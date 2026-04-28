@@ -277,7 +277,7 @@ Start from `pr.title`. Strip:
 - `[skip ci]`, `[ci-skip]`, `[skip-ci]` markers.
 - Trailing `(#NNNN)` and `[#NNNN]`.
 
-Do **not** add `Apache Airflow:` prefix — that lives in the CVE
+Do **not** add `<vendor>: <product>:` (e.g. `Apache Airflow:`) prefix — that lives in the CVE
 title, not the tracker title (the
 [`allocate-cve`](../allocate-cve/SKILL.md) skill normalises for
 the CVE record). Tracker titles in `<tracker>` are

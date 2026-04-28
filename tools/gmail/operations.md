@@ -54,7 +54,7 @@ mcp__claude_ai_Gmail__search_threads(
 Substitute the `<security-list-domain>` with the domain suffix of the
 project manifest's `security_list` (for
 `<security-list>`, the value is
-`security.airflow.apache.org`).
+`<security-list-domain>`).
 
 A non-empty result means Gmail is connected and indexed; an empty
 result means either the account does not subscribe, or the MCP is

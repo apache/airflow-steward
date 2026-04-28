@@ -44,7 +44,7 @@ Placeholder convention:
   *Mailing lists* section).
 - `<list-domain>` — the list's domain component (for
   `<security-list>`, the value is
-  `security.airflow.apache.org`); used inside the URL's query
+  `<security-list-domain>`); used inside the URL's query
   string.
 
 ## URL shapes
@@ -75,7 +75,7 @@ https://lists.apache.org/api/thread.lua?list=<list-local>&domain=<list-domain>&q
 ```
 
 Where `<list-local>` is the portion before the `@` (e.g. `users`)
-and `<list-domain>` is the portion after (e.g. `airflow.apache.org`).
+and `<list-domain>` is the portion after (e.g. `<project-domain>`).
 
 Request via `gh api <url>` (authenticates as the user — helpful for
 private lists if they ever open up) or plain `curl -s <url>` for

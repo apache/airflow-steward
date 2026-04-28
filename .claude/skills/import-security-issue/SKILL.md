@@ -191,7 +191,7 @@ report:
 Use the canonical candidate-listing query template from
 [`tools/gmail/search-queries.md`](../../../tools/gmail/search-queries.md#import-security-issue--candidate-listing-query);
 substitute the adopting project's `<security-list-domain>` (Airflow:
-`security.airflow.apache.org`) and the project's GitHub-notification
+`<security-list-domain>`) and the project's GitHub-notification
 exclusions — both declared in
 [`<project-config>/project.md`](../../../<project-config>/project.md#gmail-and-ponymail).
 
@@ -427,7 +427,7 @@ fuzzy-match search against existing issues on three orthogonal keys:
    some other tracker already discusses the same code surface — often
    a partial overlap, possibly a duplicate.
 3. **Subject root-cause keywords**: strip `[SECURITY]`, `[Security
-   Report]`, `Re:`, `Fwd:`, `FW:`, `Airflow:` / `Apache Airflow:`
+   Report]`, `Re:`, `Fwd:`, `FW:`, `Airflow:` / `<vendor>: <product>:` (e.g. `Apache Airflow:`)
    prefixes from the root message's subject, then take the remaining
    3–5 noun-phrase tokens (for example
    `"RCE BaseSerialization.deserialize next_kwargs"`) and search:

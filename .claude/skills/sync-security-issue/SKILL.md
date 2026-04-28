@@ -701,7 +701,7 @@ before the archive indexes it.
 **Search recipe.** Use the CVE-review-comment query templates in
 [`tools/gmail/search-queries.md`](../../../tools/gmail/search-queries.md#sync-security-issue--cve-review-comment-search);
 substitute the adopting project's `<security-list-domain>` (Airflow:
-`security.airflow.apache.org`, declared in
+`<security-list-domain>`, declared in
 [`<project-config>/project.md`](../../../<project-config>/project.md#gmail-and-ponymail))
 and run via `search_threads` per
 [`tools/gmail/operations.md`](../../../tools/gmail/operations.md#search-threads).
@@ -1480,7 +1480,7 @@ the actual person, in this order:
      ```
      mcp__ponymail__search_list(
        list: "dev",
-       domain: "airflow.apache.org",
+       domain: "<project-domain>",
        subject: "[RESULT][VOTE]",
        query: "<version-or-wave-token>",
        timespan: "lte=14d"
@@ -1517,7 +1517,7 @@ line so the handoff is unambiguous:
 > Allocate a CVE via the [`allocate-cve`](../allocate-cve/SKILL.md)
 > skill. It opens the ASF Vulnogram form at
 > <https://cveprocess.apache.org/allocatecve>, pre-computes a CVE-ready
-> title (stripped of `Apache Airflow:` / `[ Security Report ]` / version
+> title (stripped of `<vendor>: <product>:` (e.g. `Apache Airflow:`) / `[ Security Report ]` / version
 > noise), and — once you paste back the allocated `CVE-YYYY-NNNNN` ID —
 > wires it into the tracker (body field, label, status comment, CVE
 > JSON embed).
@@ -1849,7 +1849,7 @@ finalising the recap.
   [`AGENTS.md`](../../../AGENTS.md) for the full rationale.
 - **Never paraphrase the Security Model** in the draft email. Link to the
   relevant chapter on
-  `https://airflow.apache.org/docs/apache-airflow/stable/security/security_model.html`
+  `<security-model-url>`
   instead, following the editorial guidance in [`AGENTS.md`](../../../AGENTS.md).
 - **Never name or describe other ASF projects' vulnerabilities** in any
   tracker-destined surface — rollup entry bodies, status comments, issue

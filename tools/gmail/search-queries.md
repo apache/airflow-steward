@@ -32,7 +32,7 @@ Placeholder convention:
   [`../../<project-config>/project.md`](../../<project-config>/project.md#mailing-lists)).
 - `<security-list-domain>` — the domain suffix of that list (for
   `<security-list>`, the value is
-  `security.airflow.apache.org`). Gmail's `list:` operator uses the
+  `<security-list-domain>`). Gmail's `list:` operator uses the
   domain form, not the plain address.
 - `<dev-list>` — the project's public release-vote list (for Airflow,
   `<dev-list>`).
@@ -41,7 +41,7 @@ Placeholder convention:
 
 | Operator | Purpose |
 |---|---|
-| `list:<domain>` | Match messages sent to a mailing list. Domain form — `list:security.airflow.apache.org`, not `list:<security-list>`. |
+| `list:<domain>` | Match messages sent to a mailing list. Domain form — `list:<security-list-domain>`, not `list:<security-list>`. |
 | `from:<addr>` / `-from:<addr>` | Match (or exclude) a sender. |
 | `to:<addr>` / `cc:<addr>` | Match a recipient / copy-recipient. |
 | `subject:"<substring>"` | Match a substring in the subject line (quoted for multi-word). |
