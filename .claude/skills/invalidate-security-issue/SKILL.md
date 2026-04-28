@@ -387,7 +387,7 @@ For `security@`-imported trackers:
      discuss further"* — close the loop.
 4. **Backend selection:** probe for `oauth_curl` credentials
    first (default path
-   `~/.config/airflow-s/gmail-oauth.json`) per
+   `~/.config/apache-steward/gmail-oauth.json`) per
    [`tools/gmail/draft-backends.md`](../../../tools/gmail/draft-backends.md#how-the-skills-pick-a-backend);
    fall back to `claude_ai_mcp` (subject-matched) when
    credentials are not on disk.

@@ -935,7 +935,7 @@ For each confirmed `Report` / `ASF-security relay`:
    precedence rule in
    [`tools/gmail/draft-backends.md`](../../../tools/gmail/draft-backends.md#how-the-skills-pick-a-backend):
    **probe for `oauth_curl` credentials first** (default path
-   `~/.config/airflow-s/gmail-oauth.json`); use `oauth_curl` when
+   `~/.config/apache-steward/gmail-oauth.json`); use `oauth_curl` when
    present so the draft is `threadId`-attached, only fall back to
    `claude_ai_mcp` (subject-matched) when oauth credentials are not
    on disk. The `tools.gmail.draft_backend` config field acts as an

@@ -142,14 +142,15 @@ the inbound thread), switch the backend to `oauth_curl` — see below.
 
 ### Create draft — `oauth_curl` backend
 
-The [`tools/gmail/oauth-draft/create_draft.py`](oauth-draft/create_draft.py)
-script creates drafts by talking directly to the Gmail REST API with a
-user-provided OAuth refresh token. It sets `threadId` on the Gmail API
-call **and** populates `In-Reply-To` / `References` from the thread's
-last message, so every client threads consistently.
+The `oauth-draft-create` console script (in
+[`oauth-draft/`](oauth-draft/README.md)) creates drafts by talking
+directly to the Gmail REST API with a user-provided OAuth refresh
+token. It sets `threadId` on the Gmail API call **and** populates
+`In-Reply-To` / `References` from the thread's last message, so every
+client threads consistently.
 
 ```bash
-python3 tools/gmail/oauth-draft/create_draft.py \
+uv run --project <framework>/tools/gmail/oauth-draft oauth-draft-create \
   --thread-id <gmail-threadId> \
   --to reporter@example.com \
   --cc <security-list> \
