@@ -28,7 +28,7 @@ user in [`config/user.md`](../../config/user.md) under
 | Backend | Value | `threadId` attach? | Setup |
 |---|---|---|---|
 | claude.ai Gmail MCP | `claude_ai_mcp` (default) | **no** (subject-matched fallback only) | none — works as soon as the Gmail connector is authenticated on claude.ai |
-| OAuth + `curl` script | `oauth_curl` | **yes** | one-time Google OAuth client + refresh-token setup, automated via `uv run tools/gmail/oauth-draft/setup_credentials.py` — see [`oauth-draft/README.md`](oauth-draft/README.md) |
+| OAuth + `curl` script | `oauth_curl` | **yes** | one-time Google OAuth client + refresh-token setup, automated via `uv run --project <framework>/tools/gmail/oauth-draft oauth-draft-setup` — see [`oauth-draft/README.md`](oauth-draft/README.md) |
 
 Both backends create **drafts** — never send. The human review-and-send
 step is still required before any outbound message leaves the user's
@@ -72,7 +72,7 @@ on disk, the skills should always use them. Resolution:
    - `tools.gmail.oauth_credentials_path` from
      [`config/user.md`](../../config/user.md) when set;
    - the `$GMAIL_OAUTH_CREDENTIALS` environment variable;
-   - the default path `~/.config/airflow-s/gmail-oauth.json`.
+   - the default path `~/.config/apache-steward/gmail-oauth.json`.
 
    The probe is a single `test -f <path>` — actually parsing the file
    or doing a token-refresh probe at this stage would burn HTTP
@@ -81,8 +81,10 @@ on disk, the skills should always use them. Resolution:
    with a clear error.
 2. **If credentials are found → use `oauth_curl`** unconditionally.
    Invoke
-   [`tools/gmail/oauth-draft/create_draft.py`](oauth-draft/create_draft.py)
-   with `--thread-id`, `--to`, `--cc`, `--subject`, `--body-file`.
+   `uv run --project <framework>/tools/gmail/oauth-draft oauth-draft-create`
+   with `--thread-id`, `--to`, `--cc`, `--subject`, `--body-file` —
+   see [`oauth-draft/README.md`](oauth-draft/README.md) for the full
+   shape.
    `threadId` attachment is guaranteed; the draft surfaces in both the
    conversation view (recipient-side threading) and — when no pile-up
    blocks it — the global Drafts folder. The user's
@@ -113,8 +115,8 @@ or
 
 > *Draft created via `claude_ai_mcp` (subject-matched fallback —
 > `oauth_curl` credentials not found at default path; install via
-> `tools/gmail/oauth-draft/setup_credentials.py` to get
-> threadId attachment)*
+> `uv run --project <framework>/tools/gmail/oauth-draft oauth-draft-setup`
+> to get threadId attachment)*
 
 The fallback line is intentionally noisy when oauth credentials are
 absent — a user who would benefit from threadId attachment should

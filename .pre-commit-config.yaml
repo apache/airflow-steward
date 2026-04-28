@@ -85,3 +85,33 @@ repos:
         entry: uv run --directory tools/vulnogram/generate-cve-json pytest
         files: ^tools/vulnogram/generate-cve-json/(src|tests|pyproject\.toml)
         pass_filenames: false
+  # Project-local checks for the `oauth-draft` Python project at
+  # `tools/gmail/oauth-draft/`. Same shape as the generate-cve-json
+  # hooks above — `uv run --directory` so each tool picks up config
+  # from its own pyproject.toml; `files:` scopes by path.
+  - repo: local
+    hooks:
+      - id: oauth-draft-ruff-check
+        name: ruff check (oauth-draft)
+        language: system
+        entry: uv run --directory tools/gmail/oauth-draft ruff check
+        files: ^tools/gmail/oauth-draft/(src|tests|pyproject\.toml)
+        pass_filenames: false
+      - id: oauth-draft-ruff-format
+        name: ruff format (oauth-draft)
+        language: system
+        entry: uv run --directory tools/gmail/oauth-draft ruff format --check
+        files: ^tools/gmail/oauth-draft/(src|tests|pyproject\.toml)
+        pass_filenames: false
+      - id: oauth-draft-mypy
+        name: mypy (oauth-draft)
+        language: system
+        entry: uv run --directory tools/gmail/oauth-draft mypy
+        files: ^tools/gmail/oauth-draft/(src|tests|pyproject\.toml)
+        pass_filenames: false
+      - id: oauth-draft-pytest
+        name: pytest (oauth-draft)
+        language: system
+        entry: uv run --directory tools/gmail/oauth-draft pytest
+        files: ^tools/gmail/oauth-draft/(src|tests|pyproject\.toml)
+        pass_filenames: false

@@ -1615,13 +1615,14 @@ before moving on to the next item. Use:
   [`tools/gmail/draft-backends.md`](../../../tools/gmail/draft-backends.md#how-the-skills-pick-a-backend).
   **`oauth_curl` is preferred whenever its credentials are on disk**
   (probe order: `tools.gmail.oauth_credentials_path` →
-  `$GMAIL_OAUTH_CREDENTIALS` → default `~/.config/airflow-s/gmail-oauth.json`),
+  `$GMAIL_OAUTH_CREDENTIALS` → default `~/.config/apache-steward/gmail-oauth.json`),
   regardless of what `tools.gmail.draft_backend` is set to. The
   config field acts as an explicit override only when set to
   `claude_ai_mcp_force`. Per-backend call shape:
 
   - **`oauth_curl`** (preferred) — invoke
-    [`tools/gmail/oauth-draft/create_draft.py`](../../../tools/gmail/oauth-draft/create_draft.py)
+    `uv run --project <framework>/tools/gmail/oauth-draft oauth-draft-create`
+    (see [`tools/gmail/oauth-draft/README.md`](../../../tools/gmail/oauth-draft/README.md))
     with `--thread-id` from Step 1c, the standard `--to` / `--cc`,
     `--subject "Re: <root subject>"`, and a `--body-file`. Threads
     on every client (including the sender's own Gmail view).
