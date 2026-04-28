@@ -1709,7 +1709,7 @@ In every other case — including already-published CVEs — regenerate.
 The minimum command, from the `<tracker>` clone root:
 
 ```bash
-uv run --project tools/vulnogram/generate-cve-json generate-cve-json <N> --attach
+uv run --project <framework>/tools/vulnogram/generate-cve-json generate-cve-json <N> --attach
 ```
 
 That alone is enough. The script reads every template field from the
@@ -1757,7 +1757,7 @@ reason; the same scoping rule applies if you ever need to resolve
 the author by hand.
 
 ```bash
-uv run --project tools/vulnogram/generate-cve-json generate-cve-json <N> --attach
+uv run --project <framework>/tools/vulnogram/generate-cve-json generate-cve-json <N> --attach
 ```
 
 If the *"Remediation developer"* field is empty at regeneration time
