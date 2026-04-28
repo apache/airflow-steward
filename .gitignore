@@ -1,0 +1,10 @@
+/.idea/
+/.vscode/
+*.iml
+logs
+.build
+
+# This framework repository carries no project-specific configuration.
+# Adopting projects keep their per-user files (e.g. user.md) in their
+# own tracker repository under `<project-config>/` and ensure those
+# files stay gitignored at the adopter's level.
