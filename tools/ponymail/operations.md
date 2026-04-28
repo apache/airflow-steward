@@ -39,12 +39,12 @@ Placeholder convention used below:
 
 - `<list>` — list prefix without the `@` (e.g. `security`, `dev`,
   `users`, `announce`, `private`).
-- `<domain>` — list domain (e.g. `airflow.apache.org`,
-  `security.airflow.apache.org`). The PonyMail API treats
+- `<domain>` — list domain (e.g. `<project-domain>`,
+  `<security-list-domain>`). The PonyMail API treats
   `<security-list>` as `list: "security"` + `domain:
-  "airflow.apache.org"`; a few private lists use a dedicated
-  subdomain (`security.airflow.apache.org`), in which case `list:
-  "security"` + `domain: "security.airflow.apache.org"` is the
+  "<project-domain>"`; a few private lists use a dedicated
+  subdomain (`<security-list-domain>`), in which case `list:
+  "security"` + `domain: "<security-list-domain>"` is the
   right split.
 - `<tid>` — opaque PonyMail thread identifier, returned by
   `search_list` and `get_email`.
@@ -121,7 +121,7 @@ Returns the full `{ domain → { list → message_count } }` map the
 MCP can see with the current session. Use cases:
 
 - **Sanity-check** that the session sees the private lists the
-  project relies on (e.g. `security.airflow.apache.org` →
+  project relies on (e.g. `<security-list-domain>` →
   `security`). If an expected list is missing, the session's LDAP
   groups do not include membership for that list and downstream
   queries will return empty.

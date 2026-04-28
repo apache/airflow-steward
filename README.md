@@ -1067,7 +1067,7 @@ for the `<PROJECT>` placeholder used throughout the framework (see
 
 | Project | Directory | Index | Manifest |
 |---|---|---|---|
-| [Apache Airflow](https://airflow.apache.org/) | [`projects/airflow/`](projects/airflow/) | [`<project-config>/README.md`](<project-config>/README.md) | [`<project-config>/project.md`](<project-config>/project.md) |
+| [Apache Airflow](<project-website>/) | [`projects/airflow/`](projects/airflow/) | [`<project-config>/README.md`](<project-config>/README.md) | [`<project-config>/project.md`](<project-config>/project.md) |
 
 Add a new project by copying
 [`projects/_template/`](projects/_template/) into

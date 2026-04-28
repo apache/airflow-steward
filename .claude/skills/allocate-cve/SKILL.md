@@ -4,7 +4,7 @@ description: |
   Walk a security team member through allocating a CVE for an
   <tracker> tracking issue. Prints the ASF Vulnogram
   allocation URL and a CVE-ready title (the issue title stripped of
-  redundant `Apache Airflow:`, `[ Security Report ]`, trailing
+  redundant `<vendor>: <product>:` (e.g. `Apache Airflow:`), `[ Security Report ]`, trailing
   version parens and similar noise), waits for the allocated CVE ID
   (allocation is PMC-gated — non-PMC triagers relay to a PMC
   member), and then updates the tracker in place: fills in the

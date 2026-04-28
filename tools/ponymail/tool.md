@@ -183,7 +183,7 @@ mcp__ponymail__list_lists()
 
 The result is a `{ domain → { list → message_count } }` map. For an
 Airflow security-team triager, you should see
-`security.airflow.apache.org` → `{ security: <count> }` — proof that
+`<security-list-domain>` → `{ security: <count> }` — proof that
 the session has PMC-level LDAP access. If you only see public lists
 (`dev`, `users`, `announce`), the LDAP group membership is not being
 recognised; contact ASF Infra.

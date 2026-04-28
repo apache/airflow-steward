@@ -197,7 +197,7 @@ Scan `tracker.comments[]` for posts that argue **why** the report
 is not a security issue. Strong signals:
 
 - Citations of the
-  [Apache Airflow Security Model](https://airflow.apache.org/docs/apache-airflow/stable/security/security_model.html)
+  [Apache Airflow Security Model](<security-model-url>)
   (full URL, anchor links, paraphrases).
 - Phrases like *"this is by design"*, *"out of scope"*,
   *"documented behavior"*, *"requires X privileges already"*,
