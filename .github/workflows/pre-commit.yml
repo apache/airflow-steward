@@ -1,0 +1,44 @@
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+---
+name: prek
+
+on:  # yamllint disable-line rule:truthy
+  pull_request:
+  push:
+    branches: [main]
+
+permissions: {}
+
+jobs:
+  prek:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
+      # `uv` is required by the per-project prek hooks under
+      # `tools/{vulnogram/generate-cve-json,gmail/oauth-draft}/`, which
+      # invoke `uv run --directory ...` for ruff / mypy / pytest.
+      - uses: astral-sh/setup-uv@eac588ad8def6316056a12d4907a9d4d84ff7a3b  # v7.3.0
+        with:
+          enable-cache: true
+      - uses: j178/prek-action@0bb87d7f00b0c99306c8bcb8b8beba1eb581c037  # v1.1.1

@@ -1,0 +1,7 @@
+# zizmor — GitHub Actions security analyser. Configuration overrides
+# go here when a finding is a known false positive or otherwise
+# accepted; the file is intentionally empty to start so that every
+# finding is surfaced and reviewed.
+#
+# Docs: https://docs.zizmor.sh/configuration/
+rules: {}
