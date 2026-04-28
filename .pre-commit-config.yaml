@@ -53,3 +53,35 @@ repos:
         name: Detect if mixed line ending is used (\r vs. \r\n)
       - id: trailing-whitespace
         name: Remove trailing whitespace at end of line
+  # Project-local checks for the `generate-cve-json` Python project at
+  # `tools/vulnogram/generate-cve-json/`. Each hook sets the working
+  # directory via `uv run --directory` so ruff / mypy / pytest pick up
+  # config from the project's pyproject.toml without explicit paths.
+  # The `files:` pattern scopes each hook to changes inside the project
+  # directory.
+  - repo: local
+    hooks:
+      - id: generate-cve-json-ruff-check
+        name: ruff check (generate-cve-json)
+        language: system
+        entry: uv run --directory tools/vulnogram/generate-cve-json ruff check
+        files: ^tools/vulnogram/generate-cve-json/(src|tests|pyproject\.toml)
+        pass_filenames: false
+      - id: generate-cve-json-ruff-format
+        name: ruff format (generate-cve-json)
+        language: system
+        entry: uv run --directory tools/vulnogram/generate-cve-json ruff format --check
+        files: ^tools/vulnogram/generate-cve-json/(src|tests|pyproject\.toml)
+        pass_filenames: false
+      - id: generate-cve-json-mypy
+        name: mypy (generate-cve-json)
+        language: system
+        entry: uv run --directory tools/vulnogram/generate-cve-json mypy
+        files: ^tools/vulnogram/generate-cve-json/(src|tests|pyproject\.toml)
+        pass_filenames: false
+      - id: generate-cve-json-pytest
+        name: pytest (generate-cve-json)
+        language: system
+        entry: uv run --directory tools/vulnogram/generate-cve-json pytest
+        files: ^tools/vulnogram/generate-cve-json/(src|tests|pyproject\.toml)
+        pass_filenames: false
