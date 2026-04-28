@@ -396,7 +396,7 @@ After confirmation, apply **sequentially** (never in parallel):
    (GitHub's `duplicate` close-reason is not exposed by `gh` on
    all versions; `not planned` combined with the `duplicate` label
    carries the same signal)
-6. `uv run --project tools/vulnogram/generate-cve-json generate-cve-json <keep> --attach`
+6. `uv run --project <framework>/tools/vulnogram/generate-cve-json generate-cve-json <keep> --attach`
    — the *Remediation developer* body field is the source of truth
    for remediation-developer credits (populated by the
    `sync-security-issue` skill from the linked PR's author); no CLI

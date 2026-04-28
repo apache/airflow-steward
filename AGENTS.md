@@ -286,6 +286,7 @@ the active configuration before executing any command:
 | Placeholder | Resolves to | Source |
 |---|---|---|
 | `<project-config>` | The adopting project's `.apache-steward/` directory in its tracker repo. | Filesystem convention. |
+| `<framework>` | The framework's root — i.e. this repository. In adopting projects, `<project-config>/apache-steward/` (the submodule path); in framework standalone, `.` (the repository root). Used in `uv run` and other invocations that need to address the framework's `tools/<name>/` subtrees from a path the agent can resolve at the agent's current `cwd`. | Filesystem convention. |
 | `<tracker>` | The GitHub slug of the tracker repo (example: `airflow-s/airflow-s` for the Apache Airflow security team). | `<project-config>/project.md` → `tracker_repo` |
 | `<upstream>` | The GitHub slug of the upstream codebase the fixes land in (example: `apache/airflow`). | `<project-config>/project.md` → `upstream_repo` |
 | `<security-list>` | The project's security mailing list (example: `security@airflow.apache.org`). | `<project-config>/project.md` → `mailing_lists.security` |

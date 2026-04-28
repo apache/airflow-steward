@@ -369,7 +369,7 @@ user to confirm. Numbered items:
 4. **Regenerate the CVE JSON attachment** in the tracker body by
    running
    ```bash
-   uv run --project tools/vulnogram/generate-cve-json generate-cve-json <N> --attach
+   uv run --project <framework>/tools/vulnogram/generate-cve-json generate-cve-json <N> --attach
    ```
    This is how the CVE record first gets seeded with the allocated
    ID. The remediation-developer credit (if any) comes from the
@@ -440,7 +440,7 @@ spaces inside the block, one blank line after
 
 Allocated via the ASF Vulnogram form at <https://cveprocess.apache.org/allocatecve>; the CVE ID is now the canonical reference in every downstream artifact (CVE JSON, advisory email, credit lines, cross-links). Scope `<scope label>` → product `<product>` → `packageName` `<packageName>`.
 
-Vulnogram paste-ready JSON was regenerated from the current body state (CWE `<CWE>`, severity `<severity>`, affected `<affected versions>`, `<N>` credits, `<N>` references) and embedded in the issue body. Re-run `uv run --project tools/vulnogram/generate-cve-json generate-cve-json <N> --attach` after any body change to keep the JSON in sync.
+Vulnogram paste-ready JSON was regenerated from the current body state (CWE `<CWE>`, severity `<severity>`, affected `<affected versions>`, `<N>` credits, `<N>` references) and embedded in the issue body. Re-run `uv run --project <framework>/tools/vulnogram/generate-cve-json generate-cve-json <N> --attach` after any body change to keep the JSON in sync.
 
 </details>
 ```
@@ -488,7 +488,7 @@ partial failures stay legible:
    repos/<tracker>/issues/comments/<id> --input …`), or create
    the rollup (`gh issue comment <N> --repo <tracker>
    --body-file <tmp>`) if none exists yet.
-4. `uv run --project tools/vulnogram/generate-cve-json generate-cve-json <N> --attach`
+4. `uv run --project <framework>/tools/vulnogram/generate-cve-json generate-cve-json <N> --attach`
    — embeds the CVE JSON in the body.
 5. Create draft on the original thread (reporter notification, if
    applicable) via the project's configured drafting backend — see
