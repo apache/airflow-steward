@@ -46,6 +46,15 @@ jobs:
             path: tools/gmail/oauth-draft
           - name: generate-cve-json
             path: tools/vulnogram/generate-cve-json
+    # GitHub Actions log viewer renders ANSI colour escapes; without
+    # an attached TTY most tools default to monochrome. `FORCE_COLOR`
+    # is the de-facto signal honoured by uv, ruff, mypy, and pytest's
+    # own auto-detection. Belt-and-braces — the explicit
+    # `--color=yes` on the pytest invocation below covers tools that
+    # don't read `FORCE_COLOR`.
+    env:
+      FORCE_COLOR: "1"
+      PY_COLORS: "1"
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
@@ -61,4 +70,4 @@ jobs:
         # context, but `--directory` also changes cwd, which pytest
         # needs because each project's `pyproject.toml` declares
         # `testpaths = ["tests"]` relative to its own root.
-        run: uv run --directory ${{ matrix.project.path }} --group dev pytest
+        run: uv run --directory ${{ matrix.project.path }} --group dev pytest --color=yes
