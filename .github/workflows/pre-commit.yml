@@ -1,0 +1,54 @@
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+---
+name: prek
+
+on:  # yamllint disable-line rule:truthy
+  pull_request:
+  push:
+    branches: [main]
+
+permissions: {}
+
+jobs:
+  prek:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          persist-credentials: false
+      # `uv` brings its own Python and is required by both:
+      #  - the per-project prek hooks under
+      #    `tools/{vulnogram/generate-cve-json,gmail/oauth-draft}/`,
+      #    which invoke `uv run --directory ...` for ruff / mypy /
+      #    pytest;
+      #  - the `uv tool install prek` step below.
+      # Minimum uv version is pinned in the root `pyproject.toml`
+      # (`[tool.uv] required-version`).
+      - uses: astral-sh/setup-uv@eac588ad8def6316056a12d4907a9d4d84ff7a3b  # v7.3.0
+        with:
+          enable-cache: true
+      # Install prek via uv (rather than via the `j178/prek-action`
+      # action) so the `[tool.uv] exclude-newer` cooldown in the
+      # root `pyproject.toml` applies to the prek install as well.
+      - name: Install prek
+        run: uv tool install prek
+      - name: Run prek
+        run: prek run --show-diff-on-failure --color=always --all-files
