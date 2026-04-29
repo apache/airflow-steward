@@ -885,6 +885,18 @@ this ownership hand-off implicit; splitting them makes it explicit and
 surfaces a `fix released` backlog the release manager can drive from the
 board.
 
+**Hand-off comment.** The same `sync-security-issue` pass that proposes
+the `pr merged` → `fix released` swap also proposes posting an explicit
+**release-manager hand-off comment** on the tracker — a self-contained,
+numbered checklist (steps 13–15 from the RM's perspective) that
+@`-mentions the release manager and links to the paste-ready CVE JSON,
+the Vulnogram `#source` and `#email` tabs, and the canned-response
+templates. The comment is a one-shot, posted exactly once per tracker;
+subsequent sync runs detect it via an HTML marker and skip the post.
+This is a separate first-class comment, not a status-rollup entry —
+the rollup is for the security team's audit trail, the hand-off is the
+RM's call-to-action surface.
+
 ### Step 13 — Send the advisory
 
 During releases, the release manager looks through `fix released`
@@ -958,6 +970,19 @@ Until the *Public advisory URL* field is populated, the
 record's public `vendor-advisory` reference will point at, and publishing
 a CVE with an empty reference leaks a broken record into `cve.org`.
 
+**Publication-ready notification comment.** The same sync pass that
+populates the *Public advisory URL* body field also proposes posting a
+**publication-ready notification comment** on the tracker — a separate
+first-class comment that `@`-mentions the release manager, summarises
+the deterministic updates that just landed (URL captured, JSON
+regenerated, `announced` label added), and gives the explicit go-ahead
+for the final paste + `READY` → `PUBLIC` move and tracker close. Like
+the Step 12 hand-off comment, it is a one-shot posted exactly once
+per tracker (idempotent on subsequent runs via an HTML marker).
+Together the two comments form a two-part narrative the release
+manager can drive from the tracker page without consulting the rollup
+or external docs.
+
 ### Step 15 — Publish the CVE record and close the issue
 
 **Push the final CVE record and close the issue.** For every issue
@@ -969,11 +994,14 @@ same person who sent the advisory in Step 13):
 * copies the latest CVE JSON attachment from the tracking issue (the one
   regenerated in Step 14, now carrying the `vendor-advisory` URL) and
   pastes it into the `#source` form;
-* saves and moves the record from `REVIEW` to `PUBLIC` in the ASF CVE
+* saves and moves the record from `READY` to `PUBLIC` in the ASF CVE
   tool — **this is the final action** that propagates the record to
   [`cve.org`](https://cve.org);
 * **closes the issue** — do not update any labels. That closes
-  the lifecycle.
+  the lifecycle. The `sync-security-issue` skill follows the close
+  with an explicit `archiveProjectV2Item` mutation so the closed
+  tracker leaves the active board permanently
+  (see [`tools/github/project-board.md` — *Archive a board item*](tools/github/project-board.md#archive-a-board-item--terminal-state-cleanup)).
 
 This two-step hand-off (sync captures the URL → RM publishes the record)
 means nobody has to remember both halves: the sync skill's responsibility

@@ -1410,6 +1410,132 @@ will change and *why*. Group them by category:
   single preformatted block and hiding every link. Do not
   indent entries for "readability".
 
+- **Release-manager hand-off comment** — when this sync pass
+  proposes the `pr merged` → `fix released` label swap (Step 12),
+  **also** propose posting a separate hand-off comment that walks
+  the release manager through the rest of the lifecycle (Steps
+  13–15) end-to-end, on a single tracker page, without forcing them
+  to consult the rollup or external docs.
+
+  **This is its own first-class comment, not a rollup entry.** The
+  rollup is for the security team's audit trail and accumulates many
+  small entries; the hand-off comment is a one-shot orientation
+  surface for the release manager and must stay readable as a single
+  comment. Folding it into the rollup would bury the call-to-action
+  inside a `<details>` block.
+
+  **Trigger.** Fires *exactly once* per tracker, at the same sync
+  pass that proposes `pr merged` → `fix released`. Do not propose it
+  earlier — the tracker is not yet the release manager's
+  responsibility before that swap, and a hand-off comment posted at
+  `cve allocated` or `pr merged` would lose context by the time the
+  release actually ships. Do not propose it on subsequent runs once
+  it has already been posted (idempotency check below).
+
+  **Idempotency.** Before proposing, scan the issue's existing
+  comments for the marker
+  ```
+  <!-- apache-steward: release-manager-handoff v1 -->
+  ```
+  exactly. If a comment carrying this marker already exists, **do
+  not propose a re-post** — surface as *"hand-off comment already
+  posted on `<comment-url>` (skipping)"* in the observed-state dump
+  and move on. The marker is on line 1 of the comment body so a
+  literal `gh issue view --json comments --jq` filter can detect it
+  cheaply.
+
+  **Body source.** The comment body comes from the project's
+  configured CVE tool — the path is
+  `tools/<cve-tool>/release-manager-handoff-comment.md` where
+  `<cve-tool>` is the value of `cve_tool` in
+  [`<project-config>/project.md`](../../../<project-config>/project.md#cve-tooling)
+  (for projects on Vulnogram, that resolves to
+  [`tools/vulnogram/release-manager-handoff-comment.md`](../../../tools/vulnogram/release-manager-handoff-comment.md)).
+  The template is parameterised; the substitutions the skill
+  performs are listed in the template's HTML-comment header. Do not
+  fork or paraphrase the template body in the proposal — load it
+  verbatim, substitute the placeholders, post.
+
+  **Resolving placeholders.** All values come from configuration or
+  from the tracker itself, so there is no free-form drafting:
+
+  - `CVE_ID` — from the tracker's *CVE tool link* body field.
+  - `RM_HANDLE` — looked up via the three-source cascade in Step 2c
+    (project's *Known release managers* / Release Plan wiki / dev@
+    `[RESULT][VOTE]` thread). Same lookup the assignee swap uses;
+    do it once and reuse.
+  - `SECURITY_LIST`, `USERS_LIST`, `ANNOUNCE_LIST` — from
+    [`<project-config>/project.md`](../../../<project-config>/project.md#mailing-lists).
+  - `SOURCE_TAB_URL`, `EMAIL_TAB_URL` — substitute `<CVE-ID>` into
+    `cve_tool_record_url_template` (from project.md), append
+    `#source` / `#email` per [`tools/vulnogram/record.md`](../../../tools/vulnogram/record.md#record-urls).
+  - `JSON_ANCHOR_URL` — the deep link the `generate-cve-json` tool
+    prints on every regen (the
+    `https://github.com/<tracker>/issues/<N>#cve-json--paste-ready-for-<cve-id-slug>`
+    anchor).
+  - `ARCHIVE_SCAN_URL` — the project's PonyMail public-search URL
+    template (`ponymail_public_search_url_template` from project.md),
+    parameterised with the CVE ID.
+  - `FRAMEWORK_RECORD_MD_URL`, `FRAMEWORK_SYNC_SKILL_URL`,
+    `FRAMEWORK_README_URL` — absolute GitHub URLs into
+    `apache/airflow-steward` `main`, since the framework lives in a
+    submodule that does not render through the parent-repo viewer
+    (per the absolute-URL rule used elsewhere in this repo).
+  - `CANNED_RESPONSES_URL` — absolute GitHub URL into the tracker
+    repo's `<project-config>/canned-responses.md`.
+
+  **Apply mechanic** — see the *Release-manager hand-off comment*
+  bullet in Step 4 below; it is a fresh `gh issue comment`, not a
+  PATCH on the rollup.
+
+  **Recap.** Surface the new comment URL in the recap (Step 6) so
+  the user can click through and verify the post.
+
+- **Publication-ready notification comment** — when this sync pass
+  proposes populating the *Public advisory URL* body field (Step 14
+  — see the *Advisory archived on `<users-list>`* row of the Step 1d
+  table), **also** propose posting a separate publication-ready
+  notification comment on the tracker. The comment tells the release
+  manager that the archive URL has been captured, the JSON has been
+  regenerated to include it as a `vendor-advisory` reference, and
+  the final paste + `READY` → `PUBLIC` move is now unblocked.
+
+  **Why a second comment instead of one comment with two states.**
+  The hand-off comment posted at Step 12 has `READY` as its
+  rendered-final state and `PUBLIC` as a "wait for follow-up"
+  pointer. The follow-up is exactly this notification. Splitting
+  the call-to-action into two comments (rather than nudging the RM
+  to re-read step 7 of the same comment from days ago) gives the
+  RM a fresh, dated surface for the second action and a working
+  `@`-mention notification.
+
+  **Trigger.** Fires *exactly once* per tracker, at the same sync
+  pass that proposes the *Public advisory URL* body update. Do not
+  propose it earlier (the URL is not yet captured) or repeatedly
+  (idempotency check below).
+
+  **Idempotency.** Before proposing, scan the issue's existing
+  comments for the marker
+  ```
+  <!-- apache-steward: release-manager-publication-ready v1 -->
+  ```
+  exactly. If a comment carrying this marker already exists, do not
+  re-post — surface as *"publication-ready comment already posted on
+  `<comment-url>` (skipping)"* and move on.
+
+  **Body source.** Same load-from-tool-doc model as the hand-off
+  comment — the body comes from
+  `tools/<cve-tool>/release-manager-publication-comment.md` (for
+  Vulnogram:
+  [`tools/vulnogram/release-manager-publication-comment.md`](../../../tools/vulnogram/release-manager-publication-comment.md)).
+  Placeholders substituted: `CVE_ID`, `RM_HANDLE`, `ARCHIVE_URL`
+  (the just-captured archive URL), `SOURCE_TAB_URL`,
+  `JSON_ANCHOR_URL`, `CVE_ORG_URL`
+  (`https://www.cve.org/CVERecord?id=<CVE-ID>`).
+
+  **Apply mechanic** — same as the hand-off comment: a fresh
+  `gh issue comment`, surfaced in the recap.
+
 - **Draft email to reporter (other reasons)** — whenever the ball is in our
   court on the email thread for any other reason (a question from the
   reporter, a follow-up needed for triage, communicating a negative
@@ -1597,7 +1723,48 @@ before moving on to the next item. Use:
   comment with `gh api -X DELETE
   repos/<tracker>/issues/comments/<id>`. Never delete before the
   PATCH lands.
+- **Release-manager hand-off comment:** load the body template from
+  `tools/<cve-tool>/release-manager-handoff-comment.md`, substitute
+  the placeholders (per the *Release-manager hand-off comment*
+  bullet in Step 2b), write the result to a temp file, then post:
+
+  ```bash
+  gh issue comment <N> --repo <tracker> \
+    --body-file <tmpfile>
+  ```
+
+  This is a **fresh comment**, not a PATCH on the rollup. The
+  `<!-- apache-steward: release-manager-handoff v1 -->` marker on
+  line 1 of the template is what subsequent sync runs grep for to
+  enforce idempotency — preserve it verbatim. Capture the new
+  comment URL from the post for the Step 6 recap.
+
+  Before posting, **scrub the resolved body** for the same bare-
+  name → `@`-handle replacements documented for the rollup PATCH
+  above, so the `RM_HANDLE` substitution actually notifies the
+  release manager.
+- **Publication-ready notification comment:** same recipe as the
+  hand-off comment above, but loading
+  `tools/<cve-tool>/release-manager-publication-comment.md`. The
+  marker is `<!-- apache-steward: release-manager-publication-ready v1 -->`.
+  Apply right after the *Public advisory URL* body-field update has
+  landed and the CVE JSON has been regenerated (Step 5) — that way
+  the comment's *"the JSON has been regenerated to include the
+  archive URL"* claim is true at the moment the RM reads it.
 - **Close / reopen:** `gh issue close <N> --repo <tracker> --reason completed` (or `not planned`).
+  When this is a GitHub-backed tracker that uses a project board,
+  **always** follow a successful close with the **archive-from-board**
+  mutation per the *Archive a board item* recipe in
+  [`tools/github/project-board.md`](../../../tools/github/project-board.md#archive-a-board-item--terminal-state-cleanup).
+  Closed issues leave the active board view automatically, but an
+  explicit archive (`archiveProjectV2Item`) is what moves the item
+  to the board's *"Archived items"* view permanently — without it,
+  reopening a tracker resurfaces it on whatever column its `Status`
+  field still points at, and historical board sweeps still see the
+  item. Apply the archive for every close, regardless of the close
+  reason (terminal-Step-15 or non-terminal disposition like
+  `invalid` / `duplicate` / `not CVE worthy` / `wontfix`); the
+  mutation is idempotent and a no-op on already-archived items.
 - **Project-board column:** apply via the `updateProjectV2ItemFieldValue`
   GraphQL recipe in
   [`tools/github/project-board.md`](../../../tools/github/project-board.md#write--move-a-tracker-to-a-different-column).
