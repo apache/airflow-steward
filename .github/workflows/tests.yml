@@ -1,0 +1,73 @@
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+---
+name: tests
+
+on:  # yamllint disable-line rule:truthy
+  pull_request:
+  push:
+    branches: [main]
+
+permissions: {}
+
+jobs:
+  # Per-project pytest matrix. Each Python project under tools/ has its
+  # own `pyproject.toml` + `uv.lock`, with pytest declared in the `dev`
+  # dependency group. Running them as separate matrix jobs surfaces
+  # per-project pass/fail in the CI checks list, which is easier to
+  # triage than the bundled `pytest` lines inside the `prek` workflow's
+  # output. The `prek` workflow still exercises pytest as a hook, so
+  # this workflow is the visible signal — not the gate.
+  pytest:
+    name: "pytest (${{ matrix.project.name }})"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        project:
+          - name: oauth-draft
+            path: tools/gmail/oauth-draft
+          - name: generate-cve-json
+            path: tools/vulnogram/generate-cve-json
+    # GitHub Actions log viewer renders ANSI colour escapes; without
+    # an attached TTY most tools default to monochrome. `FORCE_COLOR`
+    # is the de-facto signal honoured by uv, ruff, mypy, and pytest's
+    # own auto-detection. Belt-and-braces — the explicit
+    # `--color=yes` on the pytest invocation below covers tools that
+    # don't read `FORCE_COLOR`.
+    env:
+      FORCE_COLOR: "1"
+      PY_COLORS: "1"
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          persist-credentials: false
+      # uv brings its own Python and reads each project's
+      # `pyproject.toml` + `uv.lock`. Minimum uv version is enforced
+      # by the root `pyproject.toml`'s `[tool.uv] required-version`.
+      - uses: astral-sh/setup-uv@eac588ad8def6316056a12d4907a9d4d84ff7a3b  # v7.3.0
+        with:
+          enable-cache: true
+      - name: Run pytest
+        # `--directory` (not `--project`) — both move uv's project
+        # context, but `--directory` also changes cwd, which pytest
+        # needs because each project's `pyproject.toml` declares
+        # `testpaths = ["tests"]` relative to its own root.
+        run: uv run --directory ${{ matrix.project.path }} --group dev pytest --color=yes
