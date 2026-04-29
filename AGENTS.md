@@ -309,6 +309,15 @@ projects is a config change, not a code change.
 
 ## Local setup
 
+**Run the agent in the credential-isolation setup.** The skills
+operate against pre-disclosure CVE content; running Claude Code (or
+another `SKILL.md`-aware agent) with default-permissive access to
+`~/`, env vars, and arbitrary network egress is a real exfiltration
+risk. See [`secure-agent-setup.md`](secure-agent-setup.md) for the
+layered defence the framework dogfoods (`.claude/settings.json`
+sandbox + tool permissions + clean-env wrapper, with system tools
+pinned at a 7-day upstream cooldown).
+
 This repository uses [`prek`](https://github.com/j178/prek) (a fast, Rust-based drop-in
 replacement for `pre-commit`) to run pre-commit hooks that keep the documentation
 consistent — regenerating the `doctoc` tables of contents, stripping trailing whitespace,

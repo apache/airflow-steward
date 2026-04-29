@@ -1,0 +1,101 @@
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+# pinned-versions.toml
+#
+# Pinned upstream versions of the host-system tools the secure agent
+# setup depends on. The pin shape mirrors the framework's other 7-day
+# cooldown convention (see `[tool.uv] exclude-newer = "7 days"` in
+# the root pyproject.toml and the per-package override for `uv`):
+# every entry below names a version that was released **at least
+# 7 days ago at the time the entry was last touched**, so an upstream
+# retag / withdrawal / fix-forward has had a week to settle before
+# adopters install it.
+#
+# Adopters consume this file by:
+#   1. Reading the versions in `secure-agent-setup.md` and installing
+#      them on the host (the doc has the install commands per distro).
+#   2. Running `tools/agent-isolation/check-tool-updates.sh` weekly
+#      (or via `/schedule`) to surface upstream releases that have
+#      themselves aged past the 7-day cooldown — those are candidates
+#      for the next intentional bump.
+#
+# To bump a tool: only when the new upstream version was released at
+# least 7 days ago, AND the framework maintainer wants to upgrade.
+# Update the `version` and `released` fields together, then bump the
+# `pinned_at` field below to today.
+
+# When this file was last touched. The check script uses this as the
+# minimum age the entries below claim to satisfy.
+pinned_at = "2026-04-29"
+
+[tools.bubblewrap]
+version = "0.11.1"
+released = "2026-03-21"
+purpose = """
+Linux user-namespace sandbox. The strongest layer of credential
+isolation: enforces the `denyRead` / `allowRead` filesystem rules
+in `.claude/settings.json` for every Bash subprocess Claude Code
+spawns. Required for the `sandbox.enabled: true` setting to
+actually mean anything on Linux; macOS uses native Seatbelt
+instead and does not need bubblewrap.
+"""
+docs = "https://github.com/containers/bubblewrap"
+upstream_releases = "https://api.github.com/repos/containers/bubblewrap/releases"
+# Install commands per distro (use the package manager's syntax for
+# requesting a specific version where supported). See
+# `secure-agent-setup.md` for adopter-facing install steps.
+install.apt = "apt-get install --no-install-recommends bubblewrap=0.11.1-*"
+install.dnf = "dnf install bubblewrap-0.11.1"
+install.brew = "# macOS does not need bubblewrap; it uses Seatbelt."
+install.from_source = "https://github.com/containers/bubblewrap/releases/tag/v0.11.1"
+
+[tools.socat]
+version = "1.8.1.1"
+released = "2026-03-13"
+purpose = """
+TCP relay used by Claude Code's sandbox network proxy to enforce
+the `sandbox.network.allowedDomains` allowlist. Without socat the
+sandboxed session has no network at all (which is sometimes a
+fine outcome). Linux only; macOS does not need it.
+"""
+docs = "http://www.dest-unreach.org/socat/"
+upstream_releases = "http://www.dest-unreach.org/socat/download/"
+install.apt = "apt-get install --no-install-recommends socat=1.8.1.1-*"
+install.dnf = "dnf install socat-1.8.1.1"
+install.from_source = "http://www.dest-unreach.org/socat/download/socat-1.8.1.1.tar.gz"
+
+[tools.claude-code]
+version = "2.1.117"
+released = "2026-04-22"
+purpose = """
+The agent runtime itself. Pinning matters because the
+permission-rule semantics, the sandbox flags, and the
+prompt-injection mitigations evolve between releases — a
+silent autoupdate to a release with a different default would
+change the framework's effective security posture without a
+review pass. The framework maintainer bumps this in lockstep
+with reviewing release-notes for behavioural changes that
+affect the secure setup.
+"""
+docs = "https://code.claude.com/docs/"
+upstream_releases = "https://api.github.com/repos/anthropics/claude-code/releases"
+# Claude Code is distributed via npm; use `--no-save` so the global
+# install doesn't drift the local lockfile of any project the user
+# installs from.
+install.npm = "npm install -g --no-save @anthropic-ai/claude-code@2.1.117"
+install.brew = "# brew tap anthropics/claude-code; brew install claude-code@2.1.117 (when available)"

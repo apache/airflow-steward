@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "sandbox": {
+    "enabled": true,
+    "filesystem": {
+      "denyRead": ["~/"],
+      "allowRead": [
+        ".",
+        "~/.gitconfig",
+        "~/.config/git/",
+        "~/.config/gh/",
+        "~/.cache/uv/",
+        "~/.local/share/uv/",
+        "~/.local/bin/",
+        "~/.config/apache-steward/"
+      ]
+    },
+    "network": {
+      "allowedDomains": [
+        "github.com",
+        "api.github.com",
+        "raw.githubusercontent.com",
+        "objects.githubusercontent.com",
+        "codeload.github.com",
+        "uploads.github.com",
+        "pypi.org",
+        "files.pythonhosted.org",
+        "lists.apache.org",
+        "cveprocess.apache.org",
+        "cve.org",
+        "www.cve.org",
+        "oauth2.googleapis.com",
+        "gmail.googleapis.com"
+      ]
+    }
+  },
+  "permissions": {
+    "deny": [
+      "Read(~/.aws/**)",
+      "Read(~/.ssh/**)",
+      "Read(~/.netrc)",
+      "Read(~/.docker/**)",
+      "Read(~/.kube/**)",
+      "Read(~/.config/gh/**)",
+      "Read(~/.config/apache-steward/**)",
+      "Read(~/.config/gcloud/**)",
+      "Read(~/.azure/**)",
+      "Read(//**/.env)",
+      "Read(//**/.env.local)",
+      "Read(//**/.env.*.local)",
+      "Bash(curl *)",
+      "Bash(wget *)",
+      "Bash(aws *)",
+      "Bash(gcloud *)",
+      "Bash(az *)",
+      "Bash(kubectl *)",
+      "Bash(docker login *)",
+      "Bash(npm publish *)",
+      "Bash(pip install --upgrade *)",
+      "Bash(uv self update *)"
+    ],
+    "ask": [
+      "Bash(git push *)",
+      "Bash(git push --force *)",
+      "Bash(git push --force-with-lease *)",
+      "Bash(gh pr create *)",
+      "Bash(gh pr edit *)",
+      "Bash(gh pr merge *)",
+      "Bash(gh issue create *)",
+      "Bash(gh issue edit *)",
+      "Bash(gh issue close *)",
+      "Bash(gh issue comment *)",
+      "Bash(gh release create *)",
+      "Bash(gh api * -X *)",
+      "Bash(gh api * -f *)",
+      "Bash(gh api * -F *)"
+    ]
+  }
+}
