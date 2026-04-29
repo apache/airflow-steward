@@ -56,8 +56,36 @@ notifications:
   # routing notifications to airflow.apache.org lists matches the
   # current ownership. Revisit if/when the repo moves to
   # `apache/steward` under a different PMC.
-  jobs: jobs@airflow.apache.org
-  commits: commits@airflow.apache.org
-  issues: commits@airflow.apache.org
-  pullrequests: commits@airflow.apache.org
-  discussions: commits@airflow.apache.org
+  #
+  # IMPORTANT: do **not** route any notification stream to
+  # `dev@airflow.apache.org`. The dev@ list is the project's
+  # design-and-development discussion list and noise from a security-
+  # framework repo (every PR, issue, push, comment, status-check
+  # event) does not belong there.
+  #
+  # ASF Infra defaults any *unset* notification field to
+  # `dev@<project>.apache.org`, so **every documented scheme below
+  # MUST stay explicitly populated** — dropping a line here silently
+  # re-enables that dev@ default for that event type. Per the ASF
+  # asf.yaml schema
+  # (https://github.com/apache/infrastructure-asfyaml/blob/main/asfyaml/feature/notifications.py
+  # `VALID_NOTIFICATION_SCHEMES`), the schemes that apply to a public
+  # GitHub repo are the eleven below (we set ten; `commits_by_path`
+  # is an optional path-specific override and is left unset). If
+  # Infra adds a new scheme, set it explicitly in the same change to
+  # keep the dev@ default suppressed.
+  #
+  # Why nearly everything goes to `commits@airflow.apache.org`:
+  # that's the standard "everything-bot-events" mirror list for the
+  # Airflow PMC; jobs go to `jobs@` (CI / workflow-failure mirror).
+  # Both lists are public-by-design and already moderated for
+  # bot-only traffic, so there is no signal-to-noise concern.
+  jobs:                  jobs@airflow.apache.org
+  commits:               commits@airflow.apache.org
+  issues:                commits@airflow.apache.org
+  issues_status:         commits@airflow.apache.org
+  issues_comment:        commits@airflow.apache.org
+  pullrequests:          commits@airflow.apache.org
+  pullrequests_status:   commits@airflow.apache.org
+  pullrequests_comment:  commits@airflow.apache.org
+  discussions:           commits@airflow.apache.org
