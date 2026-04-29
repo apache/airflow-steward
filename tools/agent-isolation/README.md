@@ -39,6 +39,10 @@ npm install -g --no-save @anthropic-ai/claude-code@2.1.117
 # Source the wrapper into your shell:
 source /path/to/airflow-steward/tools/agent-isolation/claude-iso.sh
 
+# Optional: make claude-iso the default `claude` (see secure-agent-setup.md
+# for the trade-off — the alias also strips env in non-tracker sessions):
+alias claude='claude-iso'
+
 # Launch a session with no inherited credentials:
 cd ~/code/<tracker>
 claude-iso
