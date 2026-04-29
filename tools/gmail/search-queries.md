@@ -60,7 +60,7 @@ scan excludes the mirror senders up front:
 ```text
 -from:notifications@github.com
 -from:noreply@github.com
--from:airflow-s@noreply.github.com
+-from:<tracker-noreply>
 -from:security-noreply@github.com
 ```
 
@@ -78,7 +78,7 @@ bots, within a time window:
 list:<security-list-domain>
   -from:notifications@github.com
   -from:noreply@github.com
-  -from:airflow-s@noreply.github.com
+  -from:<tracker-noreply>
   -from:security-noreply@github.com
   newer_than:30d
 ```
@@ -122,7 +122,7 @@ distinctive noun-phrase set — the same 3–5 tokens the skill's Step
 down to messages whose sender is on the security-team roster AND
 whose body opens with a canned-response preamble
 (*"Thank you for reporting … this isn't a security issue"*,
-*"Per the Airflow Security Model"*, *"This is expected behaviour
+*"Per the project's security model"*, *"This is expected behaviour
 for a Dag author"*, *"We treat this as out of scope of the Security
 Model"*). Those are the prior-rejection precedents.
 
@@ -180,14 +180,14 @@ The tool's JSON API is OAuth-gated and not readable from skill
 context, so Gmail is the load-bearing signal path.
 
 ```text
-<CVE-ID> -from:notifications@github.com -from:noreply@github.com -from:airflow-s@noreply.github.com list:<security-list-domain>
+<CVE-ID> -from:notifications@github.com -from:noreply@github.com -from:<tracker-noreply> list:<security-list-domain>
 ```
 
 A second search without the `list:` filter catches CNA-tooling
 emails that went to individual security-team members first:
 
 ```text
-<CVE-ID> -from:notifications@github.com -from:noreply@github.com -from:airflow-s@noreply.github.com
+<CVE-ID> -from:notifications@github.com -from:noreply@github.com -from:<tracker-noreply>
 ```
 
 Sync-style skills impose a hard per-issue Gmail-call budget. Keep

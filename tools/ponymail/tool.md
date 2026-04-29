@@ -95,8 +95,8 @@ Prerequisites:
 
 - Python 3.11+ (the MCP server is a Python package).
 - An ASF LDAP account with access to the lists the project needs.
-  For the Airflow security team, that is the `pmc-airflow` LDAP
-  group, which gates the `<security-list>` and
+  Typically that is the project's PMC LDAP group (e.g.
+  `pmc-<project>`), which gates the `<security-list>` and
   `<private-list>` archives.
 - A local browser that can complete the ASF OAuth redirect flow
   (the login tool opens a browser window for LDAP authentication).
@@ -181,8 +181,8 @@ lists:
 mcp__ponymail__list_lists()
 ```
 
-The result is a `{ domain → { list → message_count } }` map. For an
-Airflow security-team triager, you should see
+The result is a `{ domain → { list → message_count } }` map. For a
+PMC-LDAP-authenticated triager, you should see the project's
 `<security-list-domain>` → `{ security: <count> }` — proof that
 the session has PMC-level LDAP access. If you only see public lists
 (`dev`, `users`, `announce`), the LDAP group membership is not being

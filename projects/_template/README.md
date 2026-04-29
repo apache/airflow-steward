@@ -38,11 +38,10 @@ so a directory that starts with `_` is never accidentally picked up).
 
 ## What each file is for
 
-Once you have copied the template and renamed the directory, update
-this `README.md` to be your project's **file index**. The template
-below mirrors the structure of
-[`../airflow/README.md`](../airflow/README.md); delete the sections
-your project does not need and fill in the rest.
+Once you have copied the template into `<project-config>/` in your
+tracker repo, update this `README.md` to be your project's **file
+index**. Delete the sections your project does not need and fill in
+the rest.
 
 ### Authoritative manifest (fill this in first)
 
@@ -102,10 +101,8 @@ your project does not need and fill in the rest.
 
 ## Cross-references
 
-- [`../README.md`](../README.md) — framework-level *"Current
-  projects"* view + bootstrap walk-through.
-- [`../../config/active-project.md`](../../config/active-project.md) —
-  the selector that picks which project under `projects/` the skills
-  load.
-- [`../airflow/`](../airflow/) — a fully-populated example to
-  reference while filling in your own project.
+- [`../README.md`](../README.md) — framework-level *"Adopting the
+  framework"* view + bootstrap walk-through.
+- [`../../AGENTS.md`](../../AGENTS.md#placeholder-convention-used-in-skill-files) —
+  the placeholder convention that lets skills resolve `<project-config>/`
+  to the adopter's path at agent runtime.

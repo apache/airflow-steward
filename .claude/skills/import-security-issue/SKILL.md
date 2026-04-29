@@ -162,7 +162,7 @@ candidate Gmail threads:
 
 | Selector | Resolves to |
 |---|---|
-| `import new` (default) | every security@ thread received in the last **14 days** that has not yet been imported as an airflow-s issue and has not already been answered-and-closed on-thread |
+| `import new` (default) | every security@ thread received in the last **14 days** that has not yet been imported as an <tracker> issue and has not already been answered-and-closed on-thread |
 | `import since:YYYY-MM-DD` | every security@ thread received since the given date that is not yet imported |
 | `import thread:<id>` | the single Gmail thread with that `threadId` — useful for re-importing after a manual discard, or for picking up a single message the automatic scan missed |
 | `import last 30d` / `import all` / `import last 90d` (explicit request only) | a wider sweep — use when the skill has not been run in a while or the user is doing a backlog catch-up. The `all` alias is 90 days. |
@@ -257,7 +257,7 @@ most threads will be filtered out at Step 2.
 
 ---
 
-## Step 2 — Deduplicate against existing airflow-s issues
+## Step 2 — Deduplicate against existing <tracker> issues
 
 For each candidate `threadId`, check whether that ID already appears in
 an `<tracker>` issue body. The sync skill records each thread
@@ -323,7 +323,7 @@ check:
      cannot review it"* / *"We do not consider this a
      vulnerability"* / *"We do not consider this a security
      issue"*
-   - *"Per the Airflow Security Model"* / *"documented in our
+   - *"Per the project's security model"* / *"documented in our
      Security Model"* / *"this is by design"* / *"this is
      expected behaviour"*
    - *"This is explicitly out of scope"* / *"is explicitly
@@ -544,8 +544,8 @@ mailbox. The per-candidate budget is ≤ 2 archive searches
 
    Hits whose author is on the security-team roster AND whose body
    opens with a canned-response cue (*"Thank you for reporting …
-   this isn't a security issue"*, *"Per the Airflow Security
-   Model"*, *"This is expected behaviour for a Dag author"*, etc.)
+   this isn't a security issue"*, *"Per the project's security
+   model"*, *"This is documented / expected behaviour"*, etc.)
    are prior rejections. Fetch each with
    `mcp__claude_ai_Gmail__get_thread` (MINIMAL is enough when you
    only need to confirm the canned-response shape; FULL_CONTENT is
@@ -1015,7 +1015,7 @@ For each confirmed `Report` / `ASF-security relay`:
    `gh issue comment <N> --repo <tracker> --body-file <tmpfile>`:
 
    ```markdown
-   <!-- airflow-s status rollup v1 — all bot-authored status updates fold into this single comment. -->
+   <!-- <tracker> status rollup v1 — all bot-authored status updates fold into this single comment. -->
    <details><summary><YYYY-MM-DD> · @<author-handle> · Import (<classification>, <reporter>)</summary>
 
    **Imported from Gmail thread `<threadId>` on <YYYY-MM-DD>** (class: `<classification>`, reporter: `<reporter>`).

@@ -52,9 +52,18 @@ TODO: one rule per bullet, applied in order. Typical patterns:
 ## Implementation recipe
 
 TODO: keep the transform inline in the skill, do not create a
-separate Python project. See
-[`../airflow/title-normalization.md`](../airflow/title-normalization.md#implementation-recipe)
-for a worked example (Airflow's cascade).
+separate Python project. A typical cascade looks like:
+
+1. Strip a leading `[ Security Report ]` or similar harness prefix.
+2. Strip a leading `<vendor>: <product>:` (e.g. the project's own
+   "Apache Foo:" prefix that the CVE tool re-applies).
+3. Strip a trailing version-parenthetical like `(<= 1.2.3)`.
+4. Strip a leading `Re:` if the original report came in by email and
+   was retitled with the reply prefix.
+
+The result is the bare vulnerability description that goes into the
+CVE record's `title` field. Document the cascade your project uses
+in this file once you settle on it.
 
 ## Sanity check
 

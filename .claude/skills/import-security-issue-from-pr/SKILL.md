@@ -379,7 +379,7 @@ The first entry on the tracker's status rollup. Shape per
 [`tools/github/status-rollup.md`](../../../tools/github/status-rollup.md):
 
 ```markdown
-<!-- airflow-s status rollup v1 — all bot-authored status updates fold into this single comment. -->
+<!-- <tracker> status rollup v1 — all bot-authored status updates fold into this single comment. -->
 <details><summary><YYYY-MM-DD> · @<author-handle> · Import from PR (<scope>, <upstream>#<N>)</summary>
 
 **Imported from public PR `<upstream>#<N>` on <YYYY-MM-DD>** (scope: `<scope>`, PR state: `<state>`).
@@ -391,7 +391,7 @@ This tracker was deliberately opened by the security team for a public fix that 
 Provenance: public PR <pr.url>, author `@<pr.author.login>`.
 Extracted fields: scope=`<scope>`, *PR with the fix*=<pr.url>, *Remediation developer*=<pr.author.name>, *Affected versions*=`<per-scope shape>`, Severity=`Unknown`.
 
-*Reporter credited as* intentionally left blank — public-PR imports do not credit the PR author as the CVE reporter (no responsible disclosure). See the [Reporter credit policy](https://github.com/<tracker>/blob/airflow-s/.claude/skills/import-security-issue-from-pr/SKILL.md#reporter-credit-policy-for-public-pr-imports) section of the skill for the rationale.
+*Reporter credited as* intentionally left blank — public-PR imports do not credit the PR author as the CVE reporter (no responsible disclosure). See the [Reporter credit policy](https://github.com/<tracker>/blob/<tracker-default-branch>/.claude/skills/import-security-issue-from-pr/SKILL.md#reporter-credit-policy-for-public-pr-imports) section of the skill for the rationale.
 ```
 
 Zero-whitespace rules from

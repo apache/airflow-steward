@@ -510,7 +510,7 @@ This applies **even when**:
 **Why:** every ASF project operates its own CNA process under its
 own security team. Content about project X's in-flight or
 historical vulnerability is project X's private information, not
-Airflow's, and copying it into our tracker effectively re-publishes
+this project's, and copying it into our tracker effectively re-publishes
 it via screenshots, excerpts pasted into advisories, timeline
 clippings, or future scrapes. Cross-project correlations also
 reveal investigation patterns, reporter behaviour, and triage-team
@@ -527,7 +527,7 @@ channel they arrived on:
 - Reporter mentioned another project on the `<security-list>` thread
   → discuss it on that same thread if it helps triage; do not copy
   into the tracker.
-- Observation is load-bearing for Airflow's own fix or advisory
+- Observation is load-bearing for our own fix or advisory
   (e.g. the other project's fix shape informs ours) → summarise it
   **without naming the project**. *"The reporter has filed similar
   reports with other ASF projects"* is allowed and sometimes
@@ -570,13 +570,13 @@ informational background only.** Do not:
 
 The adopting project's security team scores every accepted vulnerability independently,
 as part of the CVE-allocation step, using the same CVSS version and vector
-conventions we use for all Airflow CVEs. The independent score is the **only**
+conventions for every CVE the project ships. The independent score is the **only**
 score that ends up in the CVE record and the public advisory. Reasons:
 
 - reporter scores are frequently inflated (*"High"* or *"Critical"* is the
   default for many report templates, regardless of actual exploitability in
-  an Airflow deployment);
-- reporters typically do not know the Airflow Security Model and therefore
+  the project's deployment);
+- reporters typically do not know the project's security model and therefore
   misjudge which capabilities are in-scope for a CVE in the first place;
 - propagating the reporter's score creates an implicit contract with them — if
   we later revise it downward, they feel the rug has been pulled, and the
@@ -721,16 +721,16 @@ handling process, no speculation about severity or timelines beyond
 the single forward-looking sentence in paragraph 2.
 
 **Emails to the ASF security team are even shorter.** The ASF CVE
-managers and the ASF security team already know the Airflow process,
-the Vulnogram tool, and the CVE-5 schema. A message to them is a
-**request or a fact**, not a briefing:
+managers and the ASF security team already know the project's
+process, the Vulnogram tool, and the CVE-5 schema. A message to
+them is a **request or a fact**, not a briefing:
 
 - Lead with the ask or the fact in one sentence (*"Please push the
   attached credit correction to cve.org for CVE-YYYY-NNNNN."*).
 - Include only the minimum artifact the recipient needs to act (the
   CVE ID, the corrected JSON, the archive URL) — one link, maybe two.
-- Do **not** restate the vulnerability, the Airflow release train, or
-  the history of the ticket.
+- Do **not** restate the vulnerability, the project's release train,
+  or the history of the ticket.
 - Do **not** explain why the ASF team's action is needed when their
   role in the process is already established (e.g. pushing to cve.org,
   allocating a CVE from a PMC-gated form).

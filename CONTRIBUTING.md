@@ -21,10 +21,10 @@
 
 Thanks for helping improve this repository. It is a reusable framework
 for running the ASF security-disclosure process as a set of agent-driven
-skills, and today drives Apache Airflow. The same tree can be extended
-to any ASF project — adding support is a matter of dropping a new
-subtree under [`projects/`](projects/) and pointing
-[`config/active-project.md`](config/active-project.md) at it.
+skills. Adopting projects ship a per-project configuration layer
+(`<project-config>/`) in their own tracker repo and consume this
+framework as a submodule — see [`projects/_template/`](projects/_template/)
+for the scaffold an adopter copies and fills in.
 
 Before sending a patch, please skim this file end-to-end: it lays out
 the layering the repository depends on, and a patch that ignores the
@@ -105,22 +105,16 @@ four — no hard-coded project assumptions anywhere.
 │   ├── user.md.template           # Bootstrap template with TODOs
 │   └── user.md.example            # Filled-in example
 │
-├── projects/                      # One subtree per supported ASF project
-│   ├── README.md                  # Current-projects index
-│   ├── airflow/                   # Active project — all Airflow-specific content
-│   │   ├── project.md             # Manifest: tracker repo, upstream repo, tools,
-│   │   │                          # board IDs, Gmail domains
-│   │   ├── security-model.md
-│   │   ├── canned-responses.md    # Reporter-facing reply templates
-│   │   ├── release-trains.md      # Current cuts + release-manager roster
-│   │   ├── milestones.md          # Scope → milestone-format mapping
-│   │   ├── scope-labels.md
-│   │   ├── naming-conventions.md
-│   │   ├── title-normalization.md
-│   │   ├── fix-workflow.md
-│   │   └── README.md
-│   └── _template/                 # Scaffold for bootstrapping a new project
-│       └── (same shape as airflow/, with TODO placeholders)
+├── projects/                      # Templates for adopting projects' configs
+│   └── _template/                 # Scaffold for bootstrapping a new project's
+│                                  # `<project-config>/` (the per-project layer
+│                                  # an adopter ships in their tracker repo).
+│                                  # Files: project.md (manifest), security-model.md,
+│                                  # canned-responses.md, release-trains.md,
+│                                  # milestones.md, scope-labels.md, naming-
+│                                  # conventions.md, title-normalization.md,
+│                                  # fix-workflow.md, README.md — all stubbed
+│                                  # with TODO placeholders.
 │
 ├── tools/                         # Project-agnostic adapters per external system
 │   ├── gmail/
@@ -171,7 +165,7 @@ First-time clone:
 
 ```bash
 git clone git@github.com:<tracker>.git
-cd airflow-s
+cd <tracker-repo-name>
 prek install                   # wire the hooks into .git/hooks
 prek run --all-files           # runs every hook on every file; does a
                                # one-time bootstrap of config/user.md
@@ -198,7 +192,7 @@ editing:
 |---|---|
 | A step of the disclosure process that applies to every project | [`README.md`](README.md) |
 | An editorial / confidentiality / style rule | [`AGENTS.md`](AGENTS.md) |
-| Anything Airflow-specific (canned reply, milestone convention, scope label, release-train state) | [`projects/airflow/`](projects/airflow/) |
+| Anything project-specific (canned reply, milestone convention, scope label, release-train state) | the adopter's own `<project-config>/` (lives in their tracker repo, not here) |
 | An adapter surface for an external system (a new Gmail search template, a new GraphQL recipe, a new `gh` invocation, a new CVE-tool endpoint) | the matching [`tools/<system>/`](tools/) subtree |
 | A skill's workflow | [`.claude/skills/<name>/SKILL.md`](.claude/skills/) |
 | Bootstrap scaffolding for a new project | [`projects/_template/`](projects/_template/) |
@@ -216,10 +210,11 @@ Rules of thumb for each layer:
   project (different Gmail domains, different GitHub org, different
   board node IDs), the adapter declares variables and the active
   project's [`project.md`](<project-config>/project.md) fills them.
-- **Project subtrees carry concrete names freely** — they exist for
-  exactly that. `projects/airflow/` can reference `<upstream>`
-  directly, can paste the Keycloak provider version without
-  apology, can name @jscheffl as RM in `release-trains.md`.
+- **An adopter's `<project-config>/` carries concrete names freely** —
+  it exists for exactly that. The adopter's own per-project files can
+  reference their `<upstream>` repo directly, paste concrete package
+  versions, name release managers, etc. — none of that lives in this
+  framework repo.
 - **Skills never mutate state without user confirmation.** If you add
   a new action, write the proposal/confirm/apply shape into the skill
   and the guardrails into `AGENTS.md`. See the existing skills for
@@ -259,14 +254,13 @@ any new behaviour has to stay compatible with.
 
 ## Opening a pull request
 
-- **Base branch:** `airflow-s`. Do not open PRs against any other
-  branch unless explicitly coordinated.
+- **Base branch:** `main`. Do not open PRs against any other branch
+  unless explicitly coordinated.
 - **Scope:** keep one concern per PR. A skill-behaviour change, a
-  tool-adapter addition, and a project-content update should land as
-  three separate PRs.
+  tool-adapter addition, and a doc update should land as separate PRs.
 - **Commit message shape:** imperative-present subject, ≤72 chars,
   plain prose body explaining *why*. Look at
-  [recent merged commits](https://github.com/<tracker>/commits/airflow-s)
+  [recent merged commits](https://github.com/apache/airflow-steward/commits/main)
   for the cadence.
 - **PR description:** one `## Summary` section with 1–3 bullets of
   *what changed and why*, and one `## Test plan` section listing how

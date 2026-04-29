@@ -10,7 +10,7 @@ exclude-newer-span = "P7D"
 uv = { timestamp = "0001-01-01T00:00:00Z", span = "P1D" }
 
 [[package]]
-name = "apache-airflow-steward"
+name = "apache-steward"
 version = "0.0.0"
 source = { virtual = "." }
 

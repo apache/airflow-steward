@@ -174,7 +174,7 @@ the close. Read the *Security mailing list thread* body field:
 For `security@`-imported trackers, locate the Gmail `threadId`:
 
 1. Read the rollup comment on the tracker (the first
-   `<details>` block with the `airflow-s status rollup v1`
+   `<details>` block with the `<tracker> status rollup v1`
    marker). Look for `threadId` references in the *Provenance:*
    line of the import entry.
 2. If the rollup is missing or thin, fall back to a Gmail subject
@@ -197,7 +197,7 @@ Scan `tracker.comments[]` for posts that argue **why** the report
 is not a security issue. Strong signals:
 
 - Citations of the
-  [Apache Airflow Security Model](<security-model-url>)
+  [the project's security model](<security-model-url>)
   (full URL, anchor links, paraphrases).
 - Phrases like *"this is by design"*, *"out of scope"*,
   *"documented behavior"*, *"requires X privileges already"*,
@@ -292,7 +292,7 @@ Reasoning summary in the [status rollup](#issuecomment-<rollup-id>); a draft rep
 For PR-imported trackers, replace *"a draft reply to the reporter
 is in Gmail awaiting review"* with *"no reporter notification
 (PR-imported tracker — see the import-from-pr skill's
-[Reporter credit policy](https://github.com/<tracker>/blob/airflow-s/.claude/skills/import-security-issue-from-pr/SKILL.md#reporter-credit-policy-for-public-pr-imports))"*.
+[Reporter credit policy](https://github.com/<tracker>/blob/<tracker-default-branch>/.claude/skills/import-security-issue-from-pr/SKILL.md#reporter-credit-policy-for-public-pr-imports))"*.
 
 The comment links must resolve once the rollup entry from Step 5e
 has been posted (capture its URL and substitute before posting
@@ -416,11 +416,11 @@ upsert recipe). Shape:
 - @<author>: > <quote 2> ([source](#issuecomment-<id>))
 - ...
 
-**Canned response selected:** *<canned section name>* in [`canned-responses.md`](https://github.com/<tracker>/blob/airflow-s/<project-config>/canned-responses.md#<anchor>).
+**Canned response selected:** *<canned section name>* in [`canned-responses.md`](https://github.com/<tracker>/blob/<tracker-default-branch>/<project-config>/canned-responses.md#<anchor>).
 
 **Reporter notification:** <one of:>
 - **`security@`-imported:** Gmail draft `<draftId>` created on thread `<threadId>` — awaiting user review.
-- **PR-imported:** none (no reporter; per [Reporter credit policy](https://github.com/<tracker>/blob/airflow-s/.claude/skills/import-security-issue-from-pr/SKILL.md#reporter-credit-policy-for-public-pr-imports)).
+- **PR-imported:** none (no reporter; per [Reporter credit policy](https://github.com/<tracker>/blob/<tracker-default-branch>/.claude/skills/import-security-issue-from-pr/SKILL.md#reporter-credit-policy-for-public-pr-imports)).
 - **Indeterminate import path:** none (flag from Step 2 surfaced; user explicitly chose silent close).
 
 **Project board:** archived (item `<item-id>`).

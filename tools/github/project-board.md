@@ -67,7 +67,7 @@ intended behaviour, since such issues are usually noise.
 neither `gh` nor a GraphQL mutation can set it. To change it:
 
 1. Open `<project_board_url>/workflows` (for Airflow:
-   <https://github.com/orgs/airflow-s/projects/2/workflows>).
+   <<project-board-url>/workflows>).
 2. Click **Auto-add to project**.
 3. Edit the **Filter** field to the expression above.
 4. Save.

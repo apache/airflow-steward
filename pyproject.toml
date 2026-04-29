@@ -29,7 +29,12 @@
 # own pyproject.toml + uv.lock.
 
 [project]
-name = "apache-airflow-steward"
+# Forward-looking name: the framework lives at `apache/airflow-steward`
+# today (legacy from when it was Airflow's private security tracker)
+# and is renaming to `apache/steward`. The package name here matches
+# the future canonical name; no PyPI publication, so the name divergence
+# from the GitHub slug is harmless.
+name = "apache-steward"
 version = "0.0.0"
 description = "Reusable framework for handling security vulnerabilities in Apache projects."
 requires-python = ">=3.11"

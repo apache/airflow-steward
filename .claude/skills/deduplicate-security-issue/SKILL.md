@@ -102,7 +102,7 @@ in `README.md`.
 ## Step 0 — Pre-flight check
 
 1. `gh api repos/<tracker> --jq .name` returns
-   `airflow-s`.
+   `<tracker>`.
 2. Both issue numbers resolve —
    `gh issue view <kept> --repo <tracker> --json number`
    and the same for `<dropped>` — before any write.

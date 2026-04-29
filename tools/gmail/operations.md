@@ -219,7 +219,7 @@ to that user until sent. Draft content may reference the private
 tracker's URL (reporter is on the private thread and is expected to
 keep it confidential), but anything destined for a public list must
 obey the confidentiality rules in
-[`../../AGENTS.md`](../../AGENTS.md) — no `airflow-s` URLs, no CVE
+[`../../AGENTS.md`](../../AGENTS.md) — no `<tracker>` URLs, no CVE
 IDs before publication, no *"security fix"* leakage.
 
 ## Error handling

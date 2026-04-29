@@ -16,9 +16,9 @@
 
 Hello, new member of the adopting project's security team. This
 repository hosts a project-agnostic framework for handling security
-issues; the adopting project (for this clone:
-[`<project-config>/`](projects/airflow/)) is declared in
-[`config/active-project.md`](config/active-project.md). This document
+issues; the adopting project's per-project layer lives in
+[`<project-config>/`](<project-config>/) (i.e. `.apache-steward/` at
+the root of the adopter's tracker repo). This document
 is the soft-landing guide — it tells you how the team works, where
 the action happens, and what is expected of you in the first few
 weeks.
@@ -69,23 +69,19 @@ for the lookup command and the latest snapshot.
 
 # Where things happen
 
-- **The project's `<security-list>`** (for Airflow:
-  `<security-list>`; in general see
-  `<project-config>/project.md → Mailing lists`). You are
-  subscribed automatically when you join the security team. This is
-  where external reporters land their reports and where we reply to
-  keep them informed.
-- **`<tracker>` GitHub repository** (for this clone:
-  `<tracker>`) — the private tracker. Every valid report
-  becomes a tracking issue here. Everything that happens on an
-  issue is automatically mirrored to the security mailing list so
-  people who prefer email stay in the loop.
+- **The project's `<security-list>`** — see
+  `<project-config>/project.md → Mailing lists` for the concrete
+  address. You are subscribed automatically when you join the
+  security team. This is where external reporters land their reports
+  and where we reply to keep them informed.
+- **`<tracker>` GitHub repository** — the private tracker. Every
+  valid report becomes a tracking issue here. Everything that
+  happens on an issue is automatically mirrored to the security
+  mailing list so people who prefer email stay in the loop.
 - **Security-issues board** — each project runs its own Projects V2
-  board. For Airflow:
-  <https://github.com/orgs/airflow-s/projects/2>. In general, see
-  `<project-config>/project.md → GitHub project board`. If you
-  want one URL to bookmark for the adopting project, bookmark that
-  board.
+  board. See `<project-config>/project.md → GitHub project board`
+  for the URL. If you want one thing to bookmark for the adopting
+  project, bookmark that board.
 - **Private PRs on the `<tracker>` `main` branch** — an exceptional
   path used for highly-critical fixes that need private code review
   before going public. See
@@ -105,9 +101,8 @@ week. A good starting routine:
 1. **Read [`README.md`](README.md) once, skim the role sections.** Pick
    the role you think you are most likely to take on first, and read it
    in full.
-2. **Open the adopting project's board** (for Airflow:
-   <https://github.com/orgs/airflow-s/projects/2>; in general, see
-   `<project-config>/project.md → GitHub project board`). Get a
+2. **Open the adopting project's board** — its URL is in
+   `<project-config>/project.md → GitHub project board`. Get a
    feel for what states issues sit in and how they flow across
    columns.
 3. **Subscribe to a few open issues** and read along. The mailing-list
@@ -222,10 +217,10 @@ The full list of skills, and what each one does, is in
 
 Beyond reacting to inbound reports, you are also welcome to
 proactively look for security improvements in the adopting project.
-Take a look at the tracker's Discussions tab (for Airflow:
-<https://github.com/<tracker>/discussions>) — we
-occasionally start a discussion there when we see we can improve
-something, process-wise or tooling-wise. Join those discussions,
+Take a look at the tracker's Discussions tab
+(`https://github.com/<tracker>/discussions`) — we occasionally start
+a discussion there when we see we can improve something, process-wise
+or tooling-wise. Join those discussions,
 share your perspective, or start new ones if you see something
 worth fixing.
 
@@ -238,9 +233,10 @@ shape the team are small enough to read in one sitting:
 - [`config/README.md`](config/README.md) — how the per-project and
   per-user configuration layers work, with a tutorial for your own
   `config/user.md`.
-- [`<project-config>/`](projects/airflow/) — project-specific content
+- [`<project-config>/`](<project-config>/) — project-specific content
   (roster, release trains, security model, scope labels, milestones,
-  canned responses, fix-workflow specifics).
+  canned responses, fix-workflow specifics) — lives in the adopter's
+  tracker repo.
 - [`how-to-fix-a-security-issue.md`](how-to-fix-a-security-issue.md) —
   high-level fix workflow.
 - [`new-members-onboarding.md`](new-members-onboarding.md) — this

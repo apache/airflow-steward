@@ -30,9 +30,9 @@ the differences are in the headers and body shape.
 
 Placeholder convention:
 
-- `<security-list>` — the project's security list. For Airflow,
-  `<security-list>`; see
-  [`../../<project-config>/project.md`](../../<project-config>/project.md#mailing-lists).
+- `<security-list>` — the project's security list. The concrete
+  address is declared in
+  [`<project-config>/project.md → Mailing lists`](../../<project-config>/project.md#mailing-lists).
 
 ## Rules
 
