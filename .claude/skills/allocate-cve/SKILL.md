@@ -50,9 +50,9 @@ confirm. The only action the skill performs unilaterally is
 **reading** the tracker state and printing the allocation recipe for
 the user to click through.
 
-**Golden rule — only Apache Airflow PMC members can allocate CVEs.**
+**Golden rule — only members of the project's PMC can allocate CVEs.**
 The ASF Vulnogram form at `https://cveprocess.apache.org/allocatecve`
-requires ASF OAuth with PMC-level access on the Airflow project. The
+requires ASF OAuth with PMC-level access on the adopting project. The
 full allocation mechanics (form-fill recipe, PMC-gated access, form
 fields, fatal mis-allocation, after-allocation wire-back) live in
 [`tools/vulnogram/allocation.md`](../../../tools/vulnogram/allocation.md);
@@ -61,8 +61,8 @@ the per-project URL templates live in
 This is not something the skill can work around — a non-PMC user who
 clicks *Allocate* sees the button grey out.
 
-The current Airflow PMC roster lives on the ASF project page:
-<https://projects.apache.org/committee.html?airflow>. Authoritative
+The current PMC roster lives on the project's ASF committee page
+(`https://projects.apache.org/committee.html?<project>`). Authoritative
 GitHub handles for the subset of PMC members who also sit on the
 security team are listed in
 [`<project-config>/release-trains.md`](../../../<project-config>/release-trains.md)
@@ -113,7 +113,7 @@ anything else.
   required if the tracker carries a reporter thread that needs a
   status-update draft (Step 5).
 - **A PMC member on call** — the Vulnogram allocation form is
-  PMC-gated. If the user is not on the Airflow PMC, the skill
+  PMC-gated. If the user is not on the project's PMC, the skill
   still runs: it produces a relay message for a PMC member to
   click through instead of stopping.
 
@@ -130,7 +130,7 @@ Before touching the tracker, verify:
 
 1. **`gh` is authenticated** —
    `gh api repos/<tracker> --jq .name` must return
-   `airflow-s`. A 401/403/404 means the user needs `gh auth login`
+   `<tracker>`. A 401/403/404 means the user needs `gh auth login`
    or collaborator access; stop.
 2. **`uv` is on the PATH** — `uv --version`. Without it the Step 4
    CVE-JSON regeneration would fail silently mid-flow; better to
@@ -580,7 +580,7 @@ presenting.
   nothing more. Do not try to automate the form fill — the ASF CVE
   tool is ASF-OAuth-gated and agent automation of CNA allocation is
   explicitly out of scope.
-- **Only an Airflow PMC member can allocate.** The Vulnogram
+- **Only a project PMC member can allocate.** The Vulnogram
   allocation button is PMC-gated. If the user running this skill is
   not a PMC member, the recipe is a **relay message** they post for
   a PMC member to act on, not a form they can fill themselves.

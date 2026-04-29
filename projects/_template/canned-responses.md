@@ -48,9 +48,8 @@ canonicalise.
 ## TODO — minimum viable canned responses
 
 At a minimum, the following templates should exist before a tracker
-team goes live. Copy one of the shapes from
-[`../airflow/canned-responses.md`](../airflow/canned-responses.md)
-and adapt the wording to the project.
+team goes live. The shapes are stubbed below; adapt the wording to
+the adopting project's voice.
 
 ### Confirmation of receiving the report
 
@@ -116,9 +115,8 @@ Minimum set (one per lifecycle transition):
 | CVE published on cve.org | post-Step 15 | `sync-security-issue` skill (recently-closed scan) |
 | Credit correction | Step 16 | Release manager |
 
-See
-[`../airflow/canned-responses.md`](../airflow/canned-responses.md)
-for fully-populated worked examples to adapt.
+Each row above corresponds to a section below; flesh out the
+template body with project-specific wording.
 
 ### CVE allocated (Step 6)
 

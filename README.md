@@ -55,15 +55,16 @@
 - [Label lifecycle](#label-lifecycle)
   - [State diagram](#state-diagram)
   - [Label reference](#label-reference)
-- [Current projects](#current-projects)
+- [Adopting the framework](#adopting-the-framework)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 ## Overview
 
-This repository (`apache/airflow-steward`, future-renamed to
-`apache/steward`) hosts a reusable, project-agnostic framework for
-running an ASF project's security-issue handling process. The
+This repository hosts a reusable, project-agnostic framework for
+running an ASF project's security-issue handling process. (Currently
+served from `apache/airflow-steward` for legacy reasons; future-
+renamed to `apache/steward`.) The
 lifecycle and conventions below are framework-level; everything
 project-specific (identity, repositories, mailing lists, canned
 responses, release trains, security model, scope labels, milestone
@@ -118,9 +119,8 @@ Pick whichever applies to you now:
 
 - **I am new to the security team, or I mostly just want to comment on
   issues.** Read [Shared conventions](#shared-conventions) below. The
-  adopting project's security-issues board (for Airflow:
-  <https://github.com/orgs/airflow-s/projects/2>; in general, see
-  `<project-config>/project.md → GitHub project board`) is the main
+  adopting project's security-issues board — see
+  `<project-config>/project.md → GitHub project board` — is the main
   view. You do not need an agent for commenting.
 - **I am a rotational triager** — running `import new reports` and
   `sync all` a few times a week. Jump to
@@ -339,10 +339,12 @@ pulling at least one other security-team member into the discussion. Use the
 canned-response templates from [`<project-config>/canned-responses.md`](<project-config>/canned-responses.md)
 for negative assessments so the tone stays polite-but-firm.
 
-When the report is confirmed valid, apply exactly one scope label (`airflow`
-/ `providers` / `chart`). If a report affects more than one scope, split into
-per-scope trackers before allocation — the `sync-security-issue` skill
-surfaces this as a blocker. See
+When the report is confirmed valid, apply exactly one scope label from
+the project's scope set (declared in
+[`<project-config>/scope-labels.md`](<project-config>/scope-labels.md)).
+If a report affects more than one scope, split into per-scope trackers
+before allocation — the `sync-security-issue` skill surfaces this as
+a blocker. See
 [Step 5](#step-5--land-the-validinvalid-consensus).
 
 If discussion stalls for about 30 days, escalate to a broader audience per
@@ -422,8 +424,8 @@ skill:
 - opens the public PR from your fork via `gh pr create --web` with a
   scrubbed title and body — every public surface (commit message,
   branch name, PR title, PR body, newsfragment) is grep-checked for
-  `CVE-`, `airflow-s`, `vulnerability`, *"security fix"* and similar
-  leakage before being written or pushed;
+  `CVE-`, the `<tracker>` repo slug, `vulnerability`, *"security fix"*
+  and similar leakage before being written or pushed;
 - updates the `<tracker>` tracking issue with the new PR
   link and applies the `pr created` label, handing back off to
   `sync-security-issue`.
@@ -725,7 +727,7 @@ short-circuits the two best outcomes phase 1 is designed to produce:
   *will* miss novel approaches.
 - **An expert flagging that the report is invalid / out of scope.**
   Sometimes the right answer is "this is documented behaviour" or
-  "this duplicates `airflow-s#XYZ` from 2 years ago"; an AI analysis
+  "this duplicates `<tracker>#XYZ` from 2 years ago"; an AI analysis
   that already proposes a fix anchors the discussion towards
   *implementing* that fix rather than evaluating whether one is
   needed.
@@ -1058,19 +1060,17 @@ skill keeps these labels honest: on every run it detects the current state
 of the issue, the fix PR, and the release train, and proposes the label
 transitions the process requires.
 
-## Current projects
+## Adopting the framework
 
-One row per project configured under
-[`projects/`](projects/). The directory name is the resolution key
-for the `<PROJECT>` placeholder used throughout the framework (see
-[`AGENTS.md` — Placeholder convention](AGENTS.md#placeholder-convention-used-in-skill-files)).
+Projects don't live in this repository — adopters pull the framework
+into their own tracker repo as a git submodule (see *Repository
+purpose* in [`AGENTS.md`](AGENTS.md#repository-purpose)) and ship
+their per-project configuration alongside it under
+`<project-config>/` (which resolves to `.apache-steward/` in the
+adopter's tracker root).
 
-| Project | Directory | Index | Manifest |
-|---|---|---|---|
-| [Apache Airflow](<project-website>/) | [`projects/airflow/`](projects/airflow/) | [`<project-config>/README.md`](<project-config>/README.md) | [`<project-config>/project.md`](<project-config>/project.md) |
-
-Add a new project by copying
-[`projects/_template/`](projects/_template/) into
-`projects/<name>/`, filling in the TODO placeholders, and adding a
-row to the table above. The full bootstrap walk-through lives in
-[`projects/README.md`](projects/README.md#bootstrapping-a-new-project).
+To bootstrap a new adopter, copy [`projects/_template/`](projects/_template/)
+into `<project-config>/` in your tracker repo, fill in the TODO
+placeholders, and point the framework's skills at it via the path
+resolution documented in
+[`AGENTS.md` — Placeholder convention](AGENTS.md#placeholder-convention-used-in-skill-files).

@@ -9,7 +9,7 @@ description: |
   implementation plan, waits for explicit user confirmation, writes the
   change in the user's local <upstream> clone, runs the local checks
   and tests, opens a PR from the user's fork via `gh pr create --web`,
-  and updates the airflow-s tracking issue with the new PR link and any
+  and updates the <tracker> tracking issue with the new PR link and any
   relevant labels. Public PR content is checked to make sure it does
   **not** reveal the CVE, the security nature of the change, or any link
   back to <tracker>.
@@ -138,7 +138,7 @@ continue.
 1. **`gh` authenticated** —
    `gh api repos/<tracker> --jq .name` and
    `gh api repos/<upstream> --jq .name` both return. A 401/403
-   on the first means no airflow-s access; on the second it is a
+   on the first means no <tracker> access; on the second it is a
    quota/auth issue — both require user action, stop.
 2. **Fork exists and is pushable** —
    `gh repo view <your-login>/airflow --json name --jq .name`
@@ -256,7 +256,7 @@ If **easily fixable**, extract and write down:
 - the target branch (`main` almost always; a release branch only if
   the user explicitly says so),
 - any backport label that should be applied to the eventual PR, based
-  on the milestone on the `airflow-s` issue (the adopting project's
+  on the milestone on the `<tracker>` issue (the adopting project's
   backport-label policy and current release branches live in
   [`<project-config>/fix-workflow.md`](../../../<project-config>/fix-workflow.md#backport-labels)
   and
@@ -330,7 +330,7 @@ verbatim.**
   - **bad** (reveals security framing): `cve-2026-40690`,
     `security-fix-218`, `vulnerable-deserialize-fix`.
 
-  Tracker identifiers on their own (e.g. `airflow-s-216`) are not
+  Tracker identifiers on their own (e.g. `<tracker>-216`) are not
   flagged — they are public-safe identifiers per the
   [Confidentiality of the tracker repository](../../../AGENTS.md#confidentiality-of-the-tracker-repository)
   rule — but they also do not help anyone reading the branch URL
@@ -394,7 +394,7 @@ List:
 
 ### 4e. Backport label
 
-If the `airflow-s` issue's milestone indicates a release branch that
+If the `<tracker>` issue's milestone indicates a release branch that
 has not yet been cut (e.g. `3.1.9`, `3.2.1`), note which
 `backport-to-vX-Y-test` label the PR should carry so that the fix
 lands on the intended patch release. If no backport is needed (the
@@ -520,7 +520,7 @@ only fires on merge, not on label application, so there is no race
 with CI. Applying the label early ensures it is not forgotten.
 
 **Grep the PR body one more time for forbidden terms** (`CVE`,
-`airflow-s`, `vulnerability`, `security fix`, `advisory`, private
+`<tracker>`, `vulnerability`, `security fix`, `advisory`, private
 issue number, reporter name tied to a finding) before calling
 `gh pr create --web`. If anything matches, abort and tell the user.
 
@@ -530,7 +530,7 @@ After the user submits the PR in the browser, capture the PR URL
 
 ---
 
-## Step 9 — Update the airflow-s tracking issue
+## Step 9 — Update the <tracker> tracking issue
 
 Now that a public PR exists, update the private tracking issue:
 
@@ -565,7 +565,7 @@ Now that a public PR exists, update the private tracking issue:
    The public `<upstream>` PR description and any follow-up public
    comments must also obey the rule, but under the usual
    public-surface confidentiality constraints (no `CVE-`,
-   `airflow-s`, *"security fix"*, etc. alongside the mention).
+   `<tracker>`, *"security fix"*, etc. alongside the mention).
 
 2. **Update the issue body "PR with the fix" field** if it is empty
    or points to a stale PR. Use `gh issue view --json body`, patch
@@ -575,7 +575,7 @@ Now that a public PR exists, update the private tracking issue:
 
 3. **Maintain milestones and labels** — see the next section.
 
-4. **Status update to the reporter** — if the airflow-s issue has an
+4. **Status update to the reporter** — if the <tracker> issue has an
    identified external reporter and the reporter has not yet been
    told about the fix PR, delegate to the `sync-security-issue`
    skill's "Status update to the reporter" category by re-running
@@ -720,7 +720,7 @@ Print a short recap:
 - the branch name (in the user's fork),
 - the list of files changed,
 - the tests that were run and their results,
-- the comment posted on the `airflow-s` issue,
+- the comment posted on the `<tracker>` issue,
 - the backport label that was applied (or a note that none was needed),
 - the next step — typically *"wait for review; re-run
   sync-security-issue after the PR merges to transition the issue

@@ -29,7 +29,7 @@ TODO: list the project's active release branches. For each branch:
 - whether new security fixes should default to this branch or a
   different one.
 
-Example shape (from `projects/airflow/release-trains.md`):
+Example shape:
 
 > - **`main`** — becomes the next minor release (X.Y+1.0 eventually).
 > - **`v1-2-test`** — patch branch for the `1.2.x` series. Next patch is `1.2.3`.

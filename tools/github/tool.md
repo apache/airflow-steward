@@ -64,7 +64,7 @@ when the tool changes.
 ## Confidentiality note
 
 Some of the recipes below operate on the **private** tracker repo
-(e.g. `<tracker>` for the Airflow project) and others on a
+(e.g. `<tracker>` for the adopting project) and others on a
 public repo (e.g. `<upstream>`). The confidentiality rules in
 [`../../AGENTS.md`](../../AGENTS.md) still bind regardless of which
 tool is in use: anything that lands on a public surface must be

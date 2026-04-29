@@ -302,7 +302,7 @@ Before reading any tracker state, verify:
    always a stop.
 2. **`gh` is authenticated** with access to `<tracker>` —
    `gh api repos/<tracker> --jq .name` must return
-   `airflow-s`. A 401/403/404 means the user needs
+   `<tracker>`. A 401/403/404 means the user needs
    `gh auth login` or collaborator access.
 3. **PonyMail MCP status** (opt-in; primary read path when
    enabled) — read `config/user.md` → `tools.ponymail`. If
@@ -405,7 +405,7 @@ state. `gh search prs --state` only accepts `open` or `closed`, so run two
 queries (or omit `--state` entirely for "any state"):
 
 ```bash
-gh search prs "airflow-s#<N>" --repo <upstream>         --json number,title,state,url,milestone,mergedAt
+gh search prs "<tracker>#<N>" --repo <upstream>         --json number,title,state,url,milestone,mergedAt
 gh search prs "#<N>"          --repo <tracker>    --json number,title,state,url,milestone,mergedAt
 ```
 
@@ -474,7 +474,7 @@ Process for finding the real reporter and the original thread:
 1. **Do not stop at the GitHub-notification mirror thread.** Searching Gmail
    for the issue title typically returns the GitHub-notification thread
    (`From: <user> via security <<security-list>>`,
-   `To: <tracker> <airflow-s@noreply.github.com>`) first. That is
+   `To: <tracker> <<tracker-noreply>>`) first. That is
    *not* the original report — it is a mirror of the GitHub issue and its
    comments. Filter it out and keep digging.
 
@@ -619,8 +619,8 @@ update, label change, or next-step recommendation in Step 2:
 | Reporter explicit opt-out of credit (*"do not credit me"*, *"anonymous"*) | Set the field to `anonymous` and flag the advisory to use that form. |
 | Release manager's `[RESULT][VOTE] Release Airflow <version>` on `<dev-list>` for a version that carries the fix | Record the release manager in the "Known release managers" subsection of [`AGENTS.md`](../../../AGENTS.md) if not already there; flag Step 13 (advisory) as assigned to that person. |
 | Advisory message sent to `announce@apache.org` / `<users-list>` for the CVE on the tracker | Propose adding the `announced - emails sent` label and removing `fix released`. **Do not propose closing the issue here** — closing is gated on the archived public advisory URL being captured (see the next row). |
-| Advisory archived on `<users-list>` (the announcement message is now visible in `lists.apache.org/list.html?<users-list>` — scan the archive with the CVE ID when `announced - emails sent` is set and the *"Public advisory URL"* body field is empty) | Propose populating the *"Public advisory URL"* body field with the archive URL, regenerating the CVE JSON attachment (the generator picks the URL up automatically and tags it `vendor-advisory`), adding the `announced` label, **and moving the project-board column from `Fix released` to `Announced`** on [`<tracker>` Project 2](https://github.com/orgs/airflow-s/projects/2). The `Announced` column is the board's representation of Step 14 — the advisory has landed and the CVE record is staged with `CNA_private.state = "PUBLIC"` ready for the release manager's single-paste Step 15. **Do not close the issue and do not add the `vendor-advisory` label** — that is Step 15, owned by the release manager after they move the record to PUBLIC in Vulnogram. |
-| Project-board column drifted from the issue's label-derived state (e.g. a tracker carries `pr merged` but is still in the `PR created` column on [Project 2](https://github.com/orgs/airflow-s/projects/2), or `announced` + *Public advisory URL* body field populated but the column is still `Fix released`) | Propose moving the project item to the correct column per the mapping table in Step 2b. The board is the primary security-team overview surface; a stale column hides ownership handoffs from the team at a glance. |
+| Advisory archived on `<users-list>` (the announcement message is now visible in `lists.apache.org/list.html?<users-list>` — scan the archive with the CVE ID when `announced - emails sent` is set and the *"Public advisory URL"* body field is empty) | Propose populating the *"Public advisory URL"* body field with the archive URL, regenerating the CVE JSON attachment (the generator picks the URL up automatically and tags it `vendor-advisory`), adding the `announced` label, **and moving the project-board column from `Fix released` to `Announced`** on [`<tracker>` Project 2](<project-board-url>). The `Announced` column is the board's representation of Step 14 — the advisory has landed and the CVE record is staged with `CNA_private.state = "PUBLIC"` ready for the release manager's single-paste Step 15. **Do not close the issue and do not add the `vendor-advisory` label** — that is Step 15, owned by the release manager after they move the record to PUBLIC in Vulnogram. |
+| Project-board column drifted from the issue's label-derived state (e.g. a tracker carries `pr merged` but is still in the `PR created` column on [Project 2](<project-board-url>), or `announced` + *Public advisory URL* body field populated but the column is still `Fix released`) | Propose moving the project item to the correct column per the mapping table in Step 2b. The board is the primary security-team overview surface; a stale column hides ownership handoffs from the team at a glance. |
 | `announced` label set and CVE record on `cveprocess.apache.org` now reports state PUBLISHED (checked via `curl -s https://cveprocess.apache.org/cve5/<CVE-ID>.json` / the ASF CVE tool API, or an explicit release-manager comment on the issue stating the Vulnogram push is done) | Propose closing the issue. Do not update any labels. This is the terminal transition. |
 | CVE record has open **review comments / reviewer proposals** (detected via the Gmail-search path in Step 1e — reviewer-comment notifications from Vulnogram land on `<security-list>` with the CVE ID in the subject line; the `cveprocess.apache.org/cve5/<CVE-ID>.json` endpoint is behind ASF OAuth and is not readable from this skill's context, so Gmail is the load-bearing signal source). | Surface each open review comment in Step 2a with **clickable links** to the Gmail thread and to the CVE record on `cveprocess.apache.org` (the reader can authenticate in-browser to see live state), verbatim-quoted; then for each one that maps cleanly to a tracking-issue body field (CWE, Affected versions, Reporter credited as, Public advisory URL, Short public summary), **propose the matching body-field update** as a numbered item in Step 2b. The body is the source of truth for the CVE JSON — regeneration in Step 5 will pull the update back into the paste-ready attachment, and the release manager's only remaining action is the Vulnogram paste + comment-resolution click. Comments that do not map to a body field (severity/CVSS, out-of-scope challenges, free-form rewrites) are surfaced verbatim and flagged for human decision. See Step 1e for the full Gmail-search recipe and the reviewer-comment-to-field mapping table. |
 | The referenced `<upstream>` PR has been opened but is still in `open` state | Propose `pr created` label; update the *"PR with the fix"* body field with the PR URL. |
@@ -982,7 +982,7 @@ will change and *why*. Group them by category:
 
 - **Assignees** — when a fix PR exists in `<upstream>` (found in
   Step 1b or named in the *"PR with the fix"* body field) **and the
-  PR author is a member of the Airflow security team** (their GitHub
+  PR author is a member of the project security team** (their GitHub
   handle appears in the security-team roster in
   [`<project-config>/release-trains.md`](../../../<project-config>/release-trains.md) — when in doubt,
   run `gh api repos/<tracker>/collaborators --jq '.[].login'`
@@ -1460,7 +1460,7 @@ the actual person, in this order:
    [`AGENTS.md`](../../../AGENTS.md) first** — if the release is already
    listed there, use that name. This is the cache; the next two sources
    are how the cache was populated and how you refresh it.
-2. **Check the Airflow Release Plan wiki** at
+2. **Check the project's release plan** at
    <https://cwiki.apache.org/confluence/display/AIRFLOW/Release+Plan>.
    This is the canonical forward-looking schedule for every release
    train (core Airflow, Providers, Airflow Ctl, Helm Chart, Airflow 2)
@@ -1523,7 +1523,7 @@ line so the handoff is unambiguous:
 > JSON embed).
 
 **Whenever a CVE ID is mentioned** — in the proposal, in the status-change
-comment on the `airflow-s` issue, in the draft email to the reporter, or in
+comment on the `<tracker>` issue, in the draft email to the reporter, or in
 the recap — render it as a clickable link per the "Linking CVEs" section of
 [`AGENTS.md`](../../../AGENTS.md). Concretely:
 
@@ -1811,7 +1811,7 @@ After the regeneration step finishes, print a short recap:
 the entire recap text: any mention of the tracking issue, any
 cross-referenced `<tracker>` issue, any PR, any specific
 comment anchor and any milestone must be a clickable markdown link.
-The user has to be able to click every `airflow-s` reference in the
+The user has to be able to click every `<tracker>` reference in the
 recap without manually pasting the number into the URL bar.
 
 Concrete minimum that every recap must include as clickable links:

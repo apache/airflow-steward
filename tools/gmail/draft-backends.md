@@ -172,7 +172,7 @@ to the user before drafting a new one"*.
 
 ## Known issue — `oauth_curl` thread-attached drafts may not surface in the global Drafts folder
 
-Caught live on 2026-04-25 during the [`airflow-s#346`](https://github.com/<tracker>/issues/346)
+Caught live on 2026-04-25 during the [`<tracker>#346`](https://github.com/<tracker>/issues/346)
 fix-skill flow: when **multiple `oauth_curl`-backed drafts pile up on
 the same Gmail thread** within a single skill flow (typical sequence:
 allocate-cve drafts a CVE-allocated message → sync-security-issue
