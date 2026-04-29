@@ -7,6 +7,7 @@
   - [Three-layer defence](#three-layer-defence)
   - [Required tools (pinned versions)](#required-tools-pinned-versions)
     - [Install commands](#install-commands)
+    - [Distro-specific shortcut — Linux Mint 22.x / Ubuntu 24.04 Noble](#distro-specific-shortcut--linux-mint-22x--ubuntu-2404-noble)
     - [Bumping a pinned version](#bumping-a-pinned-version)
     - [Wiring the check script into a weekly routine](#wiring-the-check-script-into-a-weekly-routine)
   - [The framework's own `.claude/settings.json`](#the-frameworks-own-claudesettingsjson)
@@ -346,6 +347,28 @@ The wrapper hard-allows only a tiny passthrough list (`HOME`, `PATH`,
 `SHELL`, `TERM`, `LANG`, `XDG_*`, `DISPLAY`, `SSH_AUTH_SOCK`,
 `USER`, `LOGNAME`, `PWD`); everything else from the parent shell is
 dropped via `env -i`.
+
+**Optional — make the isolated wrapper your default `claude`.** Once
+the wrapper is sourced, you can alias `claude` to it so every plain
+`claude` invocation goes through the clean-env path:
+
+```bash
+# in your ~/.bashrc or ~/.zshrc, *after* the source line above
+alias claude='claude-iso'
+```
+
+The wrapper resolves the underlying binary via shell-aware path lookup
+(`type -P` in bash, `whence -p` in zsh) rather than `command -v`, so
+the alias does not loop back into itself. Each launch prints a dim
+one-line banner on stderr (`[claude-iso] running in isolated env (…)`)
+so it is obvious which mode the agent is starting in. To bypass the
+alias for a single invocation, use `command claude …` or `\claude …`.
+
+The trade-off is the same one as any "shadow the binary with a safer
+wrapper" pattern: a session you forgot to start in a tracker checkout
+also runs with a stripped env, which surprises tools that rely on a
+parent-shell credential. If that bites, drop the alias and call
+`claude-iso` explicitly when you actually want the isolation.
 
 To inject one credential explicitly for one session:
 
