@@ -10,6 +10,10 @@
   - [Introspection — re-fetch the option IDs](#introspection--re-fetch-the-option-ids)
   - [Write — move a tracker to a different column](#write--move-a-tracker-to-a-different-column)
   - [Orphan-issue path](#orphan-issue-path)
+  - [Archive a board item — terminal-state cleanup](#archive-a-board-item--terminal-state-cleanup)
+    - [Archive recipe](#archive-recipe)
+    - [Idempotency](#idempotency)
+    - [Inverse — unarchive](#inverse--unarchive)
   - [When the board is a no-op](#when-the-board-is-a-no-op)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -215,6 +219,71 @@ gh api graphql -f query='
 
 # Step 3: move the newly-added item to the target column (see the write recipe above).
 ```
+
+## Archive a board item — terminal-state cleanup
+
+When a tracker reaches the terminal `closed` state of the lifecycle
+(Step 15 of [`../../README.md`](../../README.md) — CVE record moved
+to `PUBLIC`, tracker closed), the project-board item is no longer
+useful as an active-work signal. Archive it from the board so the
+active columns reflect only in-flight trackers.
+
+Archiving is an explicit Projects V2 mutation (`archiveProjectV2Item`)
+that hides the item from the default board view. The item is *not*
+deleted — it stays on the board's "Archived items" view and continues
+to belong to the project.
+
+### Archive recipe
+
+```bash
+gh api graphql -f query='
+  mutation($pid:ID!,$iid:ID!) {
+    archiveProjectV2Item(input: { projectId: $pid, itemId: $iid }) {
+      item { id }
+    }
+  }' \
+  -F pid=<project-node-id> \
+  -F iid=<item-id>
+```
+
+The `pid` is the same `<project-node-id>` used by the column-move
+mutation in [*Write — move a tracker to a different column*](#write--move-a-tracker-to-a-different-column);
+the `iid` is the same `<item-id>` returned by the introspection
+query (or freshly captured at apply time after `addProjectV2ItemById`
+on a previously-orphan issue).
+
+### Idempotency
+
+Archiving an already-archived item returns success without changing
+state — the mutation is idempotent on the second call. Skills that
+re-run on closed trackers (for example, a backfill sweep on
+historically-closed issues) can call `archiveProjectV2Item` without
+detecting prior-archived state first.
+
+To detect whether an item is already archived (e.g. before a sync run
+to avoid emitting a no-op log line), include `isArchived` in the
+introspection query — when an item carries `isArchived: true`, skip
+the archive call.
+
+### Inverse — unarchive
+
+If a tracker is reopened (rare; usually only when a closing
+disposition is reverted), restore the item to the active board with:
+
+```bash
+gh api graphql -f query='
+  mutation($pid:ID!,$iid:ID!) {
+    unarchiveProjectV2Item(input: { projectId: $pid, itemId: $iid }) {
+      item { id }
+    }
+  }' \
+  -F pid=<project-node-id> \
+  -F iid=<item-id>
+```
+
+The unarchived item lands back on whatever column its `Status` field
+points at; if the column needs to change too, follow with a regular
+column-move mutation.
 
 ## When the board is a no-op
 
