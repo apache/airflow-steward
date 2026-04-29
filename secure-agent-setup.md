@@ -136,6 +136,53 @@ version, no pin enforced — Homebrew rolls forward, so the
 npm install -g --no-save @anthropic-ai/claude-code@2.1.117
 ```
 
+### Distro-specific shortcut — Linux Mint 22.x / Ubuntu 24.04 Noble
+
+The pinned versions above (bubblewrap `0.11.1`, socat `1.8.1.1`) are
+the *upstream* releases that have aged past the framework's 7-day
+cooldown. **They are not in Ubuntu Noble's main repos** — Noble
+ships `bubblewrap 0.9.0` (`0.9.0-1ubuntu0.1`) and
+`socat 1.8.0.0` (`1.8.0.0-4build3`).
+
+Both Noble-shipped versions pre-date the framework's pins by months
+and are well past the 7-day cooldown, so they're a legitimate
+adopter choice on Mint 22.x / Ubuntu 24.04. The trade-off is the
+usual LTS one: older feature set, but no source build required,
+and security backports flow through Ubuntu's standard update
+channel.
+
+If you accept the trade-off, install via apt:
+
+```bash
+sudo apt-get update
+sudo apt-get install --no-install-recommends \
+    bubblewrap=0.9.0-1ubuntu0.1 \
+    socat=1.8.0.0-4build3
+```
+
+The framework's `.claude/settings.json` works unchanged — the
+sandbox flags don't depend on a specific bubblewrap version (the
+`denyRead`/`allowRead` API has been stable since `0.6.x`).
+
+The framework's `tools/agent-isolation/check-tool-updates.sh` will
+still report upstream `0.11.1` / `1.8.1.1` as the pinned versions —
+that's the manifest's view of what's *upstream-current*, not what
+your distro shipped. If you want to silence the drift, override the
+manifest locally with a `pinned-versions.local.toml` (gitignored)
+declaring the Noble versions; the script's manifest-precedence
+follows the same `*.local` convention as Claude Code's
+`settings.local.json`.
+
+> **Why this is documented as a separate "shortcut" rather than
+> the canonical path.** The framework's default pin tracks the
+> upstream release stream, not any specific distro. Adopters on
+> distros that ship recent versions (Arch, Fedora rolling, NixOS
+> on `nixos-unstable`) can install the upstream-pinned versions
+> directly from their package manager. Adopters on LTS distros
+> like Mint / Ubuntu Noble use this shortcut. The two paths
+> converge — once Noble's next LTS adopts a newer bubblewrap, this
+> section retires.
+
 ### Bumping a pinned version
 
 When an upstream release has aged past the 7-day cooldown and you
