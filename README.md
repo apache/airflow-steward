@@ -155,6 +155,18 @@ the `.claude/skills/*/SKILL.md` files and follows their step-by-step
 instructions should work; there is no hard dependency on Claude Code
 specifically.
 
+The agent runs against pre-disclosure CVE content (private mail
+threads, draft advisories, in-flight tracker discussions). Run it
+with the credential-isolation setup documented in
+[`secure-agent-setup.md`](secure-agent-setup.md) — a layered
+defence built around Claude Code's filesystem sandbox, tool-level
+permission rules, and a clean-env wrapper that strips credential-
+shaped variables from the agent's environment. The required system
+tools (`bubblewrap`, `socat`, `claude-code` itself) are pinned with
+a 7-day upstream-release cooldown, mirroring the same convention the
+framework uses for its `[tool.uv] exclude-newer` and Dependabot
+configs.
+
 ### 2. Email connection (Gmail MCP, today)
 
 The import, sync, and allocate-cve skills **read the security-list
