@@ -16,11 +16,18 @@
 # under the License.
 from __future__ import annotations
 
+import io
 import json
+import urllib.error
+from unittest.mock import patch
 
 import pytest
 
-from oauth_draft.credentials import Credentials, locate_credentials
+from oauth_draft.credentials import (
+    Credentials,
+    locate_credentials,
+    refresh_access_token,
+)
 
 
 def write_creds(path, **overrides):
@@ -92,3 +99,69 @@ def test_locate_raises_when_nothing_exists(tmp_path, monkeypatch):
     with pytest.raises(SystemExit) as excinfo:
         locate_credentials(None)
     assert "No Gmail OAuth credentials found" in str(excinfo.value)
+
+
+# --- refresh_access_token --------------------------------------------------
+
+
+CREDS = Credentials(
+    client_id="cid",
+    client_secret="secret",
+    refresh_token="refresh",
+    from_address="me@example.com",
+)
+
+
+class _FakeResponse:
+    """Minimal context-manager stand-in for urllib.request.urlopen()."""
+
+    def __init__(self, payload: bytes):
+        self._payload = payload
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+    def read(self):
+        return self._payload
+
+
+def test_refresh_access_token_returns_access_token():
+    with patch("oauth_draft.credentials.urllib.request.urlopen") as mock_open:
+        mock_open.return_value = _FakeResponse(b'{"access_token": "abc-123"}')
+        token = refresh_access_token(CREDS)
+    assert token == "abc-123"
+    # The POST body must include all four OAuth refresh-flow params.
+    request = mock_open.call_args.args[0]
+    assert request.method == "POST"
+    assert request.full_url == "https://oauth2.googleapis.com/token"
+    body = request.data.decode()
+    assert "client_id=cid" in body
+    assert "client_secret=secret" in body
+    assert "refresh_token=refresh" in body
+    assert "grant_type=refresh_token" in body
+
+
+def test_refresh_access_token_raises_on_http_error():
+    err = urllib.error.HTTPError(
+        url="https://oauth2.googleapis.com/token",
+        code=400,
+        msg="Bad Request",
+        hdrs=None,  # type: ignore[arg-type]
+        fp=io.BytesIO(b'{"error": "invalid_grant"}'),
+    )
+    with patch("oauth_draft.credentials.urllib.request.urlopen", side_effect=err):
+        with pytest.raises(SystemExit) as excinfo:
+            refresh_access_token(CREDS)
+    assert "OAuth token refresh failed (400)" in str(excinfo.value)
+    assert "invalid_grant" in str(excinfo.value)
+
+
+def test_refresh_access_token_raises_when_no_token_in_payload():
+    with patch("oauth_draft.credentials.urllib.request.urlopen") as mock_open:
+        mock_open.return_value = _FakeResponse(b'{"expires_in": 3600}')
+        with pytest.raises(SystemExit) as excinfo:
+            refresh_access_token(CREDS)
+    assert "no access_token" in str(excinfo.value)

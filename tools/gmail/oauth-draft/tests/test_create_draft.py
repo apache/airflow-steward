@@ -16,11 +16,28 @@
 # under the License.
 from __future__ import annotations
 
+import base64
 import email
 import email.policy
+import io
+import json
+import urllib.error
 from email.message import EmailMessage
+from unittest.mock import patch
 
-from oauth_draft.create_draft import build_mime, headers_from_thread, parse_args
+import pytest
+
+from oauth_draft.create_draft import (
+    api_get,
+    api_post,
+    build_mime,
+    create_draft,
+    headers_from_thread,
+    latest_reply_headers,
+    main,
+    parse_args,
+    read_body,
+)
 
 
 def parse_built_message(raw: bytes) -> EmailMessage:
@@ -174,3 +191,210 @@ def test_parse_args_repeats():
     )
     assert args.to == ["a@example.com", "b@example.com"]
     assert args.cc == ["c@example.com"]
+
+
+# --- read_body -------------------------------------------------------------
+
+
+def test_read_body_from_file(tmp_path):
+    p = tmp_path / "body.txt"
+    p.write_text("hello from file")
+    assert read_body(str(p)) == "hello from file"
+
+
+def test_read_body_from_stdin_when_dash(monkeypatch):
+    monkeypatch.setattr("sys.stdin", io.StringIO("piped"))
+    assert read_body("-") == "piped"
+
+
+def test_read_body_from_stdin_when_none(monkeypatch):
+    monkeypatch.setattr("sys.stdin", io.StringIO("default"))
+    assert read_body(None) == "default"
+
+
+# --- network-mocked helpers ------------------------------------------------
+
+
+class _FakeResponse:
+    def __init__(self, payload: bytes):
+        self._payload = payload
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+    def read(self):
+        return self._payload
+
+
+def test_api_get_parses_json_response():
+    with patch("oauth_draft.create_draft.urllib.request.urlopen") as mock_open:
+        mock_open.return_value = _FakeResponse(b'{"id": "thread-1"}')
+        result = api_get("token", "/threads/thread-1")
+    assert result == {"id": "thread-1"}
+    request = mock_open.call_args.args[0]
+    assert request.full_url.endswith("/threads/thread-1")
+    assert request.headers["Authorization"] == "Bearer token"
+
+
+def test_api_post_parses_json_response():
+    with patch("oauth_draft.create_draft.urllib.request.urlopen") as mock_open:
+        mock_open.return_value = _FakeResponse(b'{"id": "draft-7"}')
+        result = api_post("token", "/drafts", {"message": {"raw": "X"}})
+    assert result == {"id": "draft-7"}
+    request = mock_open.call_args.args[0]
+    assert request.method == "POST"
+    assert request.headers["Content-type"] == "application/json"
+    assert json.loads(request.data) == {"message": {"raw": "X"}}
+
+
+def test_api_post_raises_on_http_error():
+    err = urllib.error.HTTPError(
+        url="https://x",
+        code=403,
+        msg="Forbidden",
+        hdrs=None,  # type: ignore[arg-type]
+        fp=io.BytesIO(b'{"error": "forbidden"}'),
+    )
+    with patch("oauth_draft.create_draft.urllib.request.urlopen", side_effect=err):
+        with pytest.raises(SystemExit) as excinfo:
+            api_post("token", "/drafts", {})
+    assert "failed (403)" in str(excinfo.value)
+    assert "forbidden" in str(excinfo.value)
+
+
+def test_latest_reply_headers_pulls_from_api_get():
+    fake_thread = {
+        "messages": [
+            {
+                "payload": {
+                    "headers": [
+                        {"name": "Message-ID", "value": "<m@example.com>"},
+                    ]
+                }
+            }
+        ]
+    }
+    with patch("oauth_draft.create_draft.api_get", return_value=fake_thread) as m:
+        in_reply, refs = latest_reply_headers("token", "thread-id-9")
+    assert in_reply == "<m@example.com>"
+    assert refs == "<m@example.com>"
+    m.assert_called_once_with("token", "/threads/thread-id-9?format=full")
+
+
+def test_create_draft_payload_includes_threadid_when_set():
+    raw = b"raw-bytes"
+    with patch("oauth_draft.create_draft.api_post", return_value={"id": "d-1"}) as m:
+        result = create_draft("token", "thread-1", raw)
+    assert result == {"id": "d-1"}
+    _, _, payload = m.call_args.args
+    expected_b64 = base64.urlsafe_b64encode(raw).decode().rstrip("=")
+    assert payload == {"message": {"raw": expected_b64, "threadId": "thread-1"}}
+
+
+def test_create_draft_payload_omits_threadid_when_none():
+    with patch("oauth_draft.create_draft.api_post", return_value={"id": "d-2"}) as m:
+        create_draft("token", None, b"x")
+    _, _, payload = m.call_args.args
+    assert "threadId" not in payload["message"]
+
+
+# --- main ------------------------------------------------------------------
+
+
+def _make_creds_file(tmp_path):
+    p = tmp_path / "creds.json"
+    p.write_text(
+        json.dumps(
+            {
+                "client_id": "cid",
+                "client_secret": "secret",
+                "refresh_token": "refresh",
+                "from_address": "me@example.com",
+            }
+        )
+    )
+    return p
+
+
+def test_main_create_draft_end_to_end(tmp_path, capsys):
+    creds = _make_creds_file(tmp_path)
+    body_file = tmp_path / "body.txt"
+    body_file.write_text("Reply body")
+    api_post_mock = patch(
+        "oauth_draft.create_draft.api_post",
+        return_value={
+            "id": "draft-id-99",
+            "message": {"id": "msg-id-99", "threadId": "tid"},
+        },
+    )
+    with (
+        patch("oauth_draft.create_draft.refresh_access_token", return_value="tok"),
+        patch(
+            "oauth_draft.create_draft.latest_reply_headers",
+            return_value=("<a@x>", "<a@x>"),
+        ),
+        api_post_mock as post,
+    ):
+        rc = main(
+            [
+                "--credentials",
+                str(creds),
+                "--thread-id",
+                "tid",
+                "--to",
+                "rcpt@example.com",
+                "--subject",
+                "Re: hello",
+                "--body-file",
+                str(body_file),
+            ]
+        )
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "Draft ID:    draft-id-99" in out
+    assert "Message ID:  msg-id-99" in out
+    # Verify the MIME body posted to /drafts has reply headers + body.
+    _, path, payload = post.call_args.args
+    assert path == "/drafts"
+    raw_b64 = payload["message"]["raw"]
+    raw_bytes = base64.urlsafe_b64decode(raw_b64 + "=" * (-len(raw_b64) % 4))
+    decoded = raw_bytes.decode()
+    assert "From: me@example.com" in decoded
+    assert "To: rcpt@example.com" in decoded
+    assert "Subject: Re: hello" in decoded
+    assert "In-Reply-To: <a@x>" in decoded
+    assert "Reply body" in decoded
+
+
+def test_main_no_reply_headers_skips_thread_lookup(tmp_path):
+    creds = _make_creds_file(tmp_path)
+    body = tmp_path / "b.txt"
+    body.write_text("x")
+    with (
+        patch("oauth_draft.create_draft.refresh_access_token", return_value="t"),
+        patch("oauth_draft.create_draft.latest_reply_headers") as latest,
+        patch(
+            "oauth_draft.create_draft.api_post",
+            return_value={"id": "d", "message": {"id": "m"}},
+        ),
+    ):
+        rc = main(
+            [
+                "--credentials",
+                str(creds),
+                "--thread-id",
+                "tid",
+                "--no-reply-headers",
+                "--to",
+                "x@example.com",
+                "--subject",
+                "S",
+                "--body-file",
+                str(body),
+            ]
+        )
+    assert rc == 0
+    latest.assert_not_called()
