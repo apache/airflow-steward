@@ -248,12 +248,44 @@ Layer 0 — strip credential-shaped env vars from the parent shell
 before invoking `claude` — is implemented by
 [`tools/agent-isolation/claude-iso.sh`](tools/agent-isolation/claude-iso.sh).
 
-Source it from your shell rc:
+There are two valid ways to make `claude-iso` available on your
+shell. Pick whichever matches how you use Claude Code; the wrapper
+behaviour is identical either way.
+
+**Per-repo install** — source the script directly from the
+framework checkout. Simplest, always tracks the wrapper version in
+the repo (so a `git pull` of the framework updates the wrapper),
+but only works on hosts where the framework path resolves.
 
 ```bash
 # ~/.bashrc or ~/.zshrc
 source /path/to/airflow-steward/tools/agent-isolation/claude-iso.sh
 ```
+
+**Global (user-scope) install** — copy the script into
+`~/.claude/agent-isolation/` and source from there. Survives
+branch / worktree / repo-path changes, travels with the rest of
+`~/.claude/` when you sync dotfiles between machines, and works
+regardless of whether the framework repo happens to be checked
+out on a given host.
+
+```bash
+# one-time install (re-run to pick up an upstream wrapper change)
+mkdir -p ~/.claude/agent-isolation
+cp /path/to/airflow-steward/tools/agent-isolation/claude-iso.sh \
+    ~/.claude/agent-isolation/claude-iso.sh
+
+# ~/.bashrc or ~/.zshrc — guarded so it's a no-op until the file exists
+[ -f "$HOME/.claude/agent-isolation/claude-iso.sh" ] \
+    && . "$HOME/.claude/agent-isolation/claude-iso.sh"
+```
+
+Trade-off: the global install decouples the wrapper from the
+repo's pinned copy. If a future framework release changes the
+wrapper (new passthrough vars, security fix), you need to
+re-`cp` it into `~/.claude/agent-isolation/` by hand. Diff the
+two paths periodically — or schedule it via `/schedule` — to
+surface drift.
 
 Then use `claude-iso` instead of `claude` whenever you start a
 session in the tracker repo:
@@ -299,9 +331,14 @@ the secure setup into your tracker's working tree:
    - The `permissions.ask` list — add any project-specific
      write-side commands you want to confirm explicitly (e.g. a
      custom release-publishing CLI).
-3. Source `tools/agent-isolation/claude-iso.sh` from your shell rc.
-   The path is `<your-tracker>/.apache-steward/apache-steward/tools/agent-isolation/claude-iso.sh`
-   when the framework is consumed via the standard submodule path.
+3. Make `claude-iso` available on your shell — either per-repo
+   (sourcing the script from the framework checkout) or globally
+   (copying the script to `~/.claude/agent-isolation/` and
+   sourcing from there). Both options are documented in
+   [The clean-env wrapper](#the-clean-env-wrapper). When the
+   framework is consumed via the standard submodule path, the
+   per-repo source path is
+   `<your-tracker>/.apache-steward/apache-steward/tools/agent-isolation/claude-iso.sh`.
 4. Decide whether to gitignore `.claude/settings.local.json` in your
    tracker repo — Claude Code does this by default; verify with
    `git check-ignore .claude/settings.local.json`.
