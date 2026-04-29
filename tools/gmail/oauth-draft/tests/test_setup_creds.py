@@ -160,7 +160,7 @@ def test_main_errors_when_flow_returns_no_refresh_token(tmp_path, monkeypatch):
     assert "no refresh_token" in str(excinfo.value)
 
 
-def test_main_writes_credentials_file(tmp_path, monkeypatch):
+def test_main_writes_credentials_file(tmp_path, monkeypatch, capsys):
     monkeypatch.setenv("GMAIL_FROM", "me@example.com")
     secrets = _client_secrets(tmp_path)
     out_dir = tmp_path / "creds-dir"
@@ -186,9 +186,16 @@ def test_main_writes_credentials_file(tmp_path, monkeypatch):
     assert (out_dir.stat().st_mode & 0o777) == 0o700
     # Original client_secrets is left in place by default.
     assert secrets.exists()
+    # The startup banner logs the path of the client_secrets file (NOT
+    # its content). Asserts the variable rename
+    # (`client_secrets` → `client_secrets_path`) didn't break the
+    # log message that addresses CodeQL `py/clear-text-logging-
+    # sensitive-data` finding #3 on PR #6.
+    out_text = capsys.readouterr().out
+    assert f"Running OAuth flow against {secrets.resolve()}" in out_text
 
 
-def test_main_with_rm_client_secrets_deletes_input(tmp_path, monkeypatch):
+def test_main_with_rm_client_secrets_deletes_input(tmp_path, monkeypatch, capsys):
     monkeypatch.setenv("GMAIL_FROM", "me@example.com")
     secrets = _client_secrets(tmp_path)
     out = tmp_path / "creds-dir" / "creds.json"
@@ -200,6 +207,11 @@ def test_main_with_rm_client_secrets_deletes_input(tmp_path, monkeypatch):
     ):
         main([str(secrets), "--out", str(out), "--rm-client-secrets"])
     assert not secrets.exists()
+    # The "Removed <path>" log line — covers the second CodeQL
+    # `py/clear-text-logging-sensitive-data` site on the renamed
+    # `client_secrets_path` variable.
+    out_text = capsys.readouterr().out
+    assert f"Removed {secrets.resolve()}" in out_text
 
 
 def test_main_handles_web_shaped_client_secrets(tmp_path, monkeypatch):
