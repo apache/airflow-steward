@@ -187,14 +187,16 @@ below, annotated.
     "filesystem": {
       "denyRead": ["~/"],          // default-deny the entire home dir for Bash subprocesses
       "allowRead": [
-        ".",                       // the project tree (cwd)
-        "~/.gitconfig",            // git's user.name / user.email
-        "~/.config/git/",          // git's per-host config
-        "~/.config/gh/",           // gh CLI auth (token in hosts.yml)
-        "~/.cache/uv/",            // uv's HTTP cache
-        "~/.local/share/uv/",      // uv's tool venvs (prek, etc.)
-        "~/.local/bin/",           // uv-installed tool entry points
-        "~/.config/apache-steward/" // Gmail OAuth refresh token (oauth-draft tool)
+        ".",                          // the project tree (cwd)
+        "~/.gitconfig",               // git's user.name / user.email
+        "~/.config/git/",             // git's per-host config
+        "~/.config/gh/",              // gh CLI auth (token in hosts.yml)
+        "~/.cache/uv/",               // uv's HTTP cache
+        "~/.local/share/uv/",         // uv's tool venvs (prek, etc.)
+        "~/.local/bin/",              // uv-installed tool entry points
+        "~/.config/apache-steward/",  // Gmail OAuth refresh token (oauth-draft tool)
+        "~/.gnupg/",                  // gpg keys (commit signing)
+        "/run/user/*/gnupg/"          // gpg-agent socket dir (ssh-via-gpg-agent commit signing)
       ]
     },
     "network": {

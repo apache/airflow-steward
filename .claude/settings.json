@@ -12,7 +12,9 @@
         "~/.cache/uv/",
         "~/.local/share/uv/",
         "~/.local/bin/",
-        "~/.config/apache-steward/"
+        "~/.config/apache-steward/",
+        "~/.gnupg/",
+        "/run/user/*/gnupg/"
       ]
     },
     "network": {
