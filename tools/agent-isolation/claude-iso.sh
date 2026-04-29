@@ -42,9 +42,17 @@
 
 claude_iso_main() {
   # Resolve the claude binary on PATH before clobbering the env so
-  # the lookup uses the user's normal $PATH.
+  # the lookup uses the user's normal $PATH. Use a path-only lookup
+  # (bash `type -P`, zsh `whence -p`) instead of `command -v`: with
+  # `command -v`, an `alias claude=claude-iso` in the user's rc file
+  # (a documented setup option — see `secure-agent-setup.md`) would
+  # resolve back to the alias and recurse.
   local claude_bin
-  claude_bin="$(command -v claude || true)"
+  if [[ -n "${ZSH_VERSION-}" ]]; then
+    claude_bin="$(whence -p claude 2>/dev/null || true)"
+  else
+    claude_bin="$(type -P claude 2>/dev/null || true)"
+  fi
   if [[ -z "$claude_bin" ]]; then
     echo "claude-iso: 'claude' not found on PATH. Install per secure-agent-setup.md." >&2
     return 127
@@ -74,11 +82,15 @@ claude_iso_main() {
   )
 
   # Build an `env -i ... NAME=value ...` argv from the passthrough list.
+  # Use `eval` for the indirect lookup so this works under both bash and
+  # zsh — bash's `${!var}` indirect expansion is a "bad substitution" in
+  # zsh.
   local -a env_args=()
-  local var
+  local var val
   for var in "${passthrough[@]}"; do
-    if [[ -n "${!var-}" ]]; then
-      env_args+=("${var}=${!var}")
+    eval "val=\${$var-}"
+    if [[ -n "$val" ]]; then
+      env_args+=("${var}=${val}")
     fi
   done
 
@@ -94,9 +106,19 @@ claude_iso_main() {
   # in for one session via:
   #     CLAUDE_ISO_ALLOW="GH_TOKEN AWS_PROFILE" GH_TOKEN=... claude-iso
   if [[ -n "${CLAUDE_ISO_ALLOW-}" ]]; then
-    for var in $CLAUDE_ISO_ALLOW; do
-      if [[ -n "${!var-}" ]]; then
-        env_args+=("${var}=${!var}")
+    # Word-split portably: zsh doesn't split unquoted parameters by default
+    # (it needs ${=var}), whereas bash does. Build an array either way.
+    local -a allow_list
+    if [[ -n "${ZSH_VERSION-}" ]]; then
+      allow_list=(${=CLAUDE_ISO_ALLOW})
+    else
+      # shellcheck disable=SC2206
+      allow_list=($CLAUDE_ISO_ALLOW)
+    fi
+    for var in "${allow_list[@]}"; do
+      eval "val=\${$var-}"
+      if [[ -n "$val" ]]; then
+        env_args+=("${var}=${val}")
       fi
     done
   fi
@@ -107,6 +129,16 @@ claude_iso_main() {
   # shell didn't have it — well, actually we can't reliably tell
   # without a shadow. The conservative read: include these only when
   # the user named them in CLAUDE_ISO_ALLOW.)
+
+  # When the user has aliased `claude=claude-iso`, an interactive
+  # session looks indistinguishable from a normal `claude` launch.
+  # Print a one-line banner on stderr (dim if a TTY) so it's obvious
+  # which mode the agent is starting in.
+  if [[ -t 2 ]]; then
+    printf '\033[2m[claude-iso] running in isolated env (%s)\033[0m\n' "$claude_bin" >&2
+  else
+    printf '[claude-iso] running in isolated env (%s)\n' "$claude_bin" >&2
+  fi
 
   exec env -i "${env_args[@]}" "$claude_bin" "$@"
 }
