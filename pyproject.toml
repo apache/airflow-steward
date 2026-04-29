@@ -1,0 +1,75 @@
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+# Root pyproject.toml — frames the framework root as a uv-managed
+# project so the `[tool.uv] exclude-newer` cooldown below actually
+# applies to the root-level tooling (currently just `prek`, declared
+# under `[dependency-groups] dev`). `uv tool install` ignores
+# pyproject.toml settings, so prek is installed into a uv-managed
+# environment via `uv sync --group dev` instead.
+#
+# Not a Python package — `[tool.uv] package = false` below tells uv
+# not to try to build a wheel from the framework root. The actual
+# Python projects live under
+# `tools/{vulnogram/generate-cve-json,gmail/oauth-draft}/` with their
+# own pyproject.toml + uv.lock.
+
+[project]
+name = "apache-airflow-steward"
+version = "0.0.0"
+description = "Reusable framework for handling security vulnerabilities in Apache projects."
+requires-python = ">=3.11"
+
+[dependency-groups]
+# Dev tooling installed at the framework root. Currently just
+# `prek` (the static-check / pre-commit runner). CI installs this
+# group via `uv sync --group dev` and invokes `uv run prek …`.
+# The lower bound mirrors `minimum_prek_version` in
+# `.pre-commit-config.yaml`; the upper bound is enforced implicitly
+# by the 7-day `[tool.uv] exclude-newer` cooldown below, so the
+# resolved version is "the most recent prek that is at least 7 days
+# old".
+dev = [
+  "prek>=0.3.5",
+]
+
+[tool.uv]
+# Pin the minimum uv version. Latest at the time of writing — bump
+# manually when adopting features from newer uv releases.
+required-version = ">=0.11.8"
+
+# 7-day cooldown on dependency-resolution snapshots: a just-released
+# package version has had a week to settle (retags, withdrawals,
+# upstream incident reports) before uv will pick it up here. Same
+# rationale as the 7-day cooldown on the Dependabot updates in
+# `.github/dependabot.yml`.
+exclude-newer = "7 days"
+
+# Per-package override: `uv` itself is exempt from the 7-day cooldown
+# above because the latest uv (which `required-version` pins to
+# `>=0.11.8`) was released within the last 7 days, and the global
+# cooldown would otherwise filter it out.
+#
+# TODO(remove on 2026-05-05): once 6 days have passed, uv 0.11.8
+# (released 2026-04-27) will be older than the 7-day window and the
+# global `exclude-newer` will cover it on its own — drop this
+# override to keep the config minimal.
+exclude-newer-package = { uv = "1 day" }
+
+# This pyproject.toml is purely a settings file; do not build or
+# install it as a package.
+package = false
