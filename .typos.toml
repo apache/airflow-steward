@@ -1,0 +1,51 @@
+# Typos spell-checker config for apache/airflow-steward.
+#
+# Run locally:
+#   typos
+#
+# Auto-fix what's safe:
+#   typos --write-changes
+#
+# Run in CI: see `.github/workflows/doc-validation.yml`.
+
+[default]
+
+[default.extend-words]
+# Domain terms typos' default dictionary flags as misspellings.
+# `CNA` = CVE Numbering Authority — used hundreds of times in the
+# security documentation; not a typo of "CAN".
+CNA = "CNA"
+cna = "cna"
+Cna = "Cna"
+# `Nd` is the placeholder for "N days" in date-filter syntax
+# (`newer_than:<Nd>`, `lte=Nd`, etc); not a typo of "And".
+Nd = "Nd"
+# `mis-` prefix in `mis-allocation` is a legitimate compound, not a
+# typo of "miss" / "mist".
+mis = "mis"
+# `pre-empted` is a real word; typos flags `empted` as a typo of
+# `emptied` only because of how it splits hyphenated words.
+empted = "empted"
+
+[default.extend-identifiers]
+# Identifiers that look like typos but are real symbol names.
+ASF = "ASF"
+PMC = "PMC"
+CVE = "CVE"
+CWE = "CWE"
+Vulnogram = "Vulnogram"
+ponymail = "ponymail"
+ponymail_mcp = "ponymail_mcp"
+gh = "gh"
+mcp = "mcp"
+MCP = "MCP"
+
+[files]
+# Skip auto-generated lockfiles + the cargo-style pinned-versions
+# manifest (URLs / hashes that are not natural-language text).
+extend-exclude = [
+  "uv.lock",
+  "tools/*/uv.lock",
+  "tools/agent-isolation/pinned-versions.toml",
+  "*.svg",
+]

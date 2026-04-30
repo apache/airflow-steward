@@ -1,0 +1,79 @@
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+---
+name: link-check
+
+# Lychee runs in informational mode for now: it surfaces broken
+# internal links and broken external URLs, but does not block PR
+# merges. The existing tree has a known set of pre-existing broken
+# references (to files like `config/active-project.md` that this
+# repository plans to add later) which would otherwise fail every
+# PR. Once the baseline reaches zero, flip `continue-on-error` off.
+
+on:  # yamllint disable-line rule:truthy
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    # Daily run catches link rot in external URLs even when no PR
+    # touches them.
+    - cron: "0 8 * * *"
+
+permissions: {}
+
+jobs:
+  lychee:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          persist-credentials: false
+
+      # Restore the lychee result cache so external URL checks reuse
+      # results across runs (config sets `max_cache_age = "7d"`).
+      - name: Restore lychee cache
+        uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf  # v4.2.2
+        with:
+          path: .lycheecache
+          key: cache-lychee-${{ github.sha }}
+          restore-keys: cache-lychee-
+
+      - name: Run lychee
+        id: lychee
+        # Pinned SHA points to lycheeverse/lychee-action v2.6.1
+        # (binary cooldown convention: matches the 7-day cooldown
+        # the framework uses elsewhere).
+        uses: lycheeverse/lychee-action@82202e5e9c2f4ef1a55a3d02563e1cb6041e5332  # v2.6.1
+        with:
+          args: --config .lychee.toml --no-progress .
+          fail: false
+          token: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+      - name: Summarise
+        if: always()
+        run: |
+          if [ -f lychee/out.md ]; then
+            echo "## Lychee link-check report" >> "$GITHUB_STEP_SUMMARY"
+            cat lychee/out.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Lychee did not produce a report file." >> "$GITHUB_STEP_SUMMARY"
+          fi

@@ -1,0 +1,96 @@
+# Lychee link checker config for apache/airflow-steward.
+#
+# Validates every link in markdown / rst / .md.j2 files:
+#   * cross-file file existence — `[text](other.md)`
+#   * cross-file fragments     — `[text](other.md#anchor)`
+#   * external URLs            — HTTP 2xx
+#
+# Run locally:
+#   lychee --config .lychee.toml .
+#
+# Run in CI: see `.github/workflows/doc-validation.yml`.
+
+# Check anchor fragments, not just file paths.
+# `anchor-only` enables `#section` checks (which is what GitHub-style
+# slugs produce); `text-only` would also enable `#:~:text=` fragments
+# but those are not used in this repo.
+include_fragments = "anchor-only"
+
+# Concurrency cap — kept moderate to avoid being rate-limited by GitHub.
+max_concurrency = 14
+
+# Per-request timeout. ASF infra and GitHub raw-content endpoints
+# occasionally take 10+ seconds during peak.
+timeout = 30
+
+# Retry transient errors a few times before failing the run.
+retry_wait_time = 2
+max_retries = 3
+
+# Cache successful results for 7 days. Mirrors the framework-wide
+# 7-day `[tool.uv] exclude-newer` cooldown convention. CI restores
+# this cache between runs to keep the link check fast.
+cache = true
+max_cache_age = "7d"
+
+# Treat 4xx and 5xx as failures (default), but accept the redirects.
+accept = [200, 206, 301, 302, 304, 308, 401, 403]
+
+# 401/403 accepted because some authenticated endpoints (private ASF
+# trackers, GitHub API rate-limited responses) return them deterministically
+# on unauthenticated CI but are still valid URLs.
+
+# Skip-list — endpoints that are private to ASF infra, rate-limited
+# more aggressively than CI tolerates, or known to require headers
+# the checker cannot supply.
+exclude = [
+  # ASF mailing-list archives — rate-limit on burst, not stable in CI.
+  '^https://lists\.apache\.org/.*',
+
+  # ASF Vulnogram CVE tool — auth-gated, returns 200 only when logged in.
+  '^https://cveprocess\.apache\.org/.*',
+
+  # cve.org record pages 404 until the record is published; many of the
+  # links in skill examples reference future / hypothetical CVE IDs.
+  '^https://cve\.org/CVERecord\?id=CVE-.*',
+  '^https://www\.cve\.org/CVERecord\?id=CVE-.*',
+  '^https://cveawg\.mitre\.org/api/cve/CVE-.*',
+
+  # cve.mitre.org legacy (often slow + unreliable).
+  '^https://cve\.mitre\.org/.*',
+
+  # Ponymail thread IDs in canned-response examples — they reference
+  # synthetic or future thread URLs that do not exist yet.
+  '^https://lists\.apache\.org/thread/.*',
+
+  # Placeholder paths used by the framework convention. `<project-config>`,
+  # `<tracker>`, `<upstream>` etc. are literal placeholder tokens that
+  # are substituted at runtime by the adopting project; URL-encoded
+  # they appear as `%3C...%3E`. Lychee tries to resolve them as real
+  # file paths and fails. See AGENTS.md#placeholder-convention-used-in-skill-files.
+  '%3C[A-Za-z0-9_-]+%3E',
+
+  # ALL_CAPS substitution tokens (e.g., FRAMEWORK_README_URL,
+  # SOURCE_TAB_URL, JSON_ANCHOR_URL) used in the release-manager
+  # comment templates. Each is replaced at runtime by the rendering
+  # skill with the actual URL.
+  '/[A-Z][A-Z0-9_]+_URL(?:#|$)',
+  '/[A-Z][A-Z0-9_]+_URL/',
+  '/[A-Z][A-Z0-9_]+_URL$',
+]
+
+# File patterns to skip entirely — the agent-isolation pinned-versions
+# manifest has bare URLs that are intentionally pinned to specific tags
+# the checker should not chase.
+exclude_path = [
+  "tools/agent-isolation/pinned-versions.toml",
+  "uv.lock",
+  "tools/*/uv.lock",
+  ".git",
+]
+
+# Treat unresolvable hostnames the same as failures, no silent passes.
+no_progress = true
+
+# Report-style output — one line per failing link makes CI logs grep-friendly.
+format = "compact"

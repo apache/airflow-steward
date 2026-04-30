@@ -5,6 +5,11 @@ logs
 .build
 .claude/worktrees/
 
+# Lychee link-checker result cache. The workflow restores this from
+# Actions cache between runs; checking it in would commit machine-
+# specific resolution data.
+.lycheecache
+
 # This framework repository carries no project-specific configuration.
 # Adopting projects keep their per-user files (e.g. user.md) in their
 # own tracker repository under `<project-config>/` and ensure those

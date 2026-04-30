@@ -772,7 +772,7 @@ them is a **request or a fact**, not a briefing:
   validity on X and allocated the CVE on Y…").
 - Security-model paraphrasing — link to the chapter, do not
   re-explain (per
-  [Point reporters to the Security Model, don't re-explain it](#point-reporters-to-the-security-model-dont-re-explain-it)).
+  [Point reporters to the project's Security Model, don't re-explain it](#point-reporters-to-the-projects-security-model-dont-re-explain-it)).
 - Inflated closings ("We greatly appreciate your continued
   patience…"). A plain *"Thanks,"* / *"Regards,"* is enough.
 - Any open question that was already asked on the thread and is

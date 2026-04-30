@@ -175,8 +175,8 @@ specific messages it cares about.
 
 Returned records are **summaries** (mid, subject, from, date,
 tid) — not full bodies. Fetch the body via
-[`get_email`](#get-email) or the whole thread via
-[`get_thread`](#get-thread) when needed.
+[`get_email`](#get-an-email) or the whole thread via
+[`get_thread`](#get-a-thread) when needed.
 
 ### Get a thread
 

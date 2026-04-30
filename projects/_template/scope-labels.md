@@ -3,7 +3,7 @@
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
 - [TODO: `<Project Name>` — scope labels](#todo-project-name--scope-labels)
-  - [Scope → CVE product / package-name table](#scope-%E2%86%92-cve-product--package-name-table)
+  - [Scope to CVE product / package-name table](#scope-to-cve-product--package-name-table)
   - [Default `packageName` and vendor](#default-packagename-and-vendor)
   - [Closing dispositions (not scope labels)](#closing-dispositions-not-scope-labels)
 
@@ -30,7 +30,7 @@ affects more than one scope, the `sync-security-issue` skill surfaces
 this as a blocker and the triager splits the report into per-scope
 trackers.
 
-## Scope → CVE product / package-name table
+## Scope to CVE product / package-name table
 
 | Tracker scope label | CVE product | CVE container `packageName` | Collection URL |
 |---|---|---|---|
