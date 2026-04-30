@@ -3,6 +3,7 @@
 *.iml
 logs
 .build
+.claude/worktrees/
 
 # This framework repository carries no project-specific configuration.
 # Adopting projects keep their per-user files (e.g. user.md) in their
