@@ -17,6 +17,7 @@
     - [Install (user-scope)](#install-user-scope)
     - [Verify](#verify)
     - [Trade-offs](#trade-offs)
+  - [Sandbox-state status line](#sandbox-state-status-line)
   - [Syncing user-scope config across machines](#syncing-user-scope-config-across-machines)
     - [What to track, what not to track](#what-to-track-what-not-to-track)
     - [Layout](#layout)
@@ -501,6 +502,92 @@ entirely) should produce no output and `exit=0`.
   every Claude Code upgrade — same cadence as the
   [Verification](#verification) section below.
 
+## Sandbox-state status line
+
+The Claude Code terminal footer (`statusLine`) is the
+always-visible bottom-of-window line that renders the model name,
+context usage, and any custom information you wire in. It is the
+right place to surface whether the sandbox is currently active for
+this session — a session that is inadvertently running with
+`sandbox.enabled` unset (or globally bypassed) cannot then drift
+unnoticed for hours.
+
+The framework ships
+[`tools/agent-isolation/sandbox-status-line.sh`](tools/agent-isolation/sandbox-status-line.sh)
+to render exactly that:
+
+- `<model> [sandbox]` in green when the active `settings.json`
+  sets `"sandbox": { "enabled": true }`, OR
+- `<model> [NO SANDBOX]` in bold red when it does not.
+
+Like the [Sandbox-bypass visibility hook](#sandbox-bypass-visibility-hook),
+this is **complementary**, not authoritative — see Trade-offs
+below.
+
+**Why user-scope.** Same reasoning as the bypass-warn hook: a
+session that runs without the sandbox is just as worth flagging
+in an unrelated project as in a tracker. Install in
+`~/.claude/settings.json` so the indicator shows in every session
+on the host, not only sessions inside a tracker repo whose
+project-level `.claude/settings.json` would otherwise have to wire
+it itself.
+
+**Install (user-scope).**
+
+```bash
+mkdir -p ~/.claude/scripts
+cp /path/to/airflow-steward/tools/agent-isolation/sandbox-status-line.sh \
+    ~/.claude/scripts/sandbox-status-line.sh
+chmod +x ~/.claude/scripts/sandbox-status-line.sh
+```
+
+Wire it into `~/.claude/settings.json` under the `statusLine` key:
+
+```jsonc
+{
+  "statusLine": {
+    "type": "command",
+    "command": "~/.claude/scripts/sandbox-status-line.sh"
+  }
+}
+```
+
+If you already maintain a richer custom statusLine, the helper is
+intentionally one-line — call it as one segment of your own
+renderer rather than replacing it.
+
+**Verify.**
+
+```bash
+echo '{"model":{"display_name":"Sonnet 4.6"},"workspace":{"current_dir":"'"$PWD"'"}}' \
+    | ~/.claude/scripts/sandbox-status-line.sh
+```
+
+Expected output, *inside* this repo (its
+[`.claude/settings.json`](.claude/settings.json) sets
+`sandbox.enabled: true`): `Sonnet 4.6 [sandbox]` with `[sandbox]`
+rendered in green. From a directory whose `.claude/settings.json`
+does **not** enable the sandbox (or does not exist) and whose
+`~/.claude/settings.json` likewise does not set
+`sandbox.enabled: true`, the output is `[NO SANDBOX]` in bold red.
+
+**Trade-offs.**
+
+- **Settings-level truth, not session-level truth.** The script
+  reads `sandbox.enabled` from the file system. It cannot see CLI
+  flags (`--bypass-permissions`, equivalent runtime overrides) or
+  in-session permission-mode changes that override the file —
+  those still display as `[sandbox]` even though the running
+  session is unprotected. Pair the indicator with the
+  [Sandbox-bypass visibility hook](#sandbox-bypass-visibility-hook)
+  so per-call bypass attempts also surface in real time.
+- **Schema robustness.** The Claude Code statusLine input JSON
+  does not currently expose sandbox state — we read settings.json
+  ourselves. If a future Claude Code release adds a sandbox field
+  to the statusLine input, the script can be simplified to read
+  that field directly. Until then the file-read approach is the
+  only option, with the trade-off above.
+
 ## Syncing user-scope config across machines
 
 The user-scope pieces of the secure setup —
@@ -524,7 +611,7 @@ paths). Track the artifacts you want shared, symlink them into
 | Track in the synced repo | Keep per-machine |
 |---|---|
 | `CLAUDE.md` (personal collaboration prefs) | `~/.claude/.credentials.json` — ⚠ secret, never commit |
-| `scripts/sandbox-bypass-warn.sh` and any other hooks | `~/.claude/sessions/`, `~/.claude/history.jsonl` — session state |
+| `scripts/sandbox-bypass-warn.sh`, `scripts/sandbox-status-line.sh`, and any other hooks | `~/.claude/sessions/`, `~/.claude/history.jsonl` — session state |
 | `agent-isolation/claude-iso.sh` (if you globally installed it per the wrapper section) | `~/.claude/projects/` — per-project memory and tasks |
 | Custom slash commands (`commands/<name>.md`) | `~/.claude/settings.json` — typically differs per host (plugins, statusLine paths, voice) |
 | MCP servers you've audited and want everywhere (`.mcp.json` shape, by hand) | `~/.claude/settings.local.json` — by design machine-specific |
@@ -547,7 +634,8 @@ A minimal repo layout:
 ~/.claude-config/                       # the synced repo's checkout
 ├── CLAUDE.md                           # symlinked → ~/.claude/CLAUDE.md
 ├── scripts/
-│   └── sandbox-bypass-warn.sh          # symlinked → ~/.claude/scripts/sandbox-bypass-warn.sh
+│   ├── sandbox-bypass-warn.sh          # symlinked → ~/.claude/scripts/sandbox-bypass-warn.sh
+│   └── sandbox-status-line.sh          # symlinked → ~/.claude/scripts/sandbox-status-line.sh
 ├── agent-isolation/
 │   └── claude-iso.sh                   # symlinked → ~/.claude/agent-isolation/claude-iso.sh
 ├── README.md                           # what's in the repo, install steps per machine
@@ -568,10 +656,12 @@ mkdir -p ~/.claude
     mv ~/.claude/CLAUDE.md ~/.claude/CLAUDE.md.bak
 ln -sf ~/.claude-config/CLAUDE.md ~/.claude/CLAUDE.md
 
-# Sandbox-bypass warning hook
+# Sandbox-bypass warning hook + sandbox-state status line
 mkdir -p ~/.claude/scripts
 ln -sfn ~/.claude-config/scripts/sandbox-bypass-warn.sh \
     ~/.claude/scripts/sandbox-bypass-warn.sh
+ln -sfn ~/.claude-config/scripts/sandbox-status-line.sh \
+    ~/.claude/scripts/sandbox-status-line.sh
 
 # (Optional) global claude-iso wrapper — see the wrapper section
 mkdir -p ~/.claude/agent-isolation
@@ -657,14 +747,17 @@ the secure setup into your tracker's working tree:
    `git check-ignore .claude/settings.local.json`.
 5. **Recommended (user-scope, not repo-scope):** install the
    sandbox-bypass warning hook per
-   [Sandbox-bypass visibility hook](#sandbox-bypass-visibility-hook).
-   It applies to every Claude Code session on the host (not only
-   tracker sessions), so it belongs in your user-scope
+   [Sandbox-bypass visibility hook](#sandbox-bypass-visibility-hook)
+   *and* the sandbox-state status line per
+   [Sandbox-state status line](#sandbox-state-status-line). Both
+   apply to every Claude Code session on the host (not only
+   tracker sessions), so they belong in your user-scope
    `~/.claude/settings.json` — not in the tracker's
    `.claude/settings.json`.
 6. **Optional (multi-machine workflow):** keep the user-scope
-   pieces (the hook script, your personal `CLAUDE.md`, an optional
-   global `claude-iso.sh`) in a private dotfile-style repo per
+   pieces (the hook scripts, the status-line script, your personal
+   `CLAUDE.md`, an optional global `claude-iso.sh`) in a private
+   dotfile-style repo per
    [Syncing user-scope config across machines](#syncing-user-scope-config-across-machines).
 
 ## Verification
