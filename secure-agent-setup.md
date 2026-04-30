@@ -12,6 +12,18 @@
     - [Wiring the check script into a weekly routine](#wiring-the-check-script-into-a-weekly-routine)
   - [The framework's own `.claude/settings.json`](#the-frameworks-own-claudesettingsjson)
   - [The clean-env wrapper](#the-clean-env-wrapper)
+  - [Sandbox-bypass visibility hook](#sandbox-bypass-visibility-hook)
+    - [Why install it user-scope, not project-scope](#why-install-it-user-scope-not-project-scope)
+    - [Install (user-scope)](#install-user-scope)
+    - [Verify](#verify)
+    - [Trade-offs](#trade-offs)
+  - [Sandbox-state status line](#sandbox-state-status-line)
+  - [Syncing user-scope config across machines](#syncing-user-scope-config-across-machines)
+    - [What to track, what not to track](#what-to-track-what-not-to-track)
+    - [Layout](#layout)
+    - [Setting up a fresh host](#setting-up-a-fresh-host)
+    - [A minimal `sync.sh`](#a-minimal-syncsh)
+    - [Why a *private* repo](#why-a-private-repo)
   - [Adopter setup](#adopter-setup)
   - [Verification](#verification)
   - [Residual risks](#residual-risks)
@@ -383,6 +395,327 @@ CLAUDE_ISO_ALLOW="GH_TOKEN" GH_TOKEN="$(op read 'op://Personal/GitHub/token')" c
 The `CLAUDE_ISO_ALLOW` mechanism is opt-in per invocation — no
 implicit propagation, no persistent allowlist.
 
+## Sandbox-bypass visibility hook
+
+The Bash tool accepts a `dangerouslyDisableSandbox: true` flag that
+lets the model run a single command outside the sandbox — necessary
+for the (rare) cases where a legitimate task needs to read or write
+a path that the sandbox denies. Claude Code prompts the user before
+honouring the bypass, but in a long session the prompt is easy to
+skim past, especially when several appear in quick succession.
+
+The framework ships a `PreToolUse` hook in
+[`tools/agent-isolation/sandbox-bypass-warn.sh`](tools/agent-isolation/sandbox-bypass-warn.sh)
+that makes every bypass attempt visually impossible to miss: a bold
+red banner with the command and the model's stated reason printed
+to stderr, before the permission prompt appears.
+
+The hook is **complementary** to the rest of the secure setup, not a
+replacement: it does not prevent a bypass, it just makes the bypass
+visible. The user still has to approve the call at the permission
+prompt — the banner gives them a fair chance to read what they are
+about to approve.
+
+### Why install it user-scope, not project-scope
+
+Unlike the framework's
+[`.claude/settings.json`](.claude/settings.json) (which is
+repo-scoped — only sessions started inside the tracker repo see
+it), this hook is most useful in
+**`~/.claude/settings.json`** — the user-scope config that applies
+to *every* Claude Code session on the host, tracker or otherwise.
+A sandbox-bypass attempt is just as worth noticing in an unrelated
+project as in the tracker.
+
+Per-project-scope installation is also valid (drop the same hook
+entry into a tracker's `.claude/settings.json`) — the trade-off is
+narrower coverage in exchange for one fewer file to manage at the
+user level.
+
+### Install (user-scope)
+
+```bash
+# Copy the hook script into ~/.claude/scripts/ (or symlink it from
+# the framework checkout — see "Syncing user-scope config across
+# machines" below for the multi-host pattern).
+mkdir -p ~/.claude/scripts
+cp /path/to/airflow-steward/tools/agent-isolation/sandbox-bypass-warn.sh \
+    ~/.claude/scripts/sandbox-bypass-warn.sh
+chmod +x ~/.claude/scripts/sandbox-bypass-warn.sh
+```
+
+Then wire the hook into `~/.claude/settings.json` under the
+`PreToolUse` block, matched on the `Bash` tool. If a `Bash` matcher
+already exists (e.g. for an unrelated hook), append to its `hooks`
+array rather than creating a second matcher block:
+
+```jsonc
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/scripts/sandbox-bypass-warn.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+### Verify
+
+The hook is exit-code-driven — exit 1 with stderr output means
+"show stderr to the user, tool proceeds". To test without a real
+bypass:
+
+```bash
+echo '{"tool_name":"Bash","tool_input":{"command":"ls ~/.aws","description":"check aws creds","dangerouslyDisableSandbox":true}}' \
+    | ~/.claude/scripts/sandbox-bypass-warn.sh; echo "exit=$?"
+```
+
+Expected: a four-line red banner on stderr, then `exit=1`. A second
+call with `dangerouslyDisableSandbox` set to `false` (or absent
+entirely) should produce no output and `exit=0`.
+
+### Trade-offs
+
+- **No block, only visibility.** The hook deliberately exits 1, not
+  2 — exit 2 would block the call outright, and that defeats the
+  model's ability to do legitimate work the user has just asked for
+  (e.g. installing packages outside the project tree). If a stricter
+  posture is wanted, change the script's `exit 1` to `exit 2`; the
+  consequence is that *every* sandbox-bypass attempt then has to be
+  unblocked by editing the hook out, which in practice trains the
+  user to skip the safety entirely. Visibility-with-prompt is the
+  better steady state.
+- **Schema robustness.** The hook greps the JSON payload for
+  `"dangerouslyDisableSandbox": true` rather than reading a fixed
+  JSON path via `jq`, so it keeps working if Claude Code reshuffles
+  where in the payload the flag lives. Cost: a future Claude Code
+  release that renames the flag will silently stop firing the hook
+  until the regex is updated. Re-run the verification snippet after
+  every Claude Code upgrade — same cadence as the
+  [Verification](#verification) section below.
+
+## Sandbox-state status line
+
+The Claude Code terminal footer (`statusLine`) is the
+always-visible bottom-of-window line that renders the model name,
+context usage, and any custom information you wire in. It is the
+right place to surface whether the sandbox is currently active for
+this session — a session that is inadvertently running with
+`sandbox.enabled` unset (or globally bypassed) cannot then drift
+unnoticed for hours.
+
+The framework ships
+[`tools/agent-isolation/sandbox-status-line.sh`](tools/agent-isolation/sandbox-status-line.sh)
+to render exactly that:
+
+- `<model> [sandbox]` in green when the active `settings.json`
+  sets `"sandbox": { "enabled": true }`, OR
+- `<model> [NO SANDBOX]` in bold red when it does not.
+
+Like the [Sandbox-bypass visibility hook](#sandbox-bypass-visibility-hook),
+this is **complementary**, not authoritative — see Trade-offs
+below.
+
+**Why user-scope.** Same reasoning as the bypass-warn hook: a
+session that runs without the sandbox is just as worth flagging
+in an unrelated project as in a tracker. Install in
+`~/.claude/settings.json` so the indicator shows in every session
+on the host, not only sessions inside a tracker repo whose
+project-level `.claude/settings.json` would otherwise have to wire
+it itself.
+
+**Install (user-scope).**
+
+```bash
+mkdir -p ~/.claude/scripts
+cp /path/to/airflow-steward/tools/agent-isolation/sandbox-status-line.sh \
+    ~/.claude/scripts/sandbox-status-line.sh
+chmod +x ~/.claude/scripts/sandbox-status-line.sh
+```
+
+Wire it into `~/.claude/settings.json` under the `statusLine` key:
+
+```jsonc
+{
+  "statusLine": {
+    "type": "command",
+    "command": "~/.claude/scripts/sandbox-status-line.sh"
+  }
+}
+```
+
+If you already maintain a richer custom statusLine, the helper is
+intentionally one-line — call it as one segment of your own
+renderer rather than replacing it.
+
+**Verify.**
+
+```bash
+echo '{"model":{"display_name":"Sonnet 4.6"},"workspace":{"current_dir":"'"$PWD"'"}}' \
+    | ~/.claude/scripts/sandbox-status-line.sh
+```
+
+Expected output, *inside* this repo (its
+[`.claude/settings.json`](.claude/settings.json) sets
+`sandbox.enabled: true`): `Sonnet 4.6 [sandbox]` with `[sandbox]`
+rendered in green. From a directory whose `.claude/settings.json`
+does **not** enable the sandbox (or does not exist) and whose
+`~/.claude/settings.json` likewise does not set
+`sandbox.enabled: true`, the output is `[NO SANDBOX]` in bold red.
+
+**Trade-offs.**
+
+- **Settings-level truth, not session-level truth.** The script
+  reads `sandbox.enabled` from the file system. It cannot see CLI
+  flags (`--bypass-permissions`, equivalent runtime overrides) or
+  in-session permission-mode changes that override the file —
+  those still display as `[sandbox]` even though the running
+  session is unprotected. Pair the indicator with the
+  [Sandbox-bypass visibility hook](#sandbox-bypass-visibility-hook)
+  so per-call bypass attempts also surface in real time.
+- **Schema robustness.** The Claude Code statusLine input JSON
+  does not currently expose sandbox state — we read settings.json
+  ourselves. If a future Claude Code release adds a sandbox field
+  to the statusLine input, the script can be simplified to read
+  that field directly. Until then the file-read approach is the
+  only option, with the trade-off above.
+
+## Syncing user-scope config across machines
+
+The user-scope pieces of the secure setup —
+`~/.claude/scripts/sandbox-bypass-warn.sh`, an optional global copy
+of `claude-iso.sh` (per the
+[Global (user-scope) install](#the-clean-env-wrapper) trade-off),
+your personal `~/.claude/CLAUDE.md`, plus any other custom hooks —
+only protect a host once they are installed there. Working on more
+than one machine means keeping all of them in lockstep, by hand,
+forever. That is exactly the workflow a small dotfile-style sync
+repo solves.
+
+The recommended pattern is a **private** git repository (private,
+not public, because `~/.claude/CLAUDE.md` typically carries personal
+collaboration preferences and the scripts may reference internal
+paths). Track the artifacts you want shared, symlink them into
+`~/.claude/`, and run a small sync script that pulls/commits/pushes.
+
+### What to track, what not to track
+
+| Track in the synced repo | Keep per-machine |
+|---|---|
+| `CLAUDE.md` (personal collaboration prefs) | `~/.claude/.credentials.json` — ⚠ secret, never commit |
+| `scripts/sandbox-bypass-warn.sh`, `scripts/sandbox-status-line.sh`, and any other hooks | `~/.claude/sessions/`, `~/.claude/history.jsonl` — session state |
+| `agent-isolation/claude-iso.sh` (if you globally installed it per the wrapper section) | `~/.claude/projects/` — per-project memory and tasks |
+| Custom slash commands (`commands/<name>.md`) | `~/.claude/settings.json` — typically differs per host (plugins, statusLine paths, voice) |
+| MCP servers you've audited and want everywhere (`.mcp.json` shape, by hand) | `~/.claude/settings.local.json` — by design machine-specific |
+
+The settings.json line is worth highlighting: it is tempting to
+sync it, and it does work, but in practice the machines drift
+(different plugin sets, different terminal capabilities) and the
+last-writer-wins behaviour of a naive sync script overwrites the
+divergent settings every push. Keep it per-machine and document
+the **wiring** instead — i.e. ship the `scripts/` directory in the
+synced repo, then on each new host edit `~/.claude/settings.json`
+once to point at the synced scripts. The "Install" snippets above
+already follow this pattern.
+
+### Layout
+
+A minimal repo layout:
+
+```
+~/.claude-config/                       # the synced repo's checkout
+├── CLAUDE.md                           # symlinked → ~/.claude/CLAUDE.md
+├── scripts/
+│   ├── sandbox-bypass-warn.sh          # symlinked → ~/.claude/scripts/sandbox-bypass-warn.sh
+│   └── sandbox-status-line.sh          # symlinked → ~/.claude/scripts/sandbox-status-line.sh
+├── agent-isolation/
+│   └── claude-iso.sh                   # symlinked → ~/.claude/agent-isolation/claude-iso.sh
+├── README.md                           # what's in the repo, install steps per machine
+└── sync.sh                             # the pull/commit/push helper
+```
+
+Each tracked artifact lives in the repo; the path under `~/.claude/`
+is a symlink pointing at the repo. Editing either side updates both.
+
+### Setting up a fresh host
+
+```sh
+git clone git@github.com:<you>/claude-config.git ~/.claude-config
+
+# CLAUDE.md
+mkdir -p ~/.claude
+[ -f ~/.claude/CLAUDE.md ] && [ ! -L ~/.claude/CLAUDE.md ] && \
+    mv ~/.claude/CLAUDE.md ~/.claude/CLAUDE.md.bak
+ln -sf ~/.claude-config/CLAUDE.md ~/.claude/CLAUDE.md
+
+# Sandbox-bypass warning hook + sandbox-state status line
+mkdir -p ~/.claude/scripts
+ln -sfn ~/.claude-config/scripts/sandbox-bypass-warn.sh \
+    ~/.claude/scripts/sandbox-bypass-warn.sh
+ln -sfn ~/.claude-config/scripts/sandbox-status-line.sh \
+    ~/.claude/scripts/sandbox-status-line.sh
+
+# (Optional) global claude-iso wrapper — see the wrapper section
+mkdir -p ~/.claude/agent-isolation
+ln -sfn ~/.claude-config/agent-isolation/claude-iso.sh \
+    ~/.claude/agent-isolation/claude-iso.sh
+```
+
+Then wire the per-machine bits one time, per the install snippets
+in the relevant sections (the hook entry in
+`~/.claude/settings.json`, the `source …/claude-iso.sh` line in
+`~/.bashrc` / `~/.zshrc`, etc.).
+
+### A minimal `sync.sh`
+
+The script is intentionally tiny — pull, commit anything dirty,
+push. Run it manually, on a cron, on a systemd timer, or wherever
+fits your workflow:
+
+```bash
+#!/usr/bin/env bash
+# Pull-commit-push the personal claude-config repo. Safe to run on
+# a timer: flock prevents concurrent runs, --rebase --autostash
+# carries any local edits through cleanly.
+set -u
+REPO="$HOME/.claude-config"
+LOCK="$REPO/.sync.lock"
+exec 9>"$LOCK"; flock -n 9 || exit 0
+cd "$REPO" || exit 1
+git pull --rebase --autostash
+git add -A
+git diff --cached --quiet || \
+    git commit -m "auto-sync from $(hostname) at $(date -Iseconds)"
+git log @{u}.. --oneline | grep -q . && git push
+```
+
+### Why a *private* repo
+
+Three reasons make this non-negotiable:
+
+1. **`CLAUDE.md` carries personal preferences.** Tone overrides
+   for specific people, opinions about review style, names of
+   internal projects — content you do not want indexed by GitHub
+   search.
+2. **Hooks may embed internal paths.** A custom statusline script
+   that pokes at `~/work/<employer>/` is not something to publish.
+3. **Audit surface for prompt-injection.** If the synced repo is
+   public and writable by anyone with a PR, an attacker can land
+   a malicious script that every host pulling the repo will then
+   execute on the next sync. A private repo with branch protection
+   (or a single-author push policy) closes that vector.
+
+Public dotfile repos are fine for shell aliases and editor configs;
+they are the wrong shape for agent-runtime files.
+
 ## Adopter setup
 
 If you are adopting the framework into your own tracker repo, copy
@@ -412,6 +745,20 @@ the secure setup into your tracker's working tree:
 4. Decide whether to gitignore `.claude/settings.local.json` in your
    tracker repo — Claude Code does this by default; verify with
    `git check-ignore .claude/settings.local.json`.
+5. **Recommended (user-scope, not repo-scope):** install the
+   sandbox-bypass warning hook per
+   [Sandbox-bypass visibility hook](#sandbox-bypass-visibility-hook)
+   *and* the sandbox-state status line per
+   [Sandbox-state status line](#sandbox-state-status-line). Both
+   apply to every Claude Code session on the host (not only
+   tracker sessions), so they belong in your user-scope
+   `~/.claude/settings.json` — not in the tracker's
+   `.claude/settings.json`.
+6. **Optional (multi-machine workflow):** keep the user-scope
+   pieces (the hook scripts, the status-line script, your personal
+   `CLAUDE.md`, an optional global `claude-iso.sh`) in a private
+   dotfile-style repo per
+   [Syncing user-scope config across machines](#syncing-user-scope-config-across-machines).
 
 ## Verification
 
