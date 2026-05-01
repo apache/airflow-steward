@@ -28,17 +28,21 @@
 #                           sets `"sandbox": { "enabled": true }`.
 # - "<model> [NO SANDBOX]" — bold red, otherwise.
 #
-# Lookup order for `sandbox.enabled` (project-scope wins):
-#   1. <workspace.current_dir>/.claude/settings.json
-#   2. ~/.claude/settings.json
-# Anything not found in either file is treated as "not enabled".
+# Lookup order for `sandbox.enabled` (most-specific first, matches
+# Claude Code's settings precedence):
+#   1. <workspace.current_dir>/.claude/settings.local.json
+#   2. <workspace.current_dir>/.claude/settings.json
+#   3. ~/.claude/settings.local.json
+#   4. ~/.claude/settings.json
+# First file with `.sandbox.enabled` set (true *or* false) wins. The
+# `/sandbox` slash command persists its toggle to project-scope
+# `settings.local.json`, so reading that file is what makes the prefix
+# update after an in-session toggle.
 #
 # Caveat — the script reads settings *files*, not the live runtime
-# state. CLI flags (`--bypass-permissions`, `--no-sandbox`) and
-# in-session permission-mode changes that override the file are not
-# visible here, and will still show as `[sandbox]`. Pair with the
-# sibling `sandbox-bypass-warn.sh` PreToolUse hook for a per-call
-# signal.
+# state. CLI flags (`--bypass-permissions`, `--no-sandbox`) are not
+# visible here. Pair with the sibling `sandbox-bypass-warn.sh`
+# PreToolUse hook for a per-call signal.
 #
 # Wiring (user-scope, applies to every session on the host):
 #
@@ -60,10 +64,19 @@ model=$(printf '%s' "$input" | jq -r '.model.display_name // .model.id // ""' 2>
 cwd=$(printf '%s' "$input"   | jq -r '.workspace.current_dir // ""'           2>/dev/null || true)
 
 sandbox=""
-for f in "${cwd:+$cwd/.claude/settings.json}" "$HOME/.claude/settings.json"; do
+for f in \
+  "${cwd:+$cwd/.claude/settings.local.json}" \
+  "${cwd:+$cwd/.claude/settings.json}" \
+  "$HOME/.claude/settings.local.json" \
+  "$HOME/.claude/settings.json"; do
   [ -n "$f" ] && [ -f "$f" ] || continue
-  v=$(jq -r '.sandbox.enabled // empty' "$f" 2>/dev/null || true)
-  if [ -n "$v" ]; then
+  # `.sandbox.enabled | tostring` yields "true" / "false" / "null"; we
+  # treat "null" (key absent or `sandbox` block missing) as unset and
+  # fall through to the next file. Using `// empty` here would be
+  # wrong — jq's `//` operator treats `false` as a fallback trigger,
+  # so an explicit `"enabled": false` would be mis-read as missing.
+  v=$(jq -r '.sandbox.enabled | tostring' "$f" 2>/dev/null || true)
+  if [ "$v" = "true" ] || [ "$v" = "false" ]; then
     sandbox="$v"
     break
   fi

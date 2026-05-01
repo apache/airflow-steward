@@ -346,10 +346,29 @@ if a hook is failing, fix the underlying issue or update the hook configuration 
 
 ## Commit and PR conventions
 
-- **Never use `Co-Authored-By:` with an AI agent as co-author.** Agents are
-  assistants, not authors. Use a `Generated-by:` trailer instead. The exact
-  trailer wording is project-specific — for the adopting project see
-  [`<project-config>/fix-workflow.md`](<project-config>/fix-workflow.md#commit-trailer).
+- **MUST NOT use `Co-Authored-By:` with an AI agent as co-author.** Agents
+  are assistants, not authors — attributing them as authors
+  misrepresents contribution and is contrary to ASF policy on AI-assisted
+  contributions. This applies without exception, including to commits
+  prepared by an agent on the user's behalf in this framework repository
+  itself. **Re-read this rule before preparing every `git commit`.**
+  Use a `Generated-by:` trailer instead. The form is:
+
+  ```
+  Generated-by: <agent name and version>
+  ```
+
+  Concrete example for Claude Code:
+
+  ```
+  Generated-by: Claude Code (Opus 4.7)
+  ```
+
+  For commits in adopting projects, the exact trailer wording may carry
+  additional project-specific elements (e.g. a URL to the project's Gen-AI
+  disclosure anchor) — see
+  [`<project-config>/fix-workflow.md`](<project-config>/fix-workflow.md#commit-trailer)
+  for that project's spec.
 - **Always open PRs with `gh pr create --web`** so the human reviewer can check the title,
   body, and the generative-AI disclosure in the browser before submission. Pre-fill `--title`
   and `--body` (including the Gen-AI disclosure block) so they only need to review, not edit.
