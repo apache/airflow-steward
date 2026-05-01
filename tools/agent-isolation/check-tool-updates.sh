@@ -92,6 +92,14 @@ for r in json.load(sys.stdin):
 
 # socat upstream is a static HTML index; scrape the highest version
 # tarball whose mtime is older than `cooldown_days`.
+#
+# Implementation note — portability. Both `tac` (used to reverse a
+# sorted list) and `date -d <RFC-2822-string>` (used to parse the
+# server's Last-Modified header) are GNU-only. macOS ships BSD
+# coreutils which have neither. The version reversal is folded into
+# `sort -uVr` (descending unique versions); date parsing is delegated
+# to python3's `email.utils.parsedate_to_datetime`, which is the
+# stdlib HTTP-date parser and is available everywhere python3 is.
 socat_latest_aged() {
   local cooldown_days="$1"
   local cutoff=$(( now_epoch - cooldown_days * 86400 ))
@@ -100,9 +108,9 @@ socat_latest_aged() {
   # `Last-Modified` (per HEAD) is older than the cutoff.
   local index versions
   index="$(curl -fsSL http://www.dest-unreach.org/socat/download/)" || return 1
-  versions=$(echo "$index" | grep -oE 'socat-[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+\.tar\.gz' | sort -uV)
-  for v in $(echo "$versions" | tac); do
-    local ver mtime mtime_epoch
+  versions=$(echo "$index" | grep -oE 'socat-[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+\.tar\.gz' | sort -uVr)
+  for v in $versions; do
+    local ver mtime parsed mtime_epoch mtime_date
     ver="${v#socat-}"
     ver="${ver%.tar.gz}"
     mtime=$(curl -sI "http://www.dest-unreach.org/socat/download/${v}" \
@@ -110,9 +118,21 @@ socat_latest_aged() {
     if [[ -z "$mtime" ]]; then
       continue
     fi
-    mtime_epoch=$(date -d "$mtime" +%s 2>/dev/null) || continue
+    parsed=$(MTIME="$mtime" python3 <<'PY' || true
+import os
+from email.utils import parsedate_to_datetime
+try:
+    dt = parsedate_to_datetime(os.environ["MTIME"])
+    print(f"{int(dt.timestamp())}\t{dt.strftime('%Y-%m-%d')}")
+except Exception:
+    raise SystemExit(1)
+PY
+)
+    [[ -z "$parsed" ]] && continue
+    mtime_epoch=${parsed%%$'\t'*}
+    mtime_date=${parsed##*$'\t'}
     if (( mtime_epoch <= cutoff )); then
-      printf '%s\t%s\n' "$ver" "$(date -u -d "$mtime" +%Y-%m-%d)"
+      printf '%s\t%s\n' "$ver" "$mtime_date"
       return 0
     fi
   done
