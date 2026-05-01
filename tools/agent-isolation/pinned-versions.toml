@@ -18,30 +18,41 @@
 # pinned-versions.toml
 #
 # Pinned upstream versions of the host-system tools the secure agent
-# setup depends on. The pin shape mirrors the framework's other 7-day
+# setup depends on. The pin shape mirrors the framework's broader
 # cooldown convention (see `[tool.uv] exclude-newer = "7 days"` in
-# the root pyproject.toml and the per-package override for `uv`):
-# every entry below names a version that was released **at least
-# 7 days ago at the time the entry was last touched**, so an upstream
-# retag / withdrawal / fix-forward has had a week to settle before
-# adopters install it.
+# the root pyproject.toml and the dependabot weekly cooldown of 7
+# days in `.github/dependabot.yml`): every entry below names a
+# version that was released **at least `cooldown_days` ago at the
+# time the entry was last touched**, so an upstream retag /
+# withdrawal / fix-forward has had time to settle before adopters
+# install it.
+#
+# Cooldown is **per-tool** with a 7-day default. A tool with an
+# unusually well-watched release stream — `claude-code` is the
+# canonical example, since its release cadence is high and any
+# regression that affects the framework's permission-rule
+# semantics or sandbox flags is caught broadly within hours of
+# release — can override the default via `cooldown_days = N` in
+# its `[tools.<name>]` table. Lowering the cooldown trades
+# settle-time for currency; raise it back if a tool starts
+# shipping pre-release fix-forwards routinely.
 #
 # Adopters consume this file by:
 #   1. Reading the versions in `secure-agent-setup.md` and installing
 #      them on the host (the doc has the install commands per distro).
 #   2. Running `tools/agent-isolation/check-tool-updates.sh` weekly
 #      (or via `/schedule`) to surface upstream releases that have
-#      themselves aged past the 7-day cooldown — those are candidates
-#      for the next intentional bump.
+#      themselves aged past each tool's cooldown — those are
+#      candidates for the next intentional bump.
 #
 # To bump a tool: only when the new upstream version was released at
-# least 7 days ago, AND the framework maintainer wants to upgrade.
-# Update the `version` and `released` fields together, then bump the
-# `pinned_at` field below to today.
+# least the tool's `cooldown_days` ago, AND the framework maintainer
+# wants to upgrade. Update the `version` and `released` fields
+# together, then bump the `pinned_at` field below to today.
 
 # When this file was last touched. The check script uses this as the
 # minimum age the entries below claim to satisfy.
-pinned_at = "2026-04-29"
+pinned_at = "2026-05-01"
 
 [tools.bubblewrap]
 version = "0.11.1"
@@ -80,8 +91,18 @@ install.dnf = "dnf install socat-1.8.1.1"
 install.from_source = "http://www.dest-unreach.org/socat/download/socat-1.8.1.1.tar.gz"
 
 [tools.claude-code]
-version = "2.1.117"
-released = "2026-04-22"
+version = "2.1.123"
+released = "2026-04-29"
+# Override the framework-wide 7-day default. Claude Code releases
+# cadence is high (multiple releases per week) and any regression
+# that affects the framework's permission-rule semantics, sandbox
+# flags, or prompt-injection mitigations is caught broadly within
+# hours of release — the wider Claude Code user base spans many
+# more workloads than this framework's secure setup, and a 1-day
+# floor is a reasonable balance between currency and settle-time
+# for this specific tool. Raise back to 7 if Claude Code starts
+# shipping pre-release fix-forwards routinely.
+cooldown_days = 1
 purpose = """
 The agent runtime itself. Pinning matters because the
 permission-rule semantics, the sandbox flags, and the
@@ -97,5 +118,5 @@ upstream_releases = "https://api.github.com/repos/anthropics/claude-code/release
 # Claude Code is distributed via npm; use `--no-save` so the global
 # install doesn't drift the local lockfile of any project the user
 # installs from.
-install.npm = "npm install -g --no-save @anthropic-ai/claude-code@2.1.117"
-install.brew = "# brew tap anthropics/claude-code; brew install claude-code@2.1.117 (when available)"
+install.npm = "npm install -g --no-save @anthropic-ai/claude-code@2.1.123"
+install.brew = "# brew tap anthropics/claude-code; brew install claude-code@2.1.123 (when available)"

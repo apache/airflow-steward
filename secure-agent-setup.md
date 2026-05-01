@@ -122,7 +122,7 @@ The same flow, condensed to commands you run yourself:
 #    section: "Required tools (pinned versions)" below.
 sudo apt-get install --no-install-recommends \
     bubblewrap=0.11.1-* socat=1.8.1.1-*
-npm install -g --no-save @anthropic-ai/claude-code@2.1.117
+npm install -g --no-save @anthropic-ai/claude-code@2.1.123
 
 # 2. Project-scope `.claude/settings.json`. Copy the framework's
 #    sandbox / permissions.deny / permissions.ask / allowedDomains
@@ -159,23 +159,32 @@ detail.
 ## Required tools (pinned versions)
 
 Every system-level tool the secure setup depends on is pinned with a
-**7-day cooldown** before the framework adopts a new upstream
+**per-tool cooldown** before the framework adopts a new upstream
 release — same convention as the `[tool.uv] exclude-newer = "7 days"`
 setting in [`pyproject.toml`](pyproject.toml) and the weekly Dependabot
 updates in [`.github/dependabot.yml`](.github/dependabot.yml).
+Default cooldown is 7 days; individual tools can override via
+`cooldown_days = N` in the manifest when their release stream
+warrants it. `claude-code` is the canonical override at 1 day —
+its release cadence is high enough that a longer floor would
+strand the framework many versions behind upstream, and any
+regression that affects the secure setup's permission-rule
+semantics or sandbox flags is caught broadly within hours of
+release.
 
 The current pins live in machine-readable form in
 [`tools/agent-isolation/pinned-versions.toml`](tools/agent-isolation/pinned-versions.toml):
 
-| Tool | Pinned version | Released | Purpose |
-|---|---|---|---|
-| `bubblewrap` | 0.11.1 | 2026-03-21 | Linux user-namespace sandbox (filesystem layer). Required on Linux; macOS uses Seatbelt instead. |
-| `socat` | 1.8.1.1 | 2026-03-13 | TCP relay for the sandbox network allowlist. Linux only. |
-| `claude-code` | 2.1.117 | 2026-04-22 | Agent runtime. Pin separately from any system claude install so behavioural changes don't drift the framework's effective security posture without review. |
+| Tool | Pinned version | Released | Cooldown | Purpose |
+|---|---|---|---|---|
+| `bubblewrap` | 0.11.1 | 2026-03-21 | 7d (default) | Linux user-namespace sandbox (filesystem layer). Required on Linux; macOS uses Seatbelt instead. |
+| `socat` | 1.8.1.1 | 2026-03-13 | 7d (default) | TCP relay for the sandbox network allowlist. Linux only. |
+| `claude-code` | 2.1.123 | 2026-04-29 | 1d (override) | Agent runtime. Pin separately from any system claude install so behavioural changes don't drift the framework's effective security posture without review. |
 
 The pin date floor (`pinned_at` in the manifest) is the day the
 manifest was last touched; it is the framework's promise that every
-version above had at least 7 days to settle before being adopted.
+version above had at least its tool's cooldown to settle before
+being adopted.
 
 ### Install commands
 
@@ -209,7 +218,7 @@ version, no pin enforced — Homebrew rolls forward, so the
 
 ```bash
 # npm distribution (the only stable channel today)
-npm install -g --no-save @anthropic-ai/claude-code@2.1.117
+npm install -g --no-save @anthropic-ai/claude-code@2.1.123
 ```
 
 ### Distro-specific shortcut — Linux Mint 22.x / Ubuntu 24.04 Noble
@@ -261,8 +270,9 @@ follows the same `*.local` convention as Claude Code's
 
 ### Bumping a pinned version
 
-When an upstream release has aged past the 7-day cooldown and you
-want to adopt it:
+When an upstream release has aged past the tool's cooldown (7-day
+default, 1-day for `claude-code` per its manifest override) and
+you want to adopt it:
 
 1. Run `tools/agent-isolation/check-tool-updates.sh`. It compares the
    pinned versions to upstream and prints an "upgrade candidate" line
