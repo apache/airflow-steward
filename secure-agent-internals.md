@@ -9,6 +9,7 @@
   - [Linux: bubblewrap + user namespaces](#linux-bubblewrap--user-namespaces)
   - [macOS: Seatbelt](#macos-seatbelt)
   - [The blind spot: `Bash(curl *)` and DNS-over-HTTPS](#the-blind-spot-bashcurl--and-dns-over-https)
+    - [macOS: `permissions.deny` first-command-only matching](#macos-permissionsdeny-first-command-only-matching)
   - [How the feedback mechanisms layer together](#how-the-feedback-mechanisms-layer-together)
   - [Residual risks](#residual-risks)
   - [See also](#see-also)
@@ -166,6 +167,49 @@ That is why the framework's `permissions.deny` list also
 contains `Bash(curl *)`, `Bash(wget *)`, and the various cloud
 CLIs — defence in depth against an exfiltration path that the
 sandbox alone does not close.
+
+### macOS: `permissions.deny` first-command-only matching
+
+Claude Code's `permissions.deny` patterns match against the
+*first* command of a Bash tool invocation, not against every
+command in a multi-command chain. A standalone Bash call of
+`curl https://example.com` is correctly denied at the permission
+prompt; the same call buried mid-pipeline (`echo a; curl
+https://example.com; echo b`) starts as `echo a` and slips past
+the deny list — the runtime sees the first command and lets the
+chain run.
+
+On Linux, that gap is closed by socat's SNI proxy: even if the
+runtime lets `curl` start, the network layer of the sandbox
+blocks the egress unless the destination host is on
+`sandbox.network.allowedDomains`.
+
+**On macOS there is no socat.** Network egress for the sandboxed
+Bash subprocess is unfiltered — Seatbelt enforces filesystem
+isolation but the framework's setup does not currently wrap
+network egress on macOS. A chained `curl` to an arbitrary host
+therefore reaches the network on macOS even when the same call
+in the same session would be blocked on Linux. This is a real
+adopter-facing gap, not an implementation detail.
+
+Mitigations available today, ordered from cheapest to strongest:
+
+- Issue `Bash` calls one command at a time, not as chained
+  pipelines. The deny pattern then matches the actual command
+  that runs. The agent-guided
+  `verify-secure-config` skill does this deliberately when
+  running its denial checks.
+- On hosts where `Bash(*)` chained execution is a meaningful
+  exfiltration concern, run an outbound packet filter
+  (`pf` on macOS, `nftables` on Linux) that whitelists the same
+  hosts as `sandbox.network.allowedDomains`. The OS-level filter
+  applies regardless of whether the call goes through Claude
+  Code's runtime or escapes via a chain.
+- A future framework enhancement could wrap macOS Bash
+  subprocesses in a `sandbox-exec` profile that *also* restricts
+  outbound `network*` operations the way the current profile
+  restricts `file-read*`. That is an open follow-up, not a
+  shipped capability today.
 
 ## How the feedback mechanisms layer together
 
