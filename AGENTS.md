@@ -309,6 +309,23 @@ projects is a config change, not a code change.
 
 ## Local setup
 
+**Always run `git submodule update --init --recursive` after pulling
+the adopter tracker repository.** The framework lives at
+`<adopter-tracker>/.apache-steward/apache-steward/` as a git
+submodule (see [Repository purpose](#repository-purpose) above);
+plain `git pull` on the tracker advances the submodule *pointer*
+in the tracker's index but does **not** update the working tree
+of the submodule itself. Skills then run against the previous
+version of the framework — same skill names, stale skill bodies —
+and the failure mode is silent. Make `git submodule update --init
+--recursive` part of muscle memory after every pull, or wire it
+into a post-merge hook (`.git/hooks/post-merge` →
+`#!/bin/sh\nexec git submodule update --init --recursive`). Same
+rule applies to the framework's own
+[`upgrade-apache-steward`](.claude/skills/upgrade-apache-steward/SKILL.md)
+skill: when invoked from inside an adopter tracker, it reminds
+the user to follow up with submodule update on the parent.
+
 **Run the agent in the credential-isolation setup.** The skills
 operate against pre-disclosure CVE content; running Claude Code (or
 another `SKILL.md`-aware agent) with default-permissive access to
@@ -316,7 +333,7 @@ another `SKILL.md`-aware agent) with default-permissive access to
 risk. See [`secure-agent-setup.md`](secure-agent-setup.md) for the
 layered defence the framework dogfoods (`.claude/settings.json`
 sandbox + tool permissions + clean-env wrapper, with system tools
-pinned at a 7-day upstream cooldown).
+pinned per-tool with a 7-day default upstream cooldown).
 
 This repository uses [`prek`](https://github.com/j178/prek) (a fast, Rust-based drop-in
 replacement for `pre-commit`) to run pre-commit hooks that keep the documentation

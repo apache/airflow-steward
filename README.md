@@ -1114,3 +1114,26 @@ into `<project-config>/` in your tracker repo, fill in the TODO
 placeholders, and point the framework's skills at it via the path
 resolution documented in
 [`AGENTS.md` — Placeholder convention](AGENTS.md#placeholder-convention-used-in-skill-files).
+
+**Always run `git submodule update --init --recursive` after every
+pull on the tracker repository.** A plain `git pull` on the tracker
+advances the framework submodule *pointer* in the index but does
+**not** update the framework's working tree — skills will run
+against the version of the framework checked out on disk, which is
+the *previous* version after any pull that bumped the submodule
+pointer. Wire it into a post-merge hook to make it automatic:
+
+```bash
+# In the adopter tracker repo, one-time setup:
+cat >.git/hooks/post-merge <<'SH'
+#!/bin/sh
+exec git submodule update --init --recursive
+SH
+chmod +x .git/hooks/post-merge
+```
+
+The framework's `upgrade-apache-steward` skill (in this repo's
+[`.claude/skills/upgrade-apache-steward/SKILL.md`](.claude/skills/upgrade-apache-steward/SKILL.md))
+upgrades the framework checkout itself; if the user is consuming
+the framework as a tracker submodule, the skill reminds them to
+follow up with submodule update on the parent tracker.
