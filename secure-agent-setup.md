@@ -3,31 +3,22 @@
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
 - [Secure agent setup](#secure-agent-setup)
-  - [Threat model](#threat-model)
-  - [Three-layer defence](#three-layer-defence)
-  - [Required tools (pinned versions)](#required-tools-pinned-versions)
-    - [Install commands](#install-commands)
-    - [Distro-specific shortcut — Linux Mint 22.x / Ubuntu 24.04 Noble](#distro-specific-shortcut--linux-mint-22x--ubuntu-2404-noble)
-    - [Bumping a pinned version](#bumping-a-pinned-version)
-    - [Wiring the check script into a weekly routine](#wiring-the-check-script-into-a-weekly-routine)
-  - [The framework's own `.claude/settings.json`](#the-frameworks-own-claudesettingsjson)
-  - [The clean-env wrapper](#the-clean-env-wrapper)
-  - [Sandbox-bypass visibility hook](#sandbox-bypass-visibility-hook)
-    - [Why install it user-scope, not project-scope](#why-install-it-user-scope-not-project-scope)
-    - [Install (user-scope)](#install-user-scope)
-    - [Verify](#verify)
-    - [Trade-offs](#trade-offs)
-  - [Sandbox-state status line](#sandbox-state-status-line)
-  - [Syncing user-scope config across machines](#syncing-user-scope-config-across-machines)
-    - [What to track, what not to track](#what-to-track-what-not-to-track)
-    - [Layout](#layout)
-    - [Setting up a fresh host](#setting-up-a-fresh-host)
-    - [A minimal `sync.sh`](#a-minimal-syncsh)
-    - [Why a *private* repo](#why-a-private-repo)
-  - [Adopter setup](#adopter-setup)
-  - [Verification](#verification)
-  - [Residual risks](#residual-risks)
-  - [See also](#see-also)
+  - [Part 1 — Installation + demonstration](#part-1--installation--demonstration)
+    - [Threat model](#threat-model)
+    - [Three-layer defence](#three-layer-defence)
+    - [Required tools (pinned versions)](#required-tools-pinned-versions)
+    - [The framework's own `.claude/settings.json`](#the-frameworks-own-claudesettingsjson)
+    - [The clean-env wrapper](#the-clean-env-wrapper)
+    - [Sandbox-bypass visibility hook](#sandbox-bypass-visibility-hook)
+    - [Sandbox-state status line](#sandbox-state-status-line)
+    - [Syncing user-scope config across machines](#syncing-user-scope-config-across-machines)
+    - [Adopter setup](#adopter-setup)
+    - [Verification](#verification)
+    - [Keeping the setup updated](#keeping-the-setup-updated)
+  - [Part 2 — Technical details](#part-2--technical-details)
+    - [How sandbox isolation works](#how-sandbox-isolation-works)
+    - [Residual risks](#residual-risks)
+    - [See also](#see-also)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -54,7 +45,19 @@ This setup does not eliminate that risk. It reduces it to the
 tracker repo — and forces every credential-using bash subprocess to
 run with a narrowed view of the home directory.
 
-## Threat model
+The document is split in two halves. **Part 1** (below) is the
+adopter's path — threat model, layer overview, install commands
+for each piece, the end-to-end recipe, and verification. A reader
+who only wants the secure setup running can stop at the end of
+Part 1. **Part 2** is the mental-model path — how
+`sandbox.enabled` actually intercepts a Bash call, what
+bubblewrap (Linux) and Seatbelt (macOS) do at the OS layer,
+where the blind spots are, and what residual risks remain after
+the setup is in place.
+
+## Part 1 — Installation + demonstration
+
+### Threat model
 
 The setup defends against three concrete failure modes:
 
@@ -79,7 +82,7 @@ It does **not** defend against:
 - A maliciously-crafted MCP server installed at user scope. Audit
   `~/.claude/.mcp.json` and `~/.claude.json` periodically.
 
-## Three-layer defence
+### Three-layer defence
 
 | Layer | Mechanism | What it stops |
 |---|---|---|
@@ -93,7 +96,7 @@ Layers 1, 2, and 3 are configured by the same
 dogfoods. Adopters copy the same shape into their own tracker repo
 (see [Adopter setup](#adopter-setup) below).
 
-## Required tools (pinned versions)
+### Required tools (pinned versions)
 
 Every system-level tool the secure setup depends on is pinned with a
 **7-day cooldown** before the framework adopts a new upstream
@@ -114,7 +117,7 @@ The pin date floor (`pinned_at` in the manifest) is the day the
 manifest was last touched; it is the framework's promise that every
 version above had at least 7 days to settle before being adopted.
 
-### Install commands
+#### Install commands
 
 The exact commands are also in `pinned-versions.toml` under each
 tool's `install.<distro>` field; below is the one-line view per
@@ -149,7 +152,7 @@ version, no pin enforced — Homebrew rolls forward, so the
 npm install -g --no-save @anthropic-ai/claude-code@2.1.117
 ```
 
-### Distro-specific shortcut — Linux Mint 22.x / Ubuntu 24.04 Noble
+#### Distro-specific shortcut — Linux Mint 22.x / Ubuntu 24.04 Noble
 
 The pinned versions above (bubblewrap `0.11.1`, socat `1.8.1.1`) are
 the *upstream* releases that have aged past the framework's 7-day
@@ -196,7 +199,7 @@ follows the same `*.local` convention as Claude Code's
 > converge — once Noble's next LTS adopts a newer bubblewrap, this
 > section retires.
 
-### Bumping a pinned version
+#### Bumping a pinned version
 
 When an upstream release has aged past the 7-day cooldown and you
 want to adopt it:
@@ -218,7 +221,7 @@ want to adopt it:
 The check script is idempotent and side-effect-free — it never edits
 the manifest, never installs anything, never opens a PR.
 
-### Wiring the check script into a weekly routine
+#### Wiring the check script into a weekly routine
 
 The framework's `/schedule` slash-command lets you wire the check
 script into a recurring agent without leaving Claude Code:
@@ -234,7 +237,7 @@ itself — the surfaced candidates are a *proposal*, and the framework
 maintainer's deliberate confirmation (per step 5 above) is what
 actually lands the bump.
 
-## The framework's own `.claude/settings.json`
+### The framework's own `.claude/settings.json`
 
 The framework dogfoods the secure config in
 [`.claude/settings.json`](.claude/settings.json). The full block is
@@ -302,7 +305,7 @@ agent should never *see* it. `sandbox.filesystem.allowRead` permits
 the bash subprocess to read the file; `permissions.deny[Read(...)]`
 blocks the agent's Read tool from reading the same path.
 
-## The clean-env wrapper
+### The clean-env wrapper
 
 Layer 0 — strip credential-shaped env vars from the parent shell
 before invoking `claude` — is implemented by
@@ -395,7 +398,7 @@ CLAUDE_ISO_ALLOW="GH_TOKEN" GH_TOKEN="$(op read 'op://Personal/GitHub/token')" c
 The `CLAUDE_ISO_ALLOW` mechanism is opt-in per invocation — no
 implicit propagation, no persistent allowlist.
 
-## Sandbox-bypass visibility hook
+### Sandbox-bypass visibility hook
 
 The Bash tool accepts a `dangerouslyDisableSandbox: true` flag that
 lets the model run a single command outside the sandbox — necessary
@@ -416,7 +419,7 @@ visible. The user still has to approve the call at the permission
 prompt — the banner gives them a fair chance to read what they are
 about to approve.
 
-### Why install it user-scope, not project-scope
+#### Why install it user-scope, not project-scope
 
 Unlike the framework's
 [`.claude/settings.json`](.claude/settings.json) (which is
@@ -432,7 +435,7 @@ entry into a tracker's `.claude/settings.json`) — the trade-off is
 narrower coverage in exchange for one fewer file to manage at the
 user level.
 
-### Install (user-scope)
+#### Install (user-scope)
 
 ```bash
 # Copy the hook script into ~/.claude/scripts/ (or symlink it from
@@ -467,7 +470,7 @@ array rather than creating a second matcher block:
 }
 ```
 
-### Verify
+#### Verify
 
 The hook is exit-code-driven — exit 1 with stderr output means
 "show stderr to the user, tool proceeds". To test without a real
@@ -482,7 +485,7 @@ Expected: a four-line red banner on stderr, then `exit=1`. A second
 call with `dangerouslyDisableSandbox` set to `false` (or absent
 entirely) should produce no output and `exit=0`.
 
-### Trade-offs
+#### Trade-offs
 
 - **No block, only visibility.** The hook deliberately exits 1, not
   2 — exit 2 would block the call outright, and that defeats the
@@ -502,7 +505,7 @@ entirely) should produce no output and `exit=0`.
   every Claude Code upgrade — same cadence as the
   [Verification](#verification) section below.
 
-## Sandbox-state status line
+### Sandbox-state status line
 
 The Claude Code terminal footer (`statusLine`) is the
 always-visible bottom-of-window line that renders the model name,
@@ -516,9 +519,18 @@ The framework ships
 [`tools/agent-isolation/sandbox-status-line.sh`](tools/agent-isolation/sandbox-status-line.sh)
 to render exactly that:
 
-- `<model> [sandbox]` in green when the active `settings.json`
-  sets `"sandbox": { "enabled": true }`, OR
-- `<model> [NO SANDBOX]` in bold red when it does not.
+- `<model> [sandbox]` in green when the active settings set
+  `"sandbox": { "enabled": true }`, OR
+- `<model> [NO SANDBOX]` in bold red when they do not.
+
+The script walks the same precedence Claude Code itself uses for
+`sandbox.enabled` — project `settings.local.json` first, then
+project `settings.json`, then `~/.claude/settings.local.json`,
+then `~/.claude/settings.json` — and stops at the first file
+that sets the key (to `true` *or* `false`). The `/sandbox`
+slash-command toggle persists to project `settings.local.json`,
+so flipping it mid-session is reflected in the prefix on the
+next render.
 
 Like the [Sandbox-bypass visibility hook](#sandbox-bypass-visibility-hook),
 this is **complementary**, not authoritative — see Trade-offs
@@ -565,30 +577,33 @@ echo '{"model":{"display_name":"Sonnet 4.6"},"workspace":{"current_dir":"'"$PWD"
 
 Expected output, *inside* this repo (its
 [`.claude/settings.json`](.claude/settings.json) sets
-`sandbox.enabled: true`): `Sonnet 4.6 [sandbox]` with `[sandbox]`
-rendered in green. From a directory whose `.claude/settings.json`
-does **not** enable the sandbox (or does not exist) and whose
-`~/.claude/settings.json` likewise does not set
-`sandbox.enabled: true`, the output is `[NO SANDBOX]` in bold red.
+`sandbox.enabled: true`, and assuming `.claude/settings.local.json`
+either does not exist or does not override the key):
+`Sonnet 4.6 [sandbox]` with `[sandbox]` rendered in green. From a
+directory whose project and user settings files do **not** enable
+the sandbox (or do not exist), the output is `[NO SANDBOX]` in
+bold red.
 
 **Trade-offs.**
 
 - **Settings-level truth, not session-level truth.** The script
   reads `sandbox.enabled` from the file system. It cannot see CLI
-  flags (`--bypass-permissions`, equivalent runtime overrides) or
-  in-session permission-mode changes that override the file —
+  flags (`--bypass-permissions`, equivalent runtime overrides) —
   those still display as `[sandbox]` even though the running
-  session is unprotected. Pair the indicator with the
+  session is unprotected. The `/sandbox` slash-command toggle
+  *is* reflected, because it persists to project
+  `settings.local.json`, which the script reads. Pair the
+  indicator with the
   [Sandbox-bypass visibility hook](#sandbox-bypass-visibility-hook)
   so per-call bypass attempts also surface in real time.
 - **Schema robustness.** The Claude Code statusLine input JSON
-  does not currently expose sandbox state — we read settings.json
-  ourselves. If a future Claude Code release adds a sandbox field
-  to the statusLine input, the script can be simplified to read
-  that field directly. Until then the file-read approach is the
-  only option, with the trade-off above.
+  does not currently expose sandbox state — we read the settings
+  files ourselves. If a future Claude Code release adds a sandbox
+  field to the statusLine input, the script can be simplified to
+  read that field directly. Until then the file-read approach is
+  the only option, with the trade-off above.
 
-## Syncing user-scope config across machines
+### Syncing user-scope config across machines
 
 The user-scope pieces of the secure setup —
 `~/.claude/scripts/sandbox-bypass-warn.sh`, an optional global copy
@@ -606,7 +621,7 @@ collaboration preferences and the scripts may reference internal
 paths). Track the artifacts you want shared, symlink them into
 `~/.claude/`, and run a small sync script that pulls/commits/pushes.
 
-### What to track, what not to track
+#### What to track, what not to track
 
 | Track in the synced repo | Keep per-machine |
 |---|---|
@@ -626,7 +641,7 @@ synced repo, then on each new host edit `~/.claude/settings.json`
 once to point at the synced scripts. The "Install" snippets above
 already follow this pattern.
 
-### Layout
+#### Layout
 
 A minimal repo layout:
 
@@ -645,7 +660,7 @@ A minimal repo layout:
 Each tracked artifact lives in the repo; the path under `~/.claude/`
 is a symlink pointing at the repo. Editing either side updates both.
 
-### Setting up a fresh host
+#### Setting up a fresh host
 
 ```sh
 git clone git@github.com:<you>/claude-config.git ~/.claude-config
@@ -674,7 +689,7 @@ in the relevant sections (the hook entry in
 `~/.claude/settings.json`, the `source …/claude-iso.sh` line in
 `~/.bashrc` / `~/.zshrc`, etc.).
 
-### A minimal `sync.sh`
+#### A minimal `sync.sh`
 
 The script is intentionally tiny — pull, commit anything dirty,
 push. Run it manually, on a cron, on a systemd timer, or wherever
@@ -697,7 +712,7 @@ git diff --cached --quiet || \
 git log @{u}.. --oneline | grep -q . && git push
 ```
 
-### Why a *private* repo
+#### Why a *private* repo
 
 Three reasons make this non-negotiable:
 
@@ -716,10 +731,14 @@ Three reasons make this non-negotiable:
 Public dotfile repos are fine for shell aliases and editor configs;
 they are the wrong shape for agent-runtime files.
 
-## Adopter setup
+### Adopter setup
 
 If you are adopting the framework into your own tracker repo, copy
-the secure setup into your tracker's working tree:
+the secure setup into your tracker's working tree. Two paths —
+the manual recipe is below, the agent-guided form is in the
+sub-section that follows.
+
+#### Direct manual install
 
 1. Install the pinned tools per [Install commands](#install-commands)
    above.
@@ -760,25 +779,445 @@ the secure setup into your tracker's working tree:
    dotfile-style repo per
    [Syncing user-scope config across machines](#syncing-user-scope-config-across-machines).
 
-## Verification
+#### Via a Claude Code prompt
+
+Paste the following into Claude Code at the start of a fresh
+session in your tracker repo. Claude walks every install step,
+surfacing each command for you to approve or run yourself —
+nothing privilege-elevating, nothing that touches your shell rc
+or overwrites an existing settings file is applied without your
+explicit OK:
+
+```text
+Set up the secure-agent setup for me from scratch in this tracker
+repo. Walk me through every step before doing it; do not auto-run
+anything that needs sudo, would overwrite an existing file, or
+would write to my shell rc — print the command and ask me to run
+it / approve it.
+
+Before starting, confirm:
+
+- The OS (Linux distro / macOS).
+- The path to my airflow-steward framework checkout (you'll need
+  to read its `.claude/settings.json`,
+  `tools/agent-isolation/*`, and
+  `tools/agent-isolation/pinned-versions.toml`).
+- Whether this is a fresh install (no prior secure setup) or a
+  re-install on top of a partial state — for a re-install,
+  surface any existing user-scope `~/.claude/settings.json` hooks
+  and statusLine before merging.
+
+Then walk through:
+
+1. **Pinned tools.** Read
+   `<airflow-steward>/tools/agent-isolation/pinned-versions.toml`
+   and surface the install command for `bubblewrap` and `socat`
+   at the pinned versions for my distro (skip both on macOS —
+   Seatbelt is built-in). Then surface the npm command for
+   `claude-code` at the pinned version. Print these for me to
+   run; do not invoke sudo or npm yourself.
+
+2. **Project `.claude/settings.json`.** Read
+   `<airflow-steward>/.claude/settings.json` and copy its
+   `sandbox`, `permissions.deny`, and `permissions.ask` blocks
+   into this repo's `.claude/settings.json`. If a project
+   settings.json already exists, surface a diff of the merged
+   result first and ask me to approve before writing.
+
+3. **Clean-env wrapper.** Surface the line to add to my
+   `~/.bashrc` or `~/.zshrc` to source
+   `<airflow-steward>/tools/agent-isolation/claude-iso.sh`. Ask
+   whether I want it as the default `claude` (alias) or
+   on-demand only. Print the line; do not edit my shell rc
+   yourself.
+
+4. **User-scope hook scripts.** `mkdir -p ~/.claude/scripts`,
+   then copy
+   `<airflow-steward>/tools/agent-isolation/sandbox-bypass-warn.sh`
+   and
+   `<airflow-steward>/tools/agent-isolation/sandbox-status-line.sh`
+   into `~/.claude/scripts/` and `chmod +x` them.
+
+5. **User-scope `~/.claude/settings.json` wiring.** Read the
+   file if it exists. Add the `PreToolUse` `Bash` matcher wired
+   to `sandbox-bypass-warn.sh` and the `statusLine` command set
+   to `sandbox-status-line.sh`. If either key exists already
+   (e.g. I have other PreToolUse hooks for unrelated work),
+   surface the merge diff and ask me to approve before writing.
+
+6. **Verify.** After everything is in place, walk through the
+   Verification checks from the next section of this document
+   ("Verification — Via a Claude Code prompt") and report
+   ✓ done / ✗ missing / ⚠ partial for each piece.
+
+If any step fails, stop and report the failure — do not work
+around it silently.
+```
+
+When the prompt finishes, the [Verification](#verification)
+section is the natural next step (Claude can run the verification
+prompt in the same session — it has all the context already), and
+[Keeping the setup updated](#keeping-the-setup-updated) is the
+section to revisit after every Claude Code upgrade.
+
+### Verification
 
 After installing and configuring, verify the setup actually denies
-what it claims to:
+what it claims to. Two paths — pick whichever is easier; the
+Claude-prompt path is more thorough, the direct-Bash path is
+faster.
+
+#### Direct Bash verification
+
+Inside a `claude-iso` session, run these from the agent's Bash
+tool. Each should fail or be denied:
 
 ```bash
-# Inside a `claude-iso` session, run these from the agent's Bash tool.
-# Each should fail or be denied (expected behaviour):
 cat ~/.aws/credentials      # → permission denied (sandbox)
 echo $AWS_ACCESS_KEY_ID     # → empty (env stripped by claude-iso)
 curl https://example.com    # → blocked by permissions.deny
 ```
 
 Each command should produce a denial — not a leaked credential.
-Re-run after every Claude Code upgrade (the sandbox semantics
-occasionally evolve and the framework maintainer wants to know the
-day a denial silently turns into an allow).
 
-## Residual risks
+#### Via a Claude Code prompt
+
+Paste the following into Claude Code at the start of a fresh
+session in the tracker repo. Claude walks every install step and
+reports what is wired vs missing, without trying to fix anything
+on its own:
+
+```text
+Verify my secure-agent-setup install is complete. Check each item
+below and report ✓ done / ✗ missing / ⚠ partial, with the evidence
+(file path, line, command output). Do not attempt to fix anything
+— surface the gaps and stop:
+
+1. Project `.claude/settings.json` exists and has
+   `sandbox.enabled: true`, the `permissions.deny` block, the
+   `permissions.ask` block, and the
+   `sandbox.network.allowedDomains` block.
+2. User-scope `~/.claude/settings.json` has the `PreToolUse`
+   `Bash` matcher wired to a `sandbox-bypass-warn.sh` command
+   and the `statusLine` command set to `sandbox-status-line.sh`.
+3. Both hook scripts exist and are executable
+   (`~/.claude/scripts/sandbox-bypass-warn.sh`,
+   `~/.claude/scripts/sandbox-status-line.sh`).
+4. The `claude-iso` shell function is sourced in `~/.bashrc` or
+   `~/.zshrc`. Note whether `alias claude='claude-iso'` is set.
+5. The pinned tool versions from
+   `tools/agent-isolation/pinned-versions.toml` are installed at
+   the pinned versions: `bubblewrap` (Linux only), `socat`
+   (Linux only), `claude-code`.
+6. The status-line prefix in this session shows `[sandbox]` (not
+   `[NO SANDBOX]`).
+7. Run `cat ~/.aws/credentials`, `echo $AWS_ACCESS_KEY_ID`, and
+   `curl https://example.com` and confirm each is denied.
+```
+
+Re-run either form after every Claude Code upgrade — the sandbox
+semantics occasionally evolve and the framework maintainer wants
+to know the day a denial silently turns into an allow.
+
+### Keeping the setup updated
+
+The secure setup has three independent moving parts that drift on
+different schedules: the framework checkout (`.claude/settings.json`,
+the wrapper / hook / status-line scripts under
+`tools/agent-isolation/`, the pinned-versions manifest), the
+pinned upstream tools (`bubblewrap`, `socat`, `claude-code`), and
+any user-scope copies of helper scripts you installed under
+`~/.claude/scripts/` or `~/.claude/agent-isolation/`. Keeping them
+synchronised is a periodic operation, not a one-time install.
+
+#### Direct steps
+
+1. **Framework checkout.** From your `airflow-steward` clone,
+   pull the latest:
+
+   ```bash
+   cd /path/to/airflow-steward
+   git pull --ff-only
+   ```
+
+   That carries forward updates to `.claude/settings.json` (new
+   `denyRead` paths, `allowedDomains` entries, `ask`-list
+   additions), the wrapper / hook / status-line scripts under
+   `tools/agent-isolation/`, and the pinned-versions manifest.
+
+2. **Pinned upstream tools.** Run the framework's check script,
+   which compares your pins to upstream releases that have aged
+   past the 7-day cooldown:
+
+   ```bash
+   tools/agent-isolation/check-tool-updates.sh
+   ```
+
+   For any candidate worth adopting, follow
+   [Bumping a pinned version](#bumping-a-pinned-version) — the
+   check script is side-effect-free and never edits the manifest
+   itself.
+
+3. **User-scope script copies.** If you installed any helpers
+   user-scope (per
+   [Syncing user-scope config across machines](#syncing-user-scope-config-across-machines)),
+   diff each installed copy against the framework's
+   source-of-truth and re-`cp` if it has drifted:
+
+   ```bash
+   diff ~/.claude/scripts/sandbox-bypass-warn.sh \
+       /path/to/airflow-steward/tools/agent-isolation/sandbox-bypass-warn.sh
+   diff ~/.claude/scripts/sandbox-status-line.sh \
+       /path/to/airflow-steward/tools/agent-isolation/sandbox-status-line.sh
+   diff ~/.claude/agent-isolation/claude-iso.sh \
+       /path/to/airflow-steward/tools/agent-isolation/claude-iso.sh
+   ```
+
+4. **Re-verify.** Re-run [Verification](#verification) above
+   (either form) to confirm the denials still fire after the
+   update.
+
+#### Via a Claude Code prompt
+
+Paste the following into Claude Code at the start of a fresh
+session in the tracker repo. Claude reports drift and upgrade
+candidates, without modifying anything — you decide what to
+apply:
+
+```text
+Update my secure-agent-setup install to the framework's latest.
+Surface the diffs and the upgrade candidates; do not modify
+anything — I will decide what to apply:
+
+1. `cd` into my `airflow-steward` clone and `git pull --ff-only`.
+   Report what changed under `tools/agent-isolation/`,
+   `.claude/settings.json`, and `secure-agent-setup.md`.
+2. Run `tools/agent-isolation/check-tool-updates.sh` and surface
+   any upgrade candidates for `bubblewrap`, `socat`, or
+   `claude-code`, with the upstream changelog link for each. Do
+   not bump the manifest.
+3. Diff every user-scope copy under `~/.claude/scripts/` and (if
+   present) `~/.claude/agent-isolation/` against the framework
+   checkout. Report any drift, file by file.
+4. Re-run `cat ~/.aws/credentials`, `echo $AWS_ACCESS_KEY_ID`,
+   `curl https://example.com` and confirm each is still denied.
+   Note any newly-allowed call as a regression to investigate.
+```
+
+A good cadence for this prompt is once per Claude Code upgrade
+or once a month, whichever comes first — and immediately after
+adopting a pinned-version bump elsewhere in your fleet (so the
+machines do not silently drift apart). Wire it into a recurring
+agent via the framework's `/schedule` slash-command if you want
+it to run unattended; the surfaced drift and upgrade candidates
+land as a report you skim, not as auto-applied changes.
+
+## Part 2 — Technical details
+
+### How sandbox isolation works
+
+This is the mental model for *how* the filesystem-sandbox layer
+(Layer 1 of the [Three-layer defence](#three-layer-defence)
+table from Part 1) actually intercepts a Bash call, what the
+agent's own tools do that the sandbox does *not* cover, and what
+each visible state of a session means in practice. Optional for
+adoption — Part 1 above is sufficient to install the secure
+setup — and worth reading when you want to understand which
+layer is doing what, or are debugging why a specific call did
+or did not get through.
+
+#### What `sandbox.enabled` actually does
+
+`sandbox.enabled: true` is not a flag the agent inspects; it is a
+directive to Claude Code's Bash tool to wrap every subprocess in
+an OS-level container before launching it. The model itself never
+sees the boundary — it just gets a `command not found` /
+`No such file or directory` back from a Bash call that tried to
+reach outside the allowed paths.
+
+The agent's own Read, Edit, and Write tools are **not** sandboxed.
+Those tools call into Claude Code's runtime directly and hit the
+host filesystem with whatever privileges the user running
+`claude` has. `permissions.deny` (`Read(~/.aws/**)`,
+`Read(~/.ssh/**)`, …) is what stops the agent's Read tool from
+reading those paths — the sandbox would not.
+
+The two layers are complementary, not redundant. The sandbox stops
+a Bash subprocess (an MCP server's child process, a `gh` CLI call,
+a `python` snippet the model decided to run) from reading a denied
+path. `permissions.deny` stops the agent's Read tool from reading
+the same path. A secure setup needs both: the framework's
+[`.claude/settings.json`](.claude/settings.json) deny-lists
+`Read(~/.config/gh/**)` *and* allow-reads `~/.config/gh/` in the
+sandbox, so `gh` can see its token but the agent can never read
+the file.
+
+#### Linux: bubblewrap + user namespaces
+
+On Linux, Claude Code launches each Bash subprocess inside a
+fresh **mount namespace** built by
+[`bubblewrap`](https://github.com/containers/bubblewrap). bubblewrap
+bind-mounts only the paths listed in `sandbox.filesystem.allowRead`
+into the new namespace; everything else from the host is
+*literally absent* from the subprocess's view of the filesystem.
+
+The visible result is precise: a `cat ~/.aws/credentials` from
+inside the sandbox returns `No such file or directory`, not
+`Permission denied`. The path doesn't exist as far as the
+subprocess is concerned — there is nothing to deny access to.
+That is the same mechanism `flatpak` and `firejail` use.
+
+Network egress is layered on top of the same namespace via
+[`socat`](http://www.dest-unreach.org/socat/), which terminates
+the outgoing TLS connection, reads the SNI extension, and
+forwards only to hosts in `sandbox.network.allowedDomains`.
+A connection to a non-allowed host fails at the proxy.
+
+#### macOS: Seatbelt
+
+On macOS, bubblewrap and socat are not used — Claude Code wraps
+Bash subprocesses in
+[`sandbox-exec`](https://developer.apple.com/library/archive/documentation/Security/Conceptual/AppSandboxDesignGuide/AboutAppSandbox/AboutAppSandbox.html)
+instead, generating a `.sb` profile that the kernel enforces at
+the syscall level. The same `denyRead` / `allowRead` /
+`allowedDomains` shape from `settings.json` drives the generated
+profile.
+
+The visible result differs slightly: a denied read typically
+returns `Operation not permitted` rather than
+`No such file or directory`, because Seatbelt rejects the syscall
+before the filesystem driver runs. The policy outcome is the
+same — denied paths are unreachable from within the subprocess.
+
+No system packages need pinning on macOS — Seatbelt ships with
+the OS. The framework's
+[`pinned-versions.toml`](tools/agent-isolation/pinned-versions.toml)
+only pins `bubblewrap`, `socat`, and `claude-code` itself;
+Seatbelt does not appear because its version *is* the OS version.
+
+#### The blind spot: `Bash(curl *)` and DNS-over-HTTPS
+
+The SNI proxy filters by the TLS Server Name Indication
+extension, which a well-behaved client puts on the wire in
+clear text before the TLS handshake completes. A client that
+uses DNS-over-HTTPS through an allow-listed CDN (Cloudflare,
+Google) can cleanly dodge that inspection — the SNI says
+`cloudflare-dns.com`, the actual query is for somewhere else.
+That is why the framework's `permissions.deny` list also
+contains `Bash(curl *)`, `Bash(wget *)`, and the various cloud
+CLIs — defence in depth against an exfiltration path that the
+sandbox alone does not close.
+
+#### What a session looks like
+
+The four screenshots below cover the visible states an adopter
+actually meets. Each is reproducible from this repo with the
+setup steps written into the screenshot's caption.
+
+**1. Sandboxed session — the steady state.**
+
+![Sandboxed session: status-line prefix `[sandbox]` rendered green](images/session-sandboxed.png)
+
+The terminal footer renders `<model> [sandbox]` in green when
+the active settings (project `settings.local.json` →
+project `settings.json` → user-scope) set
+`sandbox.enabled: true`. Bash subprocesses run inside
+bubblewrap (Linux) or Seatbelt (macOS) and only see paths
+listed in `sandbox.filesystem.allowRead`.
+
+**2. Unsandboxed session — the failure mode this setup exists
+to make obvious.**
+
+![Unsandboxed session: status-line prefix `[NO SANDBOX]` rendered bold red](images/session-no-sandbox.png)
+
+`[NO SANDBOX]` in bold red means the active settings do not
+enable the sandbox. The agent's Bash subprocesses run with full
+access to the host filesystem. The
+[Sandbox-state status line](#sandbox-state-status-line)
+exists specifically so a session in this state cannot drift
+unnoticed for hours.
+
+**3. Sandbox-bypass attempt — the per-call signal.**
+
+![Bold red SANDBOX BYPASS banner immediately above the Claude Code permission prompt](images/sandbox-bypass-banner.png)
+
+When the model invokes the Bash tool with
+`dangerouslyDisableSandbox: true`, the
+[Sandbox-bypass visibility hook](#sandbox-bypass-visibility-hook)
+prints a bold red banner to stderr **before** the Claude Code
+permission prompt renders. Approving the prompt at that point is
+a deliberate act, not a skim-past click.
+
+The hook fires on bypass *attempts*, not on sandbox denials — a
+Bash call that simply hits the sandbox and fails (screenshot 4
+below) will not trigger the banner, because the model never
+requested bypass. To reproduce this state in a fresh session, ask
+the model explicitly: *"use the Bash tool with
+`dangerouslyDisableSandbox: true` to run `ls ~/.aws/`"*. The
+explicit flag-name makes the next call a deterministic bypass
+request — the banner renders, the prompt appears, and you can
+deny at the prompt (the visual is what matters).
+
+**4. Sandbox actually denying a read — proof it is real.**
+
+![Sandboxed Bash call to `ls ~/Downloads` blocked by the runtime; surfaced as "read ~/Downloads (outside allowed read paths)" with an offer to retry with the sandbox disabled](images/sandbox-blocks-read.png)
+
+In a sandboxed session **without** bypass, a Bash call that
+tries to touch a path outside `allowRead` is intercepted by
+Claude Code's tool runtime *before* the bubblewrap (Linux) /
+Seatbelt (macOS) subprocess actually fires. The runtime
+surfaces the rule that was violated by name (here,
+`read ~/Downloads (outside allowed read paths)`) and offers to
+retry with the sandbox disabled — which would, in turn, route
+through the bypass-warn hook from screenshot 3. The call never
+reaches the OS-level enforcement layer; the runtime catches it
+at the tool boundary, which is the cleaner failure mode.
+
+**5. bubblewrap / Seatbelt in action — the OS layer the runtime
+falls back to.**
+
+![Sandboxed Bash call running `python3 -c 'os.listdir(os.path.expanduser("~/.aws/"))'`; the inner syscall fails with PermissionError: [Errno 1] Operation not permitted: '/Users/jarekpotiuk/.aws/'](images/sandbox-os-level-block.png)
+
+When the eventual filesystem access is **opaque to lexical
+analysis** — here, a path constructed inside a `python3 -c`
+one-liner via `os.path.expanduser`, which the runtime cannot
+parse without actually executing it — the runtime hands the
+Bash subprocess off to bubblewrap (Linux) / Seatbelt (macOS).
+The OS sandbox then catches the violation at the syscall
+boundary. The visible result is the underlying OS error: on
+macOS Seatbelt, `[Errno 1] Operation not permitted` (above);
+on Linux bubblewrap, `[Errno 2] No such file or directory`,
+because the path is not even mounted into the subprocess's
+namespace.
+
+Claude Code's runtime *also* recognises the denied path
+post-hoc from the traceback and refuses to retry with bypass —
+visible as the "I am **not** going to propose bypassing the
+sandbox for this" narration below the python error. The two
+layers are stacked deliberately: the runtime is the cheap,
+predictable check (screenshot 4); bubblewrap/Seatbelt is the
+unbypassable backstop for everything the runtime cannot
+lexically pre-parse (this screenshot). Either layer alone has
+gaps; together they are the actual sandbox.
+
+#### How the feedback mechanisms layer together
+
+| Mechanism | Scope | What it tells you | When it fires |
+|---|---|---|---|
+| `sandbox.enabled` in settings | per-session | Source of truth — is the sandbox active for this session? | At session start; persists for the session unless `/sandbox` toggles it. |
+| [Sandbox-state status line](#sandbox-state-status-line) | per-session, always-on | Visual confirmation of the source of truth. | Re-rendered on every status-line update. |
+| [Sandbox-bypass visibility hook](#sandbox-bypass-visibility-hook) | per-call | A specific Bash call is asking to step outside the sandbox. | Only when `dangerouslyDisableSandbox: true` is set on the call. |
+| Claude Code permission prompt | per-call | The gate — approve or deny the bypass. | Same firing condition as the hook; the hook augments the prompt with a banner the user cannot skim past. |
+
+The settings file is the source of truth; the status line and
+the hook surface that truth on two different time scales —
+always-on (status line) and per-call (hook). The permission
+prompt is the actual gate. Installing all four means a
+sandbox-bypass that lands without your noticing has to skim past
+two banners and silently approve a prompt — a much higher bar
+than skimming a single permission dialog.
+
+### Residual risks
 
 This setup substantially shrinks the credential-leakage surface, but
 some risks remain inherent to running an agent against pre-disclosure
@@ -803,7 +1242,7 @@ content:
   `~/.claude/.mcp.json` and `~/.claude.json` quarterly; remove any
   MCP server you don't actively use.*
 
-## See also
+### See also
 
 - [`AGENTS.md` — Confidentiality of `<tracker>`](AGENTS.md#confidentiality-of-the-tracker-repository)
   — the framework's policy on what tracker content may go where.
