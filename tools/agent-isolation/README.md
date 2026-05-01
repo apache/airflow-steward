@@ -30,6 +30,7 @@ versions.
 | [`claude-iso.sh`](claude-iso.sh) | Shell function to launch Claude Code with `env -i` and a tiny passthrough list, stripping every credential-shaped environment variable from the parent shell. The framework's "layer 0" of the secure setup. |
 | [`sandbox-bypass-warn.sh`](sandbox-bypass-warn.sh) | Claude Code `PreToolUse` hook (Bash matcher). Prints a bold-red banner to stderr whenever the model invokes the Bash tool with `dangerouslyDisableSandbox: true`. Belt-and-braces visibility for the sandbox-bypass permission prompt. Recommended user-scope (`~/.claude/settings.json`) so it fires across every session on the host. |
 | [`sandbox-status-line.sh`](sandbox-status-line.sh) | Claude Code `statusLine` helper. Renders `<model> [sandbox]` (green) or `<model> [NO SANDBOX]` (bold red) based on `sandbox.enabled` in the active settings — project `settings.local.json` first, then project `settings.json`, then user-scope, mirroring Claude Code's own precedence. Reflects in-session `/sandbox` toggles (which persist to project `settings.local.json`). Recommended user-scope. |
+| [`sandbox-status-line-rich.sh`](sandbox-status-line-rich.sh) | Opt-in richer alternative to `sandbox-status-line.sh`. Same sandbox-state detection, plus folder name (hash-coloured), git branch + dirty + ahead/behind, per-branch PR title (cached, gated by `gh`), and a yellow `[sandbox-auto]` tag for the `autoAllowBashIfSandboxed` setting. Wire one *or* the other into `statusLine.command`. |
 
 ## Usage at a glance
 
