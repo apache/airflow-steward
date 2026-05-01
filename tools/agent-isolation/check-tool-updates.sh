@@ -20,7 +20,13 @@
 #
 # Read pinned-versions.toml and report on upstream releases that
 # (a) are newer than the pinned versions, AND (b) have themselves
-# aged past the 7-day cooldown the pin convention asks for.
+# aged past each tool's `cooldown_days` (default 7).
+#
+# Cooldown is per-tool — the manifest's `[tools.<name>]` table can
+# carry a `cooldown_days = N` override of the 7-day default. The
+# motivating case is `claude-code`, whose release cadence is high
+# enough that 7 days of settle-time is excessive; it overrides to
+# 1.
 #
 # Output is informational only — the script never installs anything,
 # never edits pinned-versions.toml, never opens a PR. It just
@@ -44,32 +50,36 @@ if [[ ! -r "$MANIFEST" ]]; then
   exit 1
 fi
 
-# Cooldown window. Mirrors `[tool.uv] exclude-newer = "7 days"` in
-# the root pyproject.toml and the dependabot weekly cooldown of 7
-# days in `.github/dependabot.yml`. Tools released within this
-# window are NOT proposed as upgrade candidates yet.
-COOLDOWN_DAYS=7
+# Default cooldown window. Mirrors `[tool.uv] exclude-newer = "7 days"`
+# in the root pyproject.toml and the dependabot weekly cooldown of 7
+# days in `.github/dependabot.yml`. Per-tool overrides via the
+# manifest's `cooldown_days` field take precedence — see
+# `pinned-versions.toml` for the convention. Releases within a tool's
+# cooldown window are NOT proposed as upgrade candidates yet.
+DEFAULT_COOLDOWN_DAYS=7
 
 now_epoch=$(date -u +%s)
-cooldown_cutoff_epoch=$(( now_epoch - COOLDOWN_DAYS * 86400 ))
 
 # ---------------------------------------------------------------------
-# Per-tool upstream lookup. Each function prints the latest aged-past-
-# cooldown release in the form "version<TAB>YYYY-MM-DD". A non-zero
-# exit code means the upstream lookup failed (rate limit, network
-# error, etc.) — the caller continues with other tools.
+# Per-tool upstream lookup. Each function takes a per-tool cooldown
+# window in days as its second argument and prints the latest
+# aged-past-cooldown release in the form "version<TAB>YYYY-MM-DD". A
+# non-zero exit code means the upstream lookup failed (rate limit,
+# network error, etc.) — the caller continues with other tools.
 # ---------------------------------------------------------------------
 
 # GitHub releases lookup (used by bubblewrap and claude-code).
 # Picks the most recent release whose `published_at` is at least
-# `COOLDOWN_DAYS` old.
+# `cooldown_days` old.
 gh_latest_aged() {
   local repo="$1"
+  local cooldown_days="$2"
+  local cutoff=$(( now_epoch - cooldown_days * 86400 ))
   curl -fsSL "https://api.github.com/repos/${repo}/releases?per_page=20" \
     | python3 -c '
 import json, sys
-from datetime import datetime, timezone
-cutoff = '"$cooldown_cutoff_epoch"'
+from datetime import datetime
+cutoff = '"$cutoff"'
 for r in json.load(sys.stdin):
     pub = datetime.fromisoformat(r["published_at"].replace("Z", "+00:00"))
     if pub.timestamp() <= cutoff:
@@ -81,8 +91,10 @@ for r in json.load(sys.stdin):
 }
 
 # socat upstream is a static HTML index; scrape the highest version
-# tarball whose mtime is older than COOLDOWN_DAYS.
+# tarball whose mtime is older than `cooldown_days`.
 socat_latest_aged() {
+  local cooldown_days="$1"
+  local cutoff=$(( now_epoch - cooldown_days * 86400 ))
   # The download index has a fairly stable shape — `socat-X.Y.Z.W.tar.gz`
   # rows in a directory listing. Pick the highest version whose
   # `Last-Modified` (per HEAD) is older than the cutoff.
@@ -99,7 +111,7 @@ socat_latest_aged() {
       continue
     fi
     mtime_epoch=$(date -d "$mtime" +%s 2>/dev/null) || continue
-    if (( mtime_epoch <= cooldown_cutoff_epoch )); then
+    if (( mtime_epoch <= cutoff )); then
       printf '%s\t%s\n' "$ver" "$(date -u -d "$mtime" +%Y-%m-%d)"
       return 0
     fi
@@ -113,12 +125,14 @@ socat_latest_aged() {
 # ---------------------------------------------------------------------
 
 read_pinned() {
-  python3 - "$MANIFEST" <<'PY'
+  python3 - "$MANIFEST" "$DEFAULT_COOLDOWN_DAYS" <<'PY'
 import sys, tomllib
+default_cooldown = int(sys.argv[2])
 with open(sys.argv[1], "rb") as f:
     cfg = tomllib.load(f)
 for name, t in cfg.get("tools", {}).items():
-    print(f"{name}\t{t['version']}\t{t['released']}")
+    cooldown = int(t.get("cooldown_days", default_cooldown))
+    print(f"{name}\t{t['version']}\t{t['released']}\t{cooldown}")
 PY
 }
 
@@ -131,16 +145,16 @@ printf '%-14s %-10s %-12s %-10s %-12s %s\n' \
 printf '%-14s %-10s %-12s %-10s %-12s %s\n' \
   ------ ------ ------- -------- --------- ------
 
-while IFS=$'\t' read -r name pinned_ver pinned_date; do
+while IFS=$'\t' read -r name pinned_ver pinned_date cooldown_days; do
   case "$name" in
     bubblewrap)
-      latest_line="$(gh_latest_aged containers/bubblewrap || true)"
+      latest_line="$(gh_latest_aged containers/bubblewrap "$cooldown_days" || true)"
       ;;
     claude-code)
-      latest_line="$(gh_latest_aged anthropics/claude-code || true)"
+      latest_line="$(gh_latest_aged anthropics/claude-code "$cooldown_days" || true)"
       ;;
     socat)
-      latest_line="$(socat_latest_aged || true)"
+      latest_line="$(socat_latest_aged "$cooldown_days" || true)"
       ;;
     *)
       latest_line=""
@@ -165,7 +179,7 @@ while IFS=$'\t' read -r name pinned_ver pinned_date; do
     # well-formed dotted-version strings, so plain `<` does the
     # right thing for ordered output. The maintainer is the actual
     # decision-maker; the script just surfaces candidates.
-    status="upgrade candidate (aged past ${COOLDOWN_DAYS}-day cooldown)"
+    status="upgrade candidate (aged past ${cooldown_days}-day cooldown)"
   fi
 
   printf '%-14s %-10s %-12s %-10s %-12s %s\n' \
@@ -183,7 +197,9 @@ To bump a pinned tool:
      distro package version has shifted.
   4. Open the bump as its own PR with a short rationale.
 
-The 7-day cooldown above is the floor for *eligibility*, not a
-mandate to upgrade — the framework maintainer is welcome to defer
-a bump indefinitely if the new version doesn't add value.
+Each tool's cooldown is the floor for *eligibility*, not a mandate
+to upgrade — the framework maintainer is welcome to defer a bump
+indefinitely if the new version doesn't add value. The default
+cooldown is 7 days; tools can override via `cooldown_days = N` in
+the manifest (the canonical example is `claude-code`, which uses 1).
 EOF
