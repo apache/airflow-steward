@@ -644,6 +644,18 @@ If you already maintain a richer custom statusLine, the helper is
 intentionally one-line — call it as one segment of your own
 renderer rather than replacing it.
 
+For adopters who want a richer variant out of the box, the framework
+also ships
+[`tools/agent-isolation/sandbox-status-line-rich.sh`](tools/agent-isolation/sandbox-status-line-rich.sh).
+Same sandbox-state detection, plus folder name (hash-coloured for a
+stable per-repo identity), git branch + dirty marker + ahead/behind,
+per-branch PR title (cached for 5 min, silent when `gh` is missing or
+unauthenticated), and a yellow `[sandbox-auto]` tag for the
+`autoAllowBashIfSandboxed` setting. Install steps are identical —
+copy the `-rich` file in place of the minimal one and point
+`statusLine.command` at it. The minimal variant remains the
+documented default; the rich one is opt-in.
+
 **Verify.**
 
 ```bash
