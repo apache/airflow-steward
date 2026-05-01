@@ -3,6 +3,9 @@
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
 - [Secure agent setup](#secure-agent-setup)
+  - [Quick start](#quick-start)
+    - [Agent-guided (recommended)](#agent-guided-recommended)
+    - [Manual (if you do not want the agent-guided path)](#manual-if-you-do-not-want-the-agent-guided-path)
   - [Required tools (pinned versions)](#required-tools-pinned-versions)
     - [Install commands](#install-commands)
     - [Distro-specific shortcut — Linux Mint 22.x / Ubuntu 24.04 Noble](#distro-specific-shortcut--linux-mint-22x--ubuntu-2404-noble)
@@ -66,6 +69,92 @@ attack hidden in an inbound report — exfiltrate cloud credentials,
 SSH keys, GitHub tokens, the Gmail OAuth refresh token, and similar
 host-level secrets. This setup does not eliminate that risk; it
 reduces it to the project tree.
+
+## Quick start
+
+If you just want the secure setup running, follow this short
+path. The rest of the document below expands every bullet here
+with the *why* and the trade-offs; you can return to it whenever
+you want the full picture. For the rationale and mechanism behind
+each layer, see
+[`secure-agent-internals.md`](secure-agent-internals.md).
+
+### Agent-guided (recommended)
+
+If you have Claude Code installed and a clone of `airflow-steward`
+on the host, the framework ships four skills that walk every
+step interactively. Each surfaces sudo / shell-rc / settings-file
+changes for explicit approval before applying — nothing
+privilege-elevating runs without you saying so.
+
+```text
+1. Open Claude Code in your tracker repo (or any directory).
+2. Run /setup-secure-config — guided first-time install.
+3. Run /verify-secure-config — confirms ✓/✗/⚠ for every piece.
+4. Run /update-secure-config periodically (per Claude Code
+   upgrade or once a month) to surface drift + upgrade
+   candidates. Read-only — surfaces, never auto-applies.
+5. Optional: if you maintain a private dotfile-style sync repo
+   per
+   [Syncing user-scope config across machines](#syncing-user-scope-config-across-machines),
+   run /sync-shared-config to push local edits to the remote
+   so other machines pick them up.
+```
+
+The skills are at
+[`.claude/skills/setup-secure-config/`](.claude/skills/setup-secure-config/SKILL.md),
+[`.claude/skills/verify-secure-config/`](.claude/skills/verify-secure-config/SKILL.md),
+[`.claude/skills/update-secure-config/`](.claude/skills/update-secure-config/SKILL.md),
+[`.claude/skills/sync-shared-config/`](.claude/skills/sync-shared-config/SKILL.md).
+Each skill references back into the canonical sections of this
+document rather than duplicating them, so anything the skill walks
+you through has a longer-form section here you can read for
+context.
+
+### Manual (if you do not want the agent-guided path)
+
+The same flow, condensed to commands you run yourself:
+
+```bash
+# 1. Pinned system tools (Linux only — macOS uses built-in
+#    Seatbelt). Exact distro commands and version pins are in
+#    `tools/agent-isolation/pinned-versions.toml`; canonical
+#    section: "Required tools (pinned versions)" below.
+sudo apt-get install --no-install-recommends \
+    bubblewrap=0.11.1-* socat=1.8.1.1-*
+npm install -g --no-save @anthropic-ai/claude-code@2.1.117
+
+# 2. Project-scope `.claude/settings.json`. Copy the framework's
+#    sandbox / permissions.deny / permissions.ask / allowedDomains
+#    blocks into your tracker repo's `.claude/settings.json`.
+#    Section: "The framework's own .claude/settings.json" below.
+
+# 3. The clean-env wrapper. Source `claude-iso.sh` from your rc
+#    file, optionally alias `claude=claude-iso`. Section: "The
+#    clean-env wrapper" below.
+
+# 4. User-scope hooks. Copy `sandbox-bypass-warn.sh` and
+#    `sandbox-status-line.sh` into `~/.claude/scripts/`, wire
+#    them into `~/.claude/settings.json` under `PreToolUse` and
+#    `statusLine`. Sections: "Sandbox-bypass visibility hook"
+#    and "Sandbox-state status line" below.
+
+# 5. Verify the install actually denies what it claims to —
+#    section "Verification" below has both a three-line Bash
+#    check and the agent-guided form.
+```
+
+Both paths converge on the same end state: a sandboxed Claude Code
+session that cannot read `~/.aws/`, cannot exfiltrate via `curl`,
+runs Bash subprocesses inside bubblewrap (Linux) or Seatbelt
+(macOS), and visibly flags `sandbox` / `NO SANDBOX` / bypass
+attempts in the terminal so an unprotected session cannot drift
+unnoticed.
+
+The rest of this document is the long-form reference behind each
+of those steps. If you used the agent-guided path, you can read
+sections on demand when a skill points you at one for more
+detail.
 
 ## Required tools (pinned versions)
 
