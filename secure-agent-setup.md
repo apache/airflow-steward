@@ -82,7 +82,7 @@ each layer, see
 ### Agent-guided (recommended)
 
 If you have Claude Code installed and a clone of `airflow-steward`
-on the host, the framework ships four skills that walk every
+on the host, the framework ships five skills that walk every
 step interactively. Each surfaces sudo / shell-rc / settings-file
 changes for explicit approval before applying — nothing
 privilege-elevating runs without you saying so.
@@ -91,9 +91,14 @@ privilege-elevating runs without you saying so.
 1. Open Claude Code in your tracker repo (or any directory).
 2. Run /setup-secure-config — guided first-time install.
 3. Run /verify-secure-config — confirms ✓/✗/⚠ for every piece.
-4. Run /update-secure-config periodically (per Claude Code
-   upgrade or once a month) to surface drift + upgrade
-   candidates. Read-only — surfaces, never auto-applies.
+4. When you want to be on the framework's latest, run
+   /upgrade-apache-steward — pulls your local airflow-steward
+   checkout to origin/main with --ff-only, refuses to touch a
+   dirty working tree, surfaces what arrived. Then run
+   /update-secure-config to surface user-side drift the
+   upgrade introduced (new permissions.deny entries,
+   user-scope script copies older than the framework, pinned
+   tool bumps that warrant a host install).
 5. Optional: if you maintain a private dotfile-style sync repo
    per
    [Syncing user-scope config across machines](#syncing-user-scope-config-across-machines),
@@ -104,6 +109,7 @@ privilege-elevating runs without you saying so.
 The skills are at
 [`.claude/skills/setup-secure-config/`](.claude/skills/setup-secure-config/SKILL.md),
 [`.claude/skills/verify-secure-config/`](.claude/skills/verify-secure-config/SKILL.md),
+[`.claude/skills/upgrade-apache-steward/`](.claude/skills/upgrade-apache-steward/SKILL.md),
 [`.claude/skills/update-secure-config/`](.claude/skills/update-secure-config/SKILL.md),
 [`.claude/skills/sync-shared-config/`](.claude/skills/sync-shared-config/SKILL.md).
 Each skill references back into the canonical sections of this

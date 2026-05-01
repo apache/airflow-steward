@@ -112,8 +112,12 @@ explicitly and stop.
 If something is out-of-date or has drifted, name the concrete
 follow-up:
 
-- Framework checkout behind → user runs `git pull --ff-only` in
-  their `airflow-steward` clone.
+- Framework checkout behind → run
+  [`upgrade-apache-steward`](../upgrade-apache-steward/SKILL.md),
+  which performs the `git pull --ff-only` after the same
+  pre-flight checks this skill recommends, surfaces what
+  arrived, and reminds the user to handle the parent-tracker
+  submodule pointer if applicable.
 - Pinned-tool upgrade candidate worth adopting → manifest bump PR
   per [Bumping a pinned version](../../../secure-agent-setup.md#bumping-a-pinned-version).
 - User-scope script drift → re-`cp` from the framework checkout,
