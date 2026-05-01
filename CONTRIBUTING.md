@@ -233,8 +233,30 @@ open a PR — CI runs the same config. The hook set:
   `config/user.md`;
 - `bootstrap-user-config` — creates `config/user.md` from the template
   on first run;
+- `markdownlint-cli2` — flags structurally bad markdown. Config in
+  `.markdownlint.json` enables only the rules that catch real bugs
+  (broken anchors via MD051, dangling link references via MD053);
+  style choices are intentionally left alone;
+- `typos` — fast spell-checker. Allowlist of project-specific terms
+  (`CNA`, `Vulnogram`, `ponymail`, `mis-`, `Nd`, etc.) lives in
+  `.typos.toml`;
+- `check-placeholders` — local script at `tools/dev/check-placeholders.sh`
+  that refuses to commit hardcoded references like `apache/airflow`
+  or `Apache Airflow` inside `.claude/skills/` or `tools/`. The
+  framework convention is the `<PROJECT>` / `<tracker>` / `<upstream>`
+  placeholder set; see
+  [`AGENTS.md` — Placeholder convention](AGENTS.md#placeholder-convention-used-in-skill-files);
 - `ruff check` / `ruff format --check` / `mypy` / `pytest` against the
-  `tools/vulnogram/generate-cve-json/` Python package.
+  `tools/vulnogram/generate-cve-json/` and `tools/gmail/oauth-draft/`
+  Python packages.
+
+A separate GitHub workflow `link-check.yml` runs
+[lychee](https://lychee.cli.rs/) on every PR and on a daily schedule
+to catch broken internal links and dead external URLs. The check is
+**informational only** today (`continue-on-error: true`) because the
+existing tree carries a known set of placeholder / not-yet-created
+file references; once the baseline reaches zero the workflow will
+flip to a hard gate.
 
 For the Python package directly:
 

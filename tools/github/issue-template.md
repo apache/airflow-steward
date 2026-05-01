@@ -7,7 +7,7 @@
   - [Field roles the skills use](#field-roles-the-skills-use)
   - [Body-field surgery](#body-field-surgery)
   - [Empty-field convention](#empty-field-convention)
-  - [Issue-template → CVE 5.x mapping](#issue-template-%E2%86%92-cve-5x-mapping)
+  - [Issue-template to CVE 5.x mapping](#issue-template-to-cve-5x-mapping)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -98,7 +98,7 @@ into every unfilled body field. The skills honour this convention:
 - The CVE JSON generator treats `_No response_` as absence and simply
   omits the corresponding CVE-record element.
 
-## Issue-template → CVE 5.x mapping
+## Issue-template to CVE 5.x mapping
 
 The `generate-cve-json` tool maps body-field roles to CVE 5.x record
 elements as follows (generic — applies to any project using this

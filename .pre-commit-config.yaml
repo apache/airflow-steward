@@ -18,7 +18,13 @@
 default_stages: [commit, push]
 default_language_version:
   python: python3
-  node: 18.6.0
+  # Node 22 is the current active LTS line. markdownlint-cli2 ≥ v0.18
+  # (and its string-width dependency from v6 onward) uses the regex
+  # `/v` flag, which requires Node ≥ 20 to parse. The previous Node
+  # 18.6.0 pin matched the framework's pre-PR-#18 tooling baseline
+  # but is incompatible with the markdownlint-cli2 v0.22.1 rev
+  # pinned below.
+  node: 22.11.0
 minimum_prek_version: '0.3.5'
 repos:
   - repo: meta
@@ -53,6 +59,38 @@ repos:
         name: Detect if mixed line ending is used (\r vs. \r\n)
       - id: trailing-whitespace
         name: Remove trailing whitespace at end of line
+  # markdownlint — catches structurally-bad markdown. Config in
+  # `.markdownlint.json` enables only the rules that catch real bugs
+  # (broken anchors via MD051, dangling link references via MD053);
+  # style choices the existing docs already settled stay off.
+  - repo: https://github.com/DavidAnson/markdownlint-cli2
+    rev: v0.22.1
+    hooks:
+      - id: markdownlint-cli2
+        name: markdownlint
+        files: \.md$
+  # typos — fast spell-checker. Allowlist is `.typos.toml`.
+  # Override the default args (which include `--write-changes`) so
+  # the hook never silently rewrites files; CI surfaces typos as
+  # errors instead.
+  - repo: https://github.com/crate-ci/typos
+    rev: v1.45.2
+    hooks:
+      - id: typos
+        name: typos
+        args: [--force-exclude]
+  # Local placeholder linter — catches hardcoded references like
+  # `apache/airflow` or `Apache Airflow` that should be the
+  # placeholder tokens `<upstream>` / `<PROJECT>` per
+  # `AGENTS.md#placeholder-convention-used-in-skill-files`.
+  - repo: local
+    hooks:
+      - id: check-placeholders
+        name: check-placeholders
+        language: system
+        entry: tools/dev/check-placeholders.sh
+        files: ^(\.claude/skills/.*|tools/.*)\.(md|sh|py|yaml|yml|toml)$
+        pass_filenames: false
   # Project-local checks for the `generate-cve-json` Python project at
   # `tools/vulnogram/generate-cve-json/`. Each hook sets the working
   # directory via `uv run --directory` so ruff / mypy / pytest pick up
