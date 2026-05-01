@@ -82,16 +82,24 @@ each layer, see
 ### Agent-guided (recommended)
 
 If you have Claude Code installed and a clone of `airflow-steward`
-on the host, the framework ships five skills that walk every
+on the host, the framework ships six skills that walk every
 step interactively. Each surfaces sudo / shell-rc / settings-file
 changes for explicit approval before applying — nothing
 privilege-elevating runs without you saying so.
 
 ```text
 1. Open Claude Code in your tracker repo (or any directory).
-2. Run /setup-secure-config — guided first-time install.
-3. Run /verify-secure-config — confirms ✓/✗/⚠ for every piece.
-4. When you want to be on the framework's latest, run
+2. If you consume the framework as a submodule of your tracker
+   (the canonical adopter pattern), run /verify-apache-steward
+   to confirm `.apache-steward/`, the submodule, and the
+   project-config under it are wired correctly. Read-only —
+   surfaces gaps, never auto-fixes.
+3. Run /setup-secure-config — guided first-time install of
+   the secure-agent setup (sandbox, hooks, status line,
+   clean-env wrapper).
+4. Run /verify-secure-config — confirms ✓/✗/⚠ for every piece
+   of the secure-agent setup.
+5. When you want to be on the framework's latest, run
    /upgrade-apache-steward — pulls your local airflow-steward
    checkout to origin/main with --ff-only, refuses to touch a
    dirty working tree, surfaces what arrived. Then run
@@ -99,7 +107,7 @@ privilege-elevating runs without you saying so.
    upgrade introduced (new permissions.deny entries,
    user-scope script copies older than the framework, pinned
    tool bumps that warrant a host install).
-5. Optional: if you maintain a private dotfile-style sync repo
+6. Optional: if you maintain a private dotfile-style sync repo
    per
    [Syncing user-scope config across machines](#syncing-user-scope-config-across-machines),
    run /sync-shared-config to push local edits to the remote
@@ -107,6 +115,7 @@ privilege-elevating runs without you saying so.
 ```
 
 The skills are at
+[`.claude/skills/verify-apache-steward/`](.claude/skills/verify-apache-steward/SKILL.md),
 [`.claude/skills/setup-secure-config/`](.claude/skills/setup-secure-config/SKILL.md),
 [`.claude/skills/verify-secure-config/`](.claude/skills/verify-secure-config/SKILL.md),
 [`.claude/skills/upgrade-apache-steward/`](.claude/skills/upgrade-apache-steward/SKILL.md),
