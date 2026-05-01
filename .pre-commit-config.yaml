@@ -18,7 +18,13 @@
 default_stages: [commit, push]
 default_language_version:
   python: python3
-  node: 18.6.0
+  # Node 22 is the current active LTS line. markdownlint-cli2 ≥ v0.18
+  # (and its string-width dependency from v6 onward) uses the regex
+  # `/v` flag, which requires Node ≥ 20 to parse. The previous Node
+  # 18.6.0 pin matched the framework's pre-PR-#18 tooling baseline
+  # but is incompatible with the markdownlint-cli2 v0.22.1 rev
+  # pinned below.
+  node: 22.11.0
 minimum_prek_version: '0.3.5'
 repos:
   - repo: meta

@@ -58,10 +58,13 @@ jobs:
 
       - name: Run lychee
         id: lychee
-        # Pinned SHA points to lycheeverse/lychee-action v2.6.1
-        # (binary cooldown convention: matches the 7-day cooldown
-        # the framework uses elsewhere).
-        uses: lycheeverse/lychee-action@82202e5e9c2f4ef1a55a3d02563e1cb6041e5332  # v2.6.1
+        # Pinned SHA must come from the ASF infrastructure-actions
+        # allowlist (https://github.com/apache/infrastructure-actions/blob/main/approved_patterns.yml),
+        # which the `asf-allowlist-check` workflow enforces on every
+        # PR. The previous v2.6.1 pin was not on the allowlist; v2.8.0
+        # (2026-02-17) is. When bumping, pick the next allowlisted SHA
+        # — do not pick the latest upstream release blindly.
+        uses: lycheeverse/lychee-action@8646ba30535128ac92d33dfc9133794bfdd9b411  # v2.8.0
         with:
           args: --config .lychee.toml --no-progress .
           fail: false
