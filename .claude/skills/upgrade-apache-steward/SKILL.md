@@ -144,7 +144,11 @@ which is read-only and runs naturally as the next step.
      any other clone of the tracker is what makes that clone see
      the new framework. Mention the post-merge hook documented in
      `README.md → Adopting the framework` for users who want this
-     automatic.
+     automatic. Suggest
+     [`verify-apache-steward`](../verify-apache-steward/SKILL.md)
+     to confirm the parent tracker's submodule integration is
+     still aligned (the skill catches the `+` "submodule HEAD
+     ahead of parent index" state directly).
 
    - **Always after a successful pull**, recommend
      [`update-secure-config`](../update-secure-config/SKILL.md)
