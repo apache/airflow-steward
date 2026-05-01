@@ -1297,6 +1297,27 @@ will change and *why*. Group them by category:
   Re-read that file before composing the entry body — the
   zero-extra-spacing rule is load-bearing and easy to miss.
 
+  **Standalone comments are reserved for release-manager
+  instructions only.** The rollup is the default surface for
+  every sync output — status changes, label rationale, milestone
+  moves, assignee swaps, reporter-draft notes, fix-PR links,
+  CVE-review-comment surfacing, legacy-fold entries, recap
+  pointers, blockers, *everything*. The **only** comment shapes
+  this skill posts as separate, first-class comments outside the
+  rollup are the two **release-manager-directed call-to-action**
+  comments documented further down in this Step 2b list: the
+  *Release-manager hand-off comment* (fired at the
+  `pr merged` → `fix released` transition, Step 12) and the
+  *Publication-ready notification comment* (fired at the
+  *Public advisory URL* update, Step 14). Both exist because they
+  tell the RM to *do something next* on a fresh, dated,
+  mention-bearing surface — the rollup's `<details>`-collapsed
+  entries are the wrong shape for an actionable nudge. If a
+  proposal does not fit one of those two shapes, it goes into the
+  rollup. When in doubt, default to the rollup; do not invent a
+  new standalone-comment shape because something "feels important
+  enough".
+
   **Entry shape for a sync pass.** Inside the rollup's
   `<details>` block, emit:
 
