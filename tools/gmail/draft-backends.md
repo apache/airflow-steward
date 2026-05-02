@@ -142,7 +142,7 @@ The detection rule depends on which backend created the prior draft:
   (see the *Known issue* section below). Detect them by reading the
   thread directly:
 
-  ```
+  ```text
   mcp__claude_ai_Gmail__get_thread(threadId: "<inbound-thread-id>", messageFormat: MINIMAL)
   ```
 

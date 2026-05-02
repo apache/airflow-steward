@@ -710,7 +710,7 @@ with other trackers.
 
 ### Example 1 — `providers` scope, already merged
 
-```
+```text
 import from pr 65703
 ```
 
@@ -729,7 +729,7 @@ disclosure; see *[Reporter credit policy](#reporter-credit-policy-for-public-pr-
 
 ### Example 2 — `airflow` scope, in-flight
 
-```
+```text
 import from pr https://github.com/<upstream>/pull/65999
 ```
 
@@ -742,7 +742,7 @@ proposes everything; on user confirmation, the tracker lands
 
 ### Example 3 — Mixed-scope PR (blocker)
 
-```
+```text
 import from pr 66042
 ```
 

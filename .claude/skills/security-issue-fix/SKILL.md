@@ -462,7 +462,7 @@ Write out the exact `--body` the skill will pass to
 - the standard Gen-AI disclosure block per
   [`<upstream>/contributing-docs/05_pull_requests.rst`](https://github.com/<upstream>/blob/main/contributing-docs/05_pull_requests.rst#gen-ai-assisted-contributions):
 
-  ```
+  ```markdown
   ##### Was generative AI tooling used to co-author this PR?
 
   - [X] Yes — Claude Opus 4.6 (1M context)

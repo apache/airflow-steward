@@ -1,5 +1,5 @@
 {
-  "$comment": "Markdownlint config for apache/airflow-steward. The rule set is deliberately minimal — only enables checks that catch real bugs (broken anchors, malformed code spans, malformed link references). Style choices that the existing docs already settled (compact tables, hyphen list markers, ordered-list numbering, fenced-language tagging) are left alone so the consolidation does not balloon the diff.",
+  "$comment": "Markdownlint config for apache/airflow-steward. The rule set is deliberately minimal — only enables checks that catch real bugs (broken anchors, malformed link references, untagged fenced code). Style choices that the existing docs already settled (compact tables, hyphen list markers, ordered-list numbering) are left alone.",
 
   "default": true,
 
@@ -16,7 +16,7 @@
   "MD033": false,
   "MD034": false,
   "MD036": false,
-  "MD040": false,
+  "MD038": false,
   "MD041": false,
   "MD046": false,
   "MD050": false,
@@ -24,11 +24,11 @@
   "MD059": false,
   "MD060": false,
 
-  "MD038": false,
+  "MD040": true,
   "MD051": true,
   "MD053": true,
 
   "$comment-MD038": "MD038 (no space inside code spans) is disabled because the steward docs intentionally use literal markdown-syntax samples like `# ` (H1), `### ` (H3), `- ` (list marker) inside backticks to illustrate markdown rendering. The rule has no per-context allowlist and would force escape-everywhere across many files. Re-enable in a follow-up that escapes those samples consistently.",
 
-  "$comment-rationale": "MD051 (link-fragments) catches broken cross-references — exactly the bug class that surfaced 5 real broken anchors on the existing tree. MD053 catches dangling link-reference definitions. Everything else is style and is intentionally off so this PR stays diff-minimal."
+  "$comment-rationale": "MD040 catches untagged fenced code blocks — surfaces 64 of them in the initial sweep, all tagged in this PR. MD051 (link-fragments) catches broken cross-references — exactly the bug class that surfaced 5 real broken anchors on the previous sweep. MD053 catches dangling link-reference definitions."
 }
