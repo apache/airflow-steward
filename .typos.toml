@@ -26,6 +26,23 @@ mis = "mis"
 # `pre-empted` is a real word; typos flags `empted` as a typo of
 # `emptied` only because of how it splits hyphenated words.
 empted = "empted"
+# Bracket-prefix CLI prompt fragments — `[B]ody`, `[R]equest`,
+# `[A]pprove`, `[E]dit`, etc. — used as keyboard-shortcut hints in
+# the pr-* skills' interactive prompts. typos sees the residual
+# (`ody`, `equest`, `pprove`, `dit`) as misspellings.
+ody = "ody"
+equest = "equest"
+efresh = "efresh"
+pprove = "pprove"
+omment = "omment"
+ebase = "ebase"
+ost = "ost"
+raft = "raft"
+verride = "verride"
+dit = "dit"
+ick = "ick"
+kip = "kip"
+lose = "lose"
 
 [default.extend-identifiers]
 # Identifiers that look like typos but are real symbol names.

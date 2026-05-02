@@ -355,13 +355,31 @@ cross-skill flow as a diagram.
 
 ### PR triage and review
 
-*Coming in a follow-up PR.* The `pr-*` skill family (`pr-triage`,
-`pr-stats`, `pr-maintainer-review`) is being lifted from
-`apache/airflow` into this framework — see
-[Adopting the framework](#adopting-the-framework) for the
-abstraction model that keeps project-specific knobs
-(maintainer roster, CI-check → doc URL map, label conventions) in
-the adopter's `<project-config>/`.
+Maintainer-facing PR-queue management — first-pass triage, stats
+on the open backlog, and deep code review. Lifted from
+`apache/airflow` into the framework so adopters with a public
+contributor PR queue can reuse the same playbook.
+
+| Skill | Purpose |
+|---|---|
+| [`pr-triage`](.claude/skills/pr-triage/SKILL.md) | Sweep open PRs, classify against the project's quality criteria, propose a disposition (draft / comment / close / rebase / rerun / mark ready / ping), execute on confirmation. |
+| [`pr-stats`](.claude/skills/pr-stats/SKILL.md) | Read-only summary tables of the open PR backlog grouped by area label — measure where queue pressure sits. |
+| [`pr-maintainer-review`](.claude/skills/pr-maintainer-review/SKILL.md) | Walk a maintainer through deep code review, one PR at a time. Reads the diff, applies the project's review criteria, drafts an `approve` / `request-changes` / `comment` review with inline comments, posts on confirmation. |
+
+Project-specific content (committers team handle, area-label
+prefix, CI-check → doc URL map, comment-template wording, review-
+criteria source files) lives in the adopter's `<project-config>/`
+under the per-skill scaffolds in
+[`projects/_template/pr-triage-config.md`](projects/_template/pr-triage-config.md),
+[`projects/_template/pr-triage-comment-templates.md`](projects/_template/pr-triage-comment-templates.md),
+[`projects/_template/pr-triage-ci-check-map.md`](projects/_template/pr-triage-ci-check-map.md),
+and
+[`projects/_template/pr-maintainer-review-criteria.md`](projects/_template/pr-maintainer-review-criteria.md).
+The framework currently ships with airflow-flavored defaults
+inline in the supporting files of each skill — non-airflow
+adopters override by forking the relevant supporting file into
+their own `.claude/skills/` until a follow-up PR completes the
+content extraction.
 
 ## For issue triagers — Steps 1–6
 
