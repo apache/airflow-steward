@@ -60,6 +60,10 @@
   - [State diagram](#state-diagram)
   - [Label reference](#label-reference)
 - [Adopting the framework](#adopting-the-framework)
+  - [Bootstrapping a new adopter](#bootstrapping-a-new-adopter)
+  - [Per-skill-family contract](#per-skill-family-contract)
+  - [How skills resolve `<project-config>/` paths](#how-skills-resolve-project-config-paths)
+  - [Keeping the submodule current](#keeping-the-submodule-current)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -988,11 +992,99 @@ their per-project configuration alongside it under
 `<project-config>/` (which resolves to `.apache-steward/` in the
 adopter's tracker root).
 
-To bootstrap a new adopter, copy [`projects/_template/`](projects/_template/)
-into `<project-config>/` in your tracker repo, fill in the TODO
-placeholders, and point the framework's skills at it via the path
-resolution documented in
-[`AGENTS.md` — Placeholder convention](AGENTS.md#placeholder-convention-used-in-skill-files).
+### Bootstrapping a new adopter
+
+Three one-time steps to integrate the framework into a new tracker
+repo:
+
+1. **Add the framework as a submodule** of your tracker repo at
+   `.apache-steward/apache-steward/`:
+
+   ```bash
+   cd path/to/your/tracker-repo
+   git submodule add https://github.com/apache/airflow-steward .apache-steward/apache-steward
+   ```
+
+2. **Copy the [`projects/_template/`](projects/_template/) scaffold**
+   into `.apache-steward/`, then `grep -rn TODO .apache-steward/` to
+   find every placeholder you need to fill in. The required files
+   vary by which skill families you're adopting — see
+   [Per-skill-family contract](#per-skill-family-contract) below.
+
+   ```bash
+   cp -r .apache-steward/apache-steward/projects/_template/. .apache-steward/
+   ```
+
+3. **Symlink `.claude/skills/`** in your tracker repo to the
+   framework's skill directory, so Claude Code (or another
+   `SKILL.md`-aware agent) loads the framework's skills against the
+   adopter's project configuration:
+
+   ```bash
+   ln -s .apache-steward/apache-steward/.claude/skills .claude/skills
+   ```
+
+The framework's
+[`setup-verify-steward`](.claude/skills/setup-verify-steward/SKILL.md)
+skill checks each of these and reports `✓ done / ✗ missing /
+⚠ partial` for the adopter integration — run it after step 3 to
+confirm the install landed.
+
+### Per-skill-family contract
+
+The `<project-config>/` files an adopter needs to populate depend
+on which skill families they want to use. Pick the families that
+match your project's needs — adopters who only use one family can
+delete the other family's scaffold files from their
+`.apache-steward/` directory.
+
+#### Security workflow — Steps 1–16 lifecycle
+
+Every skill in the [Security workflow](#security-workflow)
+section above consults at least
+[`<project-config>/project.md`](projects/_template/project.md) for
+identity. Beyond that, each skill reads only the files it needs:
+canned responses, scope labels, milestone conventions,
+title-normalisation rules, security-model pointers, release-train
+roster, fix-workflow specifics. The adopter's *file-by-file* index
+is in
+[`projects/_template/README.md`](projects/_template/README.md) —
+copy that into your `<project-config>/` and fill in every `TODO`.
+
+#### PR triage and review
+
+The [PR triage and review](#pr-triage-and-review) skills consult
+four scaffold files for project-specific knobs:
+
+| File | Used by |
+|---|---|
+| [`pr-triage-config.md`](projects/_template/pr-triage-config.md) | `pr-triage`, `pr-stats` |
+| [`pr-triage-comment-templates.md`](projects/_template/pr-triage-comment-templates.md) | `pr-triage` |
+| [`pr-triage-ci-check-map.md`](projects/_template/pr-triage-ci-check-map.md) | `pr-triage` |
+| [`pr-maintainer-review-criteria.md`](projects/_template/pr-maintainer-review-criteria.md) | `pr-maintainer-review` |
+
+Each PR-skill's `SKILL.md` carries an `## Adopter configuration`
+section that documents which of these files it reads. The framework
+currently embeds airflow-flavoured defaults inline in the skills'
+supporting files; non-airflow adopters override by forking the
+relevant supporting file into their own
+`.claude/skills/<skill-name>/`. A follow-up PR will complete the
+extraction so the skills read exclusively from `<project-config>/`.
+
+### How skills resolve `<project-config>/` paths
+
+The framework uses a documented placeholder convention: the literal
+string `<project-config>/` in any skill file resolves to the
+directory containing the adopter's `project.md` — typically
+`.apache-steward/` in the tracker root. The substitution rule is
+documented in
+[`AGENTS.md` § Placeholder convention](AGENTS.md#placeholder-convention-used-in-skill-files);
+it's a pure-text reference, no env-var or build step required. The
+adopter keeps the actual content gitignored at the adopter level if
+they want to (the framework itself is project-agnostic and ships no
+per-project content).
+
+### Keeping the submodule current
 
 **Always run `git submodule update --init --recursive` after every
 pull on the tracker repository.** A plain `git pull` on the tracker
@@ -1011,8 +1103,8 @@ SH
 chmod +x .git/hooks/post-merge
 ```
 
-The framework's `setup-upgrade-steward` skill (in this repo's
-[`.claude/skills/setup-upgrade-steward/SKILL.md`](.claude/skills/setup-upgrade-steward/SKILL.md))
-upgrades the framework checkout itself; if the user is consuming
-the framework as a tracker submodule, the skill reminds them to
-follow up with submodule update on the parent tracker.
+The framework's
+[`setup-upgrade-steward`](.claude/skills/setup-upgrade-steward/SKILL.md)
+skill upgrades the framework checkout itself; if the user is
+consuming the framework as a tracker submodule, the skill reminds
+them to follow up with submodule update on the parent tracker.
