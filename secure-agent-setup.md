@@ -311,7 +311,7 @@ the manifest, never installs anything, never opens a PR.
 The framework's `/schedule` slash-command lets you wire the check
 script into a recurring agent without leaving Claude Code:
 
-```
+```text
 /schedule weekly run tools/agent-isolation/check-tool-updates.sh
                   and surface upgrade candidates
 ```
@@ -742,7 +742,7 @@ already follow this pattern.
 
 A minimal repo layout:
 
-```
+```text
 ~/.claude-config/                       # the synced repo's checkout
 ├── CLAUDE.md                           # symlinked → ~/.claude/CLAUDE.md
 ├── scripts/

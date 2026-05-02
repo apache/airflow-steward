@@ -244,7 +244,7 @@ The tracker title is the finding's `# Title` with the standard
 convention; see
 [`tools/github/issue-template.md`](../../../tools/github/issue-template.md)):
 
-```
+```text
 [ Security Report ] <finding title>
 ```
 
@@ -335,7 +335,7 @@ exactly one blank line before `</details>`.
 
 Render a single proposal covering every parsed finding:
 
-```
+```text
 <file-basename> — N findings parsed.
 
 | # | Severity | Category                       | Title                                              | Possible duplicate |
@@ -539,7 +539,7 @@ purpose for this finding and would otherwise accumulate.
 After every finding lands, print a short one-liner so the user can
 see progress on long batches:
 
-```
+```text
 [K/N] <tracker>#NNN — <finding title>
 ```
 
@@ -619,7 +619,7 @@ the validity discussion produces signal.
 
 ### Example 1 — A six-finding AI-scan output
 
-```
+```text
 import findings from /tmp/scan-michaelwinser-airflow-2026-04-28.md
 ```
 
@@ -633,7 +633,7 @@ reference.
 
 ### Example 2 — A single-finding scanner export
 
-```
+```text
 import findings from ~/Downloads/sast-export.md
 ```
 
@@ -644,7 +644,7 @@ as a Gmail import; the only difference is the source format.
 
 ### Example 3 — Malformed input
 
-```
+```text
 import findings from /tmp/notes.md
 ```
 

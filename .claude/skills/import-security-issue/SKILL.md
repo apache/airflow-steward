@@ -208,7 +208,7 @@ When PonyMail MCP is enabled and authenticated (Step 0) **and**
 `tools.ponymail.private_lists`, run the archive as a **paired
 authoritative check** against the Gmail result set:
 
-```
+```text
 mcp__ponymail__search_list(
   list: "security",
   domain: "<project>.apache.org",
@@ -439,7 +439,7 @@ fuzzy-match search against existing issues on three orthogonal keys:
 For every candidate, surface the match results under a *Potential
 duplicates* sub-item in the Step 5 proposal — format:
 
-```
+```markdown
 - thread <threadId> — "<candidate title>"
   - GHSA match: [#NNN](...) "GHSA-xxxx-yyyy-zzzz"  (STRONG)
   - Code-pointer match: [#MMM](...) "BaseSerialization.deserialize"  (MEDIUM)
@@ -511,7 +511,7 @@ authenticated (Step 0) **and** `security@<project>.apache.org`
 is in `config/user.md` → `tools.ponymail.private_lists`,
 **PonyMail MCP is the primary backend for this step**:
 
-```
+```text
 mcp__ponymail__search_list(
   list: "security",
   domain: "<project>.apache.org",

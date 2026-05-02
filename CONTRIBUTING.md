@@ -79,7 +79,7 @@ four — no hard-coded project assumptions anywhere.
 
 ### Directory tree
 
-```
+```text
 .
 ├── README.md                      # Canonical 16-step handling process + conventions
 ├── AGENTS.md                      # Editorial rules: tone, brevity, confidentiality,

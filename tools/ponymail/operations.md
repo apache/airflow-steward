@@ -60,7 +60,7 @@ Every skill that talks to PonyMail MCP does a one-call pre-flight
 in Step 0 to verify the session is authenticated before relying on
 private-list queries:
 
-```
+```text
 mcp__ponymail__auth_status()
 ```
 
@@ -79,7 +79,7 @@ auth tools:
 
 ### Login
 
-```
+```text
 mcp__ponymail__login()
 ```
 
@@ -90,7 +90,7 @@ Code session pick up the cached cookie automatically.
 
 ### Auth status
 
-```
+```text
 mcp__ponymail__auth_status()
 ```
 
@@ -101,7 +101,7 @@ handled by the [Error handling](#error-handling) section below.
 
 ### Logout
 
-```
+```text
 mcp__ponymail__logout()
 ```
 
@@ -113,7 +113,7 @@ logout on their own — it is a user-driven lifecycle step.
 
 ### List lists
 
-```
+```text
 mcp__ponymail__list_lists()
 ```
 
@@ -133,7 +133,7 @@ the MCP itself, so repeat invocations are fast.
 
 ### Search a list
 
-```
+```text
 mcp__ponymail__search_list(
   list: "<list>",
   domain: "<domain>",
@@ -180,7 +180,7 @@ tid) — not full bodies. Fetch the body via
 
 ### Get a thread
 
-```
+```text
 mcp__ponymail__get_thread(
   list: "<list>",
   domain: "<domain>",
@@ -200,7 +200,7 @@ conversation.
 
 ### Get an email
 
-```
+```text
 mcp__ponymail__get_email(
   id: "<mid or Message-ID header value>"
 )
@@ -216,7 +216,7 @@ reference) and want its full body.
 
 ### Get an mbox dump
 
-```
+```text
 mcp__ponymail__get_mbox(
   list: "<list>",
   domain: "<domain>",
@@ -245,7 +245,7 @@ Until then, common recipes:
 
 ### Find the advisory archive thread on `users@<project>.apache.org`
 
-```
+```text
 mcp__ponymail__search_list(
   list: "users",
   domain: "<project>.apache.org",
@@ -262,7 +262,7 @@ for the tracker's *Public advisory URL* body field.
 
 ### Pull the original report thread on `security@<project>.apache.org`
 
-```
+```text
 mcp__ponymail__search_list(
   list: "security",
   domain: "<project>.apache.org",
@@ -277,7 +277,7 @@ string — same heuristic as the Gmail equivalent in
 
 ### Find the `[RESULT][VOTE]` thread for a release
 
-```
+```text
 mcp__ponymail__search_list(
   list: "dev",
   domain: "<project>.apache.org",

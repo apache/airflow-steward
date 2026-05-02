@@ -195,7 +195,7 @@ concurrently, which is exactly what the sync needs.
 Each subagent must return a single code block (or JSON) with exactly
 these fields so the orchestrator can merge deterministically:
 
-```
+```yaml
 issue: <N>
 title: <one line>
 scope_label: airflow | providers | chart | <missing>
@@ -439,7 +439,7 @@ backend for this step** — the archive is authoritative and
 reaches back further than any single user's Gmail window. Run the
 distinctive-phrase search against:
 
-```
+```text
 mcp__ponymail__search_list(
   list: "security",
   domain: "<project>.apache.org",
@@ -681,7 +681,7 @@ authenticated (Step 0) **and** `security@<project>.apache.org` is
 in `config/user.md` → `tools.ponymail.private_lists`, **PonyMail
 MCP is the primary path** for reviewer-comment archive queries:
 
-```
+```text
 mcp__ponymail__search_list(
   list: "security",
   domain: "<project>.apache.org",
@@ -1073,7 +1073,7 @@ will change and *why*. Group them by category:
      - **PonyMail MCP (preferred when enabled).** If Step 0
        recorded `ponymail_authenticated: true`, call:
 
-       ```
+       ```text
        mcp__ponymail__search_list(
          list: "users",
          domain: "<project>.apache.org",
@@ -1455,7 +1455,7 @@ will change and *why*. Group them by category:
 
   **Idempotency.** Before proposing, scan the issue's existing
   comments for the marker
-  ```
+  ```html
   <!-- apache-steward: release-manager-handoff v1 -->
   ```
   exactly. If a comment carrying this marker already exists, **do
@@ -1537,7 +1537,7 @@ will change and *why*. Group them by category:
 
   **Idempotency.** Before proposing, scan the issue's existing
   comments for the marker
-  ```
+  ```html
   <!-- apache-steward: release-manager-publication-ready v1 -->
   ```
   exactly. If a comment carrying this marker already exists, do not
@@ -1624,7 +1624,7 @@ the actual person, in this order:
    - **PonyMail MCP (preferred when enabled).** `dev@` is a public
      list; no LDAP allowlist check is needed. Call:
 
-     ```
+     ```text
      mcp__ponymail__search_list(
        list: "dev",
        domain: "<project-domain>",

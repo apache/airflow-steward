@@ -51,7 +51,7 @@ Placeholder convention:
 
 ### Archive search (query returns a list-page with matching threads)
 
-```
+```text
 https://lists.apache.org/list?<list>:YYYY-M:<url-encoded search>
 ```
 
@@ -64,13 +64,13 @@ https://lists.apache.org/list?<list>:YYYY-M:<url-encoded search>
 Alternative bare URL form used by the sync skill when scanning the
 public archive for a CVE ID:
 
-```
+```text
 https://lists.apache.org/list.html?<list>:YYYY:<CVE-ID>
 ```
 
 ### Archive API (JSON response, the sync skill uses this first)
 
-```
+```text
 https://lists.apache.org/api/thread.lua?list=<list-local>&domain=<list-domain>&q=<search>
 ```
 
@@ -83,7 +83,7 @@ public lists.
 
 ### Resolved thread URL (what the skill records in the tracker)
 
-```
+```text
 https://lists.apache.org/thread/<hash>?<list>
 ```
 
@@ -105,7 +105,7 @@ the archive URL programmatically. Instead, the skill **constructs**
 the search URL for the month the message was received and proposes
 it to the user at Step 5 as a one-click lookup:
 
-```
+```text
 https://lists.apache.org/list?<security-list>:YYYY-M:<url-encoded subject>
 ```
 

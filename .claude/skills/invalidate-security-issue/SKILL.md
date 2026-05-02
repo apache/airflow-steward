@@ -616,7 +616,7 @@ Hand-off line:
 
 ### Example 1 — `security@`-imported, dag-author-input class
 
-```
+```text
 invalidate 244
 ```
 
@@ -634,7 +634,7 @@ verbatim quotes and the draft ID. Hand-off: terminal.
 
 ### Example 2 — PR-imported, no email
 
-```
+```text
 invalidate 355
 ```
 
@@ -652,7 +652,7 @@ import-from-pr skill's golden rules.
 
 ### Example 3 — Hard stop: CVE already allocated
 
-```
+```text
 invalidate 257
 ```
 

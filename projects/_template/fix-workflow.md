@@ -68,7 +68,7 @@ TODO: the project's convention for AI-assisted commits. Example:
 
 And the concrete trailer text for this project:
 
-```
+```text
 Generated-by: TODO: model + URL to the project's Gen-AI disclosure anchor
 ```
 

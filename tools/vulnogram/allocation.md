@@ -29,7 +29,7 @@ ID) lives in
 
 ## Allocation URL
 
-```
+```text
 https://cveprocess.apache.org/allocatecve
 ```
 
