@@ -1,5 +1,5 @@
 ---
-name: sync-shared-config
+name: setup-sync-shared-config
 description: |
   Commit + push the user's shared Claude config to the
   `~/.claude-config` private dotfile-style sync repo (per
@@ -18,7 +18,7 @@ when_to_use: |
   `~/.claude-config/scripts/*.sh`,
   `~/.claude-config/CLAUDE.md`,
   `~/.claude-config/commands/*`, the `sync.sh` itself, etc. Also
-  appropriate after the `update-secure-config` skill surfaces
+  appropriate after the `setup-update-secure-config` skill surfaces
   drift on a script that the user keeps in `~/.claude-config/` and
   the user wants the framework's update propagated to every
   machine the sync repo is checked out on.
@@ -27,7 +27,7 @@ when_to_use: |
 <!-- Placeholder convention (see AGENTS.md#placeholder-convention-used-in-skill-files):
      <project-config> → adopting project's `.apache-steward/` directory -->
 
-# sync-shared-config
+# setup-sync-shared-config
 
 This skill propagates local edits in `~/.claude-config/` to the
 sync repo's remote, so other machines can pull them. It is the

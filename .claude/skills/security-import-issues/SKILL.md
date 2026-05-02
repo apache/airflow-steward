@@ -1,5 +1,5 @@
 ---
-name: import-security-issue
+name: security-import-issues
 description: |
   Scan <security-list> for reports that have not yet been
   copied into <tracker> as tracking issues, present the proposed
@@ -8,8 +8,8 @@ description: |
   `Needs triage` project-board status and draft a receipt-of-
   confirmation reply to each reporter. This is the first step of the
   handling process: the entry point that converts an inbound email
-  thread into a tracker the rest of the skills (sync-security-issue,
-  fix-security-issue, generate-cve-json) operate on.
+  thread into a tracker the rest of the skills (security-sync-issues,
+  security-fix-issue, generate-cve-json) operate on.
 when_to_use: |
   Invoke when a security team member says "import new reports", "check
   for unimported security@ messages", "import #<threadId>", or when
@@ -30,7 +30,7 @@ when_to_use: |
      Before running any bash command below, substitute these with the
      concrete values from the adopting project's <project-config>/project.md. -->
 
-# import-security-issue
+# security-import-issues
 
 This skill is the **on-ramp** of the security-issue handling process.
 It converts an inbound `<security-list>` email thread into
@@ -189,7 +189,7 @@ tooling / GitHub-notification / mailing-list chatter that isn't a
 report:
 
 Use the canonical candidate-listing query template from
-[`tools/gmail/search-queries.md`](../../../tools/gmail/search-queries.md#import-security-issue--candidate-listing-query);
+[`tools/gmail/search-queries.md`](../../../tools/gmail/search-queries.md#security-import-issues--candidate-listing-query);
 substitute the adopting project's `<security-list-domain>` (Airflow:
 `<security-list-domain>`) and the project's GitHub-notification
 exclusions — both declared in
@@ -448,7 +448,7 @@ duplicates* sub-item in the Step 5 proposal — format:
 
 When at least one **STRONG** match is found (GHSA ID collision), do
 **not** propose creating a new tracker. Instead, propose invoking
-the [`deduplicate-security-issue`](../deduplicate-security-issue/SKILL.md)
+the [`security-deduplicate-issues`](../security-deduplicate-issues/SKILL.md)
 skill to merge the new report's body, reporter credit, and
 mailing-list-thread entries into the existing tracker, and to close
 the new thread's would-be tracker with a `duplicate` label.
@@ -503,7 +503,7 @@ image-scan dump). Skip Step 2b on candidates Step 2a flagged STRONG
 
 **Search recipe — two Gmail calls per candidate, maximum.** The
 query templates and the substitution-values guide live in
-[`tools/gmail/search-queries.md`](../../../tools/gmail/search-queries.md#import-security-issue--prior-rejection-search);
+[`tools/gmail/search-queries.md`](../../../tools/gmail/search-queries.md#security-import-issues--prior-rejection-search);
 in short:
 
 **Backend selection.** When PonyMail MCP is enabled and
@@ -628,7 +628,7 @@ Decide the candidate's class from the root message:
 |---|---|---|
 | **Report**: a reporter describes a vulnerability | The body has a description, a PoC / reproduction steps, an impact claim. Sender is an external address (not `@apache.org`, not on the security-team roster in [`AGENTS.md`](../../../AGENTS.md)). | Proceed to Step 4. |
 | **ASF-security relay**: `security@apache.org` forwarded a report from a reporter via the Foundation channel | Sender is `security@apache.org`. The body almost always starts with the ASF forwarding preamble — *"Dear PMC, The security vulnerability report has been received by the Apache Security Team and is being passed to you for action …"* — and contains the original report underneath (often after a `====GHSA-…` separator when the report came in via GitHub Security Advisory). The preamble is the load-bearing signal: if you see it, treat as a report regardless of what follows. | Proceed to Step 4. **Credit extraction**: the forwarded body usually ends with a `Credit` line naming the discoverer (e.g. *"This vulnerability was discovered and reported by bugbunny.ai"*) — use that verbatim for the Reporter-credited-as placeholder, not the `From:` header (which is always `security@apache.org`). If the report has no credit line, fall back to the GHSA number or to the phrase *"ASF-relayed"* so the credit-preference question can be routed through `@raboof` / Arnout. |
-| **CVE-tool bookkeeping**: an automated or human status-change notification on the ASF CVE tool | Sender is `security@apache.org` (or one of the security-team members acting on behalf of the CVE tool). Subject matches one of: `"CVE-YYYY-NNNNN reserved for airflow"`, `"Comment added on CVE-YYYY-NNNNN"`, `"CVE-YYYY-NNNNN is now READY"`, `"CVE-YYYY-NNNNN is now PUBLIC"`, `"CVE-YYYY-NNNNN is now PUBLISHED"`, `"CVE-YYYY-NNNNN REJECTED"`, or a verbatim `"<state-change>"` line in the body pointing at `cveprocess.apache.org/cve5/CVE-YYYY-NNNNN`. | Do **not** import and do **not** draft a reply — the CVE-tool notifications are consumed by the `sync-security-issue` skill's Step 1e review-comment check. Classify as `cve-tool-bookkeeping` and drop. |
+| **CVE-tool bookkeeping**: an automated or human status-change notification on the ASF CVE tool | Sender is `security@apache.org` (or one of the security-team members acting on behalf of the CVE tool). Subject matches one of: `"CVE-YYYY-NNNNN reserved for airflow"`, `"Comment added on CVE-YYYY-NNNNN"`, `"CVE-YYYY-NNNNN is now READY"`, `"CVE-YYYY-NNNNN is now PUBLIC"`, `"CVE-YYYY-NNNNN is now PUBLISHED"`, `"CVE-YYYY-NNNNN REJECTED"`, or a verbatim `"<state-change>"` line in the body pointing at `cveprocess.apache.org/cve5/CVE-YYYY-NNNNN`. | Do **not** import and do **not** draft a reply — the CVE-tool notifications are consumed by the `security-sync-issues` skill's Step 1e review-comment check. Classify as `cve-tool-bookkeeping` and drop. |
 | **Automated scanner dump**: SAST/DAST tool output, CodeQL/Dependabot alert paste, a string of "issues" with no human PoC | Body is machine-generated, contains multiple unrelated findings, no explanation of Security Model violation | Surface as a candidate with class `automated-scanner` and **do not** propose auto-import. In Step 5 the skill proposes a Gmail draft from the *"Automated scanning results"* canned response in [`canned-responses.md`](../../../<project-config>/canned-responses.md) instead. |
 | **Consolidated multi-issue report**: one email bundles ≥3 unrelated vulnerabilities | The root message has headings like *"Issue 1"*, *"Issue 2"*, each of which would be its own tracker | Surface class `consolidated-multi-issue`; do not auto-import. Propose the "Sending multiple issues in consolidated report" canned reply. |
 | **Media / research-disclosure request**: reporter wants to publish a blog or talk about a finding we already know about | Body asks about disclosure timing, mentions a talk / blog / CVE on another vendor | Surface class `media-request`; do not auto-import. Propose the "When someone submits a media report" canned reply. |
@@ -648,7 +648,7 @@ is missing a vulnerability.
 For each `Report` / `ASF-security relay` candidate, extract the fields
 the [issue template](../../../.github/ISSUE_TEMPLATE/issue_report.yml)
 expects. Most fields the reporter did not explicitly supply stay as
-`_No response_`; the subsequent `sync-security-issue` run will prompt
+`_No response_`; the subsequent `security-sync-issues` run will prompt
 the triager to fill them as the discussion progresses.
 
 The generic body-field schema (role → field-name contract, empty-field
@@ -665,11 +665,11 @@ here.
 | **The issue description** | The root email body, **verbatim** (preserve paragraphs, PoC code blocks, and any quoted sections). The body is private — the triager will copy it into a public CVE description only after Step 13. |
 | **Short public summary for publish** | Leave `_No response_`. Filled by the release manager at Step 13 in sanitised form. |
 | **Affected versions** | Extract `Airflow <version>` / `>= X, < Y` / `<Y` phrases from the body. If the reporter gave only a single version they tested on (e.g. `3.1.5`), record that verbatim; the triager can widen the range later. Leave `_No response_` if no version is mentioned. |
-| **Security mailing list thread** | **Keep the private thread handle, and — if possible — also link the PonyMail archive entry.** The full URL-construction recipe (search URL template, month-token format, user-pastes-back flow, Gmail-threadId fallback) lives in [`tools/gmail/ponymail-archive.md`](../../../tools/gmail/ponymail-archive.md#use-case--import-security-issue); the adopting project's private-search URL template is declared in [`<project-config>/project.md`](../../../<project-config>/project.md#gmail-and-ponymail). Propose the constructed search URL to the user at Step 5, wait for them to paste back the resolved `lists.apache.org/thread/<hash>?<security-list>` URL, and record both the PonyMail URL and the Gmail `threadId` in this field. The URL is **internal-only** — the `generate-cve-json` script will not export it to `references[]` — see the "CVE references must never point at non-public mailing-list threads" section of [`AGENTS.md`](../../../AGENTS.md). |
-| **Public advisory URL** | `_No response_`. Populated at Step 14 by `sync-security-issue` once the advisory is archived. |
+| **Security mailing list thread** | **Keep the private thread handle, and — if possible — also link the PonyMail archive entry.** The full URL-construction recipe (search URL template, month-token format, user-pastes-back flow, Gmail-threadId fallback) lives in [`tools/gmail/ponymail-archive.md`](../../../tools/gmail/ponymail-archive.md#use-case--security-import-issues); the adopting project's private-search URL template is declared in [`<project-config>/project.md`](../../../<project-config>/project.md#gmail-and-ponymail). Propose the constructed search URL to the user at Step 5, wait for them to paste back the resolved `lists.apache.org/thread/<hash>?<security-list>` URL, and record both the PonyMail URL and the Gmail `threadId` in this field. The URL is **internal-only** — the `generate-cve-json` script will not export it to `references[]` — see the "CVE references must never point at non-public mailing-list threads" section of [`AGENTS.md`](../../../AGENTS.md). |
+| **Public advisory URL** | `_No response_`. Populated at Step 14 by `security-sync-issues` once the advisory is archived. |
 | **Reporter credited as** | The reporter's full display name from the email `From:` header (e.g. `Alice Example` from `"Alice Example" <alice@example.com>`). This is a **placeholder** — the receipt-of-confirmation reply in Step 7 asks the reporter to confirm their preferred credit form. |
 | **PR with the fix** | `_No response_`. |
-| **Remediation developer** | `_No response_`. Auto-populated by the `sync-security-issue` skill from the linked PR's author the first time *PR with the fix* is set; manual edits are preserved on subsequent syncs. |
+| **Remediation developer** | `_No response_`. Auto-populated by the `security-sync-issues` skill from the linked PR's author the first time *PR with the fix* is set; manual edits are preserved on subsequent syncs. |
 | **CWE** | `_No response_`. The security team scores CWE independently; a reporter-supplied CWE is informational only (per the *"Reporter-supplied CVSS scores are informational only"* rule in [`AGENTS.md`](../../../AGENTS.md)). Do **not** copy a CWE from the reporter's body into this field. |
 | **Severity** | `Unknown`. Same reason as CWE — the team scores independently. Surface a reporter-supplied CVSS / severity label in the proposal's observed-state for context, but do not use it as the field value. |
 | **CVE tool link** | `_No response_`. Filled at Step 6 once the CVE is allocated. |
@@ -704,7 +704,7 @@ Present all candidates as a single numbered proposal grouped by class:
   canned-response discipline below.
 - **Dropped silently** (class `cve-tool-bookkeeping`): do not even
   surface these to the user — they are consumed by
-  `sync-security-issue` Step 1e. The skill should just report the
+  `security-sync-issues` Step 1e. The skill should just report the
   count in the recap (*"N CVE-tool-bookkeeping emails dropped"*) so
   the user knows the filter is working but is not forced to scroll
   past them.
@@ -1143,5 +1143,5 @@ before presenting.
 - [`canned-responses.md`](../../../<project-config>/canned-responses.md) — the canned
   email bodies the skill uses for receipt-of-confirmation, invalid
   reports, automated scans, etc.
-- [`sync-security-issue`](../sync-security-issue/SKILL.md) — the
+- [`security-sync-issues`](../security-sync-issues/SKILL.md) — the
   follow-up skill that runs on the tracker this one creates.

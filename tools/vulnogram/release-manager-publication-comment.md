@@ -11,7 +11,7 @@
 
 <!--
      Comment-template body for the publication-ready notification
-     comment posted by `sync-security-issue` when the *Public advisory
+     comment posted by `security-sync-issues` when the *Public advisory
      URL* body field has just been populated and the CVE JSON has been
      regenerated to carry the archive URL as a `vendor-advisory`
      reference (Step 14 of the lifecycle).
@@ -59,6 +59,6 @@ You can now do the final paste + state move:
 1. Open the [`#source` tab](SOURCE_TAB_URL) on the CVE record.
 2. Copy the regenerated JSON from this tracker's [issue body](JSON_ANCHOR_URL) and paste into the form. **Save**.
 3. Move the record `REVIEW` → `PUBLIC` via the Vulnogram UI. The record propagates to [`cve.org`](CVE_ORG_URL) once the state lands.
-4. **Close this tracker** — close as completed; do not update any labels. The `sync-security-issue` skill archives the project-board item afterwards.
+4. **Close this tracker** — close as completed; do not update any labels. The `security-sync-issues` skill archives the project-board item afterwards.
 
 That terminates the lifecycle. Thanks for driving this one.

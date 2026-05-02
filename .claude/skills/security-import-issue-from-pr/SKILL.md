@@ -1,5 +1,5 @@
 ---
-name: import-security-issue-from-pr
+name: security-import-issue-from-pr
 description: |
   Open a tracking issue in <tracker> for a security-relevant fix that
   has already been opened (or merged) as a public PR in <upstream>,
@@ -9,7 +9,7 @@ description: |
   happened) with the scope label applied, `pr created` / `pr merged`
   reflecting the PR's state, and `Remediation developer` / `PR with
   the fix` body fields populated from the PR — ready for
-  `allocate-cve` to take over.
+  `security-allocate-cve` to take over.
 when_to_use: |
   Invoke when a security team member says "import a tracker from
   PR <N>", "open a tracker for <upstream>#NNN", "we need a CVE
@@ -18,7 +18,7 @@ when_to_use: |
   that never went through `security@`. Use only when the PR's
   security relevance has already been agreed informally; this skill
   does not host a validity discussion. For reports that arrive on
-  `<security-list>`, use `import-security-issue`.
+  `<security-list>`, use `security-import-issues`.
 ---
 
 <!-- Placeholder convention (see AGENTS.md#placeholder-convention-used-in-skill-files):
@@ -30,7 +30,7 @@ when_to_use: |
      Before running any bash command below, substitute these with the
      concrete values from the adopting project's <project-config>/project.md. -->
 
-# import-security-issue-from-pr
+# security-import-issue-from-pr
 
 This skill is an alternative on-ramp of the security-issue handling
 process for the case where the report **never arrived on
@@ -39,12 +39,12 @@ in `<upstream>`; somebody on the security team noticed it is
 security-relevant; the team decided informally that the fix
 warrants a CVE. This skill turns that public PR into an
 `<tracker>` tracking issue so the rest of the workflow
-(`allocate-cve` → `sync-security-issue` → `fix-security-issue` →
+(`security-allocate-cve` → `security-sync-issues` → `security-fix-issue` →
 public advisory) can run.
 
-It is the smaller sibling of [`import-security-issue`](../import-security-issue/SKILL.md):
+It is the smaller sibling of [`security-import-issues`](../security-import-issues/SKILL.md):
 
-| | `import-security-issue` | `import-security-issue-from-pr` |
+| | `security-import-issues` | `security-import-issue-from-pr` |
 |---|---|---|
 | Source | `<security-list>` Gmail / PonyMail thread | `<upstream>` PR URL or number |
 | Reporter present | Yes (external researcher) | No (PR author = remediation developer = de-facto finder) |
@@ -76,7 +76,7 @@ tracker URL itself is a public-safe identifier per the
 rule and may appear in the public PR description as a
 cross-reference, **so long as the surrounding text does not frame
 the change as a security fix**. The
-[`fix-security-issue`](../fix-security-issue/SKILL.md) public-PR
+[`security-fix-issue`](../security-fix-issue/SKILL.md) public-PR
 guardrails apply in full from the moment the tracker exists:
 neutral bug-fix language, no `CVE-`, no *"vulnerability"* or
 *"security fix"* phrasing.
@@ -234,7 +234,7 @@ is a manual project-board action, not part of this skill.
 Before proposing a new tracker, check that one does not already
 exist for this PR. The PR URL and number are both reliable
 discriminators because the *PR with the fix* body field on
-existing trackers contains the URL once `sync-security-issue`
+existing trackers contains the URL once `security-sync-issues`
 has run on them.
 
 ```bash
@@ -255,7 +255,7 @@ If either search returns a hit:
 - Surface the existing tracker(s) to the user with a clickable
   `<tracker>#NNN` reference.
 - **Stop** — do not create a duplicate tracker. The user either
-  re-invokes `sync-security-issue NNN` to refresh the existing
+  re-invokes `security-sync-issues NNN` to refresh the existing
   tracker's PR-state labels, or (if the existing tracker is
   closed and the fix needs re-tracking) invokes the skill again
   with an explicit `force` argument.
@@ -279,7 +279,7 @@ Start from `pr.title`. Strip:
 
 Do **not** add `<vendor>: <product>:` (e.g. `Apache Airflow:`) prefix — that lives in the CVE
 title, not the tracker title (the
-[`allocate-cve`](../allocate-cve/SKILL.md) skill normalises for
+[`security-allocate-cve`](../security-allocate-cve/SKILL.md) skill normalises for
 the CVE record). Tracker titles in `<tracker>` are
 plain-language summaries.
 
@@ -299,14 +299,14 @@ has nine fields. Fill them as follows:
 | **The issue description** | Two paragraphs: (1) a one-line note `> **Imported from public PR <upstream>#<N>** — there is no inbound \`security@\` report; the PR description below is the public statement of the vulnerability.` (2) the PR body verbatim, fenced if it is heavily templated. |
 | **Short public summary for publish** | `_No response_` (the team writes this when drafting the advisory; not derivable from the PR). |
 | **Affected versions** | Per the scope's *Affected versions* convention from [`scope-labels.md`](../../../<project-config>/scope-labels.md). For `providers`: one line per affected package, `<package-name> < NEXT VERSION`. For `airflow` / `chart`: `< X.Y.Z` from the milestone. |
-| **Security mailing list thread** | Sentinel: `N/A — opened from public PR <upstream>#<N>; no security@ thread`. The field is `required: true` in the form — the skill creates the issue via `gh api` (Step 7), which bypasses form-required-field enforcement, but the sentinel is still set so future `sync-security-issue` runs do not flag the field as missing. |
+| **Security mailing list thread** | Sentinel: `N/A — opened from public PR <upstream>#<N>; no security@ thread`. The field is `required: true` in the form — the skill creates the issue via `gh api` (Step 7), which bypasses form-required-field enforcement, but the sentinel is still set so future `security-sync-issues` runs do not flag the field as missing. |
 | **Public advisory URL** | `_No response_`. |
 | **Reporter credited as** | `_No response_`. **The PR author is *not* credited as the CVE reporter for this kind of import.** A public PR is not a responsible disclosure — the contributor went straight to the public fix without giving the security team a chance to coordinate the announcement, so the security team neither owes a finder credit nor wants to incentivise the practice. The user can populate the field manually if there is a project-specific reason to credit a different individual (e.g. an internal reviewer who privately flagged the issue on the PR before it landed). See *[Reporter credit policy for public-PR imports](#reporter-credit-policy-for-public-pr-imports)* below. |
 | **PR with the fix** | `pr.url` (e.g. `https://github.com/<upstream>/pull/65703`). |
 | **Remediation developer** | `pr.author.name` (fall back to `pr.author.login`). One name per line. |
 | **CWE** | `_No response_` (the team assesses; not derivable). |
 | **Severity** | `Unknown`. |
-| **CVE tool link** | `_No response_` (filled by [`allocate-cve`](../allocate-cve/SKILL.md)). |
+| **CVE tool link** | `_No response_` (filled by [`security-allocate-cve`](../security-allocate-cve/SKILL.md)). |
 
 The body is written to a temp file in Step 7; in the proposal,
 show it inline so the user can scan-and-redirect before any
@@ -386,12 +386,12 @@ The first entry on the tracker's status rollup. Shape per
 
 This tracker was deliberately opened by the security team for a public fix that did **not** arrive on `<security-list>`. The validity assessment was made informally before invocation; the tracker landed in the `Assessed` column accordingly.
 
-**Next:** Step 6 — allocate the CVE via the [`allocate-cve`](https://github.com/<tracker>/blob/<default-branch>/.claude/skills/allocate-cve/SKILL.md) skill.
+**Next:** Step 6 — allocate the CVE via the [`security-allocate-cve`](https://github.com/<tracker>/blob/<default-branch>/.claude/skills/security-allocate-cve/SKILL.md) skill.
 
 Provenance: public PR <pr.url>, author `@<pr.author.login>`.
 Extracted fields: scope=`<scope>`, *PR with the fix*=<pr.url>, *Remediation developer*=<pr.author.name>, *Affected versions*=`<per-scope shape>`, Severity=`Unknown`.
 
-*Reporter credited as* intentionally left blank — public-PR imports do not credit the PR author as the CVE reporter (no responsible disclosure). See the [Reporter credit policy](https://github.com/<tracker>/blob/<tracker-default-branch>/.claude/skills/import-security-issue-from-pr/SKILL.md#reporter-credit-policy-for-public-pr-imports) section of the skill for the rationale.
+*Reporter credited as* intentionally left blank — public-PR imports do not credit the PR author as the CVE reporter (no responsible disclosure). See the [Reporter credit policy](https://github.com/<tracker>/blob/<tracker-default-branch>/.claude/skills/security-import-issue-from-pr/SKILL.md#reporter-credit-policy-for-public-pr-imports) section of the skill for the rationale.
 ```
 
 Zero-whitespace rules from
@@ -430,7 +430,7 @@ Confirmation forms:
   `reporter: Anonymous, severity: Important`.
 - `cancel` / `none` / `hold off` — bail; no tracker created.
 
-Do **not** auto-default to import the way `import-security-issue`
+Do **not** auto-default to import the way `security-import-issues`
 does. This skill is invoked deliberately on a single PR;
 spending one round-trip on explicit confirmation is the right
 trade. The proposal-to-confirmation pause also lets the user
@@ -447,7 +447,7 @@ Sequenced. Each step depends on the previous one's output.
 
 Bypasses the form so the `Security mailing list thread`
 required-field check does not fire. Equivalent to
-[`import-security-issue`'s](../import-security-issue/SKILL.md) Step 7.
+[`security-import-issues`'s](../security-import-issues/SKILL.md) Step 7.
 
 Write the body to a temp file:
 
@@ -612,9 +612,9 @@ Print a one-screen recap:
 Then a one-line hand-off:
 
 > Next: allocate the CVE for this tracker. Run
-> [`allocate-cve`](../allocate-cve/SKILL.md) on `<tracker>#NNN`.
+> [`security-allocate-cve`](../security-allocate-cve/SKILL.md) on `<tracker>#NNN`.
 
-Do **not** auto-invoke `allocate-cve` — CVE allocation is
+Do **not** auto-invoke `security-allocate-cve` — CVE allocation is
 PMC-gated (a non-PMC triager must relay the allocation request
 to a PMC member), and the user may want to batch the allocation
 with other trackers.
@@ -642,7 +642,7 @@ with other trackers.
   verbatim quote from the tracker discussion. See the
   [Confidentiality of `<tracker>`](../../../AGENTS.md#confidentiality-of-the-tracker-repository)
   rule.
-- **Does not run `sync-security-issue` on the new tracker.** The
+- **Does not run `security-sync-issues` on the new tracker.** The
   initial body is already coherent; sync's job (reconciling PR
   state, milestone, assignee against current reality) is not
   needed on a tracker that is being created from those exact
@@ -696,7 +696,7 @@ PR state `OPEN`, milestone `Airflow 3.2.3`. Files all under
 Milestone: `Airflow 3.2.3`. Labels: `airflow`, `pr created`,
 `security issue`. *Affected versions*: `< 3.2.3`. The skill
 proposes everything; on user confirmation, the tracker lands
-`Assessed`, ready for `allocate-cve`.
+`Assessed`, ready for `security-allocate-cve`.
 
 ### Example 3 — Mixed-scope PR (blocker)
 

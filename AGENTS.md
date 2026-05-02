@@ -322,7 +322,7 @@ and the failure mode is silent. Make `git submodule update --init
 into a post-merge hook (`.git/hooks/post-merge` →
 `#!/bin/sh\nexec git submodule update --init --recursive`). Same
 rule applies to the framework's own
-[`upgrade-apache-steward`](.claude/skills/upgrade-apache-steward/SKILL.md)
+[`setup-upgrade-steward`](.claude/skills/setup-upgrade-steward/SKILL.md)
 skill: when invoked from inside an adopter tracker, it reminds
 the user to follow up with submodule update on the parent.
 
@@ -505,7 +505,7 @@ When editing or generating any text destined for a public audience,
 the load-bearing scrub is for **content** that came from the
 tracker (severity scores, CWE assignments, label transitions, comment
 quotes), not for the URL itself. The
-`fix-security-issue` skill's pre-push grep follows this convention
+`security-fix-issue` skill's pre-push grep follows this convention
 — it warns on `CVE-`, *"security fix"*, *"vulnerability"*,
 *"advisory"*, and verbatim-content patterns, but it does **not**
 flag a bare `<tracker>` URL or `#NNN` reference on its own.
@@ -680,7 +680,7 @@ Concretely, the issue template has two separate fields for this:
   been sent (Step 13 of the process). This is the URL that ends up
   as the `vendor-advisory` reference on the public CVE record.
   Before the advisory is sent the field stays empty; the
-  `sync-security-issue` skill scans the users-list archive for the
+  `security-sync-issues` skill scans the users-list archive for the
   CVE ID and proposes populating the field automatically once the
   advisory lands.
 
@@ -794,11 +794,11 @@ them is a **request or a fact**, not a briefing:
   patience…"). A plain *"Thanks,"* / *"Regards,"* is enough.
 - Any open question that was already asked on the thread and is
   still awaiting a reply (see the "Do not re-ask" rule in the
-  `sync-security-issue` skill — pinging twice gets us blocklisted).
+  `security-sync-issues` skill — pinging twice gets us blocklisted).
 
 **Exception: the initial receipt-of-confirmation reply.** The first
 message the security team sends to a new reporter, drafted by the
-`import-security-issue` skill, uses the *"Confirmation of receiving
+`security-import-issues` skill, uses the *"Confirmation of receiving
 the report"* canned response from
 [`<project-config>/canned-responses.md`](<project-config>/canned-responses.md)
 **verbatim**. That template is longer because it introduces the process
@@ -830,7 +830,7 @@ directly. The drafting rules for that case — different `To:`, same
 threading behaviour (prefer `threadId`, fall back to the inbound
 subject), terse body — live in
 [`tools/gmail/asf-relay.md`](tools/gmail/asf-relay.md). The detection
-signals the `import-security-issue` skill uses to classify a candidate
+signals the `security-import-issues` skill uses to classify a candidate
 as a relay live in that skill's Step 3.
 
 ### Point reporters to the project's Security Model, don't re-explain it
@@ -853,7 +853,7 @@ repository) rather than duplicated in the canned responses.
 
 Whenever a CVE ID appears in text this repository produces — status
 comments on `<tracker>` issues, proposals from the
-`sync-security-issue` skill, recap messages, canned-response drafts
+`security-sync-issues` skill, recap messages, canned-response drafts
 to reporters, internal notes — render it as a **clickable link**,
 not as bare text. The canonical link is the adopting project's CVE-tool
 record URL, which any security team member can click through to the
@@ -994,7 +994,7 @@ reporter emails, advisory references). What still must not appear
 publicly is the *contents* the link points at — comment quotes,
 labels, body excerpts, severity assessments — and, before the
 advisory ships, the security framing of the change. The scrubbing
-grep the `fix-security-issue` skill runs before pushing anything
+grep the `security-fix-issue` skill runs before pushing anything
 public flags content leaks (CVE IDs, *"vulnerability"*, *"security
 fix"* phrasing, verbatim tracker quotes); a bare tracker URL or
 `#NNN` reference on its own does not trigger the scrub.
@@ -1024,7 +1024,7 @@ in
 The authoritative roster and the release-manager rotation list live in
 [`<project-config>/release-trains.md`](<project-config>/release-trains.md).
 
-The sync-security-issue and fix-security-issue skills should render
+The security-sync-issues and security-fix-issue skills should render
 every maintainer / security-team / release-manager reference in the
 status comments they post as an `@` handle. Before publishing a status
 comment, the skills must grep for names of known people and flag any
@@ -1052,7 +1052,7 @@ commit message or an ad-hoc comment.
 
 Currently available:
 
-- [`import-security-issue`](.claude/skills/import-security-issue/SKILL.md) —
+- [`security-import-issues`](.claude/skills/security-import-issues/SKILL.md) —
   the on-ramp of the process. Scans `<security-list>` for threads
   that have not yet been copied into `<tracker>` as tracking issues,
   classifies each candidate (real report vs. automated-scan / consolidated /
@@ -1065,7 +1065,7 @@ Currently available:
   Gmail `threadId`. This is Step 2 of the handling process in
   [`README.md`](README.md) and the first skill a triager runs in a morning
   sweep.
-- [`deduplicate-security-issue`](.claude/skills/deduplicate-security-issue/SKILL.md) —
+- [`security-deduplicate-issues`](.claude/skills/security-deduplicate-issues/SKILL.md) —
   merges two tracking issues that describe the same root-cause
   vulnerability discovered independently by different reporters. Copies
   the dropped tracker's body verbatim into the kept tracker as a
@@ -1074,15 +1074,15 @@ Currently available:
   tracker's CVE JSON attachment so both finders land in `credits[]`, and
   closes the dropped tracker with the `duplicate` label. Refuses to
   operate across different scope labels (those require a scope split
-  via `sync-security-issue`, not a dedupe). Typically invoked after
-  `import-security-issue` Step 2a surfaces a STRONG GHSA-ID match with
+  via `security-sync-issues`, not a dedupe). Typically invoked after
+  `security-import-issues` Step 2a surfaces a STRONG GHSA-ID match with
   an existing tracker.
-- [`sync-security-issue`](.claude/skills/sync-security-issue/SKILL.md) —
+- [`security-sync-issues`](.claude/skills/security-sync-issues/SKILL.md) —
   reconciles a security issue with its GitHub discussion, its
   `<security-list>` mail thread, and any fixing PRs; proposes label,
   milestone, field, and draft-email updates; and prompts the user to confirm each
   change before applying it. Points the user at
-  [`allocate-cve`](.claude/skills/allocate-cve/SKILL.md) when a CVE is
+  [`security-allocate-cve`](.claude/skills/security-allocate-cve/SKILL.md) when a CVE is
   needed. **At the end of every run** it also invokes
   [`generate-cve-json`](tools/vulnogram/generate-cve-json/SKILL.md) with
   `--attach` to refresh the CVE JSON attachment on the tracking issue (auto-
@@ -1090,7 +1090,7 @@ Currently available:
   in the *PR with the fix* body field), so the attached JSON stays in
   lock-step with the issue body. Skipped only when no CVE has been allocated
   yet, or when the issue has been closed as invalid / not-CVE-worthy / duplicate.
-- [`allocate-cve`](.claude/skills/allocate-cve/SKILL.md) — walks the
+- [`security-allocate-cve`](.claude/skills/security-allocate-cve/SKILL.md) — walks the
   user through allocating a CVE via the adopting project's CVE-tool
   allocation form (for Airflow, ASF Vulnogram at
   <https://cveprocess.apache.org/allocatecve>; see
@@ -1111,11 +1111,11 @@ Currently available:
   a collapsed status-change comment, regenerates the CVE JSON attachment
   in the body via `generate-cve-json --attach`, and (when relevant)
   drafts a reporter status update on the original mail thread. **Always
-  hands off to `sync-security-issue`** at the end so the allocation-
+  hands off to `security-sync-issues`** at the end so the allocation-
   triggered changes are reconciled with the milestone, assignee, fix-PR
   state, and reporter-thread state in one continuous flow.
-- [`fix-security-issue`](.claude/skills/fix-security-issue/SKILL.md) — runs
-  `sync-security-issue` first, then analyses the issue discussion to decide
+- [`security-fix-issue`](.claude/skills/security-fix-issue/SKILL.md) — runs
+  `security-sync-issues` first, then analyses the issue discussion to decide
   whether the reported problem is easily fixable (clear consensus, small scope,
   known location). If it is, proposes an implementation plan, writes the change
   in the user's local `<upstream>` clone (path from
@@ -1165,4 +1165,4 @@ When adding a new skill:
 - [`tools/github/`](tools/github/) — GitHub tool adapter: `tool.md` (overview), `operations.md` (`gh` CLI / API catalogue), `issue-template.md` (body-field schema), `labels.md` (lifecycle-label taxonomy), `project-board.md` (Projects V2 GraphQL).
 - [`tools/gmail/`](tools/gmail/) — Gmail tool adapter: `tool.md` (overview), `operations.md` (MCP catalogue + no-update limitation), `threading.md` (prefer-`threadId`-else-subject-fallback rule), `asf-relay.md` (ASF-security-relay drafting), `search-queries.md` (query templates), `ponymail-archive.md` (ASF PonyMail URL construction).
 - [`tools/vulnogram/`](tools/vulnogram/) — Vulnogram (ASF CVE tool) adapter: `tool.md` (overview), `allocation.md` (PMC-gated allocation flow), `record.md` (record URLs + `#source` paste + `DRAFT`/`REVIEW`/`PUBLIC` state machine + reviewer-comment signal), `generate-cve-json/` (CVE-5.x JSON generator — Python project).
-- [`tools/cve-org/`](tools/cve-org/) — public CVE registry adapter: `tool.md` covers the MITRE CVE Services API v2 `check-published` recipe, used by `sync-security-issue` to verify that a closed tracker's CVE has propagated from the CNA tool to cve.org before sending the reporter the final *"CVE is live"* email.
+- [`tools/cve-org/`](tools/cve-org/) — public CVE registry adapter: `tool.md` covers the MITRE CVE Services API v2 `check-published` recipe, used by `security-sync-issues` to verify that a closed tracker's CVE has propagated from the CNA tool to cve.org before sending the reporter the final *"CVE is live"* email.

@@ -1,5 +1,5 @@
 ---
-name: invalidate-security-issue
+name: security-invalidate-issue
 description: |
   Close an `<tracker>` tracking issue as invalid: apply the
   `invalid` label, remove the scope label, post a short closing
@@ -8,7 +8,7 @@ description: |
   polite-but-firm reply to the reporter on the original Gmail
   thread explaining the team's reasoning (extracted from the
   tracker's discussion). For trackers opened via
-  `import-security-issue-from-pr`, the email-draft step is skipped
+  `security-import-issue-from-pr`, the email-draft step is skipped
   per the *no outreach to the PR author* rule of that skill.
 when_to_use: |
   Invoke when a security team member says "close NN as invalid",
@@ -31,7 +31,7 @@ when_to_use: |
      Before running any bash command below, substitute these with the
      concrete values from the adopting project's <project-config>/project.md. -->
 
-# invalidate-security-issue
+# security-invalidate-issue
 
 This skill is the **terminal-disposition apply step** for the
 `invalid` close on an `<tracker>` tracker. It does not host the
@@ -45,7 +45,7 @@ closes the tracker, archives the project-board item, and (for
 explaining why.
 
 It is the symmetric counterpart of
-[`allocate-cve`](../allocate-cve/SKILL.md) (apply step for the
+[`security-allocate-cve`](../security-allocate-cve/SKILL.md) (apply step for the
 *valid → CVE* path). Both skills assume the validity decision has
 already been reached; they wire that decision into the tracker
 state in one pass.
@@ -66,7 +66,7 @@ material.
 
 **Golden rule — no outreach to PR-imported tracker authors.** When
 the tracker came in via
-[`import-security-issue-from-pr`](../import-security-issue-from-pr/SKILL.md)
+[`security-import-issue-from-pr`](../security-import-issue-from-pr/SKILL.md)
 (detected by the `N/A — opened from public PR …` sentinel in the
 *Security mailing list thread* body field), there is no reporter
 to notify — the PR author is not the CVE reporter and the public
@@ -167,8 +167,8 @@ the close. Read the *Security mailing list thread* body field:
 | Body field shape | Import path | Email-draft step |
 |---|---|---|
 | Real `lists.apache.org` URL or any URL | `security@`-imported (public-archive case) | Draft on the original Gmail thread; locate via the rollup-comment `threadId` reference. |
-| `No public archive URL — tracked privately on Gmail thread <threadId>` (sentinel from [`import-security-issue`](../import-security-issue/SKILL.md) Step 7) | `security@`-imported (Gmail-only case) | Draft on the named `<threadId>`. |
-| `N/A — opened from public PR <upstream>#<N>; no security@ thread` (sentinel from [`import-security-issue-from-pr`](../import-security-issue-from-pr/SKILL.md)) | PR-imported | **Skip** the email-draft step. No reporter exists to notify. |
+| `No public archive URL — tracked privately on Gmail thread <threadId>` (sentinel from [`security-import-issues`](../security-import-issues/SKILL.md) Step 7) | `security@`-imported (Gmail-only case) | Draft on the named `<threadId>`. |
+| `N/A — opened from public PR <upstream>#<N>; no security@ thread` (sentinel from [`security-import-issue-from-pr`](../security-import-issue-from-pr/SKILL.md)) | PR-imported | **Skip** the email-draft step. No reporter exists to notify. |
 | Empty / `_No response_` / unrecognised | Indeterminate | Surface to the user; ask whether the tracker has a Gmail thread the skill should reply on, or whether the close is silent (no email). |
 
 For `security@`-imported trackers, locate the Gmail `threadId`:
@@ -234,7 +234,7 @@ on the tracker), surface this gap to the user with:
 
 The email draft is built canned-response-spine + augmentation,
 same pattern as
-[`import-security-issue` Step 5](../import-security-issue/SKILL.md).
+[`security-import-issues` Step 5](../security-import-issues/SKILL.md).
 Read [`<project-config>/canned-responses.md`](../../../<project-config>/canned-responses.md)
 and pick the section that best matches the invalidity reasoning
 mined in Step 3:
@@ -292,7 +292,7 @@ Reasoning summary in the [status rollup](#issuecomment-<rollup-id>); a draft rep
 For PR-imported trackers, replace *"a draft reply to the reporter
 is in Gmail awaiting review"* with *"no reporter notification
 (PR-imported tracker — see the import-from-pr skill's
-[Reporter credit policy](https://github.com/<tracker>/blob/<tracker-default-branch>/.claude/skills/import-security-issue-from-pr/SKILL.md#reporter-credit-policy-for-public-pr-imports))"*.
+[Reporter credit policy](https://github.com/<tracker>/blob/<tracker-default-branch>/.claude/skills/security-import-issue-from-pr/SKILL.md#reporter-credit-policy-for-public-pr-imports))"*.
 
 The comment links must resolve once the rollup entry from Step 5e
 has been posted (capture its URL and substitute before posting
@@ -357,7 +357,7 @@ For `security@`-imported trackers:
      ASF-security relay path (the `From:` is a `@apache.org`
      forwarder, not the external reporter), reply to the
      forwarder per the *ASF-security relay* convention in
-     [`import-security-issue` Step 7](../import-security-issue/SKILL.md).
+     [`security-import-issues` Step 7](../security-import-issues/SKILL.md).
    - `ccRecipients`: always includes `<security-list>`
      (`<security-list>` for the adopting project) —
      value comes from
@@ -373,7 +373,7 @@ For `security@`-imported trackers:
      equivalent) with the case-specific reasoning gathered in
      Step 3. Use the same `> **[Inline addition for this
      report]**` block convention as
-     [`import-security-issue` Step 5](../import-security-issue/SKILL.md)
+     [`security-import-issues` Step 5](../security-import-issues/SKILL.md)
      — the user must be able to delete the augmentation
      cleanly without leaving a grammatical orphan.
    - **No mention of `<tracker>`.** The tracker repo is
@@ -420,7 +420,7 @@ upsert recipe). Shape:
 
 **Reporter notification:** <one of:>
 - **`security@`-imported:** Gmail draft `<draftId>` created on thread `<threadId>` — awaiting user review.
-- **PR-imported:** none (no reporter; per [Reporter credit policy](https://github.com/<tracker>/blob/<tracker-default-branch>/.claude/skills/import-security-issue-from-pr/SKILL.md#reporter-credit-policy-for-public-pr-imports)).
+- **PR-imported:** none (no reporter; per [Reporter credit policy](https://github.com/<tracker>/blob/<tracker-default-branch>/.claude/skills/security-import-issue-from-pr/SKILL.md#reporter-credit-policy-for-public-pr-imports)).
 - **Indeterminate import path:** none (flag from Step 2 surfaced; user explicitly chose silent close).
 
 **Project board:** archived (item `<item-id>`).
@@ -453,7 +453,7 @@ entry — and ask:
   reporter is unreachable, GHSA closed, etc.).
 - `cancel` / `none` — bail; nothing applied.
 
-The user must confirm explicitly. Unlike `import-security-issue`,
+The user must confirm explicitly. Unlike `security-import-issues`,
 this skill does **not** default to apply — the close is a
 terminal disposition and the email draft is a public message
 attributed to the security team. One round of confirmation is
@@ -639,7 +639,7 @@ invalidate 355
 ```
 
 Tracker `#355` (the public-PR-imported tracker from the test of
-`import-security-issue-from-pr` against PR 65703). Suppose the
+`security-import-issue-from-pr` against PR 65703). Suppose the
 team later decides the report is not CVE-worthy on its own
 merits. Step 2 detects the `N/A — opened from public PR` sentinel;
 the email-draft step is skipped. Closing comment notes *"no

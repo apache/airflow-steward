@@ -21,8 +21,8 @@ when_to_use: |
   secure-config wiring yet. Also appropriate after a fresh OS
   install / new dev machine where `~/.claude/scripts/` is empty.
   Do **not** invoke when the secure setup is already in place — use
-  `verify-secure-config` (to confirm completeness) or
-  `update-secure-config` (to refresh against the framework's
+  `setup-verify-secure-config` (to confirm completeness) or
+  `setup-update-secure-config` (to refresh against the framework's
   latest) instead.
 ---
 
@@ -102,23 +102,23 @@ sub-step with the user. The doc names are the source of truth; the
 skill is the runner.
 
 For the verification step at the end, hand off to the
-`verify-secure-config` skill rather than re-walking the checklist
+`setup-verify-secure-config` skill rather than re-walking the checklist
 inline.
 
 ## After the install lands
 
 Suggest two follow-up routines the user can wire later:
 
-- `verify-secure-config` — re-run after every Claude Code upgrade
+- `setup-verify-secure-config` — re-run after every Claude Code upgrade
   or settings-file edit, to confirm denials still fire as
   expected. The "did a denial silently turn into an allow?"
   signal is exactly what this skill exists for.
-- `update-secure-config` — periodic check for framework
+- `setup-update-secure-config` — periodic check for framework
   updates, pinned-tool upgrade candidates, and drift between the
   installed user-scope copies and the framework's
   source-of-truth. Recommend a per-Claude-Code-upgrade or
   monthly cadence, whichever comes first.
 
 If the user has the `~/.claude-config` sync repo in place, also
-mention `sync-shared-config` for committing + pushing local
+mention `setup-sync-shared-config` for committing + pushing local
 modifications to the shared scripts.

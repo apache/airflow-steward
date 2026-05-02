@@ -1,5 +1,5 @@
 ---
-name: upgrade-apache-steward
+name: setup-upgrade-steward
 description: |
   Pull the user's local `airflow-steward` framework checkout to the
   latest `origin/main` and surface what changed — the commits
@@ -8,7 +8,7 @@ description: |
   `secure-agent-setup.md`, `secure-agent-internals.md`,
   `pinned-versions.toml`), and the next-step recommendation. Never
   applies user-side propagation itself — that is the job of
-  `update-secure-config` (drift report) and the framework
+  `setup-update-secure-config` (drift report) and the framework
   maintainer's manual re-`cp` of any user-scope script copies that
   drifted. Refuses to act if the working tree is dirty or the
   branch has unpushed commits, since both states are signs the
@@ -21,8 +21,8 @@ when_to_use: |
   to a periodic update routine — recommended cadence per
   secure-agent-setup.md is once per Claude Code upgrade or once
   a month, whichever comes first; this skill is the *first* step
-  of that routine, with `update-secure-config` (read-only drift
-  report) and any subsequent re-`cp` / `/sync-shared-config` runs
+  of that routine, with `setup-update-secure-config` (read-only drift
+  report) and any subsequent re-`cp` / `/setup-sync-shared-config` runs
   following on. Do **not** invoke when the user has uncommitted
   changes in the framework checkout or when they have local
   commits ahead of origin — the skill will refuse and surface
@@ -32,7 +32,7 @@ when_to_use: |
 <!-- Placeholder convention (see AGENTS.md#placeholder-convention-used-in-skill-files):
      <project-config> → adopting project's `.apache-steward/` directory -->
 
-# upgrade-apache-steward
+# setup-upgrade-steward
 
 This skill is the **upstream** half of the framework's update flow.
 It moves the user's local `airflow-steward` checkout forward to
@@ -40,7 +40,7 @@ It moves the user's local `airflow-steward` checkout forward to
 this upgrade means for the user's *installed* secure setup
 (user-scope script copies, project `.claude/settings.json`, pinned
 tool versions on the host) — is the
-[`update-secure-config`](../update-secure-config/SKILL.md) skill,
+[`setup-update-secure-config`](../setup-update-secure-config/SKILL.md) skill,
 which is read-only and runs naturally as the next step.
 
 ## Golden rules
@@ -78,7 +78,7 @@ which is read-only and runs naturally as the next step.
   `~/.claude/`. It does not edit any project's
   `.claude/settings.json`. It does not bump installed tool
   versions on the host. All of those are surfaced by the
-  follow-on `update-secure-config` skill, which is read-only by
+  follow-on `setup-update-secure-config` skill, which is read-only by
   design — the user decides what to apply.
 
 ## Walk-through
@@ -145,13 +145,13 @@ which is read-only and runs naturally as the next step.
      the new framework. Mention the post-merge hook documented in
      `README.md → Adopting the framework` for users who want this
      automatic. Suggest
-     [`verify-apache-steward`](../verify-apache-steward/SKILL.md)
+     [`setup-verify-steward`](../setup-verify-steward/SKILL.md)
      to confirm the parent tracker's submodule integration is
      still aligned (the skill catches the `+` "submodule HEAD
      ahead of parent index" state directly).
 
    - **Always after a successful pull**, recommend
-     [`update-secure-config`](../update-secure-config/SKILL.md)
+     [`setup-update-secure-config`](../setup-update-secure-config/SKILL.md)
      to surface user-side drift the upgrade may have introduced
      (new `permissions.deny` patterns the user's tracker repo
      hasn't picked up, drift between user-scope `~/.claude/`
@@ -165,7 +165,7 @@ which is read-only and runs naturally as the next step.
      re-`cp`'ing the updated framework scripts over the
      `~/.claude-config/scripts/` (or
      `~/.claude/agent-isolation/`) copies and then running
-     [`sync-shared-config`](../sync-shared-config/SKILL.md) to
+     [`setup-sync-shared-config`](../setup-sync-shared-config/SKILL.md) to
      push the propagated changes to the sync remote so other
      machines pick them up.
 
@@ -195,7 +195,7 @@ which is read-only and runs naturally as the next step.
   [Bumping a pinned version](../../../secure-agent-setup.md#bumping-a-pinned-version)
   flow.
 - Not for syncing user-scope edits to `~/.claude-config`. That
-  is `sync-shared-config`'s job.
+  is `setup-sync-shared-config`'s job.
 
 ## Failure modes
 

@@ -1,13 +1,13 @@
 ---
-name: import-security-issue-from-md
+name: security-import-issues-from-md
 description: |
   Open one or more `<tracker>` tracking issues from a markdown file
   containing a batch of security findings (typically the output of an
   AI security review or a third-party scanner). Each finding in the
   file becomes one tracker, landing in the `Needs triage` board
   column with the standard issue-template body fields populated from
-  the markdown sections. Unlike `import-security-issue` (Gmail) and
-  `import-security-issue-from-pr` (public PR), there is no inbound
+  the markdown sections. Unlike `security-import-issues` (Gmail) and
+  `security-import-issue-from-pr` (public PR), there is no inbound
   reporter to reply to and no PR to inspect — the file itself is the
   full report.
 when_to_use: |
@@ -19,8 +19,8 @@ when_to_use: |
   third-party SAST report exported as markdown, or a security
   consultant's findings document. Not appropriate when a single
   inbound report is best handled through the Gmail path
-  (`import-security-issue`) or when there is a public PR to anchor
-  the import on (`import-security-issue-from-pr`).
+  (`security-import-issues`) or when there is a public PR to anchor
+  the import on (`security-import-issue-from-pr`).
 ---
 
 <!-- Placeholder convention (see AGENTS.md#placeholder-convention-used-in-skill-files):
@@ -32,7 +32,7 @@ when_to_use: |
      Before running any bash command below, substitute these with the
      concrete values from the adopting project's <project-config>/project.md. -->
 
-# import-security-issue-from-md
+# security-import-issues-from-md
 
 This skill is the **batch on-ramp** of the security-issue handling
 process for the case where the security team has a markdown file
@@ -47,7 +47,7 @@ can run.
 It is the third on-ramp variant alongside the two existing import
 skills:
 
-| | `import-security-issue` | `import-security-issue-from-pr` | `import-security-issue-from-md` |
+| | `security-import-issues` | `security-import-issue-from-pr` | `security-import-issues-from-md` |
 |---|---|---|---|
 | Source | `<security-list>` Gmail / PonyMail thread | `<upstream>` PR URL or number | Markdown file with one or more findings |
 | Reporter | External researcher | None (PR author = remediation developer) | None (the file is the report; usually AI- or scanner-generated) |
@@ -79,7 +79,7 @@ surface the URL points at.
 **Golden rule — propose every finding individually before applying.**
 Even when the input is a 50-finding file, the skill surfaces a
 proposal table listing every finding and waits for explicit
-confirmation. The default disposition mirrors `import-security-issue`:
+confirmation. The default disposition mirrors `security-import-issues`:
 *import all unless rejected upfront* (`skip N` to drop a specific
 candidate). A bare `go` / `proceed` / `yes, all` imports every
 non-rejected candidate. The skill must still render each candidate
@@ -249,7 +249,7 @@ convention; see
 ```
 
 The title is left otherwise untouched — this skill does not run the
-title-normalisation cascade (that lives in `allocate-cve`, by which
+title-normalisation cascade (that lives in `security-allocate-cve`, by which
 point the validity of the report is established).
 
 ### 3b — Issue body
@@ -384,7 +384,7 @@ GitHub rate limits cleanly when serialised.
 
 Bypasses the form so the `Security mailing list thread`
 required-field check does not fire. Same pattern as
-[`import-security-issue-from-pr`'s](../import-security-issue-from-pr/SKILL.md#7a--create-the-tracker-via-gh-api) Step 7a.
+[`security-import-issue-from-pr`'s](../security-import-issue-from-pr/SKILL.md#7a--create-the-tracker-via-gh-api) Step 7a.
 
 Write the body to a temp file (per finding):
 
@@ -565,10 +565,10 @@ Print a one-screen recap:
 Then a one-line hand-off:
 
 > Next: triage each new tracker per Step 3 of the handling
-> process. Run [`sync-security-issue`](../sync-security-issue/SKILL.md)
+> process. Run [`security-sync-issues`](../security-sync-issues/SKILL.md)
 > on `<tracker>#NNN` once the validity discussion progresses.
 
-Do **not** auto-invoke `sync-security-issue` — these trackers are
+Do **not** auto-invoke `security-sync-issues` — these trackers are
 freshly created in `Needs triage` and have nothing to sync until
 the validity discussion produces signal.
 
@@ -586,7 +586,7 @@ the validity discussion produces signal.
 - **Does not allocate CVEs.** A finding tagged `**Severity:** HIGH`
   in the source markdown is *still* unassessed from the security
   team's perspective; the CVE-allocation gate (per
-  [`allocate-cve`](../allocate-cve/SKILL.md)) requires the team's
+  [`security-allocate-cve`](../security-allocate-cve/SKILL.md)) requires the team's
   own validity decision first.
 - **Does not parse markdown formats other than the one documented
   in Step 1.** If the input file uses a different shape (e.g.

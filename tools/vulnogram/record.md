@@ -93,7 +93,7 @@ expects when the release manager triggers the advisory email send.
 
 **`READY` → `PUBLIC`** is a human release-manager click in Vulnogram
 after the advisory archive URL has been captured on the tracker. The
-generic `sync-security-issue` skill's Step 2b does not propose this
+generic `security-sync-issues` skill's Step 2b does not propose this
 transition — it is a Step 15 release-manager action. The
 publication-ready notification comment (see
 [*Release-manager checklist*](#release-manager-checklist) below)
@@ -119,9 +119,9 @@ whether reviewer comments are still pending.
 ASF CNA reviewers leave comments on `REVIEW`-state records. Those
 comments do **not** surface on the tracking issue directly —
 Vulnogram notifies by email to the project's `security_list`
-instead, with the CVE ID in the subject line. The `sync-security-issue`
+instead, with the CVE ID in the subject line. The `security-sync-issues`
 skill's Step 1e reads those emails (Gmail search recipe lives in
-[`../gmail/search-queries.md`](../gmail/search-queries.md#sync-security-issue--cve-review-comment-search))
+[`../gmail/search-queries.md`](../gmail/search-queries.md#security-sync-issues--cve-review-comment-search))
 and surfaces each open reviewer comment in Step 2b as an actionable
 body-field proposal on the tracker.
 
@@ -137,7 +137,7 @@ OAuth-gated and not readable from skill context).
 
 The `cveprocess.apache.org/cve5/<CVE-ID>.json` endpoint exists but
 is behind ASF OAuth and is **not** readable from agent-skill
-context — the `sync-security-issue` skill therefore never curls it;
+context — the `security-sync-issues` skill therefore never curls it;
 Gmail is the load-bearing signal source.
 
 ## Record-generator round trip
@@ -161,7 +161,7 @@ has one canonical JSON to paste into `#source` at step 15.
 ## Release-manager checklist
 
 When the `<upstream>` release containing a fix ships, the
-`sync-security-issue` skill swaps the tracker's `pr merged` label to
+`security-sync-issues` skill swaps the tracker's `pr merged` label to
 `fix released`, reassigns the issue to the release manager, and posts
 an explicit **release-manager hand-off comment** on the tracker (the
 template body lives in
@@ -182,7 +182,7 @@ and **three** when reviewer comments arrive:
 2. **(conditional) Re-paste after reviewer comments.** ASF CNA
    reviewers may leave comments while the record sits in `REVIEW`
    (see [*Reviewer-comment signal*](#reviewer-comment-signal) above).
-   The `sync-security-issue` skill detects them automatically and
+   The `security-sync-issues` skill detects them automatically and
    proposes matching body-field updates on the tracker; the security
    team confirms and the embedded JSON regenerates. Once the body has
    settled (no more pending reviewer-comment proposals), re-paste the
@@ -208,7 +208,7 @@ and **three** when reviewer comments arrive:
    `announced - emails sent` label and remove `fix released`.
 
 6. **Wait for the publication-ready notification comment.** The
-   `sync-security-issue` skill scans the public users-list archive
+   `security-sync-issues` skill scans the public users-list archive
    for the CVE ID on every run. Once it finds the archived advisory,
    it populates the tracker's *Public advisory URL* body field,
    regenerates the CVE JSON to carry the archive URL as a
@@ -225,7 +225,7 @@ and **three** when reviewer comments arrive:
    The record propagates to `cve.org` once the state lands.
 
 8. **Close the tracker.** Close as completed; do not update any
-   labels. The `sync-security-issue` skill's apply step archives the
+   labels. The `security-sync-issues` skill's apply step archives the
    project-board item afterwards (per the *archive-from-board* recipe
    in [`../github/project-board.md`](../github/project-board.md))
    so the closed tracker leaves the active board.

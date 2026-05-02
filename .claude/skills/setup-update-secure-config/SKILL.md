@@ -1,5 +1,5 @@
 ---
-name: update-secure-config
+name: setup-update-secure-config
 description: |
   Surface drift between the user's installed secure agent setup and
   the framework's latest. Reports framework-checkout updates
@@ -24,7 +24,7 @@ when_to_use: |
 <!-- Placeholder convention (see AGENTS.md#placeholder-convention-used-in-skill-files):
      <project-config> → adopting project's `.apache-steward/` directory -->
 
-# update-secure-config
+# setup-update-secure-config
 
 This skill is the **drift report** for an already-installed secure
 setup. It walks the canonical update-check at
@@ -55,7 +55,7 @@ any change.
   changes into `~/.claude-config/scripts/`). Report each
   separately.
 - **Re-verify after surfacing the drift.** Run the same denial
-  checks `verify-secure-config` runs (one Bash invocation per
+  checks `setup-verify-secure-config` runs (one Bash invocation per
   command, not chained), so a regression that turned a deny into
   an allow shows up as part of the update report. A *passing*
   verification at the end of an update report is the signal that
@@ -100,7 +100,7 @@ Walk each:
    the user does not have; do not auto-merge.
 5. **Re-verify.** Run the three denial commands as standalone
    Bash invocations (not chained — see
-   [verify-secure-config](../verify-secure-config/SKILL.md) for
+   [setup-verify-secure-config](../setup-verify-secure-config/SKILL.md) for
    why). Report any newly-allowed call as a regression that
    warrants attention.
 
@@ -113,7 +113,7 @@ If something is out-of-date or has drifted, name the concrete
 follow-up:
 
 - Framework checkout behind → run
-  [`upgrade-apache-steward`](../upgrade-apache-steward/SKILL.md),
+  [`setup-upgrade-steward`](../setup-upgrade-steward/SKILL.md),
   which performs the `git pull --ff-only` after the same
   pre-flight checks this skill recommends, surfaces what
   arrived, and reminds the user to handle the parent-tracker
@@ -123,7 +123,7 @@ follow-up:
 - User-scope script drift → re-`cp` from the framework checkout,
   or — if the script lives in `~/.claude-config/` and the user
   wants the change propagated to other machines — invoke
-  `sync-shared-config` to commit + push.
+  `setup-sync-shared-config` to commit + push.
 - Settings.json shape drift → the user merges the new
   framework block into their tracker's `.claude/settings.json`
   by hand (the section to copy from is documented in
