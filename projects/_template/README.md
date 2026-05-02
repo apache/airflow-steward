@@ -72,7 +72,7 @@ the rest.
 
 | File | Purpose |
 |---|---|
-| [`title-normalization.md`](title-normalization.md) | Regex cascade the `allocate-cve` skill applies to tracker titles before pasting them into the CVE-tool allocation form. |
+| [`title-normalization.md`](title-normalization.md) | Regex cascade the `security-allocate-cve` skill applies to tracker titles before pasting them into the CVE-tool allocation form. |
 
 ### Remediation workflow
 
@@ -94,7 +94,7 @@ the rest.
 - [ ] `scope-labels.md` lists at least one scope label (exactly-one-of rule).
 - [ ] `security-model.md` points at the project's authoritative Security-Model URL.
 - [ ] `release-trains.md` has at least one current release branch + its RM.
-- [ ] `canned-responses.md` has at least the *"Confirmation of receiving the report"* template filled in (the `import-security-issue` skill sends this verbatim).
+- [ ] `canned-responses.md` has at least the *"Confirmation of receiving the report"* template filled in (the `security-import-issues` skill sends this verbatim).
 - [ ] `config/active-project.md` updated to the new directory name if this working tree should target the new project.
 - [ ] Root `README.md` *"Current projects"* table updated with a row for the new project + a link to this `README.md`.
 - [ ] `prek run --all-files` passes.

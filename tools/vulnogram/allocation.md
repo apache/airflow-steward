@@ -20,7 +20,7 @@ The Vulnogram-side mechanics of CVE allocation (step 6 of the generic
 handling process in [`../../README.md`](../../README.md)). The generic
 flow of *"walk the triager through an allocation, capture the ID,
 wire it into the tracker"* lives in the
-[`allocate-cve`](../../.claude/skills/allocate-cve/SKILL.md) skill;
+[`security-allocate-cve`](../../.claude/skills/security-allocate-cve/SKILL.md) skill;
 this file documents the **Vulnogram-specific** parts that skill reads.
 
 Per-project configuration (allocation URL, record URL template, org
@@ -47,7 +47,7 @@ project the allocation is against. This is not something the skill
 can work around — a non-PMC user who clicks *Allocate* sees the
 button grey out.
 
-**Practical consequence.** The `allocate-cve` skill asks up front
+**Practical consequence.** The `security-allocate-cve` skill asks up front
 *"are you a PMC member?"*:
 
 - **PMC** — recipe is self-service: click the URL, paste the title,
@@ -56,7 +56,7 @@ button grey out.
   a comment on the tracker (`@`-mentioning a PMC member) or sends
   on the project's `security_list`. The PMC member reads the relay,
   clicks through, allocates, and posts the ID back. The original
-  triager (or the PMC member) can then re-invoke `allocate-cve` with
+  triager (or the PMC member) can then re-invoke `security-allocate-cve` with
   the CVE ID as an override to resume from the wire-back step.
 
 Concrete PMC-member handles live in the project's roster file (for
@@ -75,13 +75,13 @@ source is the ASF project page,
 | **Summary** | Tracker body's *public-summary* field. |
 | **Reporter credits** | Tracker body's *reporter-credit* field. |
 
-The `allocate-cve` skill renders this mapping as a numbered recipe
+The `security-allocate-cve` skill renders this mapping as a numbered recipe
 the user copy-pastes into the form in one pass.
 
 ## After the CVE is allocated
 
 Once the PMC member has reported the `CVE-YYYY-NNNNN` back, the
-`allocate-cve` skill wires it into the tracker in one coordinated
+`security-allocate-cve` skill wires it into the tracker in one coordinated
 pass — the generic steps (populate the *cve-tool-link* body field,
 add the `cve allocated` label, post a status-change comment,
 regenerate the CVE JSON attachment, draft a reporter status update)
@@ -100,6 +100,6 @@ are tool-agnostic; the Vulnogram-specific output is:
 Allocating a CVE against the wrong product (e.g. `apache-airflow`
 when the fix actually lives in `apache-airflow-providers-smtp`) is a
 multi-hour cleanup involving Vulnogram support and the release
-manager. The `allocate-cve` skill's Step 1 blocker checks refuse to
+manager. The `security-allocate-cve` skill's Step 1 blocker checks refuse to
 proceed without a scope label precisely because of this — see the
 skill file for the hard-check details.

@@ -47,8 +47,8 @@ wrapper around the generic schema builders).
 
 ## How the generic skills address the CVE tool
 
-The generic `sync-security-issue`, `allocate-cve`, and
-`deduplicate-security-issue` skills frame their CVE-tool-facing steps
+The generic `security-sync-issues`, `security-allocate-cve`, and
+`security-deduplicate-issues` skills frame their CVE-tool-facing steps
 in project-tool-agnostic terms — *"regenerate the CVE artifact via
 the project's CVE tool"*, *"walk the user through the allocation
 flow"*, *"capture the reviewer-comment signal"*. They then delegate

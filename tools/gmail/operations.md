@@ -73,7 +73,7 @@ mcp__claude_ai_Gmail__search_threads(
 ```
 
 Returns an array of `{threadId, snippet, …}` objects. Use `pageSize`
-deliberately — some skills (e.g. `sync-security-issue`) impose a
+deliberately — some skills (e.g. `security-sync-issues`) impose a
 hard Gmail-call budget per issue to avoid running up the MCP quota
 on many-tracker sweeps.
 
@@ -92,7 +92,7 @@ mcp__claude_ai_Gmail__get_thread(
 Returns the full message history of a thread. Body reads are
 expensive — most skills filter candidates down on metadata first and
 only fetch bodies for the narrow set that actually warrants it
-(`import-security-issue` does this explicitly at Step 3).
+(`security-import-issues` does this explicitly at Step 3).
 
 ## Write — drafts only, never send
 
@@ -190,7 +190,7 @@ mcp__claude_ai_Gmail__list_drafts(
 )
 ```
 
-Used by `sync-security-issue` to verify that a draft flagged as stale
+Used by `security-sync-issues` to verify that a draft flagged as stale
 in a previous status comment still exists before carrying the flag
 forward. See the *"self-replicating stale-draft flag"* paragraph in
 that skill.

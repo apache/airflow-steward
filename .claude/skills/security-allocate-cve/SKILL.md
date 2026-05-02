@@ -1,5 +1,5 @@
 ---
-name: allocate-cve
+name: security-allocate-cve
 description: |
   Walk a security team member through allocating a CVE for an
   <tracker> tracking issue. Prints the ASF Vulnogram
@@ -11,7 +11,7 @@ description: |
   *CVE tool link* field, adds the `cve allocated` label, posts a
   collapsed status-change comment, and runs `generate-cve-json
   --attach` to embed the paste-ready JSON in the body. Finishes by
-  handing off to the `sync-security-issue` skill to reconcile the
+  handing off to the `security-sync-issues` skill to reconcile the
   rest of the tracker (milestone, assignee, reporter drafts, fix-PR
   state) now that the CVE landing is complete.
 when_to_use: |
@@ -32,7 +32,7 @@ when_to_use: |
      Before running any bash command below, substitute these with the
      concrete values from the adopting project's <project-config>/project.md. -->
 
-# allocate-cve
+# security-allocate-cve
 
 Walks a security team member through the CVE-allocation step of the
 [handling process](../../../README.md) for a given
@@ -81,7 +81,7 @@ of the allocated ID does not need to be done by the PMC member.
 
 **Golden rule — every `<tracker>` reference is a clickable
 link**, per Golden rule 2 in
-[`sync-security-issue`](../sync-security-issue/SKILL.md). The
+[`security-sync-issues`](../security-sync-issues/SKILL.md). The
 allocation recipe, the post-allocation proposal, and the status-
 change comment must all follow the link-form convention from
 [`AGENTS.md`](../../../AGENTS.md).
@@ -345,7 +345,7 @@ user to confirm. Numbered items:
 1. **Set the *CVE tool link* body field** to
    `https://cveprocess.apache.org/cve5/CVE-YYYY-NNNNN`. Patch only
    this one field; do not touch the rest of the body. Use the
-   `sync-security-issue` skill's body-field-surgery recipe — read
+   `security-sync-issues` skill's body-field-surgery recipe — read
    the full body, replace the *CVE tool link* field's value between
    its `### CVE tool link\n\n` header and the next `### ` or
    end-of-body, write back via `gh issue edit --body-file`.
@@ -363,8 +363,8 @@ user to confirm. Numbered items:
    creates one; on the way, the skill must also fold any
    pre-existing legacy bot comments into the new rollup per the
    fold-legacy sub-step described in
-   [`sync-security-issue`](../sync-security-issue/SKILL.md) —
-   allocate-cve is a common first write after a long pause, so
+   [`security-sync-issues`](../security-sync-issues/SKILL.md) —
+   security-allocate-cve is a common first write after a long pause, so
    the legacy comments are often there.
 4. **Regenerate the CVE JSON attachment** in the tracker body by
    running
@@ -374,12 +374,12 @@ user to confirm. Numbered items:
    This is how the CVE record first gets seeded with the allocated
    ID. The remediation-developer credit (if any) comes from the
    tracker's *Remediation developer* body field — populated by the
-   `sync-security-issue` skill from the linked PR's author the
+   `security-sync-issues` skill from the linked PR's author the
    first time *PR with the fix* is set, and editable by hand
    thereafter. No CLI flag needed.
 5. **Draft a reporter status update** — only when the real
    reporter's Gmail thread is known and the ball is in our court
-   (see `sync-security-issue` Step 1c). Keep the draft short, per
+   (see `security-sync-issues` Step 1c). Keep the draft short, per
    the "Brevity: emails state facts, not context" section of
    [`AGENTS.md`](../../../AGENTS.md): one sentence that the CVE has
    been allocated, one sentence that the advisory will be sent
@@ -434,7 +434,7 @@ spaces inside the block, one blank line after
 - Label `cve allocated` added.
 - CVE JSON attachment embedded in the issue body — paste into [Vulnogram `#source`](https://cveprocess.apache.org/cve5/<CVE-YYYY-NNNNN>#source) to seed the record.
 
-**Next:** <one-sentence next step — e.g. "design the fix (`fix-security-issue` skill)", or "release manager completes [process step 12](../../../README.md) once the fix ships">.
+**Next:** <one-sentence next step — e.g. "design the fix (`security-fix-issue` skill)", or "release manager completes [process step 12](../../../README.md) once the fix ships">.
 
 <Reporter-notification line — one of the four options below.>
 
@@ -496,16 +496,16 @@ partial failures stay legible:
 
 If any step fails, stop and ask the user how to proceed — do not
 guess. The body edit (step 1) is the only *load-bearing* step; if
-steps 2–5 fail, a subsequent `sync-security-issue` run will pick up
+steps 2–5 fail, a subsequent `security-sync-issues` run will pick up
 the slack because it reads the CVE ID from the body.
 
 ---
 
-## Step 6 — Hand off to `sync-security-issue`
+## Step 6 — Hand off to `security-sync-issues`
 
 Right after the apply loop finishes (and before the recap in Step
 7), invoke the
-[`sync-security-issue`](../sync-security-issue/SKILL.md) skill on
+[`security-sync-issues`](../security-sync-issues/SKILL.md) skill on
 the same tracker. The CVE allocation touches every axis the sync
 skill reconciles — labels, body fields, assignees, milestone,
 reporter-notification drafts, cross-referenced fix PRs — and
@@ -526,7 +526,7 @@ that the next triage sweep has to clean up from scratch. Always
 run it.
 
 **How to invoke.** The sync skill is prompt-driven, so this is a
-meta-step: tell the user *"running `sync-security-issue` on
+meta-step: tell the user *"running `security-sync-issues` on
 [<tracker>#<N>](...) to reconcile the rest of the
 tracker"* and then run the sync skill's Step 1 (Gather state) on
 the same issue. Sync produces its own numbered proposal with its
@@ -542,7 +542,7 @@ bump.
 **When the handoff is not appropriate.** Skip the sync handoff
 **only** if the user explicitly says they are about to close the
 tracker (e.g. allocated-then-decided-to-reject — a rare case, but
-possible), or if sync was already running when `allocate-cve` was
+possible), or if sync was already running when `security-allocate-cve` was
 invoked (nested invocation — sync's own Step 1 will detect the
 fresh CVE on its next pass anyway). In every other case, run it.
 
@@ -607,7 +607,7 @@ presenting.
   particular step 6 (CVE allocation).
 - [`AGENTS.md`](../../../AGENTS.md) — confidentiality, linking
   conventions, reporter-supplied CVSS rule.
-- [`sync-security-issue`](../sync-security-issue/SKILL.md) —
+- [`security-sync-issues`](../security-sync-issues/SKILL.md) —
   **mandatory follow-up** to this skill (Step 6). Reconciles the
   tracker, the mail thread, and any fix PR after the CVE landing
   touches labels, body fields, and comments. Always runs; only
@@ -615,11 +615,11 @@ presenting.
 - [`generate-cve-json`](../../../tools/vulnogram/generate-cve-json/SKILL.md) — Step 4
   regenerates the CVE JSON attachment in the body so Vulnogram can
   be seeded via the `#source` tab paste.
-- [`import-security-issue`](../import-security-issue/SKILL.md) /
-  [`deduplicate-security-issue`](../deduplicate-security-issue/SKILL.md)
+- [`security-import-issues`](../security-import-issues/SKILL.md) /
+  [`security-deduplicate-issues`](../security-deduplicate-issues/SKILL.md)
   — the two on-ramps that feed trackers into this skill; running
   dedupe before allocation is how we avoid burning two CVE IDs on
   the same root-cause bug.
-- [`fix-security-issue`](../fix-security-issue/SKILL.md) — the
+- [`security-fix-issue`](../security-fix-issue/SKILL.md) — the
   follow-up after allocation: open the public fix PR with the CVE
   context kept internal.

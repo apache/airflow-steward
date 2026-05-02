@@ -38,7 +38,7 @@ project's Security Model (see
 [`security-model.md`](security-model.md)) rather than paraphrasing
 it.
 
-The [`import-security-issue`](../../.claude/skills/import-security-issue/SKILL.md)
+The [`security-import-issues`](../../.claude/skills/security-import-issues/SKILL.md)
 skill sends the *Confirmation of receiving the report* template
 verbatim on every new inbound report — that one is **load-bearing**
 and must exist before the skill is useful. The rest can be filled in
@@ -56,7 +56,7 @@ the adopting project's voice.
 TODO: short confirmation that the report has been received, the
 security team will assess it, and what the reporter should expect
 next. Include the credit-preference question. Sent verbatim by
-`import-security-issue`.
+`security-import-issues`.
 
 ### Negative assessment — out of scope per the Security Model
 
@@ -107,12 +107,12 @@ Minimum set (one per lifecycle transition):
 
 | Template | Process step | Sent by |
 |---|---|---|
-| CVE allocated | Step 6 | `allocate-cve` skill |
-| Fix PR opened | Step 10 | `fix-security-issue` / `sync-security-issue` skill |
-| Fix PR merged | Step 11 | `sync-security-issue` skill |
-| Release shipped (fix released) | Step 12 | `sync-security-issue` skill |
-| Advisory sent | Step 13 | Release manager + `sync-security-issue` follow-up |
-| CVE published on cve.org | post-Step 15 | `sync-security-issue` skill (recently-closed scan) |
+| CVE allocated | Step 6 | `security-allocate-cve` skill |
+| Fix PR opened | Step 10 | `security-fix-issue` / `security-sync-issues` skill |
+| Fix PR merged | Step 11 | `security-sync-issues` skill |
+| Release shipped (fix released) | Step 12 | `security-sync-issues` skill |
+| Advisory sent | Step 13 | Release manager + `security-sync-issues` follow-up |
+| CVE published on cve.org | post-Step 15 | `security-sync-issues` skill (recently-closed scan) |
 | Credit correction | Step 16 | Release manager |
 
 Each row above corresponds to a section below; flesh out the

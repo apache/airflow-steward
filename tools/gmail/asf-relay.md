@@ -62,7 +62,7 @@ Placeholder convention:
 
 ## How the skills detect relay cases
 
-The `import-security-issue` skill classifies candidates into
+The `security-import-issues` skill classifies candidates into
 `Report`, `ASF-security relay`, and several non-import classes; the
 classification feeds this drafting path.
 

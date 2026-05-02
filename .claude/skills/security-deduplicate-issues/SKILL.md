@@ -1,5 +1,5 @@
 ---
-name: deduplicate-security-issue
+name: security-deduplicate-issues
 description: |
   Merge two <tracker> tracking issues that describe the same
   root-cause vulnerability (typically discovered independently by two
@@ -12,7 +12,7 @@ description: |
 when_to_use: |
   Invoke when a security team member says "dedupe #NNN and #MMM",
   "merge #MMM into #NNN", "#MMM is a duplicate of #NNN", or when the
-  import-security-issue skill's Step 2a surfaces a STRONG match (GHSA
+  security-import-issues skill's Step 2a surfaces a STRONG match (GHSA
   ID collision) between a new report and an existing tracker. Also
   appropriate as a periodic cleanup action when a triager spots two
   open trackers describing the same bug from different angles.
@@ -27,7 +27,7 @@ when_to_use: |
      Before running any bash command below, substitute these with the
      concrete values from the adopting project's <project-config>/project.md. -->
 
-# deduplicate-security-issue
+# security-deduplicate-issues
 
 Merges two `<tracker>` tracking issues that describe the
 same underlying vulnerability. The output is a single tracker
@@ -55,7 +55,7 @@ different **scope labels** (`airflow` vs. `providers`, `airflow`
 vs. `chart`, etc.) must not be merged. If an external reporter
 rediscovers the same bug in two different products' surfaces, that
 is a multi-scope report and the resolution is a
-**scope split** handled by the `sync-security-issue` skill, not a
+**scope split** handled by the `security-sync-issues` skill, not a
 dedupe. This skill refuses to operate when the two candidate
 trackers have different scope labels, and the proposal says so
 explicitly.
@@ -129,7 +129,7 @@ Verify:
 - Both have the **same scope label** — `airflow` vs. `airflow`,
   or `providers` vs. `providers`, or `chart` vs. `chart`. If the
   scope labels differ, refuse the merge and tell the user this is
-  a multi-scope report to be handled by `sync-security-issue`'s
+  a multi-scope report to be handled by `security-sync-issues`'s
   scope-split flow instead.
 - Neither tracker is already labelled `duplicate` (that would
   indicate a partial-merge already happened and someone left it
@@ -286,7 +286,7 @@ merges.
 
 Two rollup-comment entries, one per tracker — **not** two new
 top-level comments. The entries are appended to each tracker's
-existing status-rollup comment (created by `import-security-issue`)
+existing status-rollup comment (created by `security-import-issues`)
 via the upsert recipe in
 [`tools/github/status-rollup.md`](../../../tools/github/status-rollup.md#upsert-recipe--append-to-an-existing-rollup-or-create-one).
 When either tracker does not yet carry a rollup (legacy tracker
@@ -387,7 +387,7 @@ After confirmation, apply **sequentially** (never in parallel):
    the rollup if none exists yet. The same step folds any legacy
    bot comments on the kept tracker into the rollup first, per
    the fold-legacy sub-step in
-   [`sync-security-issue`](../sync-security-issue/SKILL.md).
+   [`security-sync-issues`](../security-sync-issues/SKILL.md).
 3. Rollup-comment upsert on the dropped tracker — append the
    `Merge (dropped)` entry (same recipe; fold legacy comments
    first when needed).
@@ -399,7 +399,7 @@ After confirmation, apply **sequentially** (never in parallel):
 6. `uv run --project <framework>/tools/vulnogram/generate-cve-json generate-cve-json <keep> --attach`
    — the *Remediation developer* body field is the source of truth
    for remediation-developer credits (populated by the
-   `sync-security-issue` skill from the linked PR's author); no CLI
+   `security-sync-issues` skill from the linked PR's author); no CLI
    flag needed
 7. For each legacy bot comment folded in steps 2 / 3, delete the
    original with `gh api -X DELETE
@@ -434,7 +434,7 @@ recap before presenting.
 ## Hard rules
 
 - **Never merge across scopes.** Different scope labels → scope
-  split (via `sync-security-issue`), not dedupe.
+  split (via `security-sync-issues`), not dedupe.
 - **Never re-synthesize credits.** Copy each reporter's credit line
   verbatim from their tracker.
 - **Never propagate a reporter-supplied CVSS** from the dropped
@@ -457,7 +457,7 @@ recap before presenting.
 ## When dedupe is **not** appropriate
 
 - The two trackers are in **different scopes** → use the scope-split
-  flow in `sync-security-issue` instead.
+  flow in `security-sync-issues` instead.
 - The two trackers describe the same code surface but **different
   bugs** with **different fixes** (for example, two separate
   allowlist gaps in the same file, each requiring its own
@@ -476,11 +476,11 @@ recap before presenting.
 - [`README.md`](../../../README.md) — the handling process;
   duplicates are resolved here at various steps rather than at a
   single numbered step.
-- [`import-security-issue`](../import-security-issue/SKILL.md) —
+- [`security-import-issues`](../security-import-issues/SKILL.md) —
   Step 2a surfaces potential duplicates before a new tracker is
   even created, so in the ideal case this skill is never needed
   on a fresh import.
-- [`sync-security-issue`](../sync-security-issue/SKILL.md) — runs
+- [`security-sync-issues`](../security-sync-issues/SKILL.md) — runs
   on the kept tracker after the merge to reconcile labels /
   milestone / credit-preference drafts for both reporters.
 - [`generate-cve-json`](../../../tools/vulnogram/generate-cve-json/SKILL.md) —

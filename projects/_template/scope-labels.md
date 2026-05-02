@@ -26,7 +26,7 @@ handling process (valid/invalid consensus landed). The scope:
   table below).
 
 TODO: list the project's scope labels, one row per label. If a report
-affects more than one scope, the `sync-security-issue` skill surfaces
+affects more than one scope, the `security-sync-issues` skill surfaces
 this as a blocker and the triager splits the report into per-scope
 trackers.
 

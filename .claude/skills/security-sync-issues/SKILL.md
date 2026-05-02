@@ -1,5 +1,5 @@
 ---
-name: sync-security-issue
+name: security-sync-issues
 description: |
   Synchronize a security issue in <tracker> with the state of its
   GitHub discussion, the <security-list> mailing thread, and any
@@ -25,7 +25,7 @@ when_to_use: |
      Before running any bash command below, substitute these with the
      concrete values from the adopting project's <project-config>/project.md. -->
 
-# sync-security-issue
+# security-sync-issues
 
 This skill reconciles a single security issue in
 [`<tracker>`](https://github.com/<tracker>) with:
@@ -484,7 +484,7 @@ Process for finding the real reporter and the original thread:
    phrase* from the issue body (a function name, an endpoint, an error
    message) and search Gmail with it, **excluding GitHub notifications**.
    The canonical query template for this search lives in
-   [`tools/gmail/search-queries.md`](../../../tools/gmail/search-queries.md#sync-security-issue--reporter-thread-lookup-by-distinctive-phrase)
+   [`tools/gmail/search-queries.md`](../../../tools/gmail/search-queries.md#security-sync-issues--reporter-thread-lookup-by-distinctive-phrase)
    (the GitHub-notification exclusions used for this project are
    declared in
    [`<project-config>/project.md`](../../../<project-config>/project.md#gmail-and-ponymail)).
@@ -630,7 +630,7 @@ update, label change, or next-step recommendation in Step 2:
 | A tracker is transitioning to `fix released` (per the row below) and *"Affected versions"* still carries the project's pre-release sentinel | Propose replacing the sentinel with the concrete released version per the project's convention; see [`<project-config>/scope-labels.md` — *Affected versions convention by scope*](../../../<project-config>/scope-labels.md#affected-versions-convention-by-scope) for the recipe. After the body update, regenerate the CVE JSON attachment so `versions[]` picks up the bounded `lessThan` shape and the record becomes review-ready. |
 | A release carrying the fix has shipped. Detection is **scope-dependent** — different scope labels on a project can ride different release trains, each with its own *"is it released?"* signal (which artifact registry to consult, what to query, how to map a tracker's milestone to that registry, partial-release edge cases). The per-scope detection recipe lives in [`<project-config>/scope-labels.md` — *Detecting that a fix release has shipped*](../../../<project-config>/scope-labels.md#detecting-that-a-fix-release-has-shipped). The "or an explicit *fix shipped in X.Y.Z* comment" fallback applies across all scopes regardless of the project-specific signal. | Propose swapping `pr merged` → `fix released` (Step 12). This is the release manager's cue to own Steps 13–15 (advisory send → URL capture → Vulnogram PUBLIC → close). **Also propose swapping the assignee from the remediation developer to the release manager** (looked up via the three-source cascade in Step 2c — [`<project-config>/release-trains.md`](../../../<project-config>/release-trains.md) "Release managers for releases currently relevant to the security tracker" → Release Plan wiki → `[RESULT][VOTE]` thread on `dev@`), so the issue list reflects ownership hand-off. See the *Assignee hand-off at the `fix released` transition* paragraph under **Assignees** in Step 2b for the full rule. |
 | GHSA state transition (opened, accepted, published, rejected) in a GHSA-forwarded email | If the GHSA is closed as "not accepted" but the security team accepted the report on `security@`, flag the divergence in the status comment so it is not lost. |
-| Team member saying *"let's also backport to v3-2-test"* / *"please mark X for backport"* | Note the requested backport label on the public PR as an item for Step 9 of the `fix-security-issue` workflow. |
+| Team member saying *"let's also backport to v3-2-test"* / *"please mark X for backport"* | Note the requested backport label on the public PR as an item for Step 9 of the `security-fix-issue` workflow. |
 | Reporter flagging a second distinct vulnerability on the same thread | Surface as an explicit question to the user — it may warrant a separate tracking issue. |
 | Team member classifying severity or CWE independently (not copying the reporter) | Propose setting the `Severity` / `CWE` fields accordingly, with a pointer to the comment that established the assessment. |
 | Stale "pending" text from an earlier status update (e.g. the tracker still says *"CVE allocation pending"* but the issue body now has a CVE) | Propose removing the stale reference from the status-change comment trail. |
@@ -699,7 +699,7 @@ fallback when (a) PonyMail is not enabled / not authenticated,
 before the archive indexes it.
 
 **Search recipe.** Use the CVE-review-comment query templates in
-[`tools/gmail/search-queries.md`](../../../tools/gmail/search-queries.md#sync-security-issue--cve-review-comment-search);
+[`tools/gmail/search-queries.md`](../../../tools/gmail/search-queries.md#security-sync-issues--cve-review-comment-search);
 substitute the adopting project's `<security-list-domain>` (Airflow:
 `<security-list-domain>`, declared in
 [`<project-config>/project.md`](../../../<project-config>/project.md#gmail-and-ponymail))
@@ -866,7 +866,7 @@ the recipe lives in
 Concretely, for each closed-`announced` tracker in this run:
 
 1. Extract the `CVE-YYYY-NNNNN` ID from the tracker's *CVE tool
-   link* body field (same field the allocate-cve and sync skills
+   link* body field (same field the security-allocate-cve and sync skills
    already read).
 2. Call the API:
    ```bash
@@ -1093,7 +1093,7 @@ will change and *why*. Group them by category:
      - **PonyMail HTTP API (fallback).** When PonyMail MCP is
        disabled, unauthenticated, or returns an error, fall back
        to the HTTP API + `list.html` pattern documented in
-       [`tools/gmail/ponymail-archive.md`](../../../tools/gmail/ponymail-archive.md#use-case--sync-security-issue).
+       [`tools/gmail/ponymail-archive.md`](../../../tools/gmail/ponymail-archive.md#use-case--security-sync-issues).
        The adopting project's URL templates are declared in
        [`<project-config>/project.md`](../../../<project-config>/project.md#gmail-and-ponymail)
        (`ponymail_api_url_template`,
@@ -1286,9 +1286,9 @@ will change and *why*. Group them by category:
   **The status record lives in a single rollup comment, not a new
   comment per sync.** The first bot-authored comment on a tracker
   is the **rollup comment** (created by the
-  [`import-security-issue`](../import-security-issue/SKILL.md)
-  skill); every subsequent pass — this sync skill, allocate-cve,
-  deduplicate-security-issue, fix-security-issue — appends a new
+  [`security-import-issues`](../security-import-issues/SKILL.md)
+  skill); every subsequent pass — this sync skill, security-allocate-cve,
+  security-deduplicate-issues, security-fix-issue — appends a new
   *entry* to that comment instead of posting a fresh one. Readers
   scroll one comment instead of fifteen. The full shape, summary
   conventions, upsert recipe, and legacy-comment-folding rules
@@ -1394,7 +1394,7 @@ will change and *why*. Group them by category:
   `**Closing as duplicate`, `**Split for scope clarity`, `**Imported
   on `, `**Process-step escalation`, `**Allocated CVE`, or the
   bare-text `Sync status (` / `Sync YYYY-MM-DD` / `Status update`
-  legacy prefixes, or a content tell like `sync-security-issue
+  legacy prefixes, or a content tell like `security-sync-issues
   skill`). For each hit, the Step 2 proposal carries a numbered
   item: *"fold legacy comment `<url>` (`<YYYY-MM-DD>`, first line
   <first-line>) into the rollup as a `<Action>` entry, then
@@ -1591,7 +1591,7 @@ updates land, based on the process step. Examples:
 
 - *"Step 3: start the CVE-worthiness discussion in a comment on the issue, tagging at least one other security team member."*
 - *"Step 4: escalate to a wider audience — the discussion has been stalled for 34 days. Run the two-phase escalation per [`README.md` — Step 4](../../../README.md#step-4--escalate-stalled-discussions): phase 1 is a short call for ideas to `<private-list>` (no AI analysis), phase 2 — only if phase 1 stays silent for ~7 more days — is an AI-generated design-space analysis that the triager reviews before posting. The agent drafts both phases as proposals; the triager confirms the exact wording + the list of people to `@`-mention before anything is sent."*
-- *"Step 6: allocate a CVE. Run the [`allocate-cve`](../allocate-cve/SKILL.md) skill (it prints the ASF Vulnogram form URL plus a CVE-ready title and wires the allocated ID back into the tracker)."*
+- *"Step 6: allocate a CVE. Run the [`security-allocate-cve`](../security-allocate-cve/SKILL.md) skill (it prints the ASF Vulnogram form URL plus a CVE-ready title and wires the allocated ID back into the tracker)."*
 - *"Step 10: close the private PR at <tracker>#NNN now that <upstream>#NNNN has merged."*
 - *"Step 11: `pr merged` — tracker parked until the release train ships. No action needed from the security team; the next sync run will detect the PyPI / Helm release and propose the `fix released` swap (Step 12)."*
 - *"Step 12: `fix released` — the release carrying the fix is now on PyPI / the Helm registry. Ownership of the issue has transferred to the release manager; the label swap was the hand-off."*
@@ -1658,10 +1658,10 @@ wrong name in a status update leads to the advisory sitting on nobody's
 desk.
 
 **If a CVE needs to be allocated**, always point the user at the
-[`allocate-cve`](../allocate-cve/SKILL.md) skill explicitly on its own
+[`security-allocate-cve`](../security-allocate-cve/SKILL.md) skill explicitly on its own
 line so the handoff is unambiguous:
 
-> Allocate a CVE via the [`allocate-cve`](../allocate-cve/SKILL.md)
+> Allocate a CVE via the [`security-allocate-cve`](../security-allocate-cve/SKILL.md)
 > skill. It opens the ASF Vulnogram form at
 > <https://cveprocess.apache.org/allocatecve>, pre-computes a CVE-ready
 > title (stripped of `<vendor>: <product>:` (e.g. `Apache Airflow:`) / `[ Security Report ]` / version

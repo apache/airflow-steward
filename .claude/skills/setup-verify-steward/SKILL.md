@@ -1,5 +1,5 @@
 ---
-name: verify-apache-steward
+name: setup-verify-steward
 description: |
   Verify that the `apache-steward` framework is correctly integrated
   into the user's adopter tracker repository — `.apache-steward/`
@@ -31,7 +31,7 @@ when_to_use: |
 <!-- Placeholder convention (see AGENTS.md#placeholder-convention-used-in-skill-files):
      <project-config> → adopting project's `.apache-steward/` directory -->
 
-# verify-apache-steward
+# setup-verify-steward
 
 This skill is the **integration check** for adopters who consume
 the `apache-steward` framework as a git submodule of their
@@ -41,11 +41,11 @@ It confirms the framework is wired in correctly so the rest of
 the framework's skills and tools resolve from the right paths.
 
 The companion skill is
-[`verify-secure-config`](../verify-secure-config/SKILL.md), which
+[`setup-verify-secure-config`](../setup-verify-secure-config/SKILL.md), which
 verifies the *secure-agent setup* (sandbox, hooks, status line,
 clean-env wrapper). The two are independent: an adopter can have
 the framework correctly integrated as a submodule but no secure
-setup wired (verify-secure-config catches that), or have the
+setup wired (setup-verify-secure-config catches that), or have the
 secure setup wired against a stale / un-init'd framework
 submodule (this skill catches that). Run both for a complete
 adopter-side health check.
@@ -125,7 +125,7 @@ inside `project.md` to enumerate unfilled fields. Distinguish:
 - ⚠ for unfilled fields that are convenience-only or apply
   only to optional flows — mailing-list addresses (only the
   import / sync skills need them), CVE tooling URLs (only
-  the allocate-cve skill), Gmail / PonyMail OAuth flags
+  the security-allocate-cve skill), Gmail / PonyMail OAuth flags
   (only the email-using skills).
 
 Print the unfilled-field list with line numbers so the user
@@ -183,7 +183,7 @@ output. The leading character classifies the state:
 - `+` prefix = the submodule's `HEAD` is *ahead of* the SHA
   recorded in the parent's index. The user has either pulled
   the framework directly without committing the new pointer
-  in the parent (`upgrade-apache-steward` skill mentions this
+  in the parent (`setup-upgrade-steward` skill mentions this
   case), or has hand-checked-out a different SHA. Surface as
   ⚠ — the framework still works, but the parent will record
   a different pointer on the next commit. Remediation: commit
@@ -231,7 +231,7 @@ step list, ordered most → least urgent:
 - ⚠ on check 5 (`+` prefix, pointer ahead) → name the
   remediation choice (commit the new pointer in the parent,
   or reset the submodule). The
-  [`upgrade-apache-steward`](../upgrade-apache-steward/SKILL.md)
+  [`setup-upgrade-steward`](../setup-upgrade-steward/SKILL.md)
   skill is the natural place this state usually originates.
 - ⚠ on check 6 (no post-merge hook) → print the install
   recipe and tell the user this is optional ergonomics.
@@ -240,7 +240,7 @@ step list, ordered most → least urgent:
   them when the user adopts those skills.
 
 Recommend
-[`verify-secure-config`](../verify-secure-config/SKILL.md) as
+[`setup-verify-secure-config`](../setup-verify-secure-config/SKILL.md) as
 the natural next-step skill if the user has not run it yet —
 the two skills are independent but together cover the
 adopter-side health check.

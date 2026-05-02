@@ -1,9 +1,9 @@
 ---
-name: fix-security-issue
+name: security-fix-issue
 description: |
   Attempt to fix a security issue tracked in <tracker> by
   implementing the change in a public <upstream> PR. Runs the
-  sync-security-issue skill first to reconcile the issue's state, then
+  security-sync-issues skill first to reconcile the issue's state, then
   analyses the discussion to decide whether the issue is easily fixable
   (clear consensus, small scope, known location). If it is, proposes an
   implementation plan, waits for explicit user confirmation, writes the
@@ -33,11 +33,11 @@ when_to_use: |
      Before running any bash command below, substitute these with the
      concrete values from the adopting project's <project-config>/project.md. -->
 
-# fix-security-issue
+# security-fix-issue
 
 This skill automates the "attempt a fix" step of the security handling
 process for issues in [`<tracker>`](https://github.com/<tracker>).
-It composes with the [`sync-security-issue`](../sync-security-issue/SKILL.md)
+It composes with the [`security-sync-issues`](../security-sync-issues/SKILL.md)
 skill — it always runs the sync first so that the issue's state is
 reconciled with the mail thread and any existing PRs before attempting
 any new work.
@@ -167,7 +167,7 @@ Only after **every** check is green, proceed to Step 1.
 
 ## Step 1 — Sync the issue first
 
-Run the [`sync-security-issue`](../sync-security-issue/SKILL.md) skill
+Run the [`security-sync-issues`](../security-sync-issues/SKILL.md) skill
 on the same issue number and apply any state corrections the user
 confirms there. **Do not attempt a fix before the sync has completed**,
 because:
@@ -552,7 +552,7 @@ Now that a public PR exists, update the private tracking issue:
    convention), run the upsert recipe's Step 2b to create it and
    fold any pre-existing bot comments into the new rollup first —
    see the fold-legacy sub-step in
-   [`sync-security-issue`](../sync-security-issue/SKILL.md).
+   [`security-sync-issues`](../security-sync-issues/SKILL.md).
 
    Before writing the entry, **scrub the body for bare-name
    mentions** of project maintainers, release managers, and
@@ -570,14 +570,14 @@ Now that a public PR exists, update the private tracking issue:
 2. **Update the issue body "PR with the fix" field** if it is empty
    or points to a stale PR. Use `gh issue view --json body`, patch
    only that field, and apply via `gh issue edit --body-file`, as
-   in the [`sync-security-issue`](../sync-security-issue/SKILL.md)
+   in the [`security-sync-issues`](../security-sync-issues/SKILL.md)
    skill.
 
 3. **Maintain milestones and labels** — see the next section.
 
 4. **Status update to the reporter** — if the <tracker> issue has an
    identified external reporter and the reporter has not yet been
-   told about the fix PR, delegate to the `sync-security-issue`
+   told about the fix PR, delegate to the `security-sync-issues`
    skill's "Status update to the reporter" category by re-running
    that skill with a pointer to the new PR. Do **not** draft the
    reporter email directly in this skill — it is the sync skill's
@@ -661,7 +661,7 @@ For a post-triage, pre-merge fix, the target label set is:
 - `needs triage` **removed** (if still present after triage);
 - `pr created` once the public PR is open;
 - **not** `pr merged` or `fix released` (those belong to post-merge
-  / post-release states, applied by the `sync-security-issue` skill
+  / post-release states, applied by the `security-sync-issues` skill
   on later runs);
 - **not** `announced - emails sent` or `announced` (those
   belong to post-advisory states, also applied by the sync skill).
@@ -723,7 +723,7 @@ Print a short recap:
 - the comment posted on the `<tracker>` issue,
 - the backport label that was applied (or a note that none was needed),
 - the next step — typically *"wait for review; re-run
-  sync-security-issue after the PR merges to transition the issue
+  security-sync-issues after the PR merges to transition the issue
   from `pr created` to `pr merged` and update the milestone"*.
 
 ---
@@ -766,7 +766,7 @@ Print a short recap:
 
 ## References
 
-- [`sync-security-issue` skill](../sync-security-issue/SKILL.md) — run this first.
+- [`security-sync-issues` skill](../security-sync-issues/SKILL.md) — run this first.
 - [`README.md`](../../../README.md) — canonical process description, especially steps 7–9 (implementing the fix).
 - [`AGENTS.md`](../../../AGENTS.md) — repo-wide rules (confidentiality, commit trailers, tone, CVE linking).
 - [`<upstream>/AGENTS.md`](https://github.com/<upstream>/blob/main/AGENTS.md) — parent conventions this skill defers to.

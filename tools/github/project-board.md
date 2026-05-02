@@ -26,7 +26,7 @@
 The **project board** is the security team's primary overview surface:
 a Projects V2 board where every tracking issue sits in exactly one
 `Status` column representing its current lifecycle state. The
-`sync-security-issue` skill reads the current column as part of its
+`security-sync-issues` skill reads the current column as part of its
 state-gather, and reconciles it against the issue's labels + body
 state as part of its apply loop.
 
@@ -59,7 +59,7 @@ security tracker carries the label:
 1. The repo's [issue template](issue-template.md) lists `security
    issue` in its `labels:` frontmatter, so any tracker created via
    *New issue → Airflow Security Issue* gets the label automatically.
-2. The `import-security-issue` skill passes `--label 'security issue'`
+2. The `security-import-issues` skill passes `--label 'security issue'`
    on every `gh issue create` it runs.
 
 Manually-opened issues (no template, no skill) will not appear on the

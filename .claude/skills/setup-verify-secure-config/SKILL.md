@@ -1,5 +1,5 @@
 ---
-name: verify-secure-config
+name: setup-verify-secure-config
 description: |
   Walk the verification checklist documented in
   `secure-agent-setup.md` and report ✓ done / ✗ missing / ⚠ partial
@@ -24,7 +24,7 @@ when_to_use: |
 <!-- Placeholder convention (see AGENTS.md#placeholder-convention-used-in-skill-files):
      <project-config> → adopting project's `.apache-steward/` directory -->
 
-# verify-secure-config
+# setup-verify-secure-config
 
 This skill is the **assertion** layer over the secure setup. It
 runs the checklist documented in
@@ -38,7 +38,7 @@ and reports each check's status to the user with concrete evidence
   script, install any package, or modify any settings. If a check
   surfaces a missing or misconfigured piece, surface the gap and
   point at the install path (`setup-secure-config` for a missing
-  install, `update-secure-config` for drift); do not auto-fix.
+  install, `setup-update-secure-config` for drift); do not auto-fix.
 - **Report every check, even on early failure.** Do not stop at
   the first ✗ — the value of the report is in the full picture.
   If check 3 fails, continue to checks 4 / 5 / 6 / 7 anyway and
@@ -115,7 +115,7 @@ without invoking it:
   install pieces).
 - ⚠ on check 5 (pinned-version drift) or any user-scope script
   copy that is older than the framework's source-of-truth →
-  `update-secure-config`.
+  `setup-update-secure-config`.
 - The user-scope script copies live under `~/.claude-config/`
   for users who maintain that sync repo; uncommitted local edits
-  there → `sync-shared-config`.
+  there → `setup-sync-shared-config`.
