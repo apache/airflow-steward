@@ -36,6 +36,25 @@ the framework's example `sync.sh` runs on a timer — that direction
 pulls *upstream* into the local clone; this skill pushes *local*
 modifications upstream.
 
+## Adopter overrides
+
+Before running the default behaviour documented
+below, this skill consults
+[`.apache-steward-overrides/setup-shared-config-sync.md`](../../../docs/setup/agentic-overrides.md)
+in the adopter repo if it exists, and applies any
+agent-readable overrides it finds. See
+[`docs/setup/agentic-overrides.md`](../../../docs/setup/agentic-overrides.md)
+for the contract — what overrides may contain, hard
+rules, the reconciliation flow on framework upgrade,
+upstreaming guidance.
+
+**Hard rule**: agents NEVER modify the snapshot under
+`<adopter-repo>/.apache-steward/`. Local modifications
+go in the override file. Framework changes go via PR
+to `apache/airflow-steward`.
+
+---
+
 ## Hardcoded path
 
 The sync repo lives at `~/.claude-config/`. This is the convention

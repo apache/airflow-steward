@@ -42,6 +42,25 @@ can say *"set up the secure agent setup"* in a fresh session and
 land in the right step-by-step flow without first reading the
 document.
 
+## Adopter overrides
+
+Before running the default behaviour documented
+below, this skill consults
+[`.apache-steward-overrides/setup-isolated-setup-install.md`](../../../docs/setup/agentic-overrides.md)
+in the adopter repo if it exists, and applies any
+agent-readable overrides it finds. See
+[`docs/setup/agentic-overrides.md`](../../../docs/setup/agentic-overrides.md)
+for the contract — what overrides may contain, hard
+rules, the reconciliation flow on framework upgrade,
+upstreaming guidance.
+
+**Hard rule**: agents NEVER modify the snapshot under
+`<adopter-repo>/.apache-steward/`. Local modifications
+go in the override file. Framework changes go via PR
+to `apache/airflow-steward`.
+
+---
+
 ## Golden rules
 
 - **Do not auto-run privilege-elevating commands.** Anything that
