@@ -39,12 +39,12 @@ renamed, or removed:
 2. **The project manifest** — `<project-config>/project.md` declares
    the concrete field name each skill role maps to. Renaming the
    field in the YAML requires updating this mapping.
-3. **The skills that write fresh issue bodies** — `security-import-issues`
+3. **The skills that write fresh issue bodies** — `security-issue-import`
    emits a heredoc body with the full field set; when the schema
    changes, the heredoc must change in lock-step.
 
 No skill parses the YAML at runtime. The field list is hand-
-maintained in the project manifest and in the `security-import-issues`
+maintained in the project manifest and in the `security-issue-import`
 heredoc, and the three surfaces are kept aligned by convention.
 
 ## Field roles the skills use
@@ -63,7 +63,7 @@ The generic lifecycle refers to fields by these roles:
 | `remediation-developer` | CVE JSON generator | sync (auto-populated from `pr-with-fix` author when set; manual edits preserved) | Person(s) who authored the fix; one credit per line. |
 | `cwe` | CVE JSON generator | sync proposes, user confirms | CWE number for the CVE 5.x `problemTypes[]`. |
 | `severity` | CVE JSON generator | sync proposes, user confirms | CVSS severity; never copy the reporter's self-assigned value. |
-| `cve-tool-link` | sync, security-allocate-cve (blocker check) | security-allocate-cve | Canonical link to the CVE record in the project's CVE tool. |
+| `cve-tool-link` | sync, security-cve-allocate (blocker check) | security-cve-allocate | Canonical link to the CVE record in the project's CVE tool. |
 
 The concrete field names each role maps to for the adopting project
 live in the project manifest.

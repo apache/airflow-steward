@@ -73,7 +73,7 @@ the rest.
 
 | File | Purpose |
 |---|---|
-| [`title-normalization.md`](title-normalization.md) | Regex cascade the `security-allocate-cve` skill applies to tracker titles before pasting them into the CVE-tool allocation form. |
+| [`title-normalization.md`](title-normalization.md) | Regex cascade the `security-cve-allocate` skill applies to tracker titles before pasting them into the CVE-tool allocation form. |
 
 ### Remediation workflow
 
@@ -91,23 +91,23 @@ the rest.
 ### PR triage and review
 
 These files configure the
-[`pr-triage`](../../.claude/skills/pr-triage/SKILL.md),
-[`pr-stats`](../../.claude/skills/pr-stats/SKILL.md), and
-[`pr-maintainer-review`](../../.claude/skills/pr-maintainer-review/SKILL.md)
+[`pr-management-triage`](../../.claude/skills/pr-management-triage/SKILL.md),
+[`pr-management-stats`](../../.claude/skills/pr-management-stats/SKILL.md), and
+[`pr-management-code-review`](../../.claude/skills/pr-management-code-review/SKILL.md)
 skills. Adopters who only use the security skills can delete these
 four files; adopters running maintainer-side PR-queue management
 fill them in.
 
 | File | Purpose |
 |---|---|
-| [`pr-triage-config.md`](pr-triage-config.md) | Committers team handle, area-label prefix, project-specific labels (`ready for maintainer review`, etc.), grace windows. Used by `pr-triage` and `pr-stats`. |
-| [`pr-triage-comment-templates.md`](pr-triage-comment-templates.md) | Comment-body URLs (PR quality criteria, two-stage triage rationale), AI-attribution footer wording, project display name. Used by `pr-triage`. |
-| [`pr-triage-ci-check-map.md`](pr-triage-ci-check-map.md) | CI-check name pattern → category name + doc-URL mapping for the violations comment. Used by `pr-triage`. |
-| [`pr-maintainer-review-criteria.md`](pr-maintainer-review-criteria.md) | List of project's review-criteria source files (repo-wide AGENTS.md, code-review docs, per-area AGENTS.md), security-model calibration doc, backport-branch pattern, section-anchor URLs. Used by `pr-maintainer-review`. |
+| [`pr-management-config.md`](pr-management-config.md) | Committers team handle, area-label prefix, project-specific labels (`ready for maintainer review`, etc.), grace windows. Used by `pr-management-triage` and `pr-management-stats`. |
+| [`pr-management-triage-comment-templates.md`](pr-management-triage-comment-templates.md) | Comment-body URLs (PR quality criteria, two-stage triage rationale), AI-attribution footer wording, project display name. Used by `pr-management-triage`. |
+| [`pr-management-triage-ci-check-map.md`](pr-management-triage-ci-check-map.md) | CI-check name pattern → category name + doc-URL mapping for the violations comment. Used by `pr-management-triage`. |
+| [`pr-management-code-review-criteria.md`](pr-management-code-review-criteria.md) | List of project's review-criteria source files (repo-wide AGENTS.md, code-review docs, per-area AGENTS.md), security-model calibration doc, backport-branch pattern, section-anchor URLs. Used by `pr-management-code-review`. |
 
 > The framework currently ships with airflow-flavoured defaults
 > inline in the supporting files of each PR-skill (e.g.
-> [`pr-triage/comment-templates.md`](../../.claude/skills/pr-triage/comment-templates.md)
+> [`pr-management-triage/comment-templates.md`](../../.claude/skills/pr-management-triage/comment-templates.md)
 > embeds airflow's PR-quality-criteria URL). A follow-up PR will
 > complete the extraction so the skills read exclusively from
 > `<project-config>/`. Until then, non-airflow adopters override by
@@ -127,15 +127,15 @@ skills):
 - [ ] `scope-labels.md` lists at least one scope label (exactly-one-of rule).
 - [ ] `security-model.md` points at the project's authoritative Security-Model URL.
 - [ ] `release-trains.md` has at least one current release branch + its RM.
-- [ ] `canned-responses.md` has at least the *"Confirmation of receiving the report"* template filled in (the `security-import-issues` skill sends this verbatim).
+- [ ] `canned-responses.md` has at least the *"Confirmation of receiving the report"* template filled in (the `security-issue-import` skill sends this verbatim).
 
 **PR triage and review** (delete this group if not using the
 `pr-*` skills):
 
-- [ ] `pr-triage-config.md` — committers team handle and area-label prefix filled in.
-- [ ] `pr-triage-comment-templates.md` — `<quality_criteria_url>`, `<two_stage_triage_rationale_url>`, and `<project_display_name>` filled in.
-- [ ] `pr-triage-ci-check-map.md` — at least one CI-check pattern row filled in (or the catch-all row pointing at the project's static-checks doc).
-- [ ] `pr-maintainer-review-criteria.md` — at least one repo-wide review-criteria source file declared.
+- [ ] `pr-management-config.md` — committers team handle and area-label prefix filled in.
+- [ ] `pr-management-triage-comment-templates.md` — `<quality_criteria_url>`, `<two_stage_triage_rationale_url>`, and `<project_display_name>` filled in.
+- [ ] `pr-management-triage-ci-check-map.md` — at least one CI-check pattern row filled in (or the catch-all row pointing at the project's static-checks doc).
+- [ ] `pr-management-code-review-criteria.md` — at least one repo-wide review-criteria source file declared.
 
 **Common finishers**:
 

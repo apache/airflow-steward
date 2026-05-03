@@ -116,14 +116,14 @@ line tells the reader at a glance *what* the entry represents:
 
 | Emitting skill | `<Action>` value | Optional parenthetical |
 |---|---|---|
-| `security-import-issues` | `Import` | class + reporter, e.g. `Import (Report, Jane Doe)` |
-| `security-sync-issues` (ordinary pass) | `Sync` | one-phrase headline, e.g. `Sync (pr merged → fix released)` |
-| `security-sync-issues` (escalation, Step 4) | `Sync` | `Sync (Step 4 escalation)` |
-| `security-sync-issues` (reformat-only, migrating legacy comments) | `Reformat` | `Reformat (N legacy comments folded)` |
-| `security-allocate-cve` | `CVE allocated` | the allocated ID, e.g. `CVE allocated (CVE-2026-40913)` |
-| `security-deduplicate-issues`, on the kept tracker | `Merge (kept)` | dropped side's number, e.g. `Merge (kept) (from #305)` |
-| `security-deduplicate-issues`, on the dropped tracker | `Merge (dropped)` | kept side's number, e.g. `Merge (dropped) (into #244)` |
-| `security-fix-issue` | `Fix PR` | upstream PR number, e.g. `Fix PR (<upstream>#65346)` |
+| `security-issue-import` | `Import` | class + reporter, e.g. `Import (Report, Jane Doe)` |
+| `security-issue-sync` (ordinary pass) | `Sync` | one-phrase headline, e.g. `Sync (pr merged → fix released)` |
+| `security-issue-sync` (escalation, Step 4) | `Sync` | `Sync (Step 4 escalation)` |
+| `security-issue-sync` (reformat-only, migrating legacy comments) | `Reformat` | `Reformat (N legacy comments folded)` |
+| `security-cve-allocate` | `CVE allocated` | the allocated ID, e.g. `CVE allocated (CVE-2026-40913)` |
+| `security-issue-deduplicate`, on the kept tracker | `Merge (kept)` | dropped side's number, e.g. `Merge (kept) (from #305)` |
+| `security-issue-deduplicate`, on the dropped tracker | `Merge (dropped)` | kept side's number, e.g. `Merge (dropped) (into #244)` |
+| `security-issue-fix` | `Fix PR` | upstream PR number, e.g. `Fix PR (<upstream>#65346)` |
 
 The parenthetical is optional; include it when it adds information a
 scroller actually wants (the CVE ID, the dedupe counterpart, the PR
@@ -181,7 +181,7 @@ gh issue view <N> --repo <tracker> \
 
 The matching comment is the rollup. If the query returns nothing,
 there is no rollup yet (expected on a fresh tracker where
-`security-import-issues` has not run, or on a legacy tracker that
+`security-issue-import` has not run, or on a legacy tracker that
 pre-dates this convention).
 
 Use the **first** match chronologically if the query somehow returns
@@ -277,7 +277,7 @@ A comment is a candidate for folding when **all** of the following hold:
    - Legacy bare-text prefixes (no leading `**`): `Sync status (`,
      `Sync YYYY-MM-DD`, `Status update`
    - Content tells when the prefix is idiosyncratic:
-     `security-sync-issues skill`, `re-triage`,
+     `security-issue-sync skill`, `re-triage`,
      `Reporter notification still pending`, `Outstanding — Step `,
      a verbatim `generate-cve-json` embed block.
 
@@ -383,8 +383,8 @@ audit the change.
 
 ## Referenced by
 
-- [`.claude/skills/security-import-issues/SKILL.md`](../../.claude/skills/security-import-issues/SKILL.md) — creates the rollup with the first entry.
-- [`.claude/skills/security-sync-issues/SKILL.md`](../../.claude/skills/security-sync-issues/SKILL.md) — appends per-sync entries and runs the fold-legacy sub-step.
-- [`.claude/skills/security-allocate-cve/SKILL.md`](../../.claude/skills/security-allocate-cve/SKILL.md) — appends the CVE-allocation entry.
-- [`.claude/skills/security-deduplicate-issues/SKILL.md`](../../.claude/skills/security-deduplicate-issues/SKILL.md) — appends the merge entry on both trackers.
-- [`.claude/skills/security-fix-issue/SKILL.md`](../../.claude/skills/security-fix-issue/SKILL.md) — appends the fix-PR entry.
+- [`.claude/skills/security-issue-import/SKILL.md`](../../.claude/skills/security-issue-import/SKILL.md) — creates the rollup with the first entry.
+- [`.claude/skills/security-issue-sync/SKILL.md`](../../.claude/skills/security-issue-sync/SKILL.md) — appends per-sync entries and runs the fold-legacy sub-step.
+- [`.claude/skills/security-cve-allocate/SKILL.md`](../../.claude/skills/security-cve-allocate/SKILL.md) — appends the CVE-allocation entry.
+- [`.claude/skills/security-issue-deduplicate/SKILL.md`](../../.claude/skills/security-issue-deduplicate/SKILL.md) — appends the merge entry on both trackers.
+- [`.claude/skills/security-issue-fix/SKILL.md`](../../.claude/skills/security-issue-fix/SKILL.md) — appends the fix-PR entry.

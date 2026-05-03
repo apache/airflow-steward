@@ -33,7 +33,7 @@ page is the two-minute summary.
 2. **Triage.**
    A rotating triager imports new reports into the private
    `<tracker>` repository (see the
-   [`security-import-issues`](.claude/skills/security-import-issues/SKILL.md)
+   [`security-issue-import`](.claude/skills/security-issue-import/SKILL.md)
    skill), classifies each candidate, and drafts a
    receipt-of-confirmation reply to the reporter. The team then
    discusses CVE-worthiness in the issue comments and — once the
@@ -43,7 +43,7 @@ page is the two-minute summary.
    For the rarer case where a security-relevant fix lands as a
    public PR on `<upstream>` without ever hitting `<security-list>`,
    the triager uses
-   [`security-import-issue-from-pr`](.claude/skills/security-import-issue-from-pr/SKILL.md)
+   [`security-issue-import-from-pr`](.claude/skills/security-issue-import-from-pr/SKILL.md)
    instead. The skill creates the tracker directly with a scope
    label and the `Assessed` board column — the deliberate import
    implies the validity assessment has already happened informally,
@@ -52,7 +52,7 @@ page is the two-minute summary.
 
    When the team's discussion lands a *consensus-invalid* decision,
    the triager applies that decision via the
-   [`security-invalidate-issue`](.claude/skills/security-invalidate-issue/SKILL.md)
+   [`security-issue-invalidate`](.claude/skills/security-issue-invalidate/SKILL.md)
    skill: it adds the `invalid` label, posts a short closing
    comment, archives the project-board item, and — when the
    tracker has an inbound `<security-list>` thread — drafts a
@@ -70,13 +70,13 @@ page is the two-minute summary.
    A PMC member of the adopting project allocates a CVE through the
    project's CVE tool (for Airflow, ASF Vulnogram). The allocation
    is PMC-gated; non-PMC triagers use the
-   [`security-allocate-cve`](.claude/skills/security-allocate-cve/SKILL.md) skill to
+   [`security-cve-allocate`](.claude/skills/security-cve-allocate/SKILL.md) skill to
    produce a relay message for a PMC member to click through.
 
 4. **Remediation.**
    A security-team member writes the fix in the public `<upstream>`
    repository (see the
-   [`security-fix-issue`](.claude/skills/security-fix-issue/SKILL.md)
+   [`security-issue-fix`](.claude/skills/security-issue-fix/SKILL.md)
    skill, which can draft the PR automatically). The public PR is
    scrubbed of CVE references, tracker-repo references, and any
    *"security fix"* signal — per the confidentiality rules in

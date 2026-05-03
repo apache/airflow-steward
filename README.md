@@ -10,7 +10,7 @@
   - [3. GitHub connection (GitHub MCP / `gh` CLI)](#3-github-connection-github-mcp--gh-cli)
   - [4. PMC membership (only for CVE allocation)](#4-pmc-membership-only-for-cve-allocation)
   - [5. Browser (for the human-click steps)](#5-browser-for-the-human-click-steps)
-  - [6. Local `<upstream>` clone (only for `security-fix-issue`)](#6-local-upstream-clone-only-for-security-fix-issue)
+  - [6. Local `<upstream>` clone (only for `security-issue-fix`)](#6-local-upstream-clone-only-for-security-issue-fix)
   - [7. `uv` (for `generate-cve-json`)](#7-uv-for-generate-cve-json)
 - [Shared conventions](#shared-conventions)
   - [Keeping the reporter informed](#keeping-the-reporter-informed)
@@ -148,7 +148,7 @@ section — a browser and your `<tracker>` collaborator access are
 enough.
 
 If you plan to **run any of the agent skills** (`import`, `sync`,
-`security-allocate-cve`, `fix`, `generate-cve-json`, `deduplicate`) — typically
+`security-cve-allocate`, `fix`, `generate-cve-json`, `deduplicate`) — typically
 as a rotational triager, remediation developer, or release manager —
 check the following setup **before** invoking a skill. Each skill also
 runs a short Step 0 pre-flight against the same list and stops with a
@@ -177,7 +177,7 @@ configs.
 
 ### 2. Email connection (Gmail MCP, today)
 
-The import, sync, and security-allocate-cve skills **read the security-list
+The import, sync, and security-cve-allocate skills **read the security-list
 mail thread** associated with each tracker and draft replies on that
 thread. Today this goes through the
 [Claude Gmail MCP](https://docs.anthropic.com/en/docs/build-with-claude/mcp)
@@ -196,8 +196,8 @@ without connecting their personal Gmail — authenticating directly
 against ASF credentials (and, eventually, the ASF's new MFA) will be
 sufficient. Until then, Gmail MCP is the way.
 
-**Without this connection:** `security-import-issues` cannot find new
-reports, `security-sync-issues` cannot reconcile status with the mail
+**Without this connection:** `security-issue-import` cannot find new
+reports, `security-issue-sync` cannot reconcile status with the mail
 thread, and no skill can draft replies to reporters. The skills will
 refuse to start and tell you to configure the MCP first.
 
@@ -212,7 +212,7 @@ CLI directly for some calls. What the skills need:
   security-team roster is maintained per-project; for the active
   project see
   [`<project-config>/release-trains.md`](<project-config>/release-trains.md#security-team-roster).
-- For `security-fix-issue`: a fork of `<upstream>` on your GitHub
+- For `security-issue-fix`: a fork of `<upstream>` on your GitHub
   account (the skill pushes a branch there before opening the PR
   via `gh pr create --web`).
 
@@ -220,7 +220,7 @@ CLI directly for some calls. What the skills need:
 
 The adopting project's CVE-tool allocation form is **PMC-gated** on
 the server side — only the project's PMC members can submit a CVE
-allocation. Non-PMC triagers can still run `security-allocate-cve`; the
+allocation. Non-PMC triagers can still run `security-cve-allocate`; the
 skill detects this up front (it asks *"are you a PMC member of
 `<PROJECT>`?"*) and produces a relay message for a PMC member to
 click through instead. For Airflow the concrete tool is ASF's
@@ -239,7 +239,7 @@ paste, the `gh pr create --web` compose view. The skills prepare
 the URL and the exact text to paste and hand it off to the browser;
 they do not try to automate those clicks.
 
-### 6. Local `<upstream>` clone (only for `security-fix-issue`)
+### 6. Local `<upstream>` clone (only for `security-issue-fix`)
 
 The fix skill writes the change in your local clone, runs local
 checks and tests, pushes a branch to your fork, and opens a PR via
@@ -332,12 +332,12 @@ and framework-lifecycle housekeeping.
 
 | Skill | Purpose |
 |---|---|
-| [`setup-secure-config`](.claude/skills/setup-secure-config/SKILL.md) | First-time install of the secure agent setup. |
-| [`setup-verify-secure-config`](.claude/skills/setup-verify-secure-config/SKILL.md) | Verify the secure setup landed correctly. |
-| [`setup-update-secure-config`](.claude/skills/setup-update-secure-config/SKILL.md) | Surface drift between the installed setup and the framework's latest. |
-| [`setup-upgrade-steward`](.claude/skills/setup-upgrade-steward/SKILL.md) | Pull the framework checkout to latest `origin/main`. |
-| [`setup-verify-steward`](.claude/skills/setup-verify-steward/SKILL.md) | Verify the framework is integrated correctly into an adopter tracker. |
-| [`setup-sync-shared-config`](.claude/skills/setup-sync-shared-config/SKILL.md) | Commit + push the user's shared Claude config to its sync repo. |
+| [`setup-isolated-setup-install`](.claude/skills/setup-isolated-setup-install/SKILL.md) | First-time install of the secure agent setup. |
+| [`setup-isolated-setup-verify`](.claude/skills/setup-isolated-setup-verify/SKILL.md) | Verify the secure setup landed correctly. |
+| [`setup-isolated-setup-update`](.claude/skills/setup-isolated-setup-update/SKILL.md) | Surface drift between the installed setup and the framework's latest. |
+| [`setup-steward-upgrade`](.claude/skills/setup-steward-upgrade/SKILL.md) | Pull the framework checkout to latest `origin/main`. |
+| [`setup-steward-verify`](.claude/skills/setup-steward-verify/SKILL.md) | Verify the framework is integrated correctly into an adopter tracker. |
+| [`setup-shared-config-sync`](.claude/skills/setup-shared-config-sync/SKILL.md) | Commit + push the user's shared Claude config to its sync repo. |
 
 ### Security workflow
 
@@ -348,14 +348,14 @@ cross-skill flow as a diagram.
 
 | Skill | Purpose |
 |---|---|
-| [`security-import-issues`](.claude/skills/security-import-issues/SKILL.md) | Import new reports from `<security-list>` into `<tracker>`. |
-| [`security-import-issue-from-pr`](.claude/skills/security-import-issue-from-pr/SKILL.md) | Open a tracker for a security-relevant fix opened as a public PR. |
-| [`security-import-issues-from-md`](.claude/skills/security-import-issues-from-md/SKILL.md) | Bulk-import findings from a markdown report. |
-| [`security-sync-issues`](.claude/skills/security-sync-issues/SKILL.md) | Reconcile a tracker against its mail thread, fix PR, release train, and archives. |
-| [`security-allocate-cve`](.claude/skills/security-allocate-cve/SKILL.md) | Allocate a CVE for a tracker (Vulnogram URL + paste-ready JSON). |
-| [`security-fix-issue`](.claude/skills/security-fix-issue/SKILL.md) | Implement the fix as a public PR in `<upstream>`. |
-| [`security-deduplicate-issues`](.claude/skills/security-deduplicate-issues/SKILL.md) | Merge two trackers describing the same root-cause vulnerability. |
-| [`security-invalidate-issue`](.claude/skills/security-invalidate-issue/SKILL.md) | Close a tracker as invalid with a polite-but-firm reporter reply. |
+| [`security-issue-import`](.claude/skills/security-issue-import/SKILL.md) | Import new reports from `<security-list>` into `<tracker>`. |
+| [`security-issue-import-from-pr`](.claude/skills/security-issue-import-from-pr/SKILL.md) | Open a tracker for a security-relevant fix opened as a public PR. |
+| [`security-issue-import-from-md`](.claude/skills/security-issue-import-from-md/SKILL.md) | Bulk-import findings from a markdown report. |
+| [`security-issue-sync`](.claude/skills/security-issue-sync/SKILL.md) | Reconcile a tracker against its mail thread, fix PR, release train, and archives. |
+| [`security-cve-allocate`](.claude/skills/security-cve-allocate/SKILL.md) | Allocate a CVE for a tracker (Vulnogram URL + paste-ready JSON). |
+| [`security-issue-fix`](.claude/skills/security-issue-fix/SKILL.md) | Implement the fix as a public PR in `<upstream>`. |
+| [`security-issue-deduplicate`](.claude/skills/security-issue-deduplicate/SKILL.md) | Merge two trackers describing the same root-cause vulnerability. |
+| [`security-issue-invalidate`](.claude/skills/security-issue-invalidate/SKILL.md) | Close a tracker as invalid with a polite-but-firm reporter reply. |
 
 ### PR triage and review
 
@@ -366,19 +366,19 @@ contributor PR queue can reuse the same playbook.
 
 | Skill | Purpose |
 |---|---|
-| [`pr-triage`](.claude/skills/pr-triage/SKILL.md) | Sweep open PRs, classify against the project's quality criteria, propose a disposition (draft / comment / close / rebase / rerun / mark ready / ping), execute on confirmation. |
-| [`pr-stats`](.claude/skills/pr-stats/SKILL.md) | Read-only summary tables of the open PR backlog grouped by area label — measure where queue pressure sits. |
-| [`pr-maintainer-review`](.claude/skills/pr-maintainer-review/SKILL.md) | Walk a maintainer through deep code review, one PR at a time. Reads the diff, applies the project's review criteria, drafts an `approve` / `request-changes` / `comment` review with inline comments, posts on confirmation. |
+| [`pr-management-triage`](.claude/skills/pr-management-triage/SKILL.md) | Sweep open PRs, classify against the project's quality criteria, propose a disposition (draft / comment / close / rebase / rerun / mark ready / ping), execute on confirmation. |
+| [`pr-management-stats`](.claude/skills/pr-management-stats/SKILL.md) | Read-only summary tables of the open PR backlog grouped by area label — measure where queue pressure sits. |
+| [`pr-management-code-review`](.claude/skills/pr-management-code-review/SKILL.md) | Walk a maintainer through deep code review, one PR at a time. Reads the diff, applies the project's review criteria, drafts an `approve` / `request-changes` / `comment` review with inline comments, posts on confirmation. |
 
 Project-specific content (committers team handle, area-label
 prefix, CI-check → doc URL map, comment-template wording, review-
 criteria source files) lives in the adopter's `<project-config>/`
 under the per-skill scaffolds in
-[`projects/_template/pr-triage-config.md`](projects/_template/pr-triage-config.md),
-[`projects/_template/pr-triage-comment-templates.md`](projects/_template/pr-triage-comment-templates.md),
-[`projects/_template/pr-triage-ci-check-map.md`](projects/_template/pr-triage-ci-check-map.md),
+[`projects/_template/pr-management-config.md`](projects/_template/pr-management-config.md),
+[`projects/_template/pr-management-triage-comment-templates.md`](projects/_template/pr-management-triage-comment-templates.md),
+[`projects/_template/pr-management-triage-ci-check-map.md`](projects/_template/pr-management-triage-ci-check-map.md),
 and
-[`projects/_template/pr-maintainer-review-criteria.md`](projects/_template/pr-maintainer-review-criteria.md).
+[`projects/_template/pr-management-code-review-criteria.md`](projects/_template/pr-management-code-review-criteria.md).
 The framework currently ships with airflow-flavored defaults
 inline in the supporting files of each skill — non-airflow
 adopters override by forking the relevant supporting file into
@@ -401,19 +401,19 @@ the tracker.
 A typical triage sweep runs three skills in order:
 
 1. **`import new reports`** —
-   [`security-import-issues`](.claude/skills/security-import-issues/SKILL.md)
+   [`security-issue-import`](.claude/skills/security-issue-import/SKILL.md)
    scans `<security-list>` for threads not yet imported,
    classifies each candidate (real report vs. automated-scan / consolidated /
    media / spam), and proposes a tracker per valid report plus a
    receipt-of-confirmation Gmail draft. See
    [Step 2](#step-2--import-the-report).
 2. **`sync all`** —
-   [`security-sync-issues`](.claude/skills/security-sync-issues/SKILL.md)
+   [`security-issue-sync`](.claude/skills/security-issue-sync/SKILL.md)
    reconciles every open tracker against its mail thread, the fix PR, the
    release train, and the users@ archive. Proposes label / milestone /
    assignee / body changes in one pass.
 3. **`allocate CVE for issue #N`** —
-   [`security-allocate-cve`](.claude/skills/security-allocate-cve/SKILL.md) when a report has
+   [`security-cve-allocate`](.claude/skills/security-cve-allocate/SKILL.md) when a report has
    been assessed as valid. See [Step 6](#step-6--allocate-the-cve).
 
 Nothing is applied without an explicit confirmation — each skill is a
@@ -430,7 +430,7 @@ When the report is confirmed valid, apply exactly one scope label from
 the project's scope set (declared in
 [`<project-config>/scope-labels.md`](<project-config>/scope-labels.md)).
 If a report affects more than one scope, split into per-scope trackers
-before allocation — the `security-sync-issues` skill surfaces this as
+before allocation — the `security-issue-sync` skill surfaces this as
 a blocker. See
 [Step 5](#step-5--land-the-validinvalid-consensus).
 
@@ -439,37 +439,37 @@ If discussion stalls for about 30 days, escalate to a broader audience per
 
 ### Allocating the CVE
 
-Use [`security-allocate-cve`](.claude/skills/security-allocate-cve/SKILL.md). The skill asks up
+Use [`security-cve-allocate`](.claude/skills/security-cve-allocate/SKILL.md). The skill asks up
 front whether you are on the PMC; if not, it reshapes the recipe into an
 ``@``-mention relay message you forward to a PMC member on the tracker or on
 the `<security-list>` thread. Once the allocated `CVE-YYYY-NNNNN`
 is pasted back, the skill wires it into the tracker in one pass (the *CVE
 tool link* body field, the `cve allocated` label, a status-change comment, a
-refreshed CVE-JSON attachment) and hands off to `security-sync-issues` to
+refreshed CVE-JSON attachment) and hands off to `security-issue-sync` to
 reconcile the rest of the tracker. See [Step 6](#step-6--allocate-the-cve)
 for the full detail.
 
 ### Tools you use most
 
-- [`security-import-issues`](.claude/skills/security-import-issues/SKILL.md) —
+- [`security-issue-import`](.claude/skills/security-issue-import/SKILL.md) —
   *"import new reports"* at the start of each triage sweep. The entry point
   into the process for `<security-list>` reports.
-- [`security-import-issue-from-pr`](.claude/skills/security-import-issue-from-pr/SKILL.md) —
+- [`security-issue-import-from-pr`](.claude/skills/security-issue-import-from-pr/SKILL.md) —
   *"import a tracker from PR <N>"* when a security-relevant fix landed
   publicly without going through `<security-list>` and the team has agreed
   it warrants a CVE. Lands directly in the `Assessed` column.
-- [`security-sync-issues`](.claude/skills/security-sync-issues/SKILL.md) —
+- [`security-issue-sync`](.claude/skills/security-issue-sync/SKILL.md) —
   *"sync <issue-ref>"* or *"sync all"*. Surfaces stalled issues, missing
   fields, credit replies, and scope-split requirements in one combined
   proposal.
-- [`security-allocate-cve`](.claude/skills/security-allocate-cve/SKILL.md) — *"allocate a CVE
+- [`security-cve-allocate`](.claude/skills/security-cve-allocate/SKILL.md) — *"allocate a CVE
   for <issue-ref>"*.
 - [`generate-cve-json`](tools/vulnogram/generate-cve-json/SKILL.md) — to
   refresh the paste-ready JSON embedded in the issue body on demand.
-- [`security-deduplicate-issues`](.claude/skills/security-deduplicate-issues/SKILL.md) —
+- [`security-issue-deduplicate`](.claude/skills/security-issue-deduplicate/SKILL.md) —
   when two trackers describe the same root-cause bug discovered
   independently.
-- [`security-invalidate-issue`](.claude/skills/security-invalidate-issue/SKILL.md) —
+- [`security-issue-invalidate`](.claude/skills/security-issue-invalidate/SKILL.md) —
   *"close NN as invalid"* once Step 5 lands a consensus-invalid
   decision. Applies the `invalid` label, archives the project-board
   item, and (for `<security-list>`-imported trackers) drafts a reply
@@ -492,11 +492,11 @@ ownership. See [Step 7](#step-7--self-assign-and-implement-the-fix).
 ### Attempting an automated fix
 
 Before writing the fix by hand, consider letting the
-[`security-fix-issue`](.claude/skills/security-fix-issue/SKILL.md) skill try
+[`security-issue-fix`](.claude/skills/security-issue-fix/SKILL.md) skill try
 it first. Invoked as *"try to fix issue #N"* (or *"draft a PR for #N"*), the
 skill:
 
-- runs `security-sync-issues` first to make sure the tracker's state is
+- runs `security-issue-sync` first to make sure the tracker's state is
   current;
 - reads the full tracker discussion and the linked `security@` mail
   thread and decides whether the issue is *easily fixable* — clear
@@ -515,7 +515,7 @@ skill:
   and similar leakage before being written or pushed;
 - updates the `<tracker>` tracking issue with the new PR
   link and applies the `pr created` label, handing back off to
-  `security-sync-issues`.
+  `security-issue-sync`.
 
 The skill refuses to proceed in cases where a human decision still
 needs to happen: reports that are still being assessed, reports not
@@ -552,7 +552,7 @@ tests manually before asking for review. Once approved, re-open the PR in
 
 ### Handoff to the release manager
 
-Once the `<upstream>` PR merges, `security-sync-issues` moves the tracker
+Once the `<upstream>` PR merges, `security-issue-sync` moves the tracker
 from `pr created` to `pr merged` and sets the milestone of the release the
 fix will ship in. The tracker then waits for the release train. When the
 release ships, sync swaps `pr merged` → `fix released` and the tracker
@@ -561,12 +561,12 @@ becomes the release manager's responsibility. See
 
 ### Tools you use most
 
-- [`security-fix-issue`](.claude/skills/security-fix-issue/SKILL.md) —
+- [`security-issue-fix`](.claude/skills/security-issue-fix/SKILL.md) —
   *"try to fix issue #N"*. Proposes a plan, writes the code, runs local
   tests, and opens a `--web` PR with a scrubbed title/body. See
   [Attempting an automated fix](#attempting-an-automated-fix) above for
   the full flow and the cases where the skill refuses to proceed.
-- [`security-sync-issues`](.claude/skills/security-sync-issues/SKILL.md) — to
+- [`security-issue-sync`](.claude/skills/security-issue-sync/SKILL.md) — to
   keep the tracker's labels, milestone, and assignee aligned with the PR
   state as it moves through review and merge.
 
@@ -574,7 +574,7 @@ becomes the release manager's responsibility. See
 
 You own the tracker from the moment the fix actually ships (`fix released`)
 to a closed tracking issue with a PUBLISHED CVE record. The hand-off from
-the remediation developer is automatic: `security-sync-issues` detects the
+the remediation developer is automatic: `security-issue-sync` detects the
 milestone version on PyPI / the Helm registry, swaps `pr merged` →
 `fix released`, and assigns the advisory-send to you.
 
@@ -596,7 +596,7 @@ issue yet** — see [Step 13](#step-13--send-the-advisory).
 ### Capturing the public archive URL
 
 This is a handoff the sync skill handles for you: once the advisory has
-been archived on the users@ list, the next `security-sync-issues` run finds
+been archived on the users@ list, the next `security-issue-sync` run finds
 the URL, populates the *Public advisory URL* body field, regenerates the
 CVE JSON attachment, and moves the label to `announced`. See
 [Step 14](#step-14--capture-the-public-advisory-url).
@@ -622,7 +622,7 @@ security team to push the information to `cve.org`. See
 
 ### Tools you use most
 
-- [`security-sync-issues`](.claude/skills/security-sync-issues/SKILL.md) —
+- [`security-issue-sync`](.claude/skills/security-issue-sync/SKILL.md) —
   *"sync announced"* at the start of each release window, to
   see the `announced` backlog needing a Vulnogram push. Also
   *"sync CVE-YYYY-NNNN"* to drill into one specific CVE before sending the
@@ -703,7 +703,7 @@ project list).
 
 ### Step 2 — Import the report
 
-[`security-import-issues`](.claude/skills/security-import-issues/SKILL.md)
+[`security-issue-import`](.claude/skills/security-issue-import/SKILL.md)
 scans `<security-list>` for un-imported threads, classifies each
 candidate (real / automated-scan / consolidated / spam), extracts the
 issue-template fields from the root message, and proposes one tracker
@@ -718,14 +718,14 @@ and does **not** create a tracker — invalid noise never enters the
 board.
 
 **Alternate entry — fix already opened as a public PR.** Use
-[`security-import-issue-from-pr`](.claude/skills/security-import-issue-from-pr/SKILL.md).
+[`security-issue-import-from-pr`](.claude/skills/security-issue-import-from-pr/SKILL.md).
 The tracker lands directly in the `Assessed` column with the scope
 label applied (validity already decided informally), so Step 5 is
-skipped and the tracker is ready for `security-allocate-cve`
+skipped and the tracker is ready for `security-cve-allocate`
 immediately.
 
 **Alternate entry — bulk import from markdown.** Use
-[`security-import-issues-from-md`](.claude/skills/security-import-issues-from-md/SKILL.md)
+[`security-issue-import-from-md`](.claude/skills/security-issue-import-from-md/SKILL.md)
 when triaging the output of an AI security review or third-party
 scanner. Each finding becomes one tracker.
 
@@ -764,7 +764,7 @@ with the action label `Sync (Step 4 escalation)`.
 If valid, apply exactly one scope label from
 [`<project-config>/scope-labels.md`](<project-config>/scope-labels.md);
 remove `needs triage`. If invalid,
-[`security-invalidate-issue`](.claude/skills/security-invalidate-issue/SKILL.md)
+[`security-issue-invalidate`](.claude/skills/security-issue-invalidate/SKILL.md)
 labels `invalid`, posts a closing comment, archives the board item,
 and (for `<security-list>`-imported trackers) drafts a polite-but-firm
 reporter reply. If consensus cannot be reached, follow
@@ -772,7 +772,7 @@ reporter reply. If consensus cannot be reached, follow
 on `<security-list>`.
 
 If a candidate duplicate is detected,
-[`security-deduplicate-issues`](.claude/skills/security-deduplicate-issues/SKILL.md)
+[`security-issue-deduplicate`](.claude/skills/security-issue-deduplicate/SKILL.md)
 merges two trackers in place — preserving every reporter's credit,
 every mailing-list thread reference, and every independent
 attack-vector description. The kept issue's body is updated, the
@@ -781,7 +781,7 @@ attachment is regenerated so both finders land in `credits[]`.
 
 ### Step 6 — Allocate the CVE
 
-[`security-allocate-cve`](.claude/skills/security-allocate-cve/SKILL.md)
+[`security-cve-allocate`](.claude/skills/security-cve-allocate/SKILL.md)
 opens the project's CVE allocation tool (for Airflow, ASF Vulnogram
 at <https://cveprocess.apache.org/allocatecve>; in general see
 [`<project-config>/project.md → CVE tooling`](<project-config>/project.md#cve-tooling)),
@@ -791,14 +791,14 @@ and — if the triager isn't on the PMC — builds an `@`-mention relay
 message for a PMC member. Once the allocated `CVE-YYYY-NNNNN` is
 pasted back, the skill wires it into the tracker (CVE tool link
 body field, `cve allocated` label, status-change comment, refreshed
-CVE-JSON attachment) and hands off to `security-sync-issues` to
+CVE-JSON attachment) and hands off to `security-issue-sync` to
 reconcile the rest.
 
 ### Step 7 — Self-assign and implement the fix
 
 A security team member self-assigns and implements the fix.
 Optional automation:
-[`security-fix-issue`](.claude/skills/security-fix-issue/SKILL.md)
+[`security-issue-fix`](.claude/skills/security-issue-fix/SKILL.md)
 proposes an implementation plan, writes the change in your local
 `<upstream>` clone, runs local tests, and opens a public PR via
 `gh pr create --web` with a scrubbed title + body. Every public
@@ -850,7 +850,7 @@ patches) or weeks (provider waves on a fixed cadence).
 
 When the release containing the fix ships to users (PyPI / Helm
 registry / equivalent),
-[`security-sync-issues`](.claude/skills/security-sync-issues/SKILL.md)
+[`security-issue-sync`](.claude/skills/security-issue-sync/SKILL.md)
 detects the release version on the next run and proposes the
 `pr merged` → `fix released` swap, which is the hand-off cue from
 remediation developer to release manager. The same pass proposes
@@ -881,7 +881,7 @@ issue stays open** at this point — it closes only at Step 15.
 ### Step 14 — Capture the public advisory URL
 
 Once the announcement is archived on the users@ list, the next
-`security-sync-issues` run finds the URL, populates the *Public
+`security-issue-sync` run finds the URL, populates the *Public
 advisory URL* body field (a dedicated field on the issue template —
 never reuse the *"Security mailing list thread"* field), regenerates
 the CVE JSON attachment (now carrying a `vendor-advisory` reference),
@@ -900,7 +900,7 @@ The release manager opens the project's CVE tool's `#source` view at
 latest CVE JSON attachment from the tracker (the one regenerated in
 Step 14), pastes it into the form, saves, and moves the record from
 READY to PUBLIC — propagating to [`cve.org`](https://cve.org). Then
-closes the tracker (no label updates). `security-sync-issues`
+closes the tracker (no label updates). `security-issue-sync`
 follows the close with an `archiveProjectV2Item` mutation so the
 closed tracker leaves the active board (see
 [`tools/github/project-board.md` — *Archive a board item*](tools/github/project-board.md#archive-a-board-item--terminal-state-cleanup)).
@@ -929,8 +929,8 @@ the issue forward. Closing dispositions (`invalid`, `not CVE worthy`,
 
 ```mermaid
 flowchart TD
-    A([report on project security list]) -->|step 2: security-import-issues| B[needs triage]
-    A2([security-relevant fix in public PR]) -->|step 2 alt: security-import-issue-from-pr| C
+    A([report on project security list]) -->|step 2: security-issue-import| B[needs triage]
+    A2([security-relevant fix in public PR]) -->|step 2 alt: security-issue-import-from-pr| C
     B -->|step 5: consensus invalid| X1([invalid / not CVE worthy / duplicate / wontfix])
     B -->|step 5: consensus valid| C["scope label<br/>(project-specific — see<br/>projects/&lt;PROJECT&gt;/scope-labels.md)"]
     C -->|step 6: CVE reserved by PMC member| D[cve allocated]
@@ -970,7 +970,7 @@ labels the adopting project defines.
 | --- | --- | --- | --- |
 | `needs triage` | Freshly filed; assessment not yet started. | 1 | 5 |
 | `<scope>` | Scope of the vulnerability. Exactly one project-specific scope label is set. | 5 | never (sticks for the lifetime of the issue) |
-| `cve allocated` | A CVE has been reserved for the issue. Allocation itself is PMC-gated (only the adopting project's PMC members can submit the CVE-tool allocation form); a non-PMC triager relays a request to a PMC member via the [`security-allocate-cve`](.claude/skills/security-allocate-cve/SKILL.md) skill. | 6 | never |
+| `cve allocated` | A CVE has been reserved for the issue. Allocation itself is PMC-gated (only the adopting project's PMC members can submit the CVE-tool allocation form); a non-PMC triager relays a request to a PMC member via the [`security-cve-allocate`](.claude/skills/security-cve-allocate/SKILL.md) skill. | 6 | never |
 | `pr created` | A public fix PR has been opened on `<upstream>` but has not yet merged. | 10 | 11 (replaced by `pr merged`) |
 | `pr merged` | The fix PR has merged into `<upstream>`; no release with the fix has shipped yet. | 11 | 12 (replaced by `fix released` when the release ships) |
 | `fix released` | A release containing the fix has shipped to users; advisory has not been sent yet. | 12 | 13 (replaced by `announced - emails sent`) |
@@ -978,7 +978,7 @@ labels the adopting project defines.
 | `announced` | The public advisory URL has been captured in the tracking issue's *Public advisory URL* body field and the attached CVE JSON has been regenerated so its `references[]` now carries the `vendor-advisory` URL. The tracking issue is waiting for the release manager to copy the CVE JSON into the project's CVE tool, move the record to PUBLIC, and close the issue (Step 15). No label changes at close — the issue closes with `announced` still set. | 14 | never (stays on the issue after closing) |
 | `wontfix` / `invalid` / `not CVE worthy` / `duplicate` | Closing dispositions for reports that are not valid or not CVE-worthy. | 5 / 6 | — |
 
-The [`security-sync-issues`](.claude/skills/security-sync-issues/SKILL.md)
+The [`security-issue-sync`](.claude/skills/security-issue-sync/SKILL.md)
 skill keeps these labels honest: on every run it detects the current state
 of the issue, the fix PR, and the release train, and proposes the label
 transitions the process requires.
@@ -1025,7 +1025,7 @@ repo:
    ```
 
 The framework's
-[`setup-verify-steward`](.claude/skills/setup-verify-steward/SKILL.md)
+[`setup-steward-verify`](.claude/skills/setup-steward-verify/SKILL.md)
 skill checks each of these and reports `✓ done / ✗ missing /
 ⚠ partial` for the adopter integration — run it after step 3 to
 confirm the install landed.
@@ -1058,10 +1058,10 @@ four scaffold files for project-specific knobs:
 
 | File | Used by |
 |---|---|
-| [`pr-triage-config.md`](projects/_template/pr-triage-config.md) | `pr-triage`, `pr-stats` |
-| [`pr-triage-comment-templates.md`](projects/_template/pr-triage-comment-templates.md) | `pr-triage` |
-| [`pr-triage-ci-check-map.md`](projects/_template/pr-triage-ci-check-map.md) | `pr-triage` |
-| [`pr-maintainer-review-criteria.md`](projects/_template/pr-maintainer-review-criteria.md) | `pr-maintainer-review` |
+| [`pr-management-config.md`](projects/_template/pr-management-config.md) | `pr-management-triage`, `pr-management-stats` |
+| [`pr-management-triage-comment-templates.md`](projects/_template/pr-management-triage-comment-templates.md) | `pr-management-triage` |
+| [`pr-management-triage-ci-check-map.md`](projects/_template/pr-management-triage-ci-check-map.md) | `pr-management-triage` |
+| [`pr-management-code-review-criteria.md`](projects/_template/pr-management-code-review-criteria.md) | `pr-management-code-review` |
 
 Each PR-skill's `SKILL.md` carries an `## Adopter configuration`
 section that documents which of these files it reads. The framework
@@ -1104,7 +1104,7 @@ chmod +x .git/hooks/post-merge
 ```
 
 The framework's
-[`setup-upgrade-steward`](.claude/skills/setup-upgrade-steward/SKILL.md)
+[`setup-steward-upgrade`](.claude/skills/setup-steward-upgrade/SKILL.md)
 skill upgrades the framework checkout itself; if the user is
 consuming the framework as a tracker submodule, the skill reminds
 them to follow up with submodule update on the parent tracker.

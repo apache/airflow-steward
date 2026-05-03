@@ -6,10 +6,10 @@
   - [Gmail operator cheat-sheet](#gmail-operator-cheat-sheet)
   - [GitHub-notification exclusions](#github-notification-exclusions)
   - [Query templates by skill](#query-templates-by-skill)
-    - [`security-import-issues` — candidate-listing query](#security-import-issues--candidate-listing-query)
-    - [`security-import-issues` — prior-rejection search](#security-import-issues--prior-rejection-search)
-    - [`security-sync-issues` — reporter-thread lookup by distinctive phrase](#security-sync-issues--reporter-thread-lookup-by-distinctive-phrase)
-    - [`security-sync-issues` — CVE-review-comment search](#security-sync-issues--cve-review-comment-search)
+    - [`security-issue-import` — candidate-listing query](#security-issue-import--candidate-listing-query)
+    - [`security-issue-import` — prior-rejection search](#security-issue-import--prior-rejection-search)
+    - [`security-issue-sync` — reporter-thread lookup by distinctive phrase](#security-issue-sync--reporter-thread-lookup-by-distinctive-phrase)
+    - [`security-issue-sync` — CVE-review-comment search](#security-issue-sync--cve-review-comment-search)
     - [Release `[RESULT][VOTE]` attribution](#release-resultvote-attribution)
   - [Budget discipline](#budget-discipline)
 
@@ -69,7 +69,7 @@ the list), trim or replace these as needed.
 
 ## Query templates by skill
 
-### `security-import-issues` — candidate-listing query
+### `security-issue-import` — candidate-listing query
 
 Inbound threads that might be new reports, minus GitHub-notification
 bots, within a time window:
@@ -94,7 +94,7 @@ instead.
 Adjust the time window per the user's selector (`since:` →
 `newer_than:` or `after:`; `import all` → `newer_than:90d`).
 
-### `security-import-issues` — prior-rejection search
+### `security-issue-import` — prior-rejection search
 
 Run in Step 2b of the import skill on candidates heading for a
 negative-response disposition. The goal is to find **prior similar
@@ -155,7 +155,7 @@ roster member, or rely on `list:` + the no-`from:notifications@github.com`
 filter as in template 1 and classify the result set by sender
 after the fact.
 
-### `security-sync-issues` — reporter-thread lookup by distinctive phrase
+### `security-issue-sync` — reporter-thread lookup by distinctive phrase
 
 When a tracking issue's GitHub title does not match the original
 email subject (common — the triager paraphrases the subject when
@@ -172,7 +172,7 @@ Pick a phrase that is rare in the security list's volume — a
 function name, an endpoint path, an error string — rather than a
 common word.
 
-### `security-sync-issues` — CVE-review-comment search
+### `security-issue-sync` — CVE-review-comment search
 
 The project's CVE tool (Vulnogram for ASF) notifies the security
 list by email when a reviewer leaves a comment on the CVE record.
@@ -213,8 +213,8 @@ the project's release-trains file (for Airflow,
 
 Gmail MCP calls are metered. Skill-level rules:
 
-- `security-import-issues` runs exactly one list scan per invocation.
-- `security-sync-issues` runs at most one reporter-thread search +
+- `security-issue-import` runs exactly one list scan per invocation.
+- `security-issue-sync` runs at most one reporter-thread search +
   two CVE-review searches per tracking issue (i.e. ≤ 3 per tracker;
   ≤ ~60 on a 20-tracker sweep).
 - No skill retries on its own. If a search fails, surface the

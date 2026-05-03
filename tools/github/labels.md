@@ -50,7 +50,7 @@ These are mutually exclusive — a tracker closes with exactly one of:
 |---|---|
 | `invalid` | Report is not a vulnerability per the project's Security Model. |
 | `not CVE worthy` | Reproducible but not severe / scoped enough to warrant a CVE (e.g. self-XSS, DoS by authenticated admin). |
-| `duplicate` | Root-cause-equivalent to another tracker; kept tracker carries the CVE. See the `security-deduplicate-issues` skill. |
+| `duplicate` | Root-cause-equivalent to another tracker; kept tracker carries the CVE. See the `security-issue-deduplicate` skill. |
 | `wontfix` | Will not be fixed (e.g. feature-not-bug, deprecated surface being removed in the next release). |
 
 ## Secondary labels
@@ -64,7 +64,7 @@ These do not gate state transitions but carry coordination signals.
 
 ## Maintenance
 
-The `security-sync-issues` skill is the authority on label transitions
+The `security-issue-sync` skill is the authority on label transitions
 — on every run it detects the current state (labels + body fields +
 fix-PR state + release state) and proposes the label transitions the
 process requires.

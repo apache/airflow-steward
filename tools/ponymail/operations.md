@@ -273,7 +273,7 @@ mcp__ponymail__search_list(
 
 Filter by a distinctive function name, endpoint path, or error
 string — same heuristic as the Gmail equivalent in
-[`../gmail/search-queries.md`](../gmail/search-queries.md#security-sync-issues--reporter-thread-lookup-by-distinctive-phrase).
+[`../gmail/search-queries.md`](../gmail/search-queries.md#security-issue-sync--reporter-thread-lookup-by-distinctive-phrase).
 
 ### Find the `[RESULT][VOTE]` thread for a release
 
