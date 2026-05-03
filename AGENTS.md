@@ -53,9 +53,10 @@ choices matter.
 ## Repository purpose
 
 This repository (currently `apache/airflow-steward`, **to be
-renamed** to `apache/steward` — see the `Heads-up — rename in
-flight` note at the top of [`README.md`](README.md)) is the
-**generic, project-agnostic framework**.
+renamed** — final name TBD per a working-group poll, see the
+`Heads-up — rename in flight, name not yet chosen` note at the
+top of [`README.md`](README.md) for the candidate list and
+timeline) is the **generic, project-agnostic framework**.
 It contains skills, tool adapters, generic process documentation,
 and a project-template scaffold — and **no project-specific
 content**. Adopting projects pull this repository in as a submodule

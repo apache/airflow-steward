@@ -15,17 +15,36 @@
 
 # Apache Steward (to be renamed)
 
-> **Heads-up — rename in flight.** This repository is currently
-> served from `apache/airflow-steward`; it is in the process of
-> being renamed to `apache/steward` to reflect its project-
-> agnostic identity (the framework stewards multiple ASF project
-> workflows, not just Airflow's). Until the rename lands on the
-> GitHub side, every clone URL, git-submodule reference, and CI
-> integration still uses the legacy `apache/airflow-steward`
-> slug — all path examples in this README and the linked docs
-> use that slug verbatim. The rename will only change the GitHub
-> repository slug; existing checkouts will keep working with a
-> single `git remote set-url`.
+> **Heads-up — rename in flight, name not yet chosen.** This
+> repository is currently served from `apache/airflow-steward`
+> and is going to be renamed to a **different** name — *not*
+> `apache/steward`. The current name carries `airflow` for
+> legacy reasons, but the framework is project-agnostic (it
+> stewards multiple ASF project workflows, not just Airflow's),
+> so the working group steering it will pick a new name that
+> reflects that. The final name will be chosen by **discussion
+> followed by a poll** among the working-group members.
+>
+> **Current candidate names** (the list is open for additions
+> during the **week of 4–9 May 2026**, after which the poll
+> opens):
+>
+> - Apache Mentor
+> - Apache Reeve
+> - Apache Guild
+> - Apache Minerva
+> - Apache Magpie
+> - Apache Beacon
+> - Apache Compass
+> - Apache Lexicon
+> - Apache Polyglot
+>
+> Until the rename lands on the GitHub side, every clone URL,
+> git-submodule reference, and CI integration still uses the
+> legacy `apache/airflow-steward` slug — all path examples in
+> this README and the linked docs use that slug verbatim. The
+> rename will only change the GitHub repository slug; existing
+> checkouts will keep working with a single `git remote set-url`.
 
 Reusable, project-agnostic framework for ASF-project automation.
 Adopters pull this repository into their own tracker as a git
