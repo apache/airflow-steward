@@ -28,7 +28,7 @@ when_to_use: |
 
 This skill is the **drift report** for an already-installed secure
 setup. It walks the canonical update-check at
-[`secure-agent-setup.md` → Keeping the setup updated → Via a Claude Code prompt](../../../secure-agent-setup.md#via-a-claude-code-prompt-2)
+[`docs/setup/secure-agent-setup.md` → Keeping the setup updated → Via a Claude Code prompt](../../../docs/setup/secure-agent-setup.md#via-a-claude-code-prompt-2)
 and surfaces what is older / newer / has drifted, without applying
 any change.
 
@@ -65,13 +65,13 @@ any change.
 ## What to check
 
 The canonical step list is in
-[secure-agent-setup.md → Keeping the setup updated → Via a Claude Code prompt](../../../secure-agent-setup.md#via-a-claude-code-prompt-2).
+[docs/setup/secure-agent-setup.md → Keeping the setup updated → Via a Claude Code prompt](../../../docs/setup/secure-agent-setup.md#via-a-claude-code-prompt-2).
 Walk each:
 
 1. **Framework checkout.** `cd` into the user's `airflow-steward`
    clone, `git fetch origin main`, report what changed under
    `tools/agent-isolation/`, `.claude/settings.json`, and
-   `secure-agent-setup.md` since the local checkout was last
+   `docs/setup/secure-agent-setup.md` since the local checkout was last
    updated. Print the `git pull --ff-only` command for the user
    to run; do not run it.
 2. **Pinned upstream tools.** Run
@@ -80,7 +80,7 @@ Walk each:
    has aged past the framework's 7-day cooldown. Include the
    upstream changelog link for each. Do not bump the manifest;
    that is a separate
-   [Bumping a pinned version](../../../secure-agent-setup.md#bumping-a-pinned-version)
+   [Bumping a pinned version](../../../docs/setup/secure-agent-setup.md#bumping-a-pinned-version)
    PR by hand.
 3. **User-scope script-copy drift.** For every user-scope file
    the doc tells the adopter to install
@@ -119,7 +119,7 @@ follow-up:
   arrived, and reminds the user to handle the parent-tracker
   submodule pointer if applicable.
 - Pinned-tool upgrade candidate worth adopting → manifest bump PR
-  per [Bumping a pinned version](../../../secure-agent-setup.md#bumping-a-pinned-version).
+  per [Bumping a pinned version](../../../docs/setup/secure-agent-setup.md#bumping-a-pinned-version).
 - User-scope script drift → re-`cp` from the framework checkout,
   or — if the script lives in `~/.claude-config/` and the user
   wants the change propagated to other machines — invoke
@@ -127,7 +127,7 @@ follow-up:
 - Settings.json shape drift → the user merges the new
   framework block into their tracker's `.claude/settings.json`
   by hand (the section to copy from is documented in
-  [The framework's own `.claude/settings.json`](../../../secure-agent-setup.md#the-frameworks-own-claudesettingsjson)).
+  [The framework's own `.claude/settings.json`](../../../docs/setup/secure-agent-setup.md#the-frameworks-own-claudesettingsjson)).
 - A previously-blocked denial command now succeeds → stop and
   surface as a regression, not a routine update; the user
   should investigate before bumping anything.

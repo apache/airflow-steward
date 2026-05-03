@@ -70,7 +70,7 @@
 #     }
 #   }
 #
-# See `secure-agent-setup.md` → "Sandbox-state status line" for the
+# See `docs/setup/secure-agent-setup.md` → "Sandbox-state status line" for the
 # install steps and the trade-off discussion. The minimal sibling
 # remains the documented default; this variant is opt-in.
 

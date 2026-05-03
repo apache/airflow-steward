@@ -1,0 +1,369 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [Security workflow — roles, conventions, and role guides](#security-workflow--roles-conventions-and-role-guides)
+  - [Who this guide is for](#who-this-guide-is-for)
+  - [Shared conventions](#shared-conventions)
+    - [Keeping the reporter informed](#keeping-the-reporter-informed)
+    - [Recording status transitions on the tracker](#recording-status-transitions-on-the-tracker)
+    - [Confidentiality](#confidentiality)
+  - [For issue triagers — Steps 1–6](#for-issue-triagers--steps-16)
+    - [Daily triage loop](#daily-triage-loop)
+    - [Assessing a report](#assessing-a-report)
+    - [Allocating the CVE](#allocating-the-cve)
+    - [Tools you use most](#tools-you-use-most)
+  - [For remediation developers — Steps 7–11](#for-remediation-developers--steps-711)
+    - [Picking up a tracker](#picking-up-a-tracker)
+    - [Attempting an automated fix](#attempting-an-automated-fix)
+    - [Opening the public fix PR manually](#opening-the-public-fix-pr-manually)
+    - [Private-PR fallback](#private-pr-fallback)
+    - [Handoff to the release manager](#handoff-to-the-release-manager)
+    - [Tools you use most](#tools-you-use-most-1)
+  - [For release managers — Steps 12–15](#for-release-managers--steps-1215)
+    - [Handoff from the remediation developer](#handoff-from-the-remediation-developer)
+    - [Sending the advisory](#sending-the-advisory)
+    - [Capturing the public archive URL](#capturing-the-public-archive-url)
+    - [Publishing the CVE and closing the issue](#publishing-the-cve-and-closing-the-issue)
+    - [Post-release credit corrections](#post-release-credit-corrections)
+    - [Tools you use most](#tools-you-use-most-2)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
+<!-- SPDX-License-Identifier: Apache-2.0
+     https://www.apache.org/licenses/LICENSE-2.0 -->
+
+# Security workflow — roles, conventions, and role guides
+
+Three roles share the security-issue handling process —
+issue triager (Steps 1–6), remediation developer (Steps 7–11),
+and release manager (Steps 12–15). This document covers who
+owns what, the shared conventions every role observes, and
+the per-role workflow. The detailed step descriptions live
+in [`process.md`](process.md).
+
+## Who this guide is for
+
+Three roles share the handling process. Any security-team member can take on
+any of them for a given issue, and in practice people rotate — but at any
+moment a given tracking issue has exactly one person who owns the next move.
+
+Pick whichever applies to you now:
+
+- **I am new to the security team, or I mostly just want to comment on
+  issues.** Read [Shared conventions](#shared-conventions) below. The
+  adopting project's security-issues board — see
+  `<project-config>/project.md → GitHub project board` — is the main
+  view. You do not need an agent for commenting.
+- **I am a rotational triager** — running `import new reports` and
+  `sync all` a few times a week. Jump to
+  [For issue triagers — Steps 1–6](#for-issue-triagers--steps-16).
+- **I picked up a tracker and am about to open a fix PR.** Jump to
+  [For remediation developers — Steps 7–11](#for-remediation-developers--steps-711).
+- **I am the release manager for a cut containing a security fix.** Jump to
+  [For release managers — Steps 12–15](#for-release-managers--steps-1215).
+- **I am looking up a specific step or label.** Go straight to
+  [Process reference](process.md#process-reference-the-16-steps) or
+  [Label lifecycle](process.md#label-lifecycle).
+
+## Shared conventions
+
+These conventions bind every role. If you are unsure whether a rule applies to
+you, it does.
+
+### Keeping the reporter informed
+
+The security team commits to keeping the original reporter informed about the
+state of their report **at every status transition**, on the original mail
+thread (not on the GitHub-notifications mirror thread). A short status update
+should be sent to the reporter whenever any of the following happens:
+
+* the report has been acknowledged or assessed (valid / invalid);
+* a CVE has been allocated;
+* a fix PR has been opened;
+* a fix PR has been **merged**;
+* the issue has been scheduled for a specific release (milestone set);
+* the release has shipped and the public advisory has been sent;
+* the CVE record has been published on cve.org (completes the disclosure);
+* any credits or fields visible in the eventual public advisory have changed.
+
+Each status update should plainly state what has changed, link to the relevant
+artifact (PR URL, CVE ID, advisory link), and state what comes next. If the
+reporter has not yet replied with their preferred credit, ask the
+credit-preference question — but **do not re-ask it if it has already been
+asked** on the same thread and is still awaiting a reply. Pinging the reporter
+twice about the same open question is rude and gets us blocklisted; default to
+the reporter's full name from the original email if they do not respond
+before publication.
+
+Reusable wording for the common cases lives in
+[`<project-config>/canned-responses.md`](<project-config>/canned-responses.md) — consult it before drafting a
+reply from scratch.
+
+### Recording status transitions on the tracker
+
+**Every status transition must also be recorded as a comment on the GitHub
+issue in `<tracker>`**, not only sent by email. The two channels
+serve different audiences: the email keeps the reporter informed; the issue
+comment keeps the rest of the security team and the release manager informed
+without forcing them to reconstruct the state from labels and timestamps. The
+comment should briefly state what changed, link to the artifact (PR URL, CVE
+ID, advisory link), and indicate whether the reporter has been notified.
+
+### Confidentiality
+
+Confidentiality of the private tracker (`<tracker>` for the
+adopting project) is both a **lifecycle rule** and a **writing rule**:
+every transition you record on a tracker, every status comment, every
+email draft has to respect it. The full rule set — forbidden surfaces,
+allowed surfaces, scrubbing guidance, the exception buckets for private
+`security@` / `private@` threads and in-repo `gh issue comment` calls —
+lives in
+[`AGENTS.md` — Confidentiality of the tracker repository](../../AGENTS.md#confidentiality-of-the-tracker-repository).
+Read it before editing anything that might be seen outside the team.
+
+## For issue triagers — Steps 1–6
+
+You own the tracker from an inbound report on `<security-list>`
+through to a CVE allocated, a scope label applied, and the issue ready for a
+remediation developer to pick up. Step 6 (the CVE allocation itself) is
+PMC-gated: **only the adopting project's PMC members can submit the
+CVE-tool allocation form**. If you are not on the PMC you relay a
+pre-drafted request to a PMC
+member — either way you are the one who lands the resulting CVE ID back into
+the tracker.
+
+### Daily triage loop
+
+A typical triage sweep runs three skills in order:
+
+1. **`import new reports`** —
+   [`security-issue-import`](../../.claude/skills/security-issue-import/SKILL.md)
+   scans `<security-list>` for threads not yet imported,
+   classifies each candidate (real report vs. automated-scan / consolidated /
+   media / spam), and proposes a tracker per valid report plus a
+   receipt-of-confirmation Gmail draft. See
+   [Step 2](process.md#step-2--import-the-report).
+2. **`sync all`** —
+   [`security-issue-sync`](../../.claude/skills/security-issue-sync/SKILL.md)
+   reconciles every open tracker against its mail thread, the fix PR, the
+   release train, and the users@ archive. Proposes label / milestone /
+   assignee / body changes in one pass.
+3. **`allocate CVE for issue #N`** —
+   [`security-cve-allocate`](../../.claude/skills/security-cve-allocate/SKILL.md) when a report has
+   been assessed as valid. See [Step 6](process.md#step-6--allocate-the-cve).
+
+Nothing is applied without an explicit confirmation — each skill is a
+proposal engine, not an auto-pilot.
+
+### Assessing a report
+
+For each `needs triage` tracker, drive the validity assessment in comments,
+pulling at least one other security-team member into the discussion. Use the
+canned-response templates from [`<project-config>/canned-responses.md`](<project-config>/canned-responses.md)
+for negative assessments so the tone stays polite-but-firm.
+
+When the report is confirmed valid, apply exactly one scope label from
+the project's scope set (declared in
+[`<project-config>/scope-labels.md`](<project-config>/scope-labels.md)).
+If a report affects more than one scope, split into per-scope trackers
+before allocation — the `security-issue-sync` skill surfaces this as
+a blocker. See
+[Step 5](process.md#step-5--land-the-validinvalid-consensus).
+
+If discussion stalls for about 30 days, escalate to a broader audience per
+[Step 4](process.md#step-4--escalate-stalled-discussions).
+
+### Allocating the CVE
+
+Use [`security-cve-allocate`](../../.claude/skills/security-cve-allocate/SKILL.md). The skill asks up
+front whether you are on the PMC; if not, it reshapes the recipe into an
+``@``-mention relay message you forward to a PMC member on the tracker or on
+the `<security-list>` thread. Once the allocated `CVE-YYYY-NNNNN`
+is pasted back, the skill wires it into the tracker in one pass (the *CVE
+tool link* body field, the `cve allocated` label, a status-change comment, a
+refreshed CVE-JSON attachment) and hands off to `security-issue-sync` to
+reconcile the rest of the tracker. See [Step 6](process.md#step-6--allocate-the-cve)
+for the full detail.
+
+### Tools you use most
+
+- [`security-issue-import`](../../.claude/skills/security-issue-import/SKILL.md) —
+  *"import new reports"* at the start of each triage sweep. The entry point
+  into the process for `<security-list>` reports.
+- [`security-issue-import-from-pr`](../../.claude/skills/security-issue-import-from-pr/SKILL.md) —
+  *"import a tracker from PR <N>"* when a security-relevant fix landed
+  publicly without going through `<security-list>` and the team has agreed
+  it warrants a CVE. Lands directly in the `Assessed` column.
+- [`security-issue-sync`](../../.claude/skills/security-issue-sync/SKILL.md) —
+  *"sync <issue-ref>"* or *"sync all"*. Surfaces stalled issues, missing
+  fields, credit replies, and scope-split requirements in one combined
+  proposal.
+- [`security-cve-allocate`](../../.claude/skills/security-cve-allocate/SKILL.md) — *"allocate a CVE
+  for <issue-ref>"*.
+- [`generate-cve-json`](../../tools/vulnogram/generate-cve-json/SKILL.md) — to
+  refresh the paste-ready JSON embedded in the issue body on demand.
+- [`security-issue-deduplicate`](../../.claude/skills/security-issue-deduplicate/SKILL.md) —
+  when two trackers describe the same root-cause bug discovered
+  independently.
+- [`security-issue-invalidate`](../../.claude/skills/security-issue-invalidate/SKILL.md) —
+  *"close NN as invalid"* once Step 5 lands a consensus-invalid
+  decision. Applies the `invalid` label, archives the project-board
+  item, and (for `<security-list>`-imported trackers) drafts a reply
+  to the reporter explaining the reasoning.
+
+## For remediation developers — Steps 7–11
+
+You own the tracker from a CVE allocated to a merged public fix PR in
+`<upstream>` (including the `pr merged` hand-off where the tracker sits
+waiting for the release train to ship). The role name matches the
+`remediation developer` credit you receive in the published CVE record (see
+`credits[]` with `type: "remediation developer"` in the generated CVE JSON).
+
+### Picking up a tracker
+
+Pick a tracker that has a scope label, `cve allocated`, and clear consensus
+on the fix shape. Self-assign yourself on GitHub so the board reflects
+ownership. See [Step 7](process.md#step-7--self-assign-and-implement-the-fix).
+
+### Attempting an automated fix
+
+Before writing the fix by hand, consider letting the
+[`security-issue-fix`](../../.claude/skills/security-issue-fix/SKILL.md) skill try
+it first. Invoked as *"try to fix issue #N"* (or *"draft a PR for #N"*), the
+skill:
+
+- runs `security-issue-sync` first to make sure the tracker's state is
+  current;
+- reads the full tracker discussion and the linked `security@` mail
+  thread and decides whether the issue is *easily fixable* — clear
+  consensus on the fix shape, small scope, known location in
+  `<upstream>`. If it is not, the skill stops and tells you what
+  more the tracker needs before it is safe to attempt;
+- if it is, proposes an implementation plan (which file(s) to touch,
+  what to change, what tests to add) and **waits for your explicit
+  confirmation** before making any edits;
+- writes the change in your local `<upstream>` clone, runs the
+  local static checks and tests, and iterates on failures;
+- opens the public PR from your fork via `gh pr create --web` with a
+  scrubbed title and body — every public surface (commit message,
+  branch name, PR title, PR body, newsfragment) is grep-checked for
+  `CVE-`, the `<tracker>` repo slug, `vulnerability`, *"security fix"*
+  and similar leakage before being written or pushed;
+- updates the `<tracker>` tracking issue with the new PR
+  link and applies the `pr created` label, handing back off to
+  `security-issue-sync`.
+
+The skill refuses to proceed in cases where a human decision still
+needs to happen: reports that are still being assessed, reports not
+yet classified as valid vulnerabilities, and changes that require the
+private-PR fallback in
+[Step 9](process.md#step-9--open-a-private-pr-exceptional-cases). If it refuses,
+fall back to the manual flow below.
+
+Even when the skill succeeds end-to-end, you remain the PR's author
+and reviewer-facing contact on the public `<upstream>` PR. Stay
+on the PR through review and merge.
+
+### Opening the public fix PR manually
+
+If you are writing the fix by hand, write the code change in your local
+`<upstream>` clone, run the local checks and tests, and open the PR
+via `gh pr create --web`. The PR description **must not** reveal the CVE,
+the security nature of the change, or link back to `<tracker>` —
+see [Step 8](process.md#step-8--open-a-public-pr-straightforward-cases) and the
+confidentiality rules in
+[`AGENTS.md`](../../AGENTS.md#confidentiality-of-the-tracker-repository).
+
+Request a `backport-to-v3-2-test` (or equivalent) label on the public PR
+when the fix should ship on a patch train.
+
+### Private-PR fallback
+
+In exceptional cases — highly critical fixes, or code that needs private
+review — open the PR against the `main` branch of `<tracker>`
+instead of `<upstream>`. CI does not run there, so run static checks and
+tests manually before asking for review. Once approved, re-open the PR in
+`<upstream>` by pushing the branch public. See
+[Step 9](process.md#step-9--open-a-private-pr-exceptional-cases).
+
+### Handoff to the release manager
+
+Once the `<upstream>` PR merges, `security-issue-sync` moves the tracker
+from `pr created` to `pr merged` and sets the milestone of the release the
+fix will ship in. The tracker then waits for the release train. When the
+release ships, sync swaps `pr merged` → `fix released` and the tracker
+becomes the release manager's responsibility. See
+[Step 11](process.md#step-11--pr-merged) and [Step 12](process.md#step-12--fix-released).
+
+### Tools you use most
+
+- [`security-issue-fix`](../../.claude/skills/security-issue-fix/SKILL.md) —
+  *"try to fix issue #N"*. Proposes a plan, writes the code, runs local
+  tests, and opens a `--web` PR with a scrubbed title/body. See
+  [Attempting an automated fix](#attempting-an-automated-fix) above for
+  the full flow and the cases where the skill refuses to proceed.
+- [`security-issue-sync`](../../.claude/skills/security-issue-sync/SKILL.md) — to
+  keep the tracker's labels, milestone, and assignee aligned with the PR
+  state as it moves through review and merge.
+
+## For release managers — Steps 12–15
+
+You own the tracker from the moment the fix actually ships (`fix released`)
+to a closed tracking issue with a PUBLISHED CVE record. The hand-off from
+the remediation developer is automatic: `security-issue-sync` detects the
+milestone version on PyPI / the Helm registry, swaps `pr merged` →
+`fix released`, and assigns the advisory-send to you.
+
+### Handoff from the remediation developer
+
+Watch your `fix released` queue on the board. Until the `pr merged` →
+`fix released` swap fires, the tracker is still the remediation developer's
+(Step 11 territory). Once it fires, it is yours. See
+[Step 12](process.md#step-12--fix-released).
+
+### Sending the advisory
+
+Review the attached CVE JSON on the tracker, fill any missing body fields
+(CWE, severity, affected versions), and send the advisory emails to
+`<announce-list>` / `<users-list>` from the ASF CVE tool.
+Add `announced - emails sent` and remove `fix released`. **Do not close the
+issue yet** — see [Step 13](process.md#step-13--send-the-advisory).
+
+### Capturing the public archive URL
+
+This is a handoff the sync skill handles for you: once the advisory has
+been archived on the users@ list, the next `security-issue-sync` run finds
+the URL, populates the *Public advisory URL* body field, regenerates the
+CVE JSON attachment, and moves the label to `announced`. See
+[Step 14](process.md#step-14--capture-the-public-advisory-url).
+
+### Publishing the CVE and closing the issue
+
+For every `announced` issue: open Vulnogram at
+`https://cveprocess.apache.org/cve5/<CVE-ID>#source`, paste the latest
+attached CVE JSON, save, and move the record from REVIEW to PUBLIC.
+Then close the issue (do not update any labels). This is the terminal
+step of the lifecycle. See
+[Step 15](process.md#step-15--publish-the-cve-record-and-close-the-issue).
+
+An issue that sits on `announced` for more than a day or two
+is a signal to ping the RM.
+
+### Post-release credit corrections
+
+If credits need correction after announcement, respond to the announcement
+emails with the missing credits, update the ASF CVE tool, and ask the ASF
+security team to push the information to `cve.org`. See
+[Step 16](process.md#step-16--credit-corrections).
+
+### Tools you use most
+
+- [`security-issue-sync`](../../.claude/skills/security-issue-sync/SKILL.md) —
+  *"sync announced"* at the start of each release window, to
+  see the `announced` backlog needing a Vulnogram push. Also
+  *"sync CVE-YYYY-NNNN"* to drill into one specific CVE before sending the
+  advisory.
+- [`generate-cve-json`](../../tools/vulnogram/generate-cve-json/SKILL.md) — to
+  regenerate the attachment on demand when a body field changes after the
+  URL has been captured.

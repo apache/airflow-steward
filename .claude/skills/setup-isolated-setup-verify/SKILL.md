@@ -2,7 +2,7 @@
 name: setup-isolated-setup-verify
 description: |
   Walk the verification checklist documented in
-  `secure-agent-setup.md` and report ✓ done / ✗ missing / ⚠ partial
+  `docs/setup/secure-agent-setup.md` and report ✓ done / ✗ missing / ⚠ partial
   for each piece of the secure agent setup — project + user-scope
   `settings.json` wiring, hook scripts present + executable,
   `claude-iso` sourced, pinned tool versions installed at the
@@ -28,7 +28,7 @@ when_to_use: |
 
 This skill is the **assertion** layer over the secure setup. It
 runs the checklist documented in
-[`secure-agent-setup.md` → Verification → Via a Claude Code prompt](../../../secure-agent-setup.md#via-a-claude-code-prompt-1)
+[`docs/setup/secure-agent-setup.md` → Verification → Via a Claude Code prompt](../../../docs/setup/secure-agent-setup.md#via-a-claude-code-prompt-1)
 and reports each check's status to the user with concrete evidence
 (file paths, command output, version strings).
 
@@ -57,7 +57,7 @@ and reports each check's status to the user with concrete evidence
 ## The 7 checks
 
 The canonical list lives in
-[secure-agent-setup.md → Verification → Via a Claude Code prompt](../../../secure-agent-setup.md#via-a-claude-code-prompt-1).
+[docs/setup/secure-agent-setup.md → Verification → Via a Claude Code prompt](../../../docs/setup/secure-agent-setup.md#via-a-claude-code-prompt-1).
 Walk each in order:
 
 1. Project `.claude/settings.json` shape — `sandbox.enabled: true`,

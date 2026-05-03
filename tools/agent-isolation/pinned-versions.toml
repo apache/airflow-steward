@@ -38,7 +38,7 @@
 # shipping pre-release fix-forwards routinely.
 #
 # Adopters consume this file by:
-#   1. Reading the versions in `secure-agent-setup.md` and installing
+#   1. Reading the versions in `docs/setup/secure-agent-setup.md` and installing
 #      them on the host (the doc has the install commands per distro).
 #   2. Running `tools/agent-isolation/check-tool-updates.sh` weekly
 #      (or via `/schedule`) to surface upstream releases that have
@@ -69,7 +69,7 @@ docs = "https://github.com/containers/bubblewrap"
 upstream_releases = "https://api.github.com/repos/containers/bubblewrap/releases"
 # Install commands per distro (use the package manager's syntax for
 # requesting a specific version where supported). See
-# `secure-agent-setup.md` for adopter-facing install steps.
+# `docs/setup/secure-agent-setup.md` for adopter-facing install steps.
 install.apt = "apt-get install --no-install-recommends bubblewrap=0.11.1-*"
 install.dnf = "dnf install bubblewrap-0.11.1"
 install.brew = "# macOS does not need bubblewrap; it uses Seatbelt."

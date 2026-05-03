@@ -14,10 +14,10 @@ High-level overview of how the security team handles a vulnerability
 report from inbound email through published CVE. This page is
 project-agnostic; the concrete lists, repos, release trains, and
 tooling for the adopting project live under
-[`<project-config>/`](projects/) — for Airflow, see
+[`<project-config>/`](../../projects/) — for Airflow, see
 [`<project-config>/project.md`](<project-config>/project.md).
 
-The end-to-end 16-step lifecycle is in [`README.md`](README.md). This
+The end-to-end 16-step lifecycle is in [`README.md`](../../README.md). This
 page is the two-minute summary.
 
 ## Process
@@ -33,7 +33,7 @@ page is the two-minute summary.
 2. **Triage.**
    A rotating triager imports new reports into the private
    `<tracker>` repository (see the
-   [`security-issue-import`](.claude/skills/security-issue-import/SKILL.md)
+   [`security-issue-import`](../../.claude/skills/security-issue-import/SKILL.md)
    skill), classifies each candidate, and drafts a
    receipt-of-confirmation reply to the reporter. The team then
    discusses CVE-worthiness in the issue comments and — once the
@@ -43,7 +43,7 @@ page is the two-minute summary.
    For the rarer case where a security-relevant fix lands as a
    public PR on `<upstream>` without ever hitting `<security-list>`,
    the triager uses
-   [`security-issue-import-from-pr`](.claude/skills/security-issue-import-from-pr/SKILL.md)
+   [`security-issue-import-from-pr`](../../.claude/skills/security-issue-import-from-pr/SKILL.md)
    instead. The skill creates the tracker directly with a scope
    label and the `Assessed` board column — the deliberate import
    implies the validity assessment has already happened informally,
@@ -52,7 +52,7 @@ page is the two-minute summary.
 
    When the team's discussion lands a *consensus-invalid* decision,
    the triager applies that decision via the
-   [`security-issue-invalidate`](.claude/skills/security-issue-invalidate/SKILL.md)
+   [`security-issue-invalidate`](../../.claude/skills/security-issue-invalidate/SKILL.md)
    skill: it adds the `invalid` label, posts a short closing
    comment, archives the project-board item, and — when the
    tracker has an inbound `<security-list>` thread — drafts a
@@ -70,17 +70,17 @@ page is the two-minute summary.
    A PMC member of the adopting project allocates a CVE through the
    project's CVE tool (for Airflow, ASF Vulnogram). The allocation
    is PMC-gated; non-PMC triagers use the
-   [`security-cve-allocate`](.claude/skills/security-cve-allocate/SKILL.md) skill to
+   [`security-cve-allocate`](../../.claude/skills/security-cve-allocate/SKILL.md) skill to
    produce a relay message for a PMC member to click through.
 
 4. **Remediation.**
    A security-team member writes the fix in the public `<upstream>`
    repository (see the
-   [`security-issue-fix`](.claude/skills/security-issue-fix/SKILL.md)
+   [`security-issue-fix`](../../.claude/skills/security-issue-fix/SKILL.md)
    skill, which can draft the PR automatically). The public PR is
    scrubbed of CVE references, tracker-repo references, and any
    *"security fix"* signal — per the confidentiality rules in
-   [`AGENTS.md`](AGENTS.md#confidentiality-of-the-tracker-repository).
+   [`AGENTS.md`](../../AGENTS.md#confidentiality-of-the-tracker-repository).
 
 5. **Release + advisory.**
    The release manager for the cut that carries the fix sends the
@@ -105,7 +105,7 @@ page is the two-minute summary.
   from raising reports about issues they were not originally aware
   of. Such tools may themselves violate our security practices.
 * **Keep the reporter informed at every status transition** — see
-  the [*Keeping the reporter informed*](README.md#keeping-the-reporter-informed)
+  the [*Keeping the reporter informed*](../../README.md#keeping-the-reporter-informed)
   section of `README.md` for the full list of transitions and the
   drafting rules.
 * **Confidentiality first.** Tracker URLs and `#NNN` identifiers
@@ -115,6 +115,6 @@ page is the two-minute summary.
   of a public PR (the words `CVE-`, *"vulnerability"*, *"security
   fix"*, *"advisory"*) stays embargoed until the advisory ships.
   See the
-  [Confidentiality of the tracker repository](AGENTS.md#confidentiality-of-the-tracker-repository)
+  [Confidentiality of the tracker repository](../../AGENTS.md#confidentiality-of-the-tracker-repository)
   section of `AGENTS.md` for the three-layer rule and the
   sharing-with-non-team-recipients pattern.

@@ -15,7 +15,7 @@
 # `tools/agent-isolation/` — secure agent setup helpers
 
 This directory ships the moving pieces the framework's
-[`secure-agent-setup.md`](../../secure-agent-setup.md) document
+[`docs/setup/secure-agent-setup.md`](../../docs/setup/secure-agent-setup.md) document
 references. It is not a Python project (unlike the sibling tools
 under `tools/vulnogram/` and `tools/gmail/oauth-draft/`) — these are
 plain shell scripts plus a TOML manifest of pinned upstream
@@ -42,7 +42,7 @@ npm install -g --no-save @anthropic-ai/claude-code@2.1.117
 # Source the wrapper into your shell:
 source /path/to/airflow-steward/tools/agent-isolation/claude-iso.sh
 
-# Optional: make claude-iso the default `claude` (see secure-agent-setup.md
+# Optional: make claude-iso the default `claude` (see docs/setup/secure-agent-setup.md
 # for the trade-off — the alias also strips env in non-tracker sessions):
 alias claude='claude-iso'
 
@@ -56,8 +56,8 @@ bash /path/to/airflow-steward/tools/agent-isolation/check-tool-updates.sh
 
 ## Referenced by
 
-- [`../../secure-agent-setup.md`](../../secure-agent-setup.md) —
+- [`../../docs/setup/secure-agent-setup.md`](../../docs/setup/secure-agent-setup.md) —
   the user-facing setup document. Read that first.
 - [`../../.claude/settings.json`](../../.claude/settings.json) — the
   framework's own dogfooded secure config. Adopters scaffold their
-  own version from the example block in `secure-agent-setup.md`.
+  own version from the example block in `docs/setup/secure-agent-setup.md`.

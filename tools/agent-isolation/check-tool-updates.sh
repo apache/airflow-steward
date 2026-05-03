@@ -213,7 +213,7 @@ To bump a pinned tool:
   2. Edit `tools/agent-isolation/pinned-versions.toml` — update both
      `version` and `released` for that tool, plus the top-level
      `pinned_at` field to today's date.
-  3. Update the install command in `secure-agent-setup.md` if the
+  3. Update the install command in `docs/setup/secure-agent-setup.md` if the
      distro package version has shifted.
   4. Open the bump as its own PR with a short rationale.
 

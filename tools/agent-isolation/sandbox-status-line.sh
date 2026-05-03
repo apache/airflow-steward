@@ -53,7 +53,7 @@
 #     }
 #   }
 #
-# See `secure-agent-setup.md` → "Sandbox-state status line" for
+# See `docs/setup/secure-agent-setup.md` → "Sandbox-state status line" for
 # install steps and the trade-off discussion.
 
 set -u

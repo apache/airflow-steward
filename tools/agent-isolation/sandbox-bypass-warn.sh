@@ -64,7 +64,7 @@
 #     }
 #   }
 #
-# See `secure-agent-setup.md` → "Sandbox-bypass visibility hook"
+# See `docs/setup/secure-agent-setup.md` → "Sandbox-bypass visibility hook"
 # for the install steps and the "Syncing user-scope config across
 # machines" section for the private-repo pattern that keeps this
 # hook in lockstep across hosts.

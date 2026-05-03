@@ -80,7 +80,7 @@ It does **not** defend against:
 | **3. Forced confirmation** | Claude Code's `permissions.ask` | Visible-to-others writes (`git push`, `gh pr create`, …) without an explicit yes. |
 
 Layers 1, 2, and 3 are configured by the same
-[`.claude/settings.json`](.claude/settings.json) the framework
+[`.claude/settings.json`](../../.claude/settings.json) the framework
 dogfoods. Adopters copy the same shape into their own tracker repo
 (see
 [Adopter setup](secure-agent-setup.md#adopter-setup)
@@ -107,7 +107,7 @@ a Bash subprocess (an MCP server's child process, a `gh` CLI call,
 a `python` snippet the model decided to run) from reading a denied
 path. `permissions.deny` stops the agent's Read tool from reading
 the same path. A secure setup needs both: the framework's
-[`.claude/settings.json`](.claude/settings.json) deny-lists
+[`.claude/settings.json`](../../.claude/settings.json) deny-lists
 `Read(~/.config/gh/**)` *and* allow-reads `~/.config/gh/` in the
 sandbox, so `gh` can see its token but the agent can never read
 the file.
@@ -151,7 +151,7 @@ same — denied paths are unreachable from within the subprocess.
 
 No system packages need pinning on macOS — Seatbelt ships with
 the OS. The framework's
-[`pinned-versions.toml`](tools/agent-isolation/pinned-versions.toml)
+[`pinned-versions.toml`](../../tools/agent-isolation/pinned-versions.toml)
 only pins `bubblewrap`, `socat`, and `claude-code` itself;
 Seatbelt does not appear because its version *is* the OS version.
 
@@ -239,7 +239,7 @@ content:
   surfaces it to the context window. No layer above can prevent that
   once a Read happens. *Mitigation: never commit secrets to the
   tracker repo; the framework's
-  [`AGENTS.md` — Confidentiality of `<tracker>`](AGENTS.md#confidentiality-of-the-tracker-repository)
+  [`AGENTS.md` — Confidentiality of `<tracker>`](../../AGENTS.md#confidentiality-of-the-tracker-repository)
   rule is the policy backstop.*
 - **Domain fronting / CDN abuse via allow-listed hosts.** The
   `sandbox.network.allowedDomains` allowlist matches by SNI; an
@@ -264,6 +264,6 @@ content:
   [Sandbox-bypass visibility hook](secure-agent-setup.md#sandbox-bypass-visibility-hook)
   — the install instructions for the surfacing pieces this
   document only describes mechanically.
-- [`AGENTS.md`](AGENTS.md) — placeholder convention used in skill
+- [`AGENTS.md`](../../AGENTS.md) — placeholder convention used in skill
   files.
-- [`README.md`](README.md) — framework overview.
+- [`README.md`](../../README.md) — framework overview.
