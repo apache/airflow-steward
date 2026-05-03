@@ -175,8 +175,8 @@ to the user before drafting a new one"*.
 Caught live on 2026-04-25 during the [`<tracker>#346`](https://github.com/<tracker>/issues/346)
 fix-skill flow: when **multiple `oauth_curl`-backed drafts pile up on
 the same Gmail thread** within a single skill flow (typical sequence:
-security-allocate-cve drafts a CVE-allocated message → security-sync-issues
-drafts a corrected version with updated state → security-fix-issue
+security-cve-allocate drafts a CVE-allocated message → security-issue-sync
+drafts a corrected version with updated state → security-issue-fix
 drafts the final version after a state change), the drafts all carry
 the `DRAFT` label in the Gmail API but **only the most recent surfaces
 in the user's global Drafts folder in Gmail's UI**. The earlier ones

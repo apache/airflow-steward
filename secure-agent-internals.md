@@ -197,7 +197,7 @@ Mitigations available today, ordered from cheapest to strongest:
 - Issue `Bash` calls one command at a time, not as chained
   pipelines. The deny pattern then matches the actual command
   that runs. The agent-guided
-  `setup-verify-secure-config` skill does this deliberately when
+  `setup-isolated-setup-verify` skill does this deliberately when
   running its denial checks.
 - On hosts where `Bash(*)` chained execution is a meaningful
   exfiltration concern, run an outbound packet filter

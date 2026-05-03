@@ -90,13 +90,13 @@ four — no hard-coded project assumptions anywhere.
 │
 ├── .claude/
 │   └── skills/                    # Agent workflows (invoked via the Skill tool)
-│       ├── security-import-issues/SKILL.md
-│       ├── security-import-issue-from-pr/SKILL.md
-│       ├── security-sync-issues/SKILL.md
-│       ├── security-allocate-cve/SKILL.md
-│       ├── security-fix-issue/SKILL.md
-│       ├── security-deduplicate-issues/SKILL.md
-│       └── security-invalidate-issue/SKILL.md
+│       ├── security-issue-import/SKILL.md
+│       ├── security-issue-import-from-pr/SKILL.md
+│       ├── security-issue-sync/SKILL.md
+│       ├── security-cve-allocate/SKILL.md
+│       ├── security-issue-fix/SKILL.md
+│       ├── security-issue-deduplicate/SKILL.md
+│       └── security-issue-invalidate/SKILL.md
 │
 ├── config/                        # Runtime configuration layer
 │   ├── README.md                  # Configuration tutorial + placeholder rule
@@ -268,8 +268,8 @@ uv run ruff format             # auto-format (check-only in CI)
 uv run mypy                    # type-check
 ```
 
-The package is invoked by the [`security-sync-issues`](.claude/skills/security-sync-issues/SKILL.md)
-and [`security-allocate-cve`](.claude/skills/security-allocate-cve/SKILL.md) skills via
+The package is invoked by the [`security-issue-sync`](.claude/skills/security-issue-sync/SKILL.md)
+and [`security-cve-allocate`](.claude/skills/security-cve-allocate/SKILL.md) skills via
 `uv run --project tools/vulnogram/generate-cve-json generate-cve-json
 <N> --attach` from the repo root — that is the canonical invocation
 any new behaviour has to stay compatible with.

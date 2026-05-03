@@ -150,7 +150,7 @@ perspective:
   codebase.
 - **Release manager** is usually inherited rather than volunteered for:
   when you cut a release that contains a security fix,
-  `security-sync-issues` hands those trackers to you with
+  `security-issue-sync` hands those trackers to you with
   `fix released` and you own them through the advisory + Vulnogram
   steps.
 
@@ -188,7 +188,7 @@ There is also a fourth command for anyone willing to take on a
 remediation-developer turn:
 
 - **`try to fix issue #N`** —
-  [`security-fix-issue`](.claude/skills/security-fix-issue/SKILL.md)
+  [`security-issue-fix`](.claude/skills/security-issue-fix/SKILL.md)
   attempts to land the fix for a triaged tracker in one go. It runs a
   pre-fix sync, reads the discussion on the tracker to build a fix
   plan, shows you the plan, and — only after you confirm — writes the

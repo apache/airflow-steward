@@ -18,12 +18,12 @@
 
 # TODO: `<Project Name>` — remediation PR workflow specifics
 
-Project-specific mechanics of how the `security-fix-issue` skill
+Project-specific mechanics of how the `security-issue-fix` skill
 opens a public fix PR on the project's `<upstream>` repository. Only
 the bits that are **specific to this project** live here; the
 generic flow (clone → branch → commit → push → `gh pr create --web`)
 is described in the
-[`security-fix-issue`](../../.claude/skills/security-fix-issue/SKILL.md)
+[`security-issue-fix`](../../.claude/skills/security-issue-fix/SKILL.md)
 skill itself.
 
 ## Upstream repository
@@ -49,7 +49,7 @@ TODO: list the project's developer toolchain. Example shape:
 - TODO: package manager, e.g. `uv`, `cargo`, `mvn`.
 - TODO: any project-specific dev shell or test harness.
 
-The `security-fix-issue` skill assumes a clean clone of `<upstream>`
+The `security-issue-fix` skill assumes a clean clone of `<upstream>`
 reachable from the agent's working directory (path from
 `config/user.md → environment.upstream_clone`), with a remote named
 for the user's GitHub fork that `gh pr create` can push to.

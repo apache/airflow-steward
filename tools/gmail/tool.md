@@ -40,7 +40,7 @@ Related, adjacent tool:
 
 | Capability | File | What it covers |
 |---|---|---|
-| ASF PonyMail archive lookups | [`ponymail-archive.md`](ponymail-archive.md) | URL-construction pattern for the ASF's `lists.apache.org` archive (used by `security-sync-issues` to scan the public `users@` archive for the advisory URL, and by `security-import-issues` to resolve a pastable thread URL for the private `security@` list) |
+| ASF PonyMail archive lookups | [`ponymail-archive.md`](ponymail-archive.md) | URL-construction pattern for the ASF's `lists.apache.org` archive (used by `security-issue-sync` to scan the public `users@` archive for the advisory URL, and by `security-issue-import` to resolve a pastable thread URL for the private `security@` list) |
 
 ## Why this is its own tool
 

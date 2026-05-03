@@ -7,8 +7,8 @@
     - [Archive search (query returns a list-page with matching threads)](#archive-search-query-returns-a-list-page-with-matching-threads)
     - [Archive API (JSON response, the sync skill uses this first)](#archive-api-json-response-the-sync-skill-uses-this-first)
     - [Resolved thread URL (what the skill records in the tracker)](#resolved-thread-url-what-the-skill-records-in-the-tracker)
-  - [Use case — `security-import-issues`](#use-case--security-import-issues)
-  - [Use case — `security-sync-issues`](#use-case--security-sync-issues)
+  - [Use case — `security-issue-import`](#use-case--security-issue-import)
+  - [Use case — `security-issue-sync`](#use-case--security-issue-sync)
   - [When the archive is not available](#when-the-archive-is-not-available)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -97,7 +97,7 @@ field (for public lookups). Field-role names are defined in
 [`../github/issue-template.md`](../github/issue-template.md#field-roles-the-skills-use);
 project-specific concrete field names live in the project manifest.
 
-## Use case — `security-import-issues`
+## Use case — `security-issue-import`
 
 The security list's PonyMail archive is not anonymously queryable
 (the list is gated behind ASF LDAP), so the skill **cannot** fetch
@@ -127,7 +127,7 @@ CVE-JSON generator does not export it to `references[]`. See the
 *"CVE references must never point at non-public mailing-list
 threads"* rule in [`../../AGENTS.md`](../../AGENTS.md).
 
-## Use case — `security-sync-issues`
+## Use case — `security-issue-sync`
 
 The public `users@` archive **is** anonymously queryable. On every
 sync run, if the tracker has `announced - emails sent` but the

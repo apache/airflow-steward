@@ -90,37 +90,37 @@ privilege-elevating runs without you saying so.
 ```text
 1. Open Claude Code in your tracker repo (or any directory).
 2. If you consume the framework as a submodule of your tracker
-   (the canonical adopter pattern), run /setup-verify-steward
+   (the canonical adopter pattern), run /setup-steward-verify
    to confirm `.apache-steward/`, the submodule, and the
    project-config under it are wired correctly. Read-only —
    surfaces gaps, never auto-fixes.
-3. Run /setup-secure-config — guided first-time install of
+3. Run /setup-isolated-setup-install — guided first-time install of
    the secure-agent setup (sandbox, hooks, status line,
    clean-env wrapper).
-4. Run /setup-verify-secure-config — confirms ✓/✗/⚠ for every piece
+4. Run /setup-isolated-setup-verify — confirms ✓/✗/⚠ for every piece
    of the secure-agent setup.
 5. When you want to be on the framework's latest, run
-   /setup-upgrade-steward — pulls your local airflow-steward
+   /setup-steward-upgrade — pulls your local airflow-steward
    checkout to origin/main with --ff-only, refuses to touch a
    dirty working tree, surfaces what arrived. Then run
-   /setup-update-secure-config to surface user-side drift the
+   /setup-isolated-setup-update to surface user-side drift the
    upgrade introduced (new permissions.deny entries,
    user-scope script copies older than the framework, pinned
    tool bumps that warrant a host install).
 6. Optional: if you maintain a private dotfile-style sync repo
    per
    [Syncing user-scope config across machines](#syncing-user-scope-config-across-machines),
-   run /setup-sync-shared-config to push local edits to the remote
+   run /setup-shared-config-sync to push local edits to the remote
    so other machines pick them up.
 ```
 
 The skills are at
-[`.claude/skills/setup-verify-steward/`](.claude/skills/setup-verify-steward/SKILL.md),
-[`.claude/skills/setup-secure-config/`](.claude/skills/setup-secure-config/SKILL.md),
-[`.claude/skills/setup-verify-secure-config/`](.claude/skills/setup-verify-secure-config/SKILL.md),
-[`.claude/skills/setup-upgrade-steward/`](.claude/skills/setup-upgrade-steward/SKILL.md),
-[`.claude/skills/setup-update-secure-config/`](.claude/skills/setup-update-secure-config/SKILL.md),
-[`.claude/skills/setup-sync-shared-config/`](.claude/skills/setup-sync-shared-config/SKILL.md).
+[`.claude/skills/setup-steward-verify/`](.claude/skills/setup-steward-verify/SKILL.md),
+[`.claude/skills/setup-isolated-setup-install/`](.claude/skills/setup-isolated-setup-install/SKILL.md),
+[`.claude/skills/setup-isolated-setup-verify/`](.claude/skills/setup-isolated-setup-verify/SKILL.md),
+[`.claude/skills/setup-steward-upgrade/`](.claude/skills/setup-steward-upgrade/SKILL.md),
+[`.claude/skills/setup-isolated-setup-update/`](.claude/skills/setup-isolated-setup-update/SKILL.md),
+[`.claude/skills/setup-shared-config-sync/`](.claude/skills/setup-shared-config-sync/SKILL.md).
 Each skill references back into the canonical sections of this
 document rather than duplicating them, so anything the skill walks
 you through has a longer-form section here you can read for

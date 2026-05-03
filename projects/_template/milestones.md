@@ -17,7 +17,7 @@
 The project uses GitHub milestones on its `<tracker>` repository to
 pin an issue to the release it ships in. Milestones are the hand-off
 signal from the remediation developer to the release manager; the
-`security-sync-issues` skill creates and assigns them as part of the
+`security-issue-sync` skill creates and assigns them as part of the
 `pr merged` → `fix released` transition.
 
 TODO: list every milestone format the project uses, one row per
@@ -52,7 +52,7 @@ TODO:
 ## What the milestone unlocks
 
 Once the milestone is set on a `pr merged` tracker, the
-`security-sync-issues` skill watches for the release to ship and
+`security-issue-sync` skill watches for the release to ship and
 proposes the `pr merged` → `fix released` label swap, which hands
 ownership off to the release manager for steps 13–15. See the
 repo-level [`../../README.md`](../../README.md) for the step-by-step
