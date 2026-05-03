@@ -32,6 +32,25 @@ runs the checklist documented in
 and reports each check's status to the user with concrete evidence
 (file paths, command output, version strings).
 
+## Adopter overrides
+
+Before running the default behaviour documented
+below, this skill consults
+[`.apache-steward-overrides/setup-isolated-setup-verify.md`](../../../docs/setup/agentic-overrides.md)
+in the adopter repo if it exists, and applies any
+agent-readable overrides it finds. See
+[`docs/setup/agentic-overrides.md`](../../../docs/setup/agentic-overrides.md)
+for the contract — what overrides may contain, hard
+rules, the reconciliation flow on framework upgrade,
+upstreaming guidance.
+
+**Hard rule**: agents NEVER modify the snapshot under
+`<adopter-repo>/.apache-steward/`. Local modifications
+go in the override file. Framework changes go via PR
+to `apache/airflow-steward`.
+
+---
+
 ## Golden rules
 
 - **Read-only.** This skill does not edit any file, copy any
