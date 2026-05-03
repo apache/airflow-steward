@@ -3,7 +3,7 @@ name: setup-shared-config-sync
 description: |
   Commit + push the user's shared Claude config to the
   `~/.claude-config` private dotfile-style sync repo (per
-  `secure-agent-setup.md` → Syncing user-scope config across
+  `docs/setup/secure-agent-setup.md` → Syncing user-scope config across
   machines). Inspects `~/.claude-config` for uncommitted local
   edits and unpushed commits, drafts a commit message for any
   unstaged changes, asks for explicit approval, then commits and
@@ -40,7 +40,7 @@ modifications upstream.
 
 The sync repo lives at `~/.claude-config/`. This is the convention
 documented in
-[`secure-agent-setup.md` → Syncing user-scope config across machines](../../../secure-agent-setup.md#syncing-user-scope-config-across-machines).
+[`docs/setup/secure-agent-setup.md` → Syncing user-scope config across machines](../../../docs/setup/secure-agent-setup.md#syncing-user-scope-config-across-machines).
 Adopters who maintain a sync repo at a different path will need to
 fork this skill — the path is intentionally not parameterised
 because the doc specifies one canonical location and forking the
@@ -89,7 +89,7 @@ skill is cleaner than per-invocation path-passing.
    or is not a git repo, surface that and stop — the user has
    not yet set up a sync repo per the doc, and the right next
    action is for them to follow
-   [Setting up a fresh host](../../../secure-agent-setup.md#setting-up-a-fresh-host).
+   [Setting up a fresh host](../../../docs/setup/secure-agent-setup.md#setting-up-a-fresh-host).
 
 2. **`git fetch origin`** to learn the remote's current state.
    Report:

@@ -36,7 +36,7 @@ when_to_use: |
 This skill is the **on-ramp** for adopters who do not yet have the
 secure setup running. It is a thin walkthrough wrapper around the
 canonical install path documented in
-[`secure-agent-setup.md`](../../../secure-agent-setup.md). The
+[`docs/setup/secure-agent-setup.md`](../../../docs/setup/secure-agent-setup.md). The
 authoritative content lives there; this skill exists so an adopter
 can say *"set up the secure agent setup"* in a fresh session and
 land in the right step-by-step flow without first reading the
@@ -86,7 +86,7 @@ Before walking any install step, confirm with the user:
    preserved vs replaced.
 4. **Sync repo (optional).** Whether the user maintains a
    private dotfile-style `~/.claude-config` repo per
-   [Syncing user-scope config across machines](../../../secure-agent-setup.md#syncing-user-scope-config-across-machines).
+   [Syncing user-scope config across machines](../../../docs/setup/secure-agent-setup.md#syncing-user-scope-config-across-machines).
    If yes, the skill installs user-scope scripts as **symlinks**
    into `~/.claude-config/scripts/` rather than `cp`-ing into
    `~/.claude/scripts/` — the symlink approach is what makes
@@ -95,7 +95,7 @@ Before walking any install step, confirm with the user:
 ## Walk-through
 
 Follow the canonical step list at
-[secure-agent-setup.md → Adopter setup → Via a Claude Code prompt](../../../secure-agent-setup.md#via-a-claude-code-prompt).
+[docs/setup/secure-agent-setup.md → Adopter setup → Via a Claude Code prompt](../../../docs/setup/secure-agent-setup.md#via-a-claude-code-prompt).
 Each step in that list maps 1:1 to a step in this skill. Do not
 re-write the list here — read the doc, follow it, and surface each
 sub-step with the user. The doc names are the source of truth; the

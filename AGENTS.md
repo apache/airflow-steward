@@ -79,8 +79,8 @@ The framework has two layers:
 Repo-root files:
 
 - [`README.md`](README.md) — the end-to-end process for handling security issues (generic lifecycle).
-- [`how-to-fix-a-security-issue.md`](how-to-fix-a-security-issue.md) — high-level description of the fix workflow.
-- [`new-members-onboarding.md`](new-members-onboarding.md) — onboarding guide for new security team members.
+- [`docs/security/how-to-fix-a-security-issue.md`](docs/security/how-to-fix-a-security-issue.md) — high-level description of the fix workflow.
+- [`docs/security/new-members-onboarding.md`](docs/security/new-members-onboarding.md) — onboarding guide for new security team members.
 - [`projects/_template/`](projects/_template/) — bootstrap scaffold for a new adopter's `<project-config>/`.
 - [`tools/<name>/`](tools/) — tool adapters (GitHub operations, issue-template schema, project-board GraphQL, …) for the external tools the skills invoke.
 - [`.claude/skills/<name>/SKILL.md`](.claude/skills/) — the agentic workflows.
@@ -330,7 +330,7 @@ the user to follow up with submodule update on the parent.
 operate against pre-disclosure CVE content; running Claude Code (or
 another `SKILL.md`-aware agent) with default-permissive access to
 `~/`, env vars, and arbitrary network egress is a real exfiltration
-risk. See [`secure-agent-setup.md`](secure-agent-setup.md) for the
+risk. See [`docs/setup/secure-agent-setup.md`](docs/setup/secure-agent-setup.md) for the
 layered defence the framework dogfoods (`.claude/settings.json`
 sandbox + tool permissions + clean-env wrapper, with system tools
 pinned per-tool with a 7-day default upstream cooldown).

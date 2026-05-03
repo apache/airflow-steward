@@ -5,7 +5,7 @@ description: |
   latest `origin/main` and surface what changed — the commits
   pulled, the files touched (with focus on the secure-setup blast
   radius: `.claude/settings.json`, `tools/agent-isolation/`,
-  `secure-agent-setup.md`, `secure-agent-internals.md`,
+  `docs/setup/secure-agent-setup.md`, `docs/setup/secure-agent-internals.md`,
   `pinned-versions.toml`), and the next-step recommendation. Never
   applies user-side propagation itself — that is the job of
   `setup-isolated-setup-update` (drift report) and the framework
@@ -19,7 +19,7 @@ when_to_use: |
   date", or after Claude Code surfaces something new from the
   framework's release notes. Also appropriate as the entry point
   to a periodic update routine — recommended cadence per
-  secure-agent-setup.md is once per Claude Code upgrade or once
+  docs/setup/secure-agent-setup.md is once per Claude Code upgrade or once
   a month, whichever comes first; this skill is the *first* step
   of that routine, with `setup-isolated-setup-update` (read-only drift
   report) and any subsequent re-`cp` / `/setup-shared-config-sync` runs
@@ -67,8 +67,8 @@ which is read-only and runs naturally as the next step.
 - **Show what arrived.** After a successful pull, surface the
   commit list and a per-file change summary, with explicit focus
   on the secure-setup blast radius (`.claude/settings.json`,
-  `tools/agent-isolation/`, `secure-agent-setup.md`,
-  `secure-agent-internals.md`,
+  `tools/agent-isolation/`, `docs/setup/secure-agent-setup.md`,
+  `docs/setup/secure-agent-internals.md`,
   `tools/agent-isolation/pinned-versions.toml`). The user should
   walk away knowing whether this upgrade has user-side
   follow-through to do.
@@ -107,8 +107,8 @@ which is read-only and runs naturally as the next step.
    - List per-file changes with secure-setup focus:
      `git -C <path> diff --name-status HEAD..@{u}` — call out
      entries under `.claude/settings.json`,
-     `tools/agent-isolation/**`, `secure-agent-setup.md`,
-     `secure-agent-internals.md`, `pinned-versions.toml` if they
+     `tools/agent-isolation/**`, `docs/setup/secure-agent-setup.md`,
+     `docs/setup/secure-agent-internals.md`, `pinned-versions.toml` if they
      appear.
 
 4. **Confirm with the user before pulling.** Show the commits
@@ -171,7 +171,7 @@ which is read-only and runs naturally as the next step.
 
    - **If `pinned-versions.toml` changed**, name the specific
      tool(s) bumped and remind the user that the host install
-     commands in `secure-agent-setup.md → Required tools` may
+     commands in `docs/setup/secure-agent-setup.md → Required tools` may
      now reference newer versions; the user runs the `apt-get`
      / `dnf` / `npm install` themselves (the skill does not
      touch system tools).
@@ -192,7 +192,7 @@ which is read-only and runs naturally as the next step.
   `claude-code`). Those bumps happen on the host via the
   package manager, surfaced by `check-tool-updates.sh` and
   approved per the
-  [Bumping a pinned version](../../../secure-agent-setup.md#bumping-a-pinned-version)
+  [Bumping a pinned version](../../../docs/setup/secure-agent-setup.md#bumping-a-pinned-version)
   flow.
 - Not for syncing user-scope edits to `~/.claude-config`. That
   is `setup-shared-config-sync`'s job.

@@ -44,8 +44,8 @@ four — no hard-coded project assumptions anywhere.
   brevity, confidentiality, linking conventions, the placeholder
   substitution rule (`<PROJECT>`, `<tracker>`, `<upstream>`), and the
   informational-only treatment of reporter-supplied CVSS scores.
-  [`how-to-fix-a-security-issue.md`](how-to-fix-a-security-issue.md) and
-  [`new-members-onboarding.md`](new-members-onboarding.md) are
+  [`docs/security/how-to-fix-a-security-issue.md`](docs/security/how-to-fix-a-security-issue.md) and
+  [`docs/security/new-members-onboarding.md`](docs/security/new-members-onboarding.md) are
   human-facing guides that sit alongside those.
 - **Skills** live under
   [`.claude/skills/`](.claude/skills/). Each is a `SKILL.md` that
@@ -85,8 +85,8 @@ four — no hard-coded project assumptions anywhere.
 ├── AGENTS.md                      # Editorial rules: tone, brevity, confidentiality,
 │                                  # placeholder substitution, reporter-CVSS policy
 ├── CONTRIBUTING.md                # This file
-├── how-to-fix-a-security-issue.md # Human-facing fix guide
-├── new-members-onboarding.md      # Human-facing onboarding guide
+├── docs/security/how-to-fix-a-security-issue.md # Human-facing fix guide
+├── docs/security/new-members-onboarding.md      # Human-facing onboarding guide
 │
 ├── .claude/
 │   └── skills/                    # Agent workflows (invoked via the Skill tool)

@@ -19,7 +19,7 @@
 # claude-iso.sh — launch Claude Code with a clean environment.
 #
 # This is layer 0 of the secure-agent setup (see
-# `secure-agent-setup.md`): strip every credential-shaped
+# `docs/setup/secure-agent-setup.md`): strip every credential-shaped
 # environment variable from the parent shell before exec'ing
 # Claude Code, so the agent never sees `$AWS_*`, `$GH_TOKEN`,
 # `$ANTHROPIC_API_KEY`, etc. that an unrelated terminal session
@@ -27,7 +27,7 @@
 #
 # Filesystem-level isolation (the bigger lift) is enforced by
 # Claude Code's `sandbox` feature — see the `.claude/settings.json`
-# block in `secure-agent-setup.md`. This wrapper is the
+# block in `docs/setup/secure-agent-setup.md`. This wrapper is the
 # environment-variable counterpart.
 #
 # Usage:
@@ -45,7 +45,7 @@ claude_iso_main() {
   # the lookup uses the user's normal $PATH. Use a path-only lookup
   # (bash `type -P`, zsh `whence -p`) instead of `command -v`: with
   # `command -v`, an `alias claude=claude-iso` in the user's rc file
-  # (a documented setup option — see `secure-agent-setup.md`) would
+  # (a documented setup option — see `docs/setup/secure-agent-setup.md`) would
   # resolve back to the alias and recurse.
   local claude_bin
   if [[ -n "${ZSH_VERSION-}" ]]; then
@@ -54,7 +54,7 @@ claude_iso_main() {
     claude_bin="$(type -P claude 2>/dev/null || true)"
   fi
   if [[ -z "$claude_bin" ]]; then
-    echo "claude-iso: 'claude' not found on PATH. Install per secure-agent-setup.md." >&2
+    echo "claude-iso: 'claude' not found on PATH. Install per docs/setup/secure-agent-setup.md." >&2
     return 127
   fi
 

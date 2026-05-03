@@ -115,12 +115,12 @@ privilege-elevating runs without you saying so.
 ```
 
 The skills are at
-[`.claude/skills/setup-steward-verify/`](.claude/skills/setup-steward-verify/SKILL.md),
-[`.claude/skills/setup-isolated-setup-install/`](.claude/skills/setup-isolated-setup-install/SKILL.md),
-[`.claude/skills/setup-isolated-setup-verify/`](.claude/skills/setup-isolated-setup-verify/SKILL.md),
-[`.claude/skills/setup-steward-upgrade/`](.claude/skills/setup-steward-upgrade/SKILL.md),
-[`.claude/skills/setup-isolated-setup-update/`](.claude/skills/setup-isolated-setup-update/SKILL.md),
-[`.claude/skills/setup-shared-config-sync/`](.claude/skills/setup-shared-config-sync/SKILL.md).
+[`.claude/skills/setup-steward-verify/`](../../.claude/skills/setup-steward-verify/SKILL.md),
+[`.claude/skills/setup-isolated-setup-install/`](../../.claude/skills/setup-isolated-setup-install/SKILL.md),
+[`.claude/skills/setup-isolated-setup-verify/`](../../.claude/skills/setup-isolated-setup-verify/SKILL.md),
+[`.claude/skills/setup-steward-upgrade/`](../../.claude/skills/setup-steward-upgrade/SKILL.md),
+[`.claude/skills/setup-isolated-setup-update/`](../../.claude/skills/setup-isolated-setup-update/SKILL.md),
+[`.claude/skills/setup-shared-config-sync/`](../../.claude/skills/setup-shared-config-sync/SKILL.md).
 Each skill references back into the canonical sections of this
 document rather than duplicating them, so anything the skill walks
 you through has a longer-form section here you can read for
@@ -188,7 +188,7 @@ semantics or sandbox flags is caught broadly within hours of
 release.
 
 The current pins live in machine-readable form in
-[`tools/agent-isolation/pinned-versions.toml`](tools/agent-isolation/pinned-versions.toml):
+[`tools/agent-isolation/pinned-versions.toml`](../../tools/agent-isolation/pinned-versions.toml):
 
 | Tool | Pinned version | Released | Cooldown | Purpose |
 |---|---|---|---|---|
@@ -325,7 +325,7 @@ actually lands the bump.
 ## The framework's own `.claude/settings.json`
 
 The framework dogfoods the secure config in
-[`.claude/settings.json`](.claude/settings.json). The full block is
+[`.claude/settings.json`](../../.claude/settings.json). The full block is
 below, annotated.
 
 ```jsonc
@@ -394,7 +394,7 @@ blocks the agent's Read tool from reading the same path.
 
 Layer 0 — strip credential-shaped env vars from the parent shell
 before invoking `claude` — is implemented by
-[`tools/agent-isolation/claude-iso.sh`](tools/agent-isolation/claude-iso.sh).
+[`tools/agent-isolation/claude-iso.sh`](../../tools/agent-isolation/claude-iso.sh).
 
 There are two valid ways to make `claude-iso` available on your
 shell. Pick whichever matches how you use Claude Code; the wrapper
@@ -493,7 +493,7 @@ honouring the bypass, but in a long session the prompt is easy to
 skim past, especially when several appear in quick succession.
 
 The framework ships a `PreToolUse` hook in
-[`tools/agent-isolation/sandbox-bypass-warn.sh`](tools/agent-isolation/sandbox-bypass-warn.sh)
+[`tools/agent-isolation/sandbox-bypass-warn.sh`](../../tools/agent-isolation/sandbox-bypass-warn.sh)
 that makes every bypass attempt visually impossible to miss: a bold
 red banner with the command and the model's stated reason printed
 to stderr, before the permission prompt appears.
@@ -507,7 +507,7 @@ about to approve.
 ### Why install it user-scope, not project-scope
 
 Unlike the framework's
-[`.claude/settings.json`](.claude/settings.json) (which is
+[`.claude/settings.json`](../../.claude/settings.json) (which is
 repo-scoped — only sessions started inside the tracker repo see
 it), this hook is most useful in
 **`~/.claude/settings.json`** — the user-scope config that applies
@@ -601,7 +601,7 @@ this session — a session that is inadvertently running with
 unnoticed for hours.
 
 The framework ships
-[`tools/agent-isolation/sandbox-status-line.sh`](tools/agent-isolation/sandbox-status-line.sh)
+[`tools/agent-isolation/sandbox-status-line.sh`](../../tools/agent-isolation/sandbox-status-line.sh)
 to render exactly that:
 
 - `<model> [sandbox]` in green when the active settings set
@@ -655,7 +655,7 @@ renderer rather than replacing it.
 
 For adopters who want a richer variant out of the box, the framework
 also ships
-[`tools/agent-isolation/sandbox-status-line-rich.sh`](tools/agent-isolation/sandbox-status-line-rich.sh).
+[`tools/agent-isolation/sandbox-status-line-rich.sh`](../../tools/agent-isolation/sandbox-status-line-rich.sh).
 Same sandbox-state detection, plus folder name (hash-coloured for a
 stable per-repo identity), git branch + dirty marker + ahead/behind,
 per-branch PR title (cached for 5 min, silent when `gh` is missing or
@@ -673,7 +673,7 @@ echo '{"model":{"display_name":"Sonnet 4.6"},"workspace":{"current_dir":"'"$PWD"
 ```
 
 Expected output, *inside* this repo (its
-[`.claude/settings.json`](.claude/settings.json) sets
+[`.claude/settings.json`](../../.claude/settings.json) sets
 `sandbox.enabled: true`, and assuming `.claude/settings.local.json`
 either does not exist or does not override the key):
 `Sonnet 4.6 [sandbox]` with `[sandbox]` rendered in green. From a
@@ -840,7 +840,7 @@ sub-section that follows.
 1. Install the pinned tools per [Install commands](#install-commands)
    above.
 2. Copy
-   [`.claude/settings.json`](.claude/settings.json) from the framework
+   [`.claude/settings.json`](../../.claude/settings.json) from the framework
    submodule into `<your-tracker>/.claude/settings.json`. Adjust:
    - The `sandbox.network.allowedDomains` list — drop the framework
      domains you don't actually use, add any project-specific hosts.
@@ -1210,7 +1210,7 @@ gaps; together they are the actual sandbox.
   and Seatbelt (macOS) enforce the policy at the OS layer, the
   SNI / DoH blind spot, the feedback-mechanism layering, and the
   residual risks the setup does not eliminate.
-- [`AGENTS.md`](AGENTS.md) — placeholder convention used in skill
+- [`AGENTS.md`](../../AGENTS.md) — placeholder convention used in skill
   files (`<tracker>`, `<upstream>`, `<security-list>`, …).
-- [`README.md`](README.md) — framework overview and how the
+- [`README.md`](../../README.md) — framework overview and how the
   secure setup fits the broader skill workflow.
