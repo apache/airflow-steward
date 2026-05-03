@@ -2,7 +2,7 @@
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
-- [apache-steward](#apache-steward)
+- [Apache Steward (to be renamed)](#apache-steward-to-be-renamed)
   - [Skill families](#skill-families)
   - [Adopting the framework](#adopting-the-framework)
   - [Keeping the submodule current](#keeping-the-submodule-current)
@@ -13,13 +13,24 @@
 <!-- SPDX-License-Identifier: Apache-2.0
      https://www.apache.org/licenses/LICENSE-2.0 -->
 
-# apache-steward
+# Apache Steward (to be renamed)
+
+> **Heads-up — rename in flight.** This repository is currently
+> served from `apache/airflow-steward`; it is in the process of
+> being renamed to `apache/steward` to reflect its project-
+> agnostic identity (the framework stewards multiple ASF project
+> workflows, not just Airflow's). Until the rename lands on the
+> GitHub side, every clone URL, git-submodule reference, and CI
+> integration still uses the legacy `apache/airflow-steward`
+> slug — all path examples in this README and the linked docs
+> use that slug verbatim. The rename will only change the GitHub
+> repository slug; existing checkouts will keep working with a
+> single `git remote set-url`.
 
 Reusable, project-agnostic framework for ASF-project automation.
-Currently served from `apache/airflow-steward` for legacy reasons;
-future-renamed to `apache/steward`. Adopters pull this repository
-into their own tracker as a git submodule and ship project-specific
-configuration alongside it under `<project-config>/`.
+Adopters pull this repository into their own tracker as a git
+submodule and ship project-specific configuration alongside it
+under `<project-config>/`.
 
 ## Skill families
 
