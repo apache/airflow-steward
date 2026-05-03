@@ -2,7 +2,7 @@
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
-- [apache-steward](#apache-steward)
+- [Apache Steward (to be renamed)](#apache-steward-to-be-renamed)
   - [Skill families](#skill-families)
   - [Adopting the framework](#adopting-the-framework)
   - [Keeping the submodule current](#keeping-the-submodule-current)
@@ -13,13 +13,43 @@
 <!-- SPDX-License-Identifier: Apache-2.0
      https://www.apache.org/licenses/LICENSE-2.0 -->
 
-# apache-steward
+# Apache Steward (to be renamed)
+
+> **Heads-up — rename in flight, name not yet chosen.** This
+> repository is currently served from `apache/airflow-steward`
+> and is going to be renamed to a **different** name — *not*
+> `apache/steward`. The current name carries `airflow` for
+> legacy reasons, but the framework is project-agnostic (it
+> stewards multiple ASF project workflows, not just Airflow's),
+> so the working group steering it will pick a new name that
+> reflects that. The final name will be chosen by **discussion
+> followed by a poll** among the working-group members.
+>
+> **Current candidate names** (the list is open for additions
+> during the **week of 4–9 May 2026**, after which the poll
+> opens):
+>
+> - Apache Mentor
+> - Apache Reeve
+> - Apache Guild
+> - Apache Minerva
+> - Apache Magpie
+> - Apache Beacon
+> - Apache Compass
+> - Apache Lexicon
+> - Apache Polyglot
+>
+> Until the rename lands on the GitHub side, every clone URL,
+> git-submodule reference, and CI integration still uses the
+> legacy `apache/airflow-steward` slug — all path examples in
+> this README and the linked docs use that slug verbatim. The
+> rename will only change the GitHub repository slug; existing
+> checkouts will keep working with a single `git remote set-url`.
 
 Reusable, project-agnostic framework for ASF-project automation.
-Currently served from `apache/airflow-steward` for legacy reasons;
-future-renamed to `apache/steward`. Adopters pull this repository
-into their own tracker as a git submodule and ship project-specific
-configuration alongside it under `<project-config>/`.
+Adopters pull this repository into their own tracker as a git
+submodule and ship project-specific configuration alongside it
+under `<project-config>/`.
 
 ## Skill families
 
