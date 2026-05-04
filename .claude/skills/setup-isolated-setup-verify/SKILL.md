@@ -51,6 +51,29 @@ to `apache/airflow-steward`.
 
 ---
 
+## Snapshot drift
+
+Also at the top of every run, this skill compares the
+gitignored `.apache-steward.local.lock` (per-machine
+fetch) against the committed `.apache-steward.lock`
+(the project pin). On mismatch the skill surfaces the
+gap and proposes
+[`/setup-steward upgrade`](../setup-steward/upgrade.md).
+The proposal is non-blocking — the user may defer if
+they want to run with the local snapshot for now. See
+[`docs/setup/install-recipes.md` § Subsequent runs and drift detection](../../../docs/setup/install-recipes.md#subsequent-runs-and-drift-detection)
+for the full flow.
+
+Drift severity:
+
+- **method or URL differ** → ✗ full re-install needed.
+- **ref differs** (project bumped tag, or `git-branch`
+  local is behind upstream tip) → ⚠ sync needed.
+- **`svn-zip` SHA-512 mismatches the committed
+  anchor** → ✗ security-flagged; investigate before
+  upgrading.
+
+---
 ## Golden rules
 
 - **Read-only.** This skill does not edit any file, copy any
