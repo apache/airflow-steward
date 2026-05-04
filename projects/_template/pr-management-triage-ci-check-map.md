@@ -2,7 +2,7 @@
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
-- [TODO: `<Project Name>` — pr-management-triage CI-check to doc-URL map](#todo-project-name--pr-management-triage-ci-check-to-doc-url-map)
+- [Apache Airflow — pr-management-triage CI-check to doc-URL map](#apache-airflow--pr-management-triage-ci-check-to-doc-url-map)
   - [Table](#table)
   - [Notes](#notes)
 
@@ -11,17 +11,15 @@
 <!-- SPDX-License-Identifier: Apache-2.0
      https://www.apache.org/licenses/LICENSE-2.0 -->
 
-# TODO: `<Project Name>` — pr-management-triage CI-check to doc-URL map
+# Apache Airflow — pr-management-triage CI-check to doc-URL map
 
 This file is the **CI-check categorisation table** for the
 [`pr-management-triage`](../../.claude/skills/pr-management-triage/SKILL.md) skill's
-violations comments. When a PR has failing CI checks, the skill
-groups the failures by category (static checks, tests, image
-builds, etc.) and links each category to the project's
-documentation for that area.
-
-The framework reads this table at session start; without it, the
-skill falls back to a generic "see CI for details" link.
+violations comments.  It contains the concrete mapping for the
+Apache Airflow project.  New adopters should copy this file into
+their own `<project-config>/pr-management-triage-ci-check-map.md`
+and replace every Airflow-specific pattern and URL with their
+project's equivalents.
 
 ## Table
 
@@ -32,30 +30,29 @@ links to.
 
 | Pattern | Category | Doc URL |
 |---|---|---|
-| TODO: e.g. `static checks` | TODO: e.g. `Pre-commit / static checks` | TODO: e.g. `https://github.com/apache/foo/blob/main/contributing-docs/08_static_code_checks.rst` |
-| TODO: e.g. `ruff` | Ruff (linting / formatting) | TODO |
-| TODO: e.g. `mypy-` | mypy (type checking) | TODO |
-| TODO: e.g. `unit test`, `test-` | Unit tests | TODO |
-| TODO: e.g. `docs`, `spellcheck-docs`, `build-docs` | Build docs | TODO |
-| TODO: e.g. `helm` | Helm tests | TODO (skip if not applicable) |
-| TODO: e.g. `k8s`, `kubernetes` | Kubernetes tests | TODO (skip if not applicable) |
-| TODO: e.g. `build ci image`, `build prod image`, `ci-image`, `prod-image` | Image build | TODO (skip if not applicable) |
-| TODO: e.g. `provider` | Provider tests | TODO (skip if not applicable) |
-| `*` (catch-all) | `Other failing CI checks` | TODO: catch-all link to the project's static-checks or contributing doc |
+| `static checks`, `pre-commit`, `prek` | Pre-commit / static checks | `https://github.com/apache/airflow/blob/main/contributing-docs/08_static_code_checks.rst` |
+| `ruff` | Ruff (linting / formatting) | `https://github.com/apache/airflow/blob/main/contributing-docs/08_static_code_checks.rst` |
+| `mypy-` | mypy (type checking) | `https://github.com/apache/airflow/blob/main/contributing-docs/08_static_code_checks.rst` |
+| `unit test`, `test-` | Unit tests | `https://github.com/apache/airflow/blob/main/contributing-docs/09_testing.rst` |
+| `docs`, `spellcheck-docs`, `build-docs` | Build docs | `https://github.com/apache/airflow/blob/main/contributing-docs/11_documentation_building.rst` |
+| `helm` | Helm tests | `https://github.com/apache/airflow/blob/main/contributing-docs/testing/helm_unit_tests.rst` |
+| `k8s`, `kubernetes` | Kubernetes tests | `https://github.com/apache/airflow/blob/main/contributing-docs/testing/k8s_tests.rst` |
+| `build ci image`, `build prod image`, `ci-image`, `prod-image` | Image build | `https://github.com/apache/airflow/blob/main/contributing-docs/08_static_code_checks.rst` |
+| `provider` | Provider tests | `https://github.com/apache/airflow/blob/main/contributing-docs/12_provider_distributions.rst` |
+| `*` (catch-all) | Other failing CI checks | `https://github.com/apache/airflow/blob/main/contributing-docs/08_static_code_checks.rst` |
 
 ## Notes
 
-- **Order matters.** The skill matches first-found; put more-
-  specific patterns above broader ones (e.g. `mypy-airflow-core`
-  before bare `mypy`).
+- **Order matters.** The skill matches first-found; more-specific
+  patterns are listed above broader ones (e.g. `mypy-airflow-core`
+  matches the `mypy-` row).
 - **Mergeability fallback.** If the PR has `mergeable ==
   CONFLICTING`, the skill emits a separate "Merge conflicts"
-  category linking to the project's git/rebase doc — declare
-  that link here too:
+  category linking to the project's git/rebase doc:
 
 | Concept | Doc URL |
 |---|---|
-| Merge conflicts (rebase guide) | TODO: e.g. `https://github.com/apache/foo/blob/main/contributing-docs/10_working_with_git.rst` |
+| Merge conflicts (rebase guide) | `https://github.com/apache/airflow/blob/main/contributing-docs/10_working_with_git.rst` |
 
 - **Failing-CI fallback.** If `checks_state == FAILURE` but no
   failed check names are extractable, the skill emits a generic

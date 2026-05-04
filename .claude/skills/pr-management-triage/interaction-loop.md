@@ -170,7 +170,7 @@ CI: FAILURE (4 failed checks)
   - mypy-providers                     ← only-static-check pattern broken
 
 Unresolved review threads: 4
-  - @potiuk (MEMBER): "Why does this touch airflow-core/..."
+  - @alice (MEMBER): "Why does this touch src/core/..."
   - @uranusjr (MEMBER): "Consider using the existing hook abstraction"
   - @eladkal (MEMBER): "Should we add a newsfragment?"
   - @potiuk (MEMBER): "Typo on line 74"

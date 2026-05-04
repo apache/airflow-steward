@@ -27,9 +27,8 @@ the comment. Posting the comment before converting leaves the
 comment on a non-draft PR if the conversion fails.
 
 ```bash
-# 1. Convert to draft (GraphQL mutation — Airflow's `breeze` used
-#    `convertPullRequestToDraft`; `gh pr ready <N> --undo` is the
-#    CLI equivalent).
+# 1. Convert to draft (`gh pr ready <N> --undo` is the CLI
+#    equivalent of the GraphQL `convertPullRequestToDraft` mutation).
 gh pr ready <N> --repo <repo> --undo
 
 # 2. Post the violations comment

@@ -179,7 +179,7 @@ Pagination stops when either:
 
 For each PR, intersect `files[].path` with the active set; if
 non-empty, add the PR to the working list with the **first
-match path** as the chip text (e.g. `[touches: airflow-core/src/airflow/jobs/scheduler_job_runner.py]`).
+match path** as the chip text (e.g. `[touches: src/core/jobs/scheduler.py]`).
 For >1 match, the chip says `[touches: <first-path> +N more]`.
 
 ### Tuning

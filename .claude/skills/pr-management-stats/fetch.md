@@ -174,7 +174,7 @@ Two stages:
 
 ```graphql
 query {
-  repository(owner:"apache",name:"airflow") {
+  repository(owner:$owner,name:$repo) {
     pr63407: pullRequest(number:63407) {
       number author{login} authorAssociation closedAt mergedAt state merged
       labels(first:30){nodes{name}}

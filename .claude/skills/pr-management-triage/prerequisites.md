@@ -113,7 +113,7 @@ a missing label is itself an anomaly worth flagging.
 
 The scratch cache lives at
 `/tmp/pr-management-triage-cache-<repo-slug>.json` where `<repo-slug>` is
-`<owner>__<name>` (e.g. `apache__airflow`). It stores:
+`<owner>__<name>` (e.g. `apache__project`). It stores:
 
 - viewer login and `viewerPermission` (so we don't re-check in
   the same session)

@@ -118,7 +118,7 @@ highlighted with its file + line number.
 
 - Modifications to `Dockerfile*` that add `curl | sh` /
   `npm install` from an arbitrary URL / `pip install` from a
-  non-PyPI index that's not one of Airflow's known ones
+  non-PyPI index that's not one of the project's known ones
 - Changes to `setup.cfg` / `pyproject.toml` that add a
   `install_requires` referencing a typosquat-looking name
 - Changes to `scripts/ci/**` that execute downloaded payloads
@@ -169,7 +169,7 @@ AuthorAssociation: FIRST_TIME_CONTRIBUTOR
 Changed files (F):
   .github/workflows/new.yml           (+42 / -0)    ← WORKFLOW
   scripts/ci/deploy.sh                (+10 / -2)    ← CI
-  airflow-core/src/airflow/x.py       (+3 / -1)
+  src/project/x.py                    (+3 / -1)
 
 Suspicious-pattern matches: <count>
   - .github/workflows/new.yml:15 — "curl … | sh"
@@ -301,7 +301,7 @@ approve. In that case:
 - Phase 2 swaps the *Approve* line label to
   *Request approval (indices)*. Indices listed there generate
   a short message the triager can post in
-  `#airflow-maintainers` (or wherever the team coordinates),
+  the project's maintainer coordination channel (e.g. `#project-maintainers`),
   one PR per line, and log each as "pending WRITE-level
   approval" in the session.
 - *Flag-suspicious* is still available — closing and labeling

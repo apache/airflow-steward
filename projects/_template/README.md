@@ -105,16 +105,13 @@ fill them in.
 | [`pr-management-triage-ci-check-map.md`](pr-management-triage-ci-check-map.md) | CI-check name pattern → category name + doc-URL mapping for the violations comment. Used by `pr-management-triage`. |
 | [`pr-management-code-review-criteria.md`](pr-management-code-review-criteria.md) | List of project's review-criteria source files (repo-wide AGENTS.md, code-review docs, per-area AGENTS.md), security-model calibration doc, backport-branch pattern, section-anchor URLs. Used by `pr-management-code-review`. |
 
-> The framework currently ships with airflow-flavoured defaults
-> inline in the supporting files of each PR-skill (e.g.
-> [`pr-management-triage/comment-templates.md`](../../.claude/skills/pr-management-triage/comment-templates.md)
-> embeds airflow's PR-quality-criteria URL). A follow-up PR will
-> complete the extraction so the skills read exclusively from
-> `<project-config>/`. Until then, non-airflow adopters override by
-> forking the relevant supporting file into their own
-> `.claude/skills/<skill-name>/`. Each PR-skill's `SKILL.md`
-> documents the override path in its `Adopter configuration`
-> section.
+> Each PR-skill reads its project-specific content exclusively
+> from the files listed below.  No defaults are baked into the
+> framework — every adopter provides their own values in
+> `<project-config>/`.  See `projects/_template/pr-management-*.md`
+> for concrete examples (filled in with the Apache Airflow project's
+> values, which new adopters can use as a reference when drafting
+> their own configuration).
 
 ## Checklist after copying
 
