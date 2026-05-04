@@ -39,8 +39,8 @@ framework safe to use.
 | [`setup-isolated-setup-install`](../../.claude/skills/setup-isolated-setup-install/SKILL.md) | First-time install of the secure agent setup. |
 | [`setup-isolated-setup-verify`](../../.claude/skills/setup-isolated-setup-verify/SKILL.md) | Verify the secure setup landed correctly. |
 | [`setup-isolated-setup-update`](../../.claude/skills/setup-isolated-setup-update/SKILL.md) | Surface drift between the installed setup and the framework's latest. |
-| [`setup-steward-upgrade`](../../.claude/skills/setup-steward-upgrade/SKILL.md) | Pull the framework checkout to latest `origin/main`. |
-| [`setup-steward-verify`](../../.claude/skills/setup-steward-verify/SKILL.md) | Verify the framework is integrated correctly into an adopter tracker. |
+| [`setup-steward upgrade`](../../.claude/skills/setup-steward/upgrade.md) | Pull the framework checkout to latest `origin/main`. |
+| [`setup-steward verify`](../../.claude/skills/setup-steward/verify.md) | Verify the framework is integrated correctly into an adopter tracker. |
 | [`setup-shared-config-sync`](../../.claude/skills/setup-shared-config-sync/SKILL.md) | Commit + push the user's shared Claude config to its sync repo. |
 
 ## Deep documentation

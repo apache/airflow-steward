@@ -64,12 +64,26 @@ jobs:
         # PR. The previous v2.6.1 pin was not on the allowlist; v2.8.0
         # (2026-02-17) is. When bumping, pick the next allowlisted SHA
         # — do not pick the latest upstream release blindly.
+        #
+        # `lycheeVersion` is pinned to v0.23.0 — the newest binary
+        # whose release archive lays the `lychee` executable at the
+        # top level. From the v0.24 line onward the archive wraps
+        # the binary in a `lychee-<arch>-<os>/` directory, which
+        # the v2.8.0 action's install step does not handle (it
+        # `install`s the literal `lychee` path and exits with
+        # `cannot stat`). Until a newer lychee-action SHA is added
+        # to the ASF infrastructure-actions allowlist, the binary
+        # has to stay on v0.23.x. `.lychee.toml` matches: the
+        # boolean form of `include_fragments` is what v0.23.x
+        # expects (the enum string `"anchor-only"` is a v0.24+
+        # form).
         uses: lycheeverse/lychee-action@8646ba30535128ac92d33dfc9133794bfdd9b411  # v2.8.0
         with:
           args: --config .lychee.toml --no-progress .
-          fail: false
+          fail: true
+          lycheeVersion: v0.23.0
           token: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: true
+        continue-on-error: false
 
       - name: Summarise
         if: always()

@@ -236,7 +236,7 @@ so a triager doing a one-off archive walk has a direct recipe.
 ## Query patterns
 
 Concrete query templates for the skill use cases live in the
-sibling [`search-queries.md`](search-queries.md) (to be written
+sibling `search-queries.md` (to be written
 when the first skill adopts PonyMail MCP — the shape will mirror
 [`../gmail/search-queries.md`](../gmail/search-queries.md) but
 substitute the PonyMail query grammar).

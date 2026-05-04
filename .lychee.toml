@@ -10,11 +10,13 @@
 #
 # Run in CI: see `.github/workflows/doc-validation.yml`.
 
-# Check anchor fragments, not just file paths.
-# `anchor-only` enables `#section` checks (which is what GitHub-style
-# slugs produce); `text-only` would also enable `#:~:text=` fragments
-# but those are not used in this repo.
-include_fragments = "anchor-only"
+# Check anchor fragments, not just file paths — `#section` checks
+# the GitHub-style slug exists in the linked file. Boolean form is
+# the v0.23.x schema (and the version `link-check.yml` pins; see
+# the comment there for why we cannot move to v0.24's enum-string
+# form yet). When CI moves to lychee v0.24+, change this to
+# `include_fragments = "anchor-only"`.
+include_fragments = true
 
 # Concurrency cap — kept moderate to avoid being rate-limited by GitHub.
 max_concurrency = 14

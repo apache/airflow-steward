@@ -34,7 +34,7 @@
 The authoritative reference for the 16-step security-issue
 lifecycle and the label-lifecycle state diagram. The
 [role guides](roles.md) point into specific steps; the
-[security skills](../../README.md#skills) execute the steps.
+[security skills](../../.claude/skills/) execute the steps.
 
 ## Process reference: the 16 steps
 
@@ -173,7 +173,7 @@ remove `needs triage`. If invalid,
 labels `invalid`, posts a closing comment, archives the board item,
 and (for `<security-list>`-imported trackers) drafts a polite-but-firm
 reporter reply. If consensus cannot be reached, follow
-[ASF voting](https://www.apache.org/foundation/voting.html#apache-voting-process)
+[ASF voting](https://www.apache.org/foundation/voting.html)
 on `<security-list>`.
 
 If a candidate duplicate is detected,

@@ -145,7 +145,7 @@ skills):
 
 ## Cross-references
 
-- [`../README.md`](../README.md) — framework-level *"Adopting the
+- [`../../README.md`](../../README.md) — framework-level *"Adopting the
   framework"* view + bootstrap walk-through.
 - [`../../AGENTS.md`](../../AGENTS.md#placeholder-convention-used-in-skill-files) —
   the placeholder convention that lets skills resolve `<project-config>/`

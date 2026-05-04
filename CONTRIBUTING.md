@@ -54,14 +54,13 @@ four — no hard-coded project assumptions anywhere.
   deduplicating two trackers. Skills use the `<PROJECT>` /
   `<tracker>` / `<upstream>` placeholders everywhere and resolve them
   at runtime. They must not contain project-specific strings.
-- **Config** lives under [`config/`](config/) and wires the runtime
-  together.
-  [`config/active-project.md`](config/active-project.md) declares which
-  subtree under `projects/` is active (checked in);
-  [`config/user.md`](config/README.md#what-the-user-layer-does) carries
-  per-user preferences (tool access, PMC status, local clone paths) and
-  is **gitignored**. Two prek hooks keep `user.md` off the remote. See
-  [`config/README.md`](config/README.md) for the full tutorial.
+- **Per-user config** is scaffolded by `setup-steward` at
+  `.apache-steward-overrides/user.md` in the adopter repo. It carries
+  per-user preferences (PMC status, local clone paths, optional tool
+  backends) and is **committed** so it ships with the adopter repo.
+  If the file is missing, skills fall back to interactive prompting
+  and offer to save the answer back. See the `user.md` template in
+  [`.claude/skills/setup-steward/adopt.md`](.claude/skills/setup-steward/adopt.md) for the full shape.
 - **Projects** live under [`projects/`](projects/), one subtree per
   supported ASF project. The active subtree holds every
   project-specific fact the skills depend on — the security model, the
@@ -168,18 +167,18 @@ git clone git@github.com:<tracker>.git
 cd <tracker-repo-name>
 prek install                   # wire the hooks into .git/hooks
 prek run --all-files           # runs every hook on every file; does a
-                               # one-time bootstrap of config/user.md
+                               # one-time bootstrap of .apache-steward-overrides/user.md
                                # from the template
 ```
 
 The `bootstrap-user-config` hook will create
-[`config/user.md`](config/README.md#what-the-user-layer-does) on the
+`.apache-steward-overrides/user.md` on the
 first run. Open it, grep for `TODO`, and fill in the lines that apply
 to your setup. The file is gitignored; a second hook
 (`forbid-user-config`) refuses any commit that stages it, so you
 cannot accidentally publish your local configuration.
 
-Read [`config/README.md`](config/README.md) for the end-to-end
+Read [`.claude/skills/setup-steward/adopt.md`](.claude/skills/setup-steward/adopt.md) for the end-to-end
 configuration tutorial, including the placeholder convention and how
 the skills consume both layers.
 
@@ -333,8 +332,8 @@ doc wins. Re-read it first:
 
 - [`README.md`](README.md) — the 16-step disclosure process.
 - [`AGENTS.md`](AGENTS.md) — editorial and confidentiality rules.
-- [`config/README.md`](config/README.md) — configuration layer tutorial.
-- [`projects/README.md`](projects/README.md) — current-projects index
+- [`.claude/skills/setup-steward/adopt.md`](.claude/skills/setup-steward/adopt.md) — framework adoption + per-user config scaffold tutorial.
+- [`projects/_template/README.md`](projects/_template/README.md) — current-projects index
   and the new-project bootstrap path.
 - [`projects/_template/`](projects/_template/) — scaffold to clone when
   adding a new project.

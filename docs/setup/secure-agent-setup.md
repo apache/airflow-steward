@@ -90,7 +90,7 @@ privilege-elevating runs without you saying so.
 ```text
 1. Open Claude Code in your tracker repo (or any directory).
 2. If you consume the framework as a submodule of your tracker
-   (the canonical adopter pattern), run /setup-steward-verify
+   (the canonical adopter pattern), run `/setup-steward verify`
    to confirm `.apache-steward/`, the submodule, and the
    project-config under it are wired correctly. Read-only —
    surfaces gaps, never auto-fixes.
@@ -100,7 +100,7 @@ privilege-elevating runs without you saying so.
 4. Run /setup-isolated-setup-verify — confirms ✓/✗/⚠ for every piece
    of the secure-agent setup.
 5. When you want to be on the framework's latest, run
-   /setup-steward-upgrade — pulls your local airflow-steward
+   `/setup-steward upgrade` — pulls your local airflow-steward
    checkout to origin/main with --ff-only, refuses to touch a
    dirty working tree, surfaces what arrived. Then run
    /setup-isolated-setup-update to surface user-side drift the
@@ -115,10 +115,10 @@ privilege-elevating runs without you saying so.
 ```
 
 The skills are at
-[`.claude/skills/setup-steward-verify/`](../../.claude/skills/setup-steward-verify/SKILL.md),
+[`.claude/skills/setup-steward/verify.md`](../../.claude/skills/setup-steward/verify.md),
 [`.claude/skills/setup-isolated-setup-install/`](../../.claude/skills/setup-isolated-setup-install/SKILL.md),
 [`.claude/skills/setup-isolated-setup-verify/`](../../.claude/skills/setup-isolated-setup-verify/SKILL.md),
-[`.claude/skills/setup-steward-upgrade/`](../../.claude/skills/setup-steward-upgrade/SKILL.md),
+[`.claude/skills/setup-steward/upgrade.md`](../../.claude/skills/setup-steward/upgrade.md),
 [`.claude/skills/setup-isolated-setup-update/`](../../.claude/skills/setup-isolated-setup-update/SKILL.md),
 [`.claude/skills/setup-shared-config-sync/`](../../.claude/skills/setup-shared-config-sync/SKILL.md).
 Each skill references back into the canonical sections of this
@@ -176,8 +176,8 @@ detail.
 Every system-level tool the secure setup depends on is pinned with a
 **per-tool cooldown** before the framework adopts a new upstream
 release — same convention as the `[tool.uv] exclude-newer = "7 days"`
-setting in [`pyproject.toml`](pyproject.toml) and the weekly Dependabot
-updates in [`.github/dependabot.yml`](.github/dependabot.yml).
+setting in [`pyproject.toml`](../../pyproject.toml) and the weekly Dependabot
+updates in [`.github/dependabot.yml`](../../.github/dependabot.yml).
 Default cooldown is 7 days; individual tools can override via
 `cooldown_days = N` in the manifest when their release stream
 warrants it. `claude-code` is the canonical override at 1 day —
@@ -1117,7 +1117,7 @@ setup steps written into the screenshot's caption.
 
 **1. Sandboxed session — the steady state.**
 
-![Sandboxed session: status-line prefix `[sandbox]` rendered green](images/session-sandboxed.png)
+![Sandboxed session: status-line prefix `[sandbox]` rendered green](../../images/session-sandboxed.png)
 
 The terminal footer renders `<model> [sandbox]` in green when
 the active settings (project `settings.local.json` →
@@ -1129,7 +1129,7 @@ listed in `sandbox.filesystem.allowRead`.
 **2. Unsandboxed session — the failure mode this setup exists
 to make obvious.**
 
-![Unsandboxed session: status-line prefix `[NO SANDBOX]` rendered bold red](images/session-no-sandbox.png)
+![Unsandboxed session: status-line prefix `[NO SANDBOX]` rendered bold red](../../images/session-no-sandbox.png)
 
 `[NO SANDBOX]` in bold red means the active settings do not
 enable the sandbox. The agent's Bash subprocesses run with full
@@ -1140,7 +1140,7 @@ unnoticed for hours.
 
 **3. Sandbox-bypass attempt — the per-call signal.**
 
-![Bold red SANDBOX BYPASS banner immediately above the Claude Code permission prompt](images/sandbox-bypass-banner.png)
+![Bold red SANDBOX BYPASS banner immediately above the Claude Code permission prompt](../../images/sandbox-bypass-banner.png)
 
 When the model invokes the Bash tool with
 `dangerouslyDisableSandbox: true`, the
@@ -1161,7 +1161,7 @@ deny at the prompt (the visual is what matters).
 
 **4. Sandbox actually denying a read — proof it is real.**
 
-![Sandboxed Bash call to `ls ~/Downloads` blocked by the runtime; surfaced as "read ~/Downloads (outside allowed read paths)" with an offer to retry with the sandbox disabled](images/sandbox-blocks-read.png)
+![Sandboxed Bash call to `ls ~/Downloads` blocked by the runtime; surfaced as "read ~/Downloads (outside allowed read paths)" with an offer to retry with the sandbox disabled](../../images/sandbox-blocks-read.png)
 
 In a sandboxed session **without** bypass, a Bash call that
 tries to touch a path outside `allowRead` is intercepted by
@@ -1177,7 +1177,7 @@ at the tool boundary, which is the cleaner failure mode.
 **5. bubblewrap / Seatbelt in action — the OS layer the runtime
 falls back to.**
 
-![Sandboxed Bash call running `python3 -c 'os.listdir(os.path.expanduser("~/.aws/"))'`; the inner syscall fails with PermissionError: [Errno 1] Operation not permitted: '/Users/jarekpotiuk/.aws/'](images/sandbox-os-level-block.png)
+![Sandboxed Bash call running `python3 -c 'os.listdir(os.path.expanduser("~/.aws/"))'`; the inner syscall fails with PermissionError: [Errno 1] Operation not permitted: '/Users/jarekpotiuk/.aws/'](../../images/sandbox-os-level-block.png)
 
 When the eventual filesystem access is **opaque to lexical
 analysis** — here, a path constructed inside a `python3 -c`

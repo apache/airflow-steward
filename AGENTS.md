@@ -371,7 +371,7 @@ and the failure mode is silent. Make `git submodule update --init
 into a post-merge hook (`.git/hooks/post-merge` →
 `#!/bin/sh\nexec git submodule update --init --recursive`). Same
 rule applies to the framework's own
-[`setup-steward-upgrade`](.claude/skills/setup-steward-upgrade/SKILL.md)
+[`setup-steward upgrade`](.claude/skills/setup-steward/upgrade.md)
 skill: when invoked from inside an adopter tracker, it reminds
 the user to follow up with submodule update on the parent.
 
@@ -1273,11 +1273,11 @@ When adding a new skill:
 
 ## References
 
-- [`config/README.md`](config/README.md) — two-layer configuration model + step-by-step tutorial (project + user).
-- [`config/active-project.md`](config/active-project.md) — declares which project under `projects/` this working tree targets.
-- [`config/user.md.example`](config/user.md.example) — per-user configuration template (copy to `config/user.md`, which is gitignored).
+- `.apache-steward-overrides/user.md` — per-user configuration (PMC status, local clone paths, optional tool backends) scaffolded during adoption.
 - [`<project-config>/project.md`](<project-config>/project.md) — the adopting project's manifest (identity, repositories, mailing lists, tools enabled, CVE tooling, GitHub project board + issue-template field declarations).
-- [`<project-config>/`](projects/airflow/) — other project-specific files (canned responses, release trains, security model, scope labels, milestones, title-normalization, fix workflow, naming conventions).
+- `.apache-steward-overrides/` — adopter-specific overrides and per-user config committed in the adopter repo.
+- [`<project-config>/project.md`](<project-config>/project.md) — the adopting project's manifest (identity, repositories, mailing lists, tools enabled, CVE tooling, GitHub project board + issue-template field declarations).
+- [`<project-config>/`](projects/_template/) — other project-specific files (canned responses, release trains, security model, scope labels, milestones, title-normalization, fix workflow, naming conventions).
 - [`tools/github/`](tools/github/) — GitHub tool adapter: `tool.md` (overview), `operations.md` (`gh` CLI / API catalogue), `issue-template.md` (body-field schema), `labels.md` (lifecycle-label taxonomy), `project-board.md` (Projects V2 GraphQL).
 - [`tools/gmail/`](tools/gmail/) — Gmail tool adapter: `tool.md` (overview), `operations.md` (MCP catalogue + no-update limitation), `threading.md` (prefer-`threadId`-else-subject-fallback rule), `asf-relay.md` (ASF-security-relay drafting), `search-queries.md` (query templates), `ponymail-archive.md` (ASF PonyMail URL construction).
 - [`tools/vulnogram/`](tools/vulnogram/) — Vulnogram (ASF CVE tool) adapter: `tool.md` (overview), `allocation.md` (PMC-gated allocation flow), `record.md` (record URLs + `#source` paste + `DRAFT`/`REVIEW`/`PUBLIC` state machine + reviewer-comment signal), `generate-cve-json/` (CVE-5.x JSON generator — Python project).
