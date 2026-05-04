@@ -14,6 +14,7 @@
     - [What public surfaces still must not contain](#what-public-surfaces-still-must-not-contain)
     - [Where the URLs are routinely OK to use](#where-the-urls-are-routinely-ok-to-use)
     - [Other ASF projects — never name or describe their vulnerabilities](#other-asf-projects--never-name-or-describe-their-vulnerabilities)
+  - [Privacy-LLM — what data goes through which model](#privacy-llm--what-data-goes-through-which-model)
   - [Assessing reports](#assessing-reports)
     - [Reporter-supplied CVSS scores are informational only — never propagate them](#reporter-supplied-cvss-scores-are-informational-only--never-propagate-them)
     - [CVE references must never point at non-public mailing-list threads](#cve-references-must-never-point-at-non-public-mailing-list-threads)
@@ -312,6 +313,51 @@ projects is a config change, not a code change.
 
 ## Local setup
 
+**`prek install` MUST be run before any other work in this
+repository — including the first commit on a fresh clone.** This
+repository uses [`prek`](https://github.com/j178/prek) (a fast,
+Rust-based drop-in replacement for `pre-commit`) to run pre-commit
+hooks that keep the documentation consistent — regenerating the
+`doctoc` tables of contents, stripping trailing whitespace,
+checking line endings, blocking accidentally committed secrets,
+and running the per-sub-tool `ruff` / `mypy` / `pytest` quality
+gates. The hook configuration lives in
+[`.pre-commit-config.yaml`](.pre-commit-config.yaml).
+
+```bash
+uv tool install prek   # or: pipx install prek
+prek install           # installs the git hook into .git/hooks/pre-commit
+```
+
+**Verify before every commit (agents and humans alike).** Before
+preparing any `git commit` — including the first commit on a
+fresh clone — confirm `.git/hooks/pre-commit` exists. If it does
+not, run `prek install` immediately; do **not** proceed to the
+commit step before the hook is in place. The CI re-runs the same
+hooks against every push (`prek` workflow at
+[`.github/workflows/`](.github/workflows/)) and rejects any commit
+whose contents do not match the hook's output, so a missing local
+hook silently turns into a CI failure on push. The pre-flight
+check is one line:
+
+```bash
+test -x .git/hooks/pre-commit || prek install
+```
+
+Run the hooks on demand:
+
+```bash
+prek run --all-files                 # run all hooks against every file
+prek run doctoc --all-files          # only regenerate TOCs
+prek run --from-ref airflow-s        # run against everything changed vs the base branch
+```
+
+If a hook modifies files (for example, `doctoc` regenerating a
+TOC), the commit is aborted; re-stage the modified files and
+commit again. **Do not bypass the hooks with `--no-verify`** —
+if a hook is failing, fix the underlying issue or update the
+hook configuration in the same PR.
+
 **Always run `git submodule update --init --recursive` after pulling
 the adopter tracker repository.** The framework lives at
 `<adopter-tracker>/.apache-steward/apache-steward/` as a git
@@ -359,32 +405,6 @@ follow the pattern. If a credential is found in-tree (legacy,
 copy-paste from upstream docs, generated to a temp scratch path),
 relocate it to a home-dir path and update the tool to read from
 there — never leave it in place "because it's already there".
-
-This repository uses [`prek`](https://github.com/j178/prek) (a fast, Rust-based drop-in
-replacement for `pre-commit`) to run pre-commit hooks that keep the documentation
-consistent — regenerating the `doctoc` tables of contents, stripping trailing whitespace,
-checking line endings, and blocking accidentally committed secrets. The hook configuration
-lives in [`.pre-commit-config.yaml`](.pre-commit-config.yaml).
-
-Install `prek` once and enable the hooks in your local clone before making any changes:
-
-```bash
-uv tool install prek   # or: pipx install prek
-prek install           # installs the git hook into .git/hooks/pre-commit
-```
-
-After that, every `git commit` in this repo will run the hooks automatically. You can also
-run them on demand:
-
-```bash
-prek run --all-files                 # run all hooks against every file
-prek run doctoc --all-files          # only regenerate TOCs
-prek run --from-ref airflow-s        # run against everything changed vs the base branch
-```
-
-If a hook modifies files (for example, `doctoc` regenerating a TOC), the commit is aborted;
-re-stage the modified files and commit again. **Do not bypass the hooks with `--no-verify`** —
-if a hook is failing, fix the underlying issue or update the hook configuration in the same PR.
 
 ## Commit and PR conventions
 

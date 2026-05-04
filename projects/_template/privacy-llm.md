@@ -1,3 +1,14 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [Privacy-LLM configuration](#privacy-llm-configuration)
+  - [Currently configured LLM stack](#currently-configured-llm-stack)
+  - [Approved third-party endpoints (opt-in)](#approved-third-party-endpoints-opt-in)
+  - [Private mailing lists for this project](#private-mailing-lists-for-this-project)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 <!-- SPDX-License-Identifier: Apache-2.0
      https://www.apache.org/legal/release-policy.html -->
 
