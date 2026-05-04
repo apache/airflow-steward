@@ -105,8 +105,8 @@ page is the two-minute summary.
   from raising reports about issues they were not originally aware
   of. Such tools may themselves violate our security practices.
 * **Keep the reporter informed at every status transition** — see
-  the [*Keeping the reporter informed*](../../README.md#keeping-the-reporter-informed)
-  section of `README.md` for the full list of transitions and the
+  the [*Keeping the reporter informed*](../security/roles.md#keeping-the-reporter-informed)
+  section of `roles.md` for the full list of transitions and the
   drafting rules.
 * **Confidentiality first.** Tracker URLs and `#NNN` identifiers
   are public-safe (they point at access-gated pages); tracker

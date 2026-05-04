@@ -95,7 +95,7 @@ TODO.
 
 Every lifecycle transition that the team commits to notifying the
 reporter about (per
-[`../../README.md#keeping-the-reporter-informed`](../../README.md#keeping-the-reporter-informed))
+[`../../docs/security/roles.md#keeping-the-reporter-informed`](../../docs/security/roles.md#keeping-the-reporter-informed))
 needs a short template. Skills draft from these verbatim and send
 on the original inbound thread.
 
@@ -178,5 +178,5 @@ updated record URL.
   must not appear in templates that go out as email — they remain
   internal-only.
 - **Every transition that warrants a reply is listed in
-  [`../../README.md`](../../README.md#keeping-the-reporter-informed)** —
+  [`../../docs/security/roles.md`](../../docs/security/roles.md#keeping-the-reporter-informed)** —
   treat that list as authoritative.

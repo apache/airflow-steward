@@ -67,9 +67,9 @@ jobs:
         uses: lycheeverse/lychee-action@8646ba30535128ac92d33dfc9133794bfdd9b411  # v2.8.0
         with:
           args: --config .lychee.toml --no-progress .
-          fail: false
+          fail: true
           token: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: true
+        continue-on-error: false
 
       - name: Summarise
         if: always()

@@ -51,7 +51,7 @@ specifically.
 The agent runs against pre-disclosure CVE content (private mail
 threads, draft advisories, in-flight tracker discussions). Run it
 with the credential-isolation setup documented in
-[`docs/setup/secure-agent-setup.md`](docs/setup/secure-agent-setup.md) — a layered
+[`docs/setup/secure-agent-setup.md`](setup/secure-agent-setup.md) — a layered
 defence built around Claude Code's filesystem sandbox, tool-level
 permission rules, and a clean-env wrapper that strips credential-
 shaped variables from the agent's environment. The required system

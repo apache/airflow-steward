@@ -85,7 +85,7 @@ for the lookup command and the latest snapshot.
 - **Private PRs on the `<tracker>` `main` branch** — an exceptional
   path used for highly-critical fixes that need private code review
   before going public. See
-  [Step 9](../../README.md#step-9--open-a-private-pr-exceptional-cases) of
+  [Step 9](../security/process.md#step-9--open-a-private-pr-exceptional-cases) of
   the process.
 
 Some discussions with an obvious answer can be handled on the mailing
@@ -136,7 +136,7 @@ any per-user config.
 Once you have observed the process for a while, you can start taking
 on more of the work. The three rotating roles — issue triager,
 remediation developer, release manager — are defined in
-[`README.md` — Who this guide is for](../../README.md#who-this-guide-is-for),
+[`README.md`](../../README.md),
 which describes the step ranges each role owns. From the onboarding
 perspective:
 
@@ -157,7 +157,7 @@ You can volunteer to provide a fix for a specific issue even before
 formally taking on the remediation-developer role — just comment on
 the tracker and self-assign. You can also ask whether it makes sense
 to involve someone else to provide the fix (see
-[Step 7](../../README.md#step-7--self-assign-and-implement-the-fix) for the
+[Step 7](../security/process.md#step-7--self-assign-and-implement-the-fix) for the
 delegation rules).
 
 # Using the agent skills
@@ -177,11 +177,11 @@ a few times a week are:
 
 - **`import new reports`** — converts un-imported security-list
   threads into trackers and drafts the receipt-of-confirmation reply.
-  See [Step 2](../../README.md#step-2--import-the-report).
+  See [Step 2](../security/process.md#step-2--import-the-report).
 - **`sync all issues`** — reconciles every open tracker with its mail
   thread, its fix PR, the release train, and the users-list archive.
 - **`allocate CVE for issue #N`** — when a report is assessed as valid.
-  See [Step 6](../../README.md#step-6--allocate-the-cve).
+  See [Step 6](../security/process.md#step-6--allocate-the-cve).
 
 There is also a fourth command for anyone willing to take on a
 remediation-developer turn:
@@ -199,8 +199,8 @@ remediation-developer turn:
   repo slug / `vulnerability` / `security fix` leakage before being
   written or pushed. The skill refuses to operate on reports that are still being
   assessed, or on issues that need the private-PR fallback of
-  [Step 9](../../README.md#step-9--open-a-private-pr-exceptional-cases). See
-  [For remediation developers — Steps 7–11](../../README.md#for-remediation-developers--steps-711)
+  [Step 9](../security/process.md#step-9--open-a-private-pr-exceptional-cases). See
+  [Steps 7–11 in the process reference](../security/process.md#step-7--self-assign-and-implement-the-fix)
   for the full expectations around a fix PR.
 
 Every skill is a **proposal engine**, not an auto-pilot — it reads the

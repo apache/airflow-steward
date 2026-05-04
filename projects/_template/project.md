@@ -22,9 +22,7 @@
 
 This is the **project configuration** for `TODO: <project-name>`.
 Every skill under [`../../.claude/skills/`](../../.claude/skills/)
-reads the project name from
-[`../../config/active-project.md`](../../config/active-project.md) and
-then loads this manifest to resolve project-specific identity,
+reads the project name from `<project-config>/project.md` and then loads this manifest to resolve project-specific identity,
 repositories, mailing lists, and references to the other files in
 this directory.
 
@@ -161,9 +159,8 @@ values below are what the generic recipes substitute in.
 ## Issue-template fields
 
 The skills' body-field roles map to the following concrete `###`
-headings in the project's issue template at
-[`../../.github/ISSUE_TEMPLATE/issue_report.yml`](../../.github/ISSUE_TEMPLATE/issue_report.yml)
-(or the project's equivalent). The generic role → GitHub-field
+headings in the project's issue template (the concrete YAML file lives in the
+adopter's `<upstream>` repo; the generic role → field contract is in The generic role → GitHub-field
 contract lives in
 [`../../tools/github/issue-template.md`](../../tools/github/issue-template.md);
 the concrete names below are what skills read and write for this
