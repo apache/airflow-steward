@@ -99,7 +99,7 @@ only fetch bodies for the narrow set that actually warrants it
 ### Drafting backends
 
 Draft creation runs through one of two backends, selected by the user
-in [`config/user.md`](../../config/user.md) under
+in `.apache-steward-overrides/user.md` under
 `tools.gmail.draft_backend`. The full comparison and rationale live
 in [`draft-backends.md`](draft-backends.md); the call shape per
 backend is here.

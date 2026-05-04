@@ -173,7 +173,7 @@ Before touching any candidate thread, verify:
    (401, 403, 404), stop and tell the user to log in with
    `gh auth login` or get added to `<tracker>`.
 3. **PonyMail MCP status** (opt-in; primary read path when
-   enabled) — read `config/user.md` → `tools.ponymail`. If
+   enabled) — read `.apache-steward-overrides/user.md` → `tools.ponymail`. If
    `enabled: true`, call `mcp__ponymail__auth_status()` once and
    record `ponymail_enabled` + `ponymail_authenticated` in the
    skill's observed-state bag. **When authenticated, downstream
@@ -246,7 +246,7 @@ lags the inbox by minutes-to-hours for brand-new messages, which
 is exactly the window this skill most cares about.
 
 When PonyMail MCP is enabled and authenticated (Step 0) **and**
-`security@<project>.apache.org` is in `config/user.md` →
+`security@<project>.apache.org` is in `.apache-steward-overrides/user.md` →
 `tools.ponymail.private_lists`, run the archive as a **paired
 authoritative check** against the Gmail result set:
 
@@ -550,7 +550,7 @@ in short:
 
 **Backend selection.** When PonyMail MCP is enabled and
 authenticated (Step 0) **and** `security@<project>.apache.org`
-is in `config/user.md` → `tools.ponymail.private_lists`,
+is in `.apache-steward-overrides/user.md` → `tools.ponymail.private_lists`,
 **PonyMail MCP is the primary backend for this step**:
 
 ```text

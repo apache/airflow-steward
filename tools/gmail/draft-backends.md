@@ -22,7 +22,7 @@
 # Gmail drafting backends
 
 The skills create Gmail drafts via one of two backends, selected by the
-user in [`config/user.md`](../../config/user.md) under
+user in `.apache-steward-overrides/user.md` under
 `tools.gmail.draft_backend`:
 
 | Backend | Value | `threadId` attach? | Setup |
@@ -70,7 +70,7 @@ on disk, the skills should always use them. Resolution:
 
 1. **Probe for `oauth_curl` credentials** in this order:
    - `tools.gmail.oauth_credentials_path` from
-     [`config/user.md`](../../config/user.md) when set;
+     `.apache-steward-overrides/user.md` when set;
    - the `$GMAIL_OAUTH_CREDENTIALS` environment variable;
    - the default path `~/.config/apache-steward/gmail-oauth.json`.
 
