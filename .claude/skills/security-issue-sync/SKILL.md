@@ -380,6 +380,21 @@ Before reading any tracker state, verify:
    if the user said `sync NNN` but the number does not exist in
    `<tracker>`, stop before Step 1 and ask which issue
    they meant.
+5. **Privacy-LLM contract.** This skill reads `<security-list>`
+   bodies (and may read `<private-list>` content when escalating)
+   that may contain third-party PII. Before fetching any body,
+   load `<project-config>/privacy-llm.md` and verify the
+   pre-flight items in
+   [`tools/privacy-llm/wiring.md`](../../../tools/privacy-llm/wiring.md#step-0--pre-flight) —
+   `~/.config/apache-steward/` is writable, the configured
+   collaborator source is reachable, the redaction-tuning knobs
+   are loaded into the observed-state bag. Subsequent body reads
+   in Step 1 (gather current state) follow the
+   [redact-after-fetch protocol](../../../tools/privacy-llm/wiring.md#redact-after-fetch-protocol);
+   Step 4 outbound drafts follow the
+   [reveal-before-send protocol](../../../tools/privacy-llm/wiring.md#reveal-before-send-protocol)
+   when (and only when) the rendered draft references a
+   third-party identifier.
 
 If any check fails (other than PonyMail, which degrades quietly),
 stop and surface what is missing. Do **not** proceed to Step 1 on a

@@ -94,6 +94,24 @@ expensive — most skills filter candidates down on metadata first and
 only fetch bodies for the narrow set that actually warrants it
 (`security-issue-import` does this explicitly at Step 3).
 
+**Privacy-LLM contract — apply to every body read.** Every
+`get_thread` call against a `<security-list>` thread (or any
+`<private-list>` thread, where the approved-LLM gate also
+applies) MUST be followed by the redact-after-fetch protocol
+documented in
+[`../privacy-llm/wiring.md`](../privacy-llm/wiring.md#redact-after-fetch-protocol)
+before the body is used for any further processing. The window
+between `get_thread` returning and `pii-redact` running should
+be a single tool invocation wide; the redacted body is what
+flows through the rest of the skill. Skills that consume bodies
+without running the protocol are framework bugs.
+
+Skip the protocol on `messageFormat='METADATA'` calls — the
+returned envelope carries the reporter's `From:` header (which
+is not redacted under the contract) and routing fields, no
+free-form body content. The protocol applies once an actual
+body is fetched.
+
 ## Write — drafts only, never send
 
 ### Drafting backends
@@ -187,6 +205,17 @@ backend too — drafts only, never send; subject is always
 
 - **Never send.**
 - **Subject is always `Re: <root subject>`**, never fabricated.
+- **Run `pii-reveal` before passing the body to the create-draft
+  call.** If the draft body carries any third-party identifiers
+  the skill redacted earlier (e.g. when assembling a CVE-credit
+  line referencing a non-reporter, non-collaborator individual),
+  the rendered draft text MUST be passed through `pii-reveal`
+  *once*, immediately before the create-draft tool call, so the
+  recipient sees the real value. Drafts whose bodies contain only
+  the reporter's own identity (already not-redacted under the
+  contract) need no reveal step. The full reveal-before-send
+  protocol is in
+  [`../privacy-llm/wiring.md`](../privacy-llm/wiring.md#reveal-before-send-protocol).
 - **Surface which backend was used** in the proposal / recap so the
   user can tell at a glance whether the draft threads on their own
   Gmail view (`oauth_curl`) or only on the recipient's

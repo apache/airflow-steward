@@ -91,20 +91,25 @@ mental model simple: a collaborator is a collaborator everywhere.
 
 The lookup is per-skill-run, not cached across runs — a
 collaborator added to or removed from the tracker takes effect
-on the next skill invocation. Skills SHOULD pass the resolved
-collaborator set to the redactor as a `--collaborators-file`
-argument (path to a one-login-per-line file), so the redactor
-can decline to redact a name / handle / email that maps to a
-collaborator's GitHub identity.
+on the next skill invocation.
 
-> **Note for PR-1 / PR-2 readers.** The
-> `--collaborators-file` argument is a *future* addition to the
-> redactor (it lands when PR-2 wires the gate into the security
-> skills). For PR-1 the redactor accepts a flat
-> `--field <type>:<value>` list and trusts the caller to filter
-> against the collaborator set before passing values in. The
-> filtering responsibility stays with the skill either way; the
-> argument is purely an ergonomic shorthand.
+**Filtering happens in the skill, not the redactor.** The
+redactor is a generic value→identifier swap; it does not know
+who the reporter is or who is a collaborator. Skills resolve the
+collaborator set, identify third-party PII candidates in the
+body, drop the reporter and collaborators, and only then pass
+the *should-be-redacted* set as `--field` arguments. The
+canonical step-by-step pattern is in
+[`wiring.md`](wiring.md#redact-after-fetch-protocol).
+
+The collaborator filter is **adopter-tunable** — the
+*"Collaborator exemption"* knob in the adopter's
+[`<project-config>/privacy-llm.md`](../../projects/_template/privacy-llm.md#collaborator-exemption)
+controls whether the exemption is enabled at all. Default is
+enabled (collaborator names flow as-is); disabled is the
+stricter posture (every non-reporter individual gets redacted,
+including collaborators). See the template doc for when to use
+each.
 
 ## The identifier format
 

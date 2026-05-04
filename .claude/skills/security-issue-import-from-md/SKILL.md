@@ -169,6 +169,18 @@ Before parsing the file, verify:
    sections, then a `**Severity:** … **Status:** … **Category:**
    … **Repository:** … **Date created:** …` metadata block; blocks
    separated by `---` on their own line."*
+4. **Privacy-LLM contract.** The input markdown can carry
+   third-party PII the same way a `<security-list>` mail body
+   can — researcher names cited in a finding, victim emails in
+   a reproduction step, and so on. Apply the same pre-flight
+   from
+   [`tools/privacy-llm/wiring.md`](../../../tools/privacy-llm/wiring.md#step-0--pre-flight)
+   that the Gmail-touching skills do (config loads,
+   `~/.config/apache-steward/` writable, collaborator source
+   reachable). Findings parsed in Step 1 below feed the
+   redact-after-fetch protocol the same way Gmail bodies do —
+   the file IS the source-of-truth here, treat it like an
+   inbound mail body.
 
 If any check fails, do **not** proceed.
 

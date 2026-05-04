@@ -6,6 +6,11 @@
   - [Currently configured LLM stack](#currently-configured-llm-stack)
   - [Approved third-party endpoints (opt-in)](#approved-third-party-endpoints-opt-in)
   - [Private mailing lists for this project](#private-mailing-lists-for-this-project)
+  - [Redaction configuration](#redaction-configuration)
+    - [Collaborator source](#collaborator-source)
+    - [Collaborator exemption](#collaborator-exemption)
+    - [Redaction field types](#redaction-field-types)
+    - [How the knobs are applied](#how-the-knobs-are-applied)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -77,3 +82,65 @@ the per-variant setup recipes are at
      third-party PII (non-reporter, non-collaborator individuals
      named in the body) is redacted (per
      ../../tools/privacy-llm/pii.md). -->
+
+## Redaction configuration
+
+These knobs tune how skills apply the PII redactor (per
+[`../../tools/privacy-llm/wiring.md`](../../tools/privacy-llm/wiring.md))
+when reading `<security-list>` content. Defaults are listed in
+parentheses; uncomment a row to override.
+
+### Collaborator source
+
+```text
+# collaborator_source: <tracker>
+```
+
+(default: read from `<project-config>/project.md → tracker_repo`).
+The repository whose collaborator list is treated as "already
+public/known" and therefore NOT redacted. Override here if your
+project tracks security-team membership in a different repo
+(e.g. a parent-org roster repo).
+
+### Collaborator exemption
+
+```text
+# collaborator_exemption: enabled
+```
+
+(default: `enabled` — collaborators are NOT redacted; their
+identity is already public via the tracker's collaborator list).
+
+Set to `disabled` for a stricter posture: every non-reporter
+individual gets redacted, including collaborators. Use when
+your PMC has decided that even public collaborator identity
+should not flow through LLMs as a defence-in-depth measure.
+
+### Redaction field types
+
+```text
+# redaction_field_types: name, email, phone, ip, handle, address
+```
+
+(default: all six types are redacted). Remove a type from this
+list to disable redaction for that field type. Rare — most
+projects keep all six on. Examples of when an adopter might
+narrow:
+
+- A project whose security reports never include phone numbers
+  (and where redacting phone-shaped strings might cause false
+  positives in code excerpts) might drop `phone`.
+- A project with a strict "treat public IPs as non-PII" policy
+  might drop `ip`. The framework already excludes IPs that
+  identify a vulnerable production server (see
+  [`../../tools/privacy-llm/pii.md`](../../tools/privacy-llm/pii.md))
+  but this knob is the broader override.
+
+### How the knobs are applied
+
+The redactor itself reads no config file — these knobs are
+applied by **the skill** at filter time (Step 3 of the
+[redact-after-fetch protocol](../../tools/privacy-llm/wiring.md#redact-after-fetch-protocol)),
+before `pii-redact --field` arguments are constructed. A skill
+that does not respect a knob is a framework bug; report it on
+[`apache/airflow-steward`](https://github.com/apache/airflow-steward).
