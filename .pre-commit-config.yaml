@@ -180,3 +180,30 @@ repos:
         entry: uv run --directory tools/privacy-llm/redactor pytest
         files: ^tools/privacy-llm/redactor/(src|tests|pyproject\.toml)
         pass_filenames: false
+
+  - repo: local
+    hooks:
+      - id: checker-ruff-check
+        name: ruff check (checker)
+        language: system
+        entry: uv run --directory tools/privacy-llm/checker ruff check
+        files: ^tools/privacy-llm/checker/(src|tests|pyproject\.toml)
+        pass_filenames: false
+      - id: checker-ruff-format
+        name: ruff format (checker)
+        language: system
+        entry: uv run --directory tools/privacy-llm/checker ruff format --check
+        files: ^tools/privacy-llm/checker/(src|tests|pyproject\.toml)
+        pass_filenames: false
+      - id: checker-mypy
+        name: mypy (checker)
+        language: system
+        entry: uv run --directory tools/privacy-llm/checker mypy
+        files: ^tools/privacy-llm/checker/(src|tests|pyproject\.toml)
+        pass_filenames: false
+      - id: checker-pytest
+        name: pytest (checker)
+        language: system
+        entry: uv run --directory tools/privacy-llm/checker pytest
+        files: ^tools/privacy-llm/checker/(src|tests|pyproject\.toml)
+        pass_filenames: false

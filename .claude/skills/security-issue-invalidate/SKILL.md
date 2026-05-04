@@ -170,9 +170,15 @@ Before any work, verify:
 4. **Privacy-LLM contract.** This skill drafts a closing reply
    on the inbound `<security-list>` Gmail thread, so it reads
    the original report's body to mine the team's reasoning
-   (Step 3) and assembles an outbound draft (Step 6). Before
-   either, load `<project-config>/privacy-llm.md` and verify
-   the pre-flight items in
+   (Step 3) and assembles an outbound draft (Step 6). Run the
+   gate-check first — non-zero exit is a hard stop:
+
+   ```bash
+   uv run --project <framework>/tools/privacy-llm/checker \
+     privacy-llm-check
+   ```
+
+   Plus the rest of the pre-flight items in
    [`tools/privacy-llm/wiring.md`](../../../tools/privacy-llm/wiring.md#step-0--pre-flight).
    The Step 3 read follows the
    [redact-after-fetch protocol](../../../tools/privacy-llm/wiring.md#redact-after-fetch-protocol);
