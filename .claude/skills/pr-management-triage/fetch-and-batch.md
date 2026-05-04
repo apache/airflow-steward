@@ -119,7 +119,7 @@ query(
 below. The typical production shape for the default sweep on
 `<upstream>` is:
 
-```
+```text
 is:pr is:open repo:<upstream>
 -label:"ready for maintainer review"
 sort:updated-asc

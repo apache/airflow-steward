@@ -121,7 +121,7 @@ Counts must sum to the open-PR total (non-bot). If they don't, print a warning a
 
 Before the first table, print one line summarising the scope. This line is plain text (no Rich markup needed — it's header-style, not a table) so it renders identically in the terminal and in the Markdown fallback.
 
-```
+```text
 <upstream> — 413 open PRs (non-bot) · closed/merged since 2026-03-11 · viewer @potiuk · 2026-04-22 22:33 UTC
 ```
 
@@ -131,7 +131,7 @@ The `<now>` is the fetch-start timestamp, not the render-end timestamp — a slo
 
 If the closed-since counts came from the lagging search index (see [`fetch.md#known-limitation`](fetch.md)), print a one-line caveat between the context line and Table 1:
 
-```
+```text
 ⚠ Table 1 built from GitHub's free-text search of the quality-criteria marker. The index lags — older triaged+merged PRs are likely undercounted. Pass accurate-closed for the hybrid REST + GraphQL path.
 ```
 
@@ -229,7 +229,7 @@ console.print(Panel("\n".join(legend_lines), border_style="dim", expand=False))
 
 Close with a single-line summary the maintainer can use for at-a-glance reporting:
 
-```
+```text
 Summary: 413 open · 66 triaged (16%) · 3 responded (5% of triaged) · 126 ready for review · 43 drafted by triager in last 7d.
 ```
 

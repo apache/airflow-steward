@@ -55,7 +55,7 @@ query(
 
 ### `searchQuery`
 
-```
+```text
 is:pr is:open repo:<repo> sort:created-asc
 ```
 
@@ -199,7 +199,7 @@ Empirical delta on `<upstream>`, cutoff 2026-03-11:
 
 When the maintainer explicitly asks for a quick approximation (`fast-closed` flag, or in a low-budget context), fall back to the search-based path:
 
-```
+```text
 is:pr -is:open repo:<repo> closed:>=<cutoff> sort:updated-desc
 ```
 
@@ -207,7 +207,7 @@ The fast path must print a clear caveat above Table 1: *"fast-closed mode: Table
 
 ### `searchQuery`
 
-```
+```text
 is:pr -is:open repo:<repo> closed:>=<cutoff> sort:updated-desc
 ```
 

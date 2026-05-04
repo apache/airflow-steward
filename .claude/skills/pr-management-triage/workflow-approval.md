@@ -160,7 +160,7 @@ For each PR in the group, in the order returned by the
 classifier (which is age-ascending so the freshest PRs land
 first), print:
 
-```
+```text
 ─────────────────────────────────────────────────────
 [N] PR #NNNNN  "<title>"
 Author: @<login>  (account: D days old, R repos, M merged PRs)
@@ -192,7 +192,7 @@ patterns matched"*. That's the green-light pre-classification.
 After all blocks are printed, render the summary table and
 prompt for selection:
 
-```
+```text
 ─────────────────────────────────────────────────────
 pending_workflow_approval — N PRs · choose what to approve
 ─────────────────────────────────────────────────────

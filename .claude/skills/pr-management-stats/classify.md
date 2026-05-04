@@ -91,7 +91,7 @@ Mark which path the skill used in the legend output (`drafted by triager (heuris
 
 The age of a PR for bucketing is the time since the author's *last interaction*:
 
-```
+```text
 last_author_interaction = max(
     most_recent_comment.createdAt where comment.author.login == pr.author.login,
     last_commit.committedDate,
@@ -120,7 +120,7 @@ Four buckets is the deliberate minimum — each one maps to a distinct maintaine
 
 A PR is by a *contributor* (for the `Contrib.` column) when:
 
-```
+```text
 authorAssociation NOT IN (OWNER, MEMBER, COLLABORATOR)
 ```
 
@@ -138,7 +138,7 @@ The `Ready` column counts PRs carrying the `ready for maintainer review` label. 
 
 Table 1's `Responded` column measures, per area, how many triaged PRs got an author reply *before* they were closed or merged. For a PR in the closed-since set:
 
-```
+```text
 responded_before_close =
     is_triaged AND
     exists(comment by pr.author where comment.createdAt > triage_comment.createdAt AND comment.createdAt <= pr.closedAt)
