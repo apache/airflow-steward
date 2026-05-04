@@ -624,6 +624,73 @@ doubt, leave it out — the cost of omitting useful context is
 low, the cost of leaking another project's private information is
 not.
 
+## Privacy-LLM — what data goes through which model
+
+The confidentiality rules above govern *human-visible* surfaces
+(public PRs, public issue comments, public mailing-list replies).
+A second, layered set of rules governs *machine-routed* surfaces
+— the LLM context the agent operates in, any LLM API call a
+skill makes, any delegated-summarisation hop a future skill might
+add. Both apply.
+
+The framework's privacy-LLM contract is enforced via
+[`tools/privacy-llm/`](tools/privacy-llm/tool.md) and configured
+per-adopter in `<project-config>/privacy-llm.md` (template at
+[`projects/_template/privacy-llm.md`](projects/_template/privacy-llm.md)).
+Setup recipes for the supported variants are in
+[`docs/setup/privacy-llm.md`](docs/setup/privacy-llm.md).
+
+Three rules every skill follows:
+
+**Reporter PII never enters any LLM in the clear.** The
+reporter's name, email, phone, IP, personal handle, and other PII
+are replaced with hash-prefixed identifiers (`R-a3f9d2`,
+`E-b8c247`, …) immediately after fetch and before any LLM-bound
+step — including Claude's own context. The mapping from
+identifier to real value lives at
+`~/.config/apache-steward/pii-mapping.json` (per the home-dir
+credentials rule in [Local setup](#local-setup)) and is never
+sent to any LLM. Reveal-to-real-name happens only at the
+outbound boundary, when a draft to the reporter is being assembled.
+The contract is in
+[`tools/privacy-llm/pii.md`](tools/privacy-llm/pii.md).
+
+**`<private-list>` content never reaches a non-approved LLM.**
+PMC-private foundation list content (the project's
+`<private-list>` and any other PMC-private list the security
+team reads) is wholly private — body and PII alike. Skills that
+may read this content run a Step 0 pre-flight gate: if any LLM
+in the active stack is not in the approved-model registry, the
+skill stops. The default-approved set is Claude Code itself,
+anything at `*.apache.org`, local-only inference (Ollama / vLLM
+on `127.0.0.1`), and air-gapped on-prem endpoints. Everything
+else (AWS Bedrock, direct Anthropic API, Vertex, OpenAI, …) is
+opt-in, declared explicitly in `<project-config>/privacy-llm.md`
+with a data-residency contract link and a PMC-member approval
+line. The contract is in
+[`tools/privacy-llm/models.md`](tools/privacy-llm/models.md).
+
+**Adding a new LLM hop is a deliberate act, not an emergent one.**
+The pre-flight gate is conservative: any single unapproved entry
+in the active stack stops the skill. This makes it impossible
+for a skill to silently grow a second LLM dependency without the
+adopter's security team approving it in
+`<project-config>/privacy-llm.md`. When a skill needs to
+delegate to another LLM (a summarizer for long mail threads, a
+classifier, an outbound moderation step), the adopter wires the
+endpoint per the appropriate variant in
+[`docs/setup/privacy-llm.md`](docs/setup/privacy-llm.md) **before**
+the skill that uses it runs.
+
+**Status — provisional pending ASF Legal.** The default-approved
+list above reflects the framework maintainer's working position;
+ASF Legal Affairs has not yet ratified an authoritative
+approved-LLM list for foundation private data. When such a list
+lands, the registry will be updated to point at it as
+source-of-truth. Until then,
+[`tools/privacy-llm/models.md`](tools/privacy-llm/models.md) is
+the framework's source-of-truth and the rationale-of-record.
+
 ## Assessing reports
 
 ### Reporter-supplied CVSS scores are informational only — never propagate them
