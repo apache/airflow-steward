@@ -43,7 +43,7 @@ default-approved Claude Code instance and passes).
 | **Local-only inference** | The data never leaves the user's machine. No external party (cloud LLM operator, network operator, log aggregator) can observe it. | Ollama serving a local model, vLLM on the user's workstation, llama.cpp embedded in a CLI helper |
 | **Air-gapped on-prem** | Same rationale as local inference, scaled to a contributor's organisation. The model server runs on infra the adopter operationally controls and which has no path to a third-party LLM operator. | A PMC-hosted inference appliance on a private VLAN |
 
-Detection lives in the helper's [registry.py](redactor/src/redactor/registry.py)
+Detection lives in the helper's `redactor/src/redactor/registry.py`
 (once PR-3 lands the gate-call wiring); for PR-1 the registry is
 the markdown contract here and the
 [`<project-config>/privacy-llm.md`](#adopter-config--project-configprivacy-llmmd)
