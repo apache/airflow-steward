@@ -50,11 +50,11 @@ def _run(monkeypatch, stdin_text: str, argv: list[str]) -> tuple[str, int]:
 
 
 def test_parse_field_friendly_name():
-    assert redact.parse_field("reporter:Jane Smith") == ("R", "Jane Smith")
+    assert redact.parse_field("name:Jane Smith") == ("N", "Jane Smith")
 
 
 def test_parse_field_code():
-    assert redact.parse_field("R:Jane Smith") == ("R", "Jane Smith")
+    assert redact.parse_field("N:Jane Smith") == ("N", "Jane Smith")
 
 
 def test_parse_field_value_can_contain_colon():
@@ -74,7 +74,7 @@ def test_parse_field_rejects_unknown_type():
 
 def test_parse_field_rejects_empty_value():
     with pytest.raises(SystemExit, match="value is empty"):
-        redact.parse_field("reporter:")
+        redact.parse_field("name:")
 
 
 # -- end-to-end redaction ------------------------------------------------
@@ -85,12 +85,12 @@ def test_redact_replaces_values_with_identifiers(mapping_path, monkeypatch):
     out, rc = _run(
         monkeypatch,
         body,
-        ["--field", "reporter:Jane Smith", "--field", "email:jane@example.com"],
+        ["--field", "name:Jane Smith", "--field", "email:jane@example.com"],
     )
     assert rc == 0
     assert "Jane Smith" not in out
     assert "jane@example.com" not in out
-    assert "R-" in out
+    assert "N-" in out
     assert "E-" in out
 
 
@@ -98,21 +98,21 @@ def test_redact_persists_mapping(mapping_path, monkeypatch):
     _, rc = _run(
         monkeypatch,
         "Jane Smith",
-        ["--field", "reporter:Jane Smith"],
+        ["--field", "name:Jane Smith"],
     )
     assert rc == 0
     mapping = load_mapping(mapping_path)
     # Exactly one entry, of type reporter, value "Jane Smith".
     assert len(mapping) == 1
     [entry] = mapping.values()
-    assert entry.type == "reporter"
+    assert entry.type == "name"
     assert entry.value == "Jane Smith"
 
 
 def test_redact_idempotent_across_runs(mapping_path, monkeypatch):
     """Running redact twice with the same field produces the same identifier."""
-    out_a, _ = _run(monkeypatch, "Jane Smith", ["--field", "reporter:Jane Smith"])
-    out_b, _ = _run(monkeypatch, "Jane Smith", ["--field", "reporter:Jane Smith"])
+    out_a, _ = _run(monkeypatch, "Jane Smith", ["--field", "name:Jane Smith"])
+    out_b, _ = _run(monkeypatch, "Jane Smith", ["--field", "name:Jane Smith"])
     assert out_a == out_b
     assert len(load_mapping(mapping_path)) == 1
 
@@ -127,7 +127,7 @@ def test_redact_no_fields_passes_input_through(mapping_path, monkeypatch):
 
 def test_redact_replaces_all_occurrences(mapping_path, monkeypatch):
     body = "Jane Smith said. Then Jane Smith left. Finally Jane Smith returned."
-    out, _ = _run(monkeypatch, body, ["--field", "reporter:Jane Smith"])
+    out, _ = _run(monkeypatch, body, ["--field", "name:Jane Smith"])
     assert "Jane Smith" not in out
     # Exactly three identifiers in the output.
     mapping = load_mapping(mapping_path)
@@ -147,21 +147,21 @@ def test_redact_substring_safety(mapping_path, monkeypatch):
     out, _ = _run(
         monkeypatch,
         body,
-        ["--field", "reporter:Jane", "--field", "email:jane@example.com"],
+        ["--field", "name:Jane", "--field", "email:jane@example.com"],
     )
-    # The email's identifier should be intact (not contain "R-").
+    # The email's identifier should be intact (not contain "N-").
     mapping = load_mapping(mapping_path)
     email_entry = next(e for e in mapping.values() if e.type == "email")
     assert email_entry.identifier in out
     # The standalone "Jane" should be redacted.
-    reporter_entry = next(e for e in mapping.values() if e.type == "reporter")
+    reporter_entry = next(e for e in mapping.values() if e.type == "name")
     assert reporter_entry.identifier in out
 
 
 def test_redact_missing_value_in_input_is_silent(mapping_path, monkeypatch):
     """Declaring a ``--field`` whose value is absent from stdin is a no-op on the text."""
     body = "no PII here"
-    out, _ = _run(monkeypatch, body, ["--field", "reporter:Absent Person"])
+    out, _ = _run(monkeypatch, body, ["--field", "name:Absent Person"])
     assert out == "no PII here"
     # The value was still recorded in the mapping (skill's
     # responsibility to declare; we trust the declaration).
@@ -175,5 +175,5 @@ def test_redact_returns_2_on_malformed_mapping_file(mapping_path, monkeypatch):
     monkeypatch.setattr("sys.stdin", io.StringIO("ignored"))
     monkeypatch.setattr("sys.stdout", io.StringIO())
     monkeypatch.setattr("sys.stderr", io.StringIO())
-    rc = redact.main(["--field", "reporter:Jane Smith"])
+    rc = redact.main(["--field", "name:Jane Smith"])
     assert rc == 2

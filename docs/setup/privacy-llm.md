@@ -40,11 +40,17 @@ The framework treats two distinct privacy concerns separately:
 
 1. **PII redaction** — applies to `<security-list>` content (the
    reporter mail). The body is OK to flow through any approved
-   LLM, but reporter PII (name, email, phone, IP, personal
-   handle) is replaced with hash-prefixed identifiers
-   (`R-a3f9d2`, …) before any LLM step. The mapping is local to
-   the user's machine. This applies under **every** variant
-   below — even Variant 1 (Claude-only).
+   LLM. The reporter's own identity (name, email, etc.) flows
+   as-is — they sent the mail and are operationally known to the
+   security team. **What gets redacted** is PII the reporter
+   discloses about *other people* (third-party researchers,
+   victims, named individuals other than the reporter), replaced
+   with hash-prefixed identifiers (`N-a3f9d2`, …) before any LLM
+   step — *unless* the named individual is already a collaborator
+   on the `<tracker>` repo (their identity is already public/known
+   via collaborator status, no privacy gain from redacting). The
+   mapping is local to the user's machine. This applies under
+   **every** variant below — even Variant 1 (Claude-only).
 2. **Approved-LLM gate** — applies to `<private-list>` content
    (PMC private mail) and any other private foundation lists.
    The skill refuses to fetch unless every LLM in the active
@@ -334,17 +340,20 @@ Once `<project-config>/privacy-llm.md` is in place:
    ```
 
    Returns exit code 0 if the active stack is fully approved.
-3. Sanity-check the redactor end-to-end:
+3. Sanity-check the redactor end-to-end. The third party in this
+   example is `Other Researcher` (someone the reporter mentions
+   in their report; the reporter's own name would NOT be passed
+   to `--field`):
 
    ```bash
-   echo "Hi I am Jane Smith and my email is jane@example.com" | \
+   echo "I worked with Other Researcher (other@example.com) on this finding" | \
      uv run --project <framework>/tools/privacy-llm/redactor \
      pii-redact \
-     --field reporter:"Jane Smith" \
-     --field email:"jane@example.com"
+     --field name:"Other Researcher" \
+     --field email:"other@example.com"
    ```
 
-   Output should replace the two values with `R-…` and `E-…`
+   Output should replace the two values with `N-…` and `E-…`
    identifiers.
 4. List the resulting map:
 

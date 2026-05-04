@@ -47,7 +47,7 @@ ENV_MAPPING_PATH = "PII_MAPPING_PATH"
 # are the prefix the identifier carries; the friendly names are
 # what `pii-list` prints.
 TYPE_CODES: dict[str, str] = {
-    "R": "reporter",
+    "N": "name",
     "E": "email",
     "P": "phone",
     "IP": "ip",
@@ -68,7 +68,7 @@ class Entry:
     """One mapping row: identifier → real PII value, with type."""
 
     identifier: str
-    type: str  # friendly type name (e.g. "reporter", "email")
+    type: str  # friendly type name (e.g. "name", "email")
     value: str
 
 

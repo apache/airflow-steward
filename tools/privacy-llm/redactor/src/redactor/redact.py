@@ -57,7 +57,7 @@ def parse_field(spec: str) -> tuple[str, str]:
     # Accept friendly name first, then code.
     if type_part.lower() in TYPE_NAMES:
         return TYPE_NAMES[type_part.lower()], value
-    if type_part.upper() in {"R", "E", "P", "IP", "H", "A"}:
+    if type_part.upper() in {"N", "E", "P", "IP", "H", "A"}:
         return type_part.upper(), value
     raise SystemExit(
         f"unknown field type {type_part!r}. "

@@ -51,16 +51,18 @@ the snapshot path inside an adopting tracker repo):
 
 ```bash
 # Redact: pass --field <type>:<value> for each PII value to swap.
-echo "Hi I am Jane Smith, jane@example.com" | \
+# `name:` is for any natural-person name OTHER than the reporter
+# and other than current <tracker> collaborators (see ../pii.md).
+echo "I worked with Other Researcher (other@example.com) on this finding" | \
   uv run --project tools/privacy-llm/redactor pii-redact \
-    --field reporter:"Jane Smith" \
-    --field email:"jane@example.com"
-# →  Hi I am R-<hex>, E-<hex>
+    --field name:"Other Researcher" \
+    --field email:"other@example.com"
+# →  I worked with N-<hex> (E-<hex>) on this finding
 
 # Reveal: identifiers in stdin → real values from the local map.
-echo "Reply to R-<hex>" | \
+echo "Reply mentions N-<hex>" | \
   uv run --project tools/privacy-llm/redactor pii-reveal
-# →  Reply to Jane Smith
+# →  Reply mentions Other Researcher
 
 # List the current map (text or JSON):
 uv run --project tools/privacy-llm/redactor pii-list
@@ -83,12 +85,12 @@ Field types accepted by `--field`:
 
 | Friendly name | Code | Use for |
 |---|---|---|
-| `reporter` | `R` | Reporter / external party natural-person name. |
-| `email` | `E` | Any email address. |
-| `phone` | `P` | Phone number in any format. |
-| `ip` | `IP` | IPv4 or IPv6 address self-disclosed by the reporter. |
-| `handle` | `H` | Personal social handle (GitHub, Twitter, IRC nick, …). |
-| `address` | `A` | Postal / employer address. |
+| `name` | `N` | Natural-person name of a non-reporter, non-collaborator individual the reporter mentions. |
+| `email` | `E` | Email address of the same. |
+| `phone` | `P` | Phone number of the same. |
+| `ip` | `IP` | IPv4 or IPv6 address self-disclosed by a third party. |
+| `handle` | `H` | Personal social handle (GitHub, Twitter, IRC nick, …) of the same. |
+| `address` | `A` | Postal / employer address of the same. |
 
 ## Mapping file
 

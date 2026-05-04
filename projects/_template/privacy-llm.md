@@ -73,6 +73,7 @@ the per-variant setup recipes are at
      stack above is fully approved.
 
      `<security-list>` (the project's security@ list) is **not**
-     listed here — its body is treated as non-private; only the
-     reporter PII inside it is redacted (per
+     listed here — its body is treated as non-private; only
+     third-party PII (non-reporter, non-collaborator individuals
+     named in the body) is redacted (per
      ../../tools/privacy-llm/pii.md). -->

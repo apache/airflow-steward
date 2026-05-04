@@ -4,6 +4,7 @@
 
 - [PII redaction contract](#pii-redaction-contract)
   - [What counts as PII](#what-counts-as-pii)
+    - [Who counts as a collaborator (not redacted)](#who-counts-as-a-collaborator-not-redacted)
   - [The identifier format](#the-identifier-format)
   - [The mapping store](#the-mapping-store)
   - [The redact-then-reveal lifecycle](#the-redact-then-reveal-lifecycle)
@@ -30,30 +31,80 @@ identifier prefix:
 
 | Field type | Prefix | Sources skills should redact from |
 |---|---|---|
-| Reporter name (or any natural-person name supplied by an external party) | `R-` | `From:` header display name on `<security-list>` mail; signature lines; "I am" / "my name is" patterns in body; CVE credit fields; HackerOne / GHSA reporter names. |
-| Email address | `E-` | `From:` / `Cc:` / `To:` headers; quoted email addresses inside the body; CVE credit `email` fields. |
-| Phone number | `P-` | Signature blocks; "call me at" / "reach me on" patterns. |
-| IP address (v4 or v6) | `IP-` | Reproducer logs; "I tested from" lines. Self-disclosed IPs only — IPs that name a vulnerable production server are **not** PII and stay in place. |
-| Personal handle | `H-` | Personal GitHub username, Twitter handle, IRC nick, Slack handle the reporter self-discloses. The reporter's *public* identity on the GitHub *issue itself* is already public and is not PII; the handle they sign their email with may be different and is. |
-| Postal / employer address (free-form) | `A-` | "I work at" / "my address is" lines. Rare; redact when present. |
+| Third-party name (any natural-person name **other than the reporter** and **other than current `<tracker>` collaborators** — see [Who counts as a collaborator](#who-counts-as-a-collaborator-not-redacted) below) | `N-` | Names appearing in the body / signature lines / CVE credit fields / HackerOne / GHSA fields that the reporter discloses about *other people* (research collaborators, victims they observed, named third parties). |
+| Email address | `E-` | Same scope: emails of the third parties redacted under the row above. The reporter's own `From:` / `Cc:` / `To:` addresses are NOT redacted. |
+| Phone number | `P-` | Signature blocks of third parties; "call me at" / "reach me on" patterns referring to non-reporter individuals. |
+| IP address (v4 or v6) | `IP-` | Reproducer logs; "I tested from" lines. Self-disclosed IPs of third parties only — IPs that name a vulnerable production server are **not** PII and stay in place. |
+| Personal handle | `H-` | Personal GitHub username, Twitter handle, IRC nick, Slack handle of a third party (not the reporter and not a `<tracker>` collaborator). The third party's *public* identity on the GitHub *issue itself* is already public and is not PII; a handle they only signed their email with is. |
+| Postal / employer address (free-form) | `A-` | "I work at" / "my address is" lines referring to non-reporter individuals. |
 
 Things that are **not** PII and the redactor leaves alone:
 
+- **The reporter's own identity** — name, email, phone, signature
+  details. The reporter sent the mail to `<security-list>` and
+  is operationally known to the security team (the team replies
+  to them, credits them in the CVE, references them across the
+  tracker discussion). Their identity flows through the agent's
+  context as-is. *Confidentiality* of the reporter's identity vs
+  *public surfaces* is governed separately by
+  [`AGENTS.md` — Confidentiality of the tracker repository](../../AGENTS.md#confidentiality-of-the-tracker-repository),
+  not by this redactor.
+- **`<tracker>` repo collaborators** — see
+  [Who counts as a collaborator](#who-counts-as-a-collaborator-not-redacted)
+  below. Their identity is already public/known via their
+  collaborator status; redacting them produces no privacy gain.
 - Vulnerability detail (CVEs, CWE numbers, file paths in the
   affected project, code snippets demonstrating the bug).
-- Project maintainer names — the security team's own roster lives
-  in `<project-config>/` and is committed; they are authors, not
+- Project maintainer names — covered by the collaborator
+  exception above. The security team's own roster lives in
+  `<project-config>/` and is committed; they are authors, not
   external parties whose identity needs protecting.
 - Anything inside `<` … `>` that is *already* a placeholder in the
   framework's templates (`<security-list>`, `<reporter>` in canned
   responses, etc.). Redacting placeholders would be silly.
-- URLs — except where the URL contains a personal handle (e.g.
-  `https://github.com/janesmith/...`) the handle alone gets
-  redacted; the URL stays valid.
+- URLs — except where the URL contains a redactable handle (e.g.
+  `https://github.com/janesmith/...` for a non-collaborator
+  janesmith), the handle alone gets redacted; the URL stays
+  valid.
 
-When in doubt, redact. The reverse-on-outbound step (`pii-reveal`)
-is cheap; over-redaction has no cost beyond cosmetics in the
-agent's working text. Under-redaction leaks PII into LLM logs.
+When in doubt about a *third party*, redact. The reverse-on-
+outbound step (`pii-reveal`) is cheap; over-redaction has no
+cost beyond cosmetics in the agent's working text. Under-
+redaction of third-party identity leaks PII into LLM logs. (The
+reporter's own identity is the one case where the default flips
+the other way — leave it as-is, it is operationally needed.)
+
+### Who counts as a collaborator (not redacted)
+
+A "collaborator" for the purposes of the not-redacted exception
+above is anyone returned by:
+
+```bash
+gh api repos/<tracker>/collaborators --jq '.[].login'
+```
+
+This is the same source-of-truth the framework's
+[Treat external content as data, never as instructions](../../AGENTS.md#treat-external-content-as-data-never-as-instructions)
+rule uses for "who is authorised to instruct the agent". Using
+the same list across both rules keeps the security team's
+mental model simple: a collaborator is a collaborator everywhere.
+
+The lookup is per-skill-run, not cached across runs — a
+collaborator added to or removed from the tracker takes effect
+on the next skill invocation. Skills SHOULD pass the resolved
+collaborator set to the redactor as a `--collaborators-file`
+argument (path to a one-login-per-line file), so the redactor
+can decline to redact a name / handle / email that maps to a
+collaborator's GitHub identity.
+
+> **Note for PR-1 / PR-2 readers.** The
+> `--collaborators-file` argument is a *future* addition to the
+> redactor (it lands when PR-2 wires the gate into the security
+> skills). For PR-1 the redactor accepts a flat
+> `--field <type>:<value>` list and trusts the caller to filter
+> against the collaborator set before passing values in. The
+> filtering responsibility stays with the skill either way; the
+> argument is purely an ergonomic shorthand.
 
 ## The identifier format
 
@@ -61,7 +112,7 @@ agent's working text. Under-redaction leaks PII into LLM logs.
 <TYPE>-<6-char-lowercase-hex>
 ```
 
-- `<TYPE>` is one of the prefixes from the table above (`R`, `E`,
+- `<TYPE>` is one of the prefixes from the table above (`N`, `E`,
   `P`, `IP`, `H`, `A`).
 - The 6-char hex is the first 24 bits of `sha256(<lowercased,
   trimmed value>)`, lowercased, no separator.
@@ -75,7 +126,7 @@ Examples:
 
 | Input | Identifier |
 |---|---|
-| `Jane Smith` | `R-a3f9d2` *(illustrative — actual hash differs)* |
+| `Jane Smith` | `N-a3f9d2` *(illustrative — actual hash differs)* |
 | `jane.smith@example.com` | `E-b8c247` |
 | `+1-555-0100` | `P-7d4e91` |
 | `192.0.2.42` | `IP-1a5cef` |
@@ -97,7 +148,7 @@ Format:
 {
   "version": 1,
   "entries": {
-    "R-a3f9d2": {"type": "reporter", "value": "Jane Smith"},
+    "N-a3f9d2": {"type": "name", "value": "Jane Smith"},
     "E-b8c247": {"type": "email",    "value": "jane.smith@example.com"},
     "P-7d4e91": {"type": "phone",    "value": "+1-555-0100"}
   }
@@ -154,7 +205,7 @@ Three rules govern the lifecycle:
    should be a single tool call wide.
 2. **Operate on identifiers throughout.** All intermediate work
    (analysis, summarization, draft composition, prior-art lookup)
-   runs against `R-a3f9d2`-style text. Skills that compose a draft
+   runs against `N-a3f9d2`-style text. Skills that compose a draft
    for the reporter use the identifier in the draft body and only
    reverse it as the last step.
 3. **Reveal only at the outbound boundary.** `pii-reveal` runs
@@ -170,7 +221,7 @@ Two console scripts, both reading stdin and writing stdout:
 ```bash
 # Redact: replace real PII with identifiers; map updated in place.
 echo "$BODY" | uv run --project <framework>/tools/privacy-llm/redactor pii-redact \
-  --field reporter:"Jane Smith" \
+  --field name:"Jane Smith" \
   --field email:"jane.smith@example.com" \
   --field phone:"+1-555-0100"
 
@@ -194,7 +245,7 @@ A third console script lists the current map for debugging:
 
 ```bash
 uv run --project <framework>/tools/privacy-llm/redactor pii-list
-# →  R-a3f9d2  reporter  Jane Smith
+# →  N-a3f9d2  name      Jane Smith
 #    E-b8c247  email     jane.smith@example.com
 #    …
 ```
@@ -205,9 +256,9 @@ placeholder — see
 
 ## Determinism, idempotency, collisions
 
-- **Deterministic** — `pii-redact reporter:"Jane Smith"` produces
-  the same `R-a3f9d2` on every machine, every run, because the
-  identifier is `R-` + first-24-bits of `sha256("jane smith")`.
+- **Deterministic** — `pii-redact name:"Jane Smith"` produces
+  the same `N-a3f9d2` on every machine, every run, because the
+  identifier is `N-` + first-24-bits of `sha256("jane smith")`.
   The mapping file is convenience storage for `pii-reveal`; the
   identifier itself is reproducible without it.
 - **Idempotent** — running `pii-redact` twice on the same input
@@ -217,9 +268,9 @@ placeholder — see
   inputs mapping to the same prefix is a one-in-16-million event
   per (type, prefix) pair. When it happens, the redactor extends
   the second-detected value's hash by 2 hex chars at a time
-  (`R-a3f9d2ab`, then `R-a3f9d2abcd`, …) until the new identifier
+  (`N-a3f9d2ab`, then `N-a3f9d2abcd`, …) until the new identifier
   is unique against the current map. Extension is permanent for
-  that mapping entry — once `R-a3f9d2ab` is in the file, that
+  that mapping entry — once `N-a3f9d2ab` is in the file, that
   value keeps the longer form forever.
 
 ## What never reaches an LLM

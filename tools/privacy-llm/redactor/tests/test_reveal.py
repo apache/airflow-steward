@@ -36,7 +36,7 @@ def seeded_mapping(tmp_path: pathlib.Path, monkeypatch) -> Iterator[pathlib.Path
     # Seed with one reporter and one email.
     monkeypatch.setattr("sys.stdin", io.StringIO("Jane Smith jane@example.com"))
     monkeypatch.setattr("sys.stdout", io.StringIO())
-    redact.main(["--field", "reporter:Jane Smith", "--field", "email:jane@example.com"])
+    redact.main(["--field", "name:Jane Smith", "--field", "email:jane@example.com"])
     yield path
 
 
@@ -54,7 +54,7 @@ def _reveal(monkeypatch, stdin_text: str) -> tuple[str, int]:
 
 def test_reveal_substitutes_known_identifiers(seeded_mapping, monkeypatch):
     mapping = load_mapping(seeded_mapping)
-    reporter = next(e for e in mapping.values() if e.type == "reporter")
+    reporter = next(e for e in mapping.values() if e.type == "name")
     email = next(e for e in mapping.values() if e.type == "email")
     text = f"Hi {reporter.identifier}, your email {email.identifier} was confirmed."
     out, rc = _reveal(monkeypatch, text)
@@ -71,7 +71,7 @@ def test_reveal_leaves_unknown_identifiers_intact(seeded_mapping, monkeypatch):
     This is the cross-machine / lost-mapping case — we have no
     way to reverse it, so we leave the bytes alone.
     """
-    text = "Reply to R-deadbeef please."
+    text = "Reply to N-deadbeef please."
     out, _ = _reveal(monkeypatch, text)
     assert out == text
 
@@ -86,7 +86,7 @@ def test_reveal_does_not_match_arbitrary_uppercase_dash_hex(seeded_mapping, monk
 def test_reveal_handles_identifier_inside_punctuation(seeded_mapping, monkeypatch):
     """Identifiers next to punctuation should still be revealed."""
     mapping = load_mapping(seeded_mapping)
-    reporter = next(e for e in mapping.values() if e.type == "reporter")
+    reporter = next(e for e in mapping.values() if e.type == "name")
     text = f"({reporter.identifier})"
     out, _ = _reveal(monkeypatch, text)
     assert out == "(Jane Smith)"
@@ -95,7 +95,7 @@ def test_reveal_handles_identifier_inside_punctuation(seeded_mapping, monkeypatc
 def test_reveal_empty_mapping_passes_through(tmp_path: pathlib.Path, monkeypatch):
     """No mapping file → identifier-shaped tokens are left as-is."""
     monkeypatch.setenv("PII_MAPPING_PATH", str(tmp_path / "missing.json"))
-    text = "Hi R-abcdef, your email E-deadbe was confirmed."
+    text = "Hi N-abcdef, your email E-deadbe was confirmed."
     out, rc = _reveal(monkeypatch, text)
     assert rc == 0
     assert out == text
@@ -109,7 +109,7 @@ def test_reveal_round_trip_with_redact(tmp_path: pathlib.Path, monkeypatch):
     monkeypatch.setattr("sys.stdin", io.StringIO(body))
     redacted_buf = io.StringIO()
     monkeypatch.setattr("sys.stdout", redacted_buf)
-    redact.main(["--field", "reporter:Jane Smith", "--field", "email:jane@example.com"])
+    redact.main(["--field", "name:Jane Smith", "--field", "email:jane@example.com"])
     # Reveal pass.
     monkeypatch.setattr("sys.stdin", io.StringIO(redacted_buf.getvalue()))
     revealed_buf = io.StringIO()
@@ -126,9 +126,9 @@ def test_reveal_function_directly():
     from redactor.mapping import Entry
 
     mapping = {
-        "R-abcdef": Entry(identifier="R-abcdef", type="reporter", value="Jane Smith"),
+        "N-abcdef": Entry(identifier="N-abcdef", type="name", value="Jane Smith"),
     }
-    assert reveal.reveal("Hello R-abcdef.", mapping) == "Hello Jane Smith."
+    assert reveal.reveal("Hello N-abcdef.", mapping) == "Hello Jane Smith."
 
 
 def test_reveal_returns_2_on_malformed_mapping_file(tmp_path: pathlib.Path, monkeypatch):
