@@ -236,7 +236,7 @@ def parse_config(path: pathlib.Path) -> ParsedConfig:
 
 
 def host_of(url: str) -> str | None:
-    """Lowercase host of ``url``, or ``None`` if unparseable."""
+    """Lowercase host of ``url``, or ``None`` if unparsable."""
     try:
         parsed = urllib.parse.urlparse(url)
     except ValueError:

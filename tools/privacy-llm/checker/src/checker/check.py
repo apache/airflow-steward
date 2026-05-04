@@ -73,7 +73,7 @@ def _approve_by_default_rules(entry: LLMEntry) -> Verdict | None:
     if entry.url is not None:
         host = host_of(entry.url)
         if host is None:
-            return Verdict(entry, False, f"unparseable URL host in {entry.url!r}")
+            return Verdict(entry, False, f"unparsable URL host in {entry.url!r}")
         if host in _LOCAL_HOSTS:
             return Verdict(entry, True, f"local-only inference at {host} (default-approved)")
         if host.endswith(".apache.org") or host == "apache.org":

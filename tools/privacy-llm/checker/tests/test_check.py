@@ -76,7 +76,12 @@ def test_apache_org_is_approved():
         )
     )
     assert v.approved is True
-    assert "apache.org" in v.reason
+    # Match the verdict's exact phrasing rather than a bare "apache.org"
+    # substring — the latter trips CodeQL's incomplete-URL-sanitization
+    # rule (false positive here; v.reason is a human message, not a URL
+    # being validated). Asserting on the production-code phrasing also
+    # locks down the user-facing reason text against accidental drift.
+    assert "*.apache.org-hosted" in v.reason
 
 
 def test_subdomain_apache_org_is_approved():
