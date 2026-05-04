@@ -338,6 +338,28 @@ layered defence the framework dogfoods (`.claude/settings.json`
 sandbox + tool permissions + clean-env wrapper, with system tools
 pinned per-tool with a 7-day default upstream cooldown).
 
+**Tool credentials live under `$HOME`, never in the project tree.**
+Any persistent token, API key, OAuth refresh token, or session
+cookie a framework tool needs goes under a well-known home-directory
+path — `~/.config/apache-steward/<tool>` for tools the framework
+owns, or whatever upstream convention the third-party tool already
+uses. The existing exemplars: Gmail OAuth at
+`~/.config/apache-steward/gmail-oauth.json` (see
+[`tools/gmail/oauth-draft/src/oauth_draft/credentials.py`](tools/gmail/oauth-draft/src/oauth_draft/credentials.py)),
+PonyMail session cookie at `~/.ponymail-mcp/session.json`, GitHub
+auth via `gh auth` (`~/.config/gh/`). Two reasons this is
+non-negotiable: (1) the standard sandbox
+([`docs/setup/secure-agent-setup.md`](docs/setup/secure-agent-setup.md))
+denies reads on home-dir credential paths, so an in-tree credential
+silently bypasses that boundary — every credential read becomes an
+explicit, visible sandbox-bypass moment instead of a silent in-tree
+file slurp; (2) one credential file serves every clone / worktree /
+project, not re-acquired per checkout. New tool integrations MUST
+follow the pattern. If a credential is found in-tree (legacy,
+copy-paste from upstream docs, generated to a temp scratch path),
+relocate it to a home-dir path and update the tool to read from
+there — never leave it in place "because it's already there".
+
 This repository uses [`prek`](https://github.com/j178/prek) (a fast, Rust-based drop-in
 replacement for `pre-commit`) to run pre-commit hooks that keep the documentation
 consistent — regenerating the `doctoc` tables of contents, stripping trailing whitespace,
