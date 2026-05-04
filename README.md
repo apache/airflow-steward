@@ -5,6 +5,10 @@
 - [Apache Steward (to be renamed)](#apache-steward-to-be-renamed)
   - [How adoption works](#how-adoption-works)
   - [Adopting the framework](#adopting-the-framework)
+    - [1. Bootstrap (copy-pasteable shell)](#1-bootstrap-copy-pasteable-shell)
+    - [2. Skill takeover](#2-skill-takeover)
+    - [Subsequent contributors](#subsequent-contributors)
+    - [Drift detection](#drift-detection)
   - [Skill families](#skill-families)
   - [Maintenance](#maintenance)
   - [Cross-references](#cross-references)
@@ -90,32 +94,87 @@ a gitignored snapshot, and agent-readable override files.
 
 ## Adopting the framework
 
-Tell your agent: **"adopt apache/airflow-steward in my repo"**.
+Two phases — a **shell bootstrap** that gets `setup-steward`
+into your repo, then the **skill takeover** that wires up the
+rest interactively.
 
-The agent should:
+### 1. Bootstrap (copy-pasteable shell)
 
-1. Read this README (you're here).
-2. Copy the
+Pick an install method and follow the verbatim recipe in
+[**`docs/setup/install-recipes.md`**](docs/setup/install-recipes.md):
+
+| Method | When to use | Reproducibility |
+|---|---|---|
+| `svn-zip` | Production once ASF official releases ship to `dist.apache.org` (signed + checksummed) | Frozen by version |
+| `git-tag` | Pin a specific framework version | Frozen by tag |
+| `git-branch` (default `main`) | WIP path — track the framework's `main` directly. The default during the framework's pre-release phase. | Tracks tip |
+
+Each recipe is a single shell block that:
+
+1. Adds `.apache-steward/`, `.apache-steward.local.lock`, and
+   the framework-skill symlinks to `.gitignore`.
+2. Downloads + verifies + extracts the framework into
+   `.apache-steward/` (gitignored — build artefact, not
+   source).
+3. Copies the
    [`setup-steward`](.claude/skills/setup-steward/SKILL.md)
-   skill from this framework into your repo's skill directory,
-   matching your existing convention (flat `.claude/skills/` or
-   the double-symlinked pattern — see
-   [`conventions.md`](.claude/skills/setup-steward/conventions.md)).
-   This is the **only** framework artefact the adopter commits.
-3. Invoke `/setup-steward` to do the rest:
+   skill into your skills directory, matching your existing
+   convention (flat `.claude/skills/<n>/` or the
+   double-symlinked `.claude/skills/<n>` →
+   `.github/skills/<n>/` pattern).
 
-   - download the snapshot into `.apache-steward/` (gitignored),
-   - create symlinks in your skill directory for the families
-     you pick (security and/or pr-management),
-   - scaffold `.apache-steward-overrides/` (committed),
-   - update your repo's `.gitignore`,
-   - install a `post-checkout` git hook so worktrees re-create
-     the gitignored symlinks automatically,
-   - update your project documentation with a brief mention.
+After the recipe completes, the framework snapshot is on
+disk and the bootstrap skill is in your repo.
+
+### 2. Skill takeover
+
+Tell your agent: **"adopt apache/airflow-steward in my repo"**
+(or invoke `/setup-steward` directly). The skill walks
+through the rest:
+
+- writes `.apache-steward.lock` (committed) — the project's
+  pin: install method + URL + ref + verification anchor;
+- writes `.apache-steward.local.lock` (gitignored) — what
+  this machine actually fetched + when;
+- asks which skill families (`security`, `pr-management`) to
+  symlink in;
+- creates the gitignored framework-skill symlinks;
+- scaffolds `.apache-steward-overrides/` (committed) for any
+  local workflow modifications;
+- installs a `post-checkout` git hook so worktrees re-create
+  runtime state automatically;
+- updates your project documentation with a brief mention.
 
 After the skill finishes, you commit the small, focused
 diff — the bootstrap skill, the `.gitignore` entries, the
-overrides scaffold, the doc note — and you're done. Open a PR.
+two lock files (committed + gitignore exclusion for the
+local one), the overrides scaffold, the doc note — and you're
+done. Open a PR.
+
+### Subsequent contributors
+
+Future contributors who clone your repo just say "adopt
+apache-steward in this repo" (or invoke `/setup-steward`).
+The skill reads `.apache-steward.lock` (already committed)
+and re-installs to the same version your project pinned. No
+need to redo the manual recipe — the committed lock is the
+project's source-of-truth.
+
+### Drift detection
+
+Every framework skill compares the gitignored
+`.apache-steward.local.lock` against the committed
+`.apache-steward.lock` at the top of its run. If they have
+drifted (project lead bumped the pin, or the local install
+is stale on a `main`-tracking adopter), the skill surfaces
+the gap and proposes `/setup-steward upgrade`. `upgrade`
+deletes the gitignored snapshot, re-installs per the
+committed pin, refreshes the gitignored symlinks, and
+reconciles any agentic overrides — see
+[`docs/setup/install-recipes.md`](docs/setup/install-recipes.md)
+and
+[`.claude/skills/setup-steward/upgrade.md`](.claude/skills/setup-steward/upgrade.md)
+for the full flow.
 
 ## Skill families
 
