@@ -191,10 +191,21 @@ Before touching any candidate thread, verify:
    for the one-time setup instructions.
 4. **Privacy-LLM contract.** This skill reads `<security-list>`
    bodies that may contain third-party PII the reporter
-   discloses about other people. Before fetching any body,
-   load `<project-config>/privacy-llm.md` (template at
+   discloses about other people. Run the gate-check first —
+   non-zero exit is a hard stop:
+
+   ```bash
+   uv run --project <framework>/tools/privacy-llm/checker \
+     privacy-llm-check
+   ```
+
+   The checker auto-locates `<project-config>/privacy-llm.md`
+   (template at
    [`projects/_template/privacy-llm.md`](../../../projects/_template/privacy-llm.md))
-   and verify:
+   and verifies every entry in *Currently configured LLM stack*
+   is approved per
+   [`tools/privacy-llm/models.md`](../../../tools/privacy-llm/models.md#the-pre-flight-check).
+   In addition, verify:
    - `~/.config/apache-steward/` is writable (the redactor's
      mapping file lives there);
    - the configured collaborator source is reachable via

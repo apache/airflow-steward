@@ -79,18 +79,21 @@ Three rules govern the whole protocol:
 Add to the skill's existing Step 0 (pre-flight check) section:
 
 ```markdown
-- **Privacy-LLM contract.** Read
-  `<project-config>/privacy-llm.md` (or the framework's
-  template at
-  [`projects/_template/privacy-llm.md`](../../projects/_template/privacy-llm.md)
-  if the adopter has not yet customised it). Confirm:
+- **Privacy-LLM contract.** Run the gate-check via the
+  `privacy-llm-check` console script — it parses
+  `<project-config>/privacy-llm.md`, verifies every entry in the
+  *Currently configured LLM stack* is approved per
+  [`tools/privacy-llm/models.md`](../../tools/privacy-llm/models.md#the-pre-flight-check),
+  and exits non-zero on any unapproved entry.
 
-  - The configured LLM stack matches what is currently
-    active. If the skill may read `<private-list>` content
-    and the active LLM stack contains an entry not in the
-    approved-model registry per
-    [`tools/privacy-llm/models.md`](../../tools/privacy-llm/models.md#the-pre-flight-check),
-    stop and ask the user to wire an approved model first.
+      uv run --project <framework>/tools/privacy-llm/checker \
+        privacy-llm-check --reads-private-list
+
+  Pass `--reads-private-list` when the skill may read
+  `<private-list>` content; omit it for `<security-list>`-only
+  flows (the check itself is the same — the flag only controls
+  the printed banner). The skill also confirms:
+
   - `~/.config/apache-steward/` is writable (the redactor's
     mapping file lives there). If not, prompt the user to
     create it.
@@ -102,8 +105,9 @@ Add to the skill's existing Step 0 (pre-flight check) section:
 ```
 
 The pre-flight is read-only — no PII has been fetched yet. A
-failed pre-flight does not write to the mapping file or the
-tracker.
+failed pre-flight (gate-check exit non-zero, or any of the other
+checks above) does not write to the mapping file or the
+tracker; the skill stops and surfaces the failure to the user.
 
 ## Redact-after-fetch protocol
 

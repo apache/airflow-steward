@@ -43,11 +43,13 @@ default-approved Claude Code instance and passes).
 | **Local-only inference** | The data never leaves the user's machine. No external party (cloud LLM operator, network operator, log aggregator) can observe it. | Ollama serving a local model, vLLM on the user's workstation, llama.cpp embedded in a CLI helper |
 | **Air-gapped on-prem** | Same rationale as local inference, scaled to a contributor's organisation. The model server runs on infra the adopter operationally controls and which has no path to a third-party LLM operator. | A PMC-hosted inference appliance on a private VLAN |
 
-Detection lives in the helper's `redactor/src/redactor/registry.py`
-(once PR-3 lands the gate-call wiring); for PR-1 the registry is
-the markdown contract here and the
+Detection lives in
+[`checker/src/checker/check.py`](checker/src/checker/check.py)
+(the `_approve_by_default_rules` function); the markdown contract
+here is the source-of-truth for what those rules implement, and
+the
 [`<project-config>/privacy-llm.md`](#adopter-config--project-configprivacy-llmmd)
-declaration shape.
+declaration shape is what the checker parses.
 
 ## The opt-in entries — adopter declares explicitly
 
@@ -148,22 +150,35 @@ re-uses the same source-of-truth so the two stay in sync.
 
 ## How skills call the gate
 
-Skills call the gate via a small Python helper that ships with
-the redactor sub-tool (in PR-3 — the gate-call wiring is
-deferred from PR-1 to keep the foundation diff focused). The
-contract for that helper, defined here for forward-compatibility:
+Skills call the gate via the `privacy-llm-check` console script
+in [`checker/`](checker/). Run it at Step 0 (pre-flight); a
+non-zero exit is a hard stop.
 
 ```bash
 # Returns exit code 0 if the active stack is fully approved,
-# non-zero with a stderr explanation if not. Skills run this at
-# Step 0 and bail on non-zero.
-uv run --project <framework>/tools/privacy-llm/redactor privacy-llm-check \
+# non-zero with a stderr explanation if not.
+uv run --project <framework>/tools/privacy-llm/checker privacy-llm-check \
   --reads-private-list                 # set when the skill may read <private-list>
 ```
 
-For `<security-list>`-only skills the gate-call is not required
-(the body classification permits Claude-Code-default LLMs by
-construction); the redactor (`pii-redact`) is required regardless.
+The checker auto-locates `<project-config>/privacy-llm.md`:
+explicit `--config` → `$PRIVACY_LLM_CONFIG` env var → standard
+adopter paths (`<cwd>/.apache-steward/privacy-llm.md`,
+`<cwd>/.apache-steward-overrides/privacy-llm.md`). On approval
+it prints a one-line banner per stack entry; on rejection it
+prints the failing entries to stderr and exits 1. Exit 2 means
+the config file could not be located or parsed.
+
+For `<security-list>`-only skills the gate-call is **also
+required** as a defence-in-depth measure: even though the body
+classification permits Claude-Code-default LLMs, running the
+check ensures the adopter's config is in a valid state (no
+unconfigured opt-in entries lurking in the active stack) before
+any private content flows. The redactor (`pii-redact`) is
+required for every `<security-list>` body read regardless; see
+[`pii.md`](pii.md) for the redaction contract and
+[`wiring.md`](wiring.md) for how the two mechanisms compose at
+the skill level.
 
 ## Why this list is provisional
 

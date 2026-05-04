@@ -52,7 +52,8 @@ agent's context, and `privacy-llm` is what stops it from leaking.
 | Skill-wiring pattern | [`wiring.md`](wiring.md) | The canonical step-by-step pattern every `<security-list>`- or `<private-list>`-touching skill follows when applying the contract — Step 0 pre-flight, redact-after-fetch, reveal-before-send, plus edge cases. Skill `SKILL.md` files link here from their pre-flight section rather than copying the protocol. |
 | Per-project configuration | [`projects/_template/privacy-llm.md`](../../projects/_template/privacy-llm.md) | Template the adopter copies into `<project-config>/privacy-llm.md` to declare their LLM stack, private mailing-list set, collaborator source, and redaction-tuning knobs (collaborator exemption, enabled field types). Defaults are documented inline. |
 | Setup recipes | [`../../docs/setup/privacy-llm.md`](../../docs/setup/privacy-llm.md) | Copy-pasteable configurations for the supported variants — local inference, Apache-hosted endpoint, AWS Bedrock, opt-in third-party. Marked **provisional pending ASF Legal Affairs ratification** of an authoritative approved-model list. |
-| Reference Python helper | [`redactor/`](redactor/) | A small `uv` project exposing three console scripts — `pii-redact`, `pii-reveal`, `pii-list` — that skills shell out to so the redaction lifecycle is consistent across every consumer. |
+| Reference Python helper — redactor | [`redactor/`](redactor/) | A small `uv` project exposing three console scripts — `pii-redact`, `pii-reveal`, `pii-list` — that skills shell out to so the redaction lifecycle is consistent across every consumer. |
+| Reference Python helper — gate-check | [`checker/`](checker/) | A small `uv` project exposing one console script — `privacy-llm-check` — that parses `<project-config>/privacy-llm.md` and verifies every active-stack entry is approved per [`models.md`](models.md). Skills shell out to it at Step 0 (pre-flight). |
 
 ## Why this is its own tool
 

@@ -382,9 +382,17 @@ Before reading any tracker state, verify:
    they meant.
 5. **Privacy-LLM contract.** This skill reads `<security-list>`
    bodies (and may read `<private-list>` content when escalating)
-   that may contain third-party PII. Before fetching any body,
-   load `<project-config>/privacy-llm.md` and verify the
-   pre-flight items in
+   that may contain third-party PII. Run the gate-check first —
+   non-zero exit is a hard stop, and pass `--reads-private-list`
+   because escalation paths in this skill may read PMC-private
+   foundation lists:
+
+   ```bash
+   uv run --project <framework>/tools/privacy-llm/checker \
+     privacy-llm-check --reads-private-list
+   ```
+
+   Plus the rest of the pre-flight items in
    [`tools/privacy-llm/wiring.md`](../../../tools/privacy-llm/wiring.md#step-0--pre-flight) —
    `~/.config/apache-steward/` is writable, the configured
    collaborator source is reachable, the redaction-tuning knobs
