@@ -136,9 +136,25 @@ snapshot's `.apache-steward/.claude/skills/setup-steward/`.
 
 - ✓ if same content.
 - ⚠ if different — the adopter's committed copy has
-  drifted. Suggest re-copying from the snapshot per the
-  install recipe. The user may have intentional local
-  tweaks; surface as ⚠ not ✗.
+  drifted from the snapshot. The remediation depends on
+  *which way* the drift goes:
+
+  - **Snapshot is newer than the committed copy** (typical
+    case after a framework upgrade where the adopter has
+    not yet rerun `/setup-steward upgrade`). Run
+    `/setup-steward upgrade` — its
+    [Step 6b](upgrade.md#step-6b--overwrite-the-committed-setup-steward-skill-from-the-new-snapshot)
+    auto-overwrites the committed copy with the snapshot's
+    version, surfaces local modifications first if any
+    exist, and lands the change in `git status` for the
+    user to commit.
+  - **Committed copy is newer than the snapshot** (the
+    adopter modified the bootstrap skill directly; an
+    anti-pattern per the framework's hard rule). The
+    framework-side fix is to upstream the modifications as
+    a PR against `apache/airflow-steward`; the local fix
+    is to revert the modifications and use
+    `.apache-steward-overrides/` instead.
 
 ### 8. Post-checkout hook installed
 
