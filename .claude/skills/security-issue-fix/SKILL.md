@@ -148,10 +148,10 @@ tracker only to discover you cannot push the branch.
     directly — a fork is required.
 - **A clean local clone of `<upstream>`** reachable from the
   agent's working directory. The path comes from the user's
-  [`config/user.md`](../../../config/user.md) →
+  `.apache-steward-overrides/user.md` →
   `environment.upstream_clone`; if the file or key is missing,
   the skill asks the user interactively and offers to save the
-  answer back into `config/user.md` so the next run is silent. The
+  answer back into `.apache-steward-overrides/user.md` so the next run is silent. The
   skill does **not** guess filesystem layouts — there is no
   hard-coded search path. The clone must:
   - have a remote pointing at your fork;
@@ -313,14 +313,14 @@ change; it writes into a local clone of `<upstream>`. Before
 touching any files:
 
 1. Resolve the clone path from the user's
-   [`config/user.md`](../../../config/user.md) →
+   `.apache-steward-overrides/user.md` →
    `environment.upstream_clone` (see
    [`config/README.md`](../../../config/README.md) for the config
    layer explainer). If the file is missing, the key is unset, or
    the stored path does not resolve to a git repo with a remote
    pointing at `<upstream>` or the user's fork, **ask the user
    for the path interactively** and offer to save their answer back
-   into `config/user.md` so the next run is silent. Do **not**
+   into `.apache-steward-overrides/user.md` so the next run is silent. Do **not**
    probe hard-coded paths like `~/code/airflow` — filesystem layouts
    vary per user and a wrong guess masks a misconfigured clone.
 
@@ -328,7 +328,7 @@ touching any files:
    and which is the upstream `<upstream>`. Per the rule in
    [`<upstream>/AGENTS.md`](https://github.com/<upstream>/blob/main/AGENTS.md),
    push only to the user's fork, never to `<upstream>` directly.
-   If the user's `config/user.md` has
+   If the user's `.apache-steward-overrides/user.md` has
    `environment.upstream_fork_remote` set, prefer that remote
    name; otherwise use the first non-`origin` remote that looks like
    a fork. If no fork remote is configured, **stop and ask the user

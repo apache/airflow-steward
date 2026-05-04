@@ -347,7 +347,7 @@ Before reading any tracker state, verify:
    `<tracker>`. A 401/403/404 means the user needs
    `gh auth login` or collaborator access.
 3. **PonyMail MCP status** (opt-in; primary read path when
-   enabled) — read `config/user.md` → `tools.ponymail`. If
+   enabled) — read `.apache-steward-overrides/user.md` → `tools.ponymail`. If
    `enabled: true`, call `mcp__ponymail__auth_status()` once. Three
    outcomes:
    - **Authenticated session** — record
@@ -371,7 +371,7 @@ Before reading any tracker state, verify:
      user who set `enabled: true` in config but has not
      registered the MCP in Claude Code's `mcpServers` block gets
      the Gmail-only path without a noisy error.
-   When `config/user.md` sets `enabled: false` or omits the
+   When `.apache-steward-overrides/user.md` sets `enabled: false` or omits the
    `ponymail` block entirely, skip this sub-step; Gmail is the
    only read backend. See
    [`tools/ponymail/tool.md`](../../../tools/ponymail/tool.md)
@@ -475,7 +475,7 @@ set is the strongest signal for what milestone the security issue should carry.
 
 **Backend selection.** When Step 0 recorded
 `ponymail_authenticated: true` **and**
-`security@<project>.apache.org` is in `config/user.md` →
+`security@<project>.apache.org` is in `.apache-steward-overrides/user.md` →
 `tools.ponymail.private_lists`, **PonyMail MCP is the primary
 backend for this step** — the archive is authoritative and
 reaches back further than any single user's Gmail window. Run the
@@ -613,7 +613,7 @@ it for: historical lookups, cross-list fan-outs
 reliably find messages older than ~90 days. Gmail is the fallback
 when (a) PonyMail is not enabled / not authenticated, (b) a
 private list the query targets is not in
-`config/user.md` → `tools.ponymail.private_lists`, or (c) the
+`.apache-steward-overrides/user.md` → `tools.ponymail.private_lists`, or (c) the
 signal is *just-arrived inbound mail* where Gmail's inbox latency
 beats the archive's indexing delay. The per-issue budget is
 ≤ 2 archive searches (whichever backend) plus ≤ 3 Gmail inbox
@@ -720,7 +720,7 @@ uses for reporter threads. That is the load-bearing signal path.
 
 **Backend selection.** When PonyMail MCP is enabled and
 authenticated (Step 0) **and** `security@<project>.apache.org` is
-in `config/user.md` → `tools.ponymail.private_lists`, **PonyMail
+in `.apache-steward-overrides/user.md` → `tools.ponymail.private_lists`, **PonyMail
 MCP is the primary path** for reviewer-comment archive queries:
 
 ```text
