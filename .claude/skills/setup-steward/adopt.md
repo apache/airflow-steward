@@ -4,240 +4,303 @@
 # adopt — first-time install of apache-steward into an adopter repo
 
 The default sub-action when the user says "adopt apache-steward".
-Walks through detection, snapshot install, and the small set of
-adopter-side artefacts that need to land on disk.
+
+There are two adoption shapes the skill recognises and routes
+between automatically:
+
+- **Fresh adoption (no committed lock yet).** The first
+  adopter on a project. Runs the full bootstrap: pick the
+  install method, fetch the snapshot, write *both* lock
+  files, wire up symlinks, scaffold overrides, install
+  hooks, update docs.
+- **Subsequent adoption (committed lock exists).** A new
+  developer joining a project that already adopted. Reads
+  `<committed-lock>` to know what to install, fetches per
+  that pin, writes only the `<local-lock>`, refreshes
+  symlinks. Skips the doc-update + interactive-prompt flow.
+
+> **Note on the bootstrap recipe.** `setup-steward` is **the
+> only framework artefact an adopter commits**. Getting it
+> *into* a fresh adopter repo is the chicken-and-egg the
+> [install-recipes](../../../docs/setup/install-recipes.md)
+> doc resolves: copy-pasteable shell recipes per install
+> method that fetch the snapshot + place the `setup-steward`
+> skill content + add `.gitignore` entries. Once that
+> recipe runs and `setup-steward` is on disk, the agent
+> follows this file to finish adoption.
 
 ## Inputs
 
-- `from:<git-ref>` — adopt from a specific framework `<git-ref>`
-  (default: `main` of `apache/airflow-steward`).
-- `skill-families:<list>` — comma-separated families to symlink
-  in (`security`, `pr-management`). Default: prompt the user.
+- `from:<git-ref>` / `from:<version>` — explicit ref or
+  version (overrides the prompt).
+- `method:<git-branch | git-tag | svn-zip>` — explicit method
+  (overrides the prompt).
+- `skill-families:<list>` — comma-separated families to
+  symlink (default: prompt).
 
 ## Step 0 — Pre-flight
 
-1. Confirm we are in a git repo (`git rev-parse --show-toplevel`).
-   If not, surface and stop — the user opened the agent in the
-   wrong directory.
+1. Confirm we are in a git repo (`git rev-parse
+   --show-toplevel`).
 2. Confirm we are **not** in `apache/airflow-steward` itself
-   (read `git remote get-url origin` and refuse if it resolves
-   to the framework). Adopting the framework into itself is a
-   no-op the user did not intend.
+   (read `git remote get-url origin` and refuse if it
+   resolves to the framework).
 3. Detect the adopter's existing skills-dir convention by
-   following [`conventions.md`](conventions.md). The result
-   pins which directory the framework symlinks land in
-   (`<adopter-skills-dir>` from here on).
+   following [`conventions.md`](conventions.md). Pin the
+   result as `<adopter-skills-dir>` for the rest of this
+   flow.
 
-## Step 1 — Pick the skill families
-
-If `skill-families:` was passed on the invocation, use those
-verbatim. Otherwise, present the families to the user and let
-them choose:
-
-- **`security`** — eight skills for security-issue handling
-  (`security-issue-import`, `security-issue-sync`,
-  `security-cve-allocate`, `security-issue-fix`, etc.).
-  Maintainer-only; not useful unless the project has a
-  security tracker.
-- **`pr-management`** — three skills for maintainer-facing PR
-  queue work (`pr-management-triage`,
-  `pr-management-stats`, `pr-management-code-review`).
-- **`setup`** *(implicit)* — the `setup-isolated-setup-*`,
-  `setup-steward-*`, `setup-shared-config-sync` skills. The
-  `setup` family is always installed because the snapshot
-  carries it; the symlinks are wired up regardless of the
-  user's other family picks.
-
-Show the user a short description of each family and ask which
-to install. Default to whichever family the user named in
-their initial "adopt" request (e.g. *"adopt apache-steward for
-PR triage"* → `pr-management`).
-
-## Step 2 — Download the snapshot
-
-Place the snapshot at `<repo-root>/.apache-steward/`. Use the
-WIP path for now (a `--depth=1` git checkout of the framework's
-`main` branch). The signed-tarball path
-(e.g. `https://downloads.apache.org/airflow/...` once ASF official
-releases ship per
-[release-policy](https://www.apache.org/legal/release-policy.html))
-is a future upgrade; both paths produce the same on-disk
-shape.
-
-```bash
-# WIP path — works today
-git clone --depth=1 \
-  --branch <git-ref-or-main> \
-  https://github.com/apache/airflow-steward.git \
-  .apache-steward
-```
-
-If `<repo-root>/.apache-steward/` already exists with content,
-the user is in upgrade territory — refuse and suggest
-`/setup-steward upgrade` instead. (Idempotent re-run after a
-*partial* adopt is fine — see Step 6.)
-
-Pin the snapshot version into a small `.apache-steward.lock`
-file at the repo root (committed) — record the source URL,
-the resolved commit SHA, and the date. The `verify` and
-`upgrade` sub-actions read this file.
+## Step 1 — Detect adoption shape
 
 ```text
-# .apache-steward.lock (committed)
-source: https://github.com/apache/airflow-steward.git
-ref: main
-commit: <SHA>
-fetched: <ISO-8601 date>
+if .apache-steward.lock exists:
+    → SUBSEQUENT adoption
+elif .apache-steward/ exists (snapshot only):
+    → manual recipe was run; finish bootstrap (write committed
+      lock from the recipe's choices, then continue as FRESH
+      from Step 5)
+else:
+    → FRESH adoption
 ```
 
-## Step 3 — `.gitignore` entries
+## Step 2 — Pick install method (FRESH only)
 
-Add (if not already present) to `<repo-root>/.gitignore`:
+If the user passed `method:` and `from:` flags, use those
+verbatim. Otherwise, prompt:
+
+| Method | When | Reproducibility |
+|---|---|---|
+| `svn-zip` | Production once ASF releases ship to dist | Frozen by version |
+| `git-tag` | Pin a specific tag | Frozen by tag |
+| `git-branch` | Track a branch tip (default: `main`) | Tracks tip — best during pre-release |
+
+The verbatim shell that fetches per each method is in
+[`docs/setup/install-recipes.md`](../../../docs/setup/install-recipes.md).
+The skill at this point can either:
+
+- Tell the user "your manual recipe already ran — please
+  confirm the method you used, I will record it in the
+  committed lock", or
+- Run the per-method fetch itself if `<snapshot-dir>` does
+  not yet exist.
+
+For a SUBSEQUENT adoption (committed lock present), skip the
+prompt entirely — re-use the method/url/ref from the
+committed lock.
+
+## Step 3 — Fetch the snapshot (if not already on disk)
+
+Per the chosen method (FRESH) or per the committed lock
+(SUBSEQUENT):
+
+- **`git-branch`**: `git clone --depth=1 --branch <ref> <url>
+  .apache-steward`
+- **`git-tag`**: `git clone --depth=1 --branch <tag> <url>
+  .apache-steward`. After clone, capture the resolved commit
+  SHA for `<committed-lock>` (FRESH only).
+- **`svn-zip`**: `curl` the zip + `.sha512` + `.asc`,
+  verify, `unzip` to `.apache-steward/`. Re-fetch
+  verification details into `<committed-lock>` (FRESH only).
+
+If `<snapshot-dir>/` already exists with content, skip the
+fetch — the recipe ran first and left the snapshot in place.
+
+After the fetch (or skip), confirm
+`<snapshot-dir>/.claude/skills/` lists the framework skills
+(`pr-management-*`, `security-*`, `setup-*`). If not, the
+fetch produced an unexpected layout — surface and stop.
+
+## Step 4 — Write `<committed-lock>` (FRESH only)
+
+Create `<repo-root>/.apache-steward.lock`:
 
 ```text
-# apache-steward — gitignored snapshot of the framework, refreshed
-# by the setup-steward skill. The snapshot is a build artefact, not
-# source. To re-create: /setup-steward (in your agent of choice).
+# .apache-steward.lock — committed; the project's pin.
+# Edited only by /setup-steward; do not modify by hand.
+
+method: <method>
+url:    <url>
+
+# Per-method fields:
+ref:    <branch | tag | version>
+# git-tag: also `commit: <SHA>`
+# svn-zip: also `sha512: <hash>`
+```
+
+## Step 5 — Pick the skill families
+
+(SUBSEQUENT adoption: re-use the families currently
+symlinked, if any. Or re-prompt if none.)
+
+If `skill-families:` was passed, use those. Otherwise,
+prompt the user:
+
+- **`security`** — eight skills for security-issue
+  handling. Maintainer-only; not useful unless the project
+  has a security tracker.
+- **`pr-management`** — three skills for maintainer-facing
+  PR queue work.
+- **`setup`** *(implicit)* — always installed because the
+  snapshot carries it.
+
+Default to whichever family the user named in their
+initial "adopt" request (e.g. *"adopt apache-steward for PR
+triage"* → `pr-management`).
+
+## Step 6 — Write `<local-lock>`
+
+Always written, both FRESH and SUBSEQUENT. Records what
+this machine fetched.
+
+```text
+# .apache-steward.local.lock — gitignored; per-machine.
+
+source_method:    <method>
+source_url:       <url>
+source_ref:       <ref>
+fetched_commit:   <commit SHA — for git-branch and git-tag>
+fetched_at:       <ISO-8601 timestamp>
+```
+
+## Step 7 — `.gitignore` entries (FRESH only)
+
+The bootstrap recipe wrote these already; this step is
+idempotent — re-add them if they're missing.
+
+```text
 /.apache-steward/
-
-# Symlinks the setup-steward skill creates into the snapshot. They
-# would dangle on a fresh clone before /setup-steward is run.
+/.apache-steward.local.lock
 /.claude/skills/security-*
 /.claude/skills/pr-management-*
 /.claude/skills/setup-isolated-setup-*
-/.claude/skills/setup-steward-*
 /.claude/skills/setup-shared-config-sync
-# ...mirror the same patterns under .github/skills/ if the adopter
-# uses the double-symlinked convention (see conventions.md).
+/.github/skills/security-*
+/.github/skills/pr-management-*
+/.github/skills/setup-isolated-setup-*
+/.github/skills/setup-shared-config-sync
 ```
 
-Show the diff to the user before writing. The `setup-steward`
-skill itself (`*/setup-steward/`) is **not** gitignored — it
-is committed.
+Mirror under `.github/skills/` only if the adopter uses the
+double-symlinked convention.
 
-## Step 4 — Wire up the framework-skill symlinks
+## Step 8 — Wire up the framework-skill symlinks
 
-For each skill family the user picked plus the `setup` family,
-walk the snapshot's `.apache-steward/.claude/skills/` and create
-a gitignored symlink for every matching skill at
+For each skill family the user picked, walk
+`<snapshot-dir>/.claude/skills/` and create a gitignored
+symlink for every matching skill at
 `<adopter-skills-dir>/<skill>` → relative path into
-`.apache-steward/.claude/skills/<skill>/`.
+`<snapshot-dir>/.claude/skills/<skill>/`.
 
 If the adopter uses the double-symlinked convention
-(`.claude/skills/<n>` → `.github/skills/<n>/` per
-[`conventions.md`](conventions.md)), create both layers — the
-inner one in `.github/skills/` points at the snapshot, the
-outer `.claude/skills/` points at the inner.
+(see [`conventions.md`](conventions.md)), create both
+layers — the inner one in `.github/skills/` points at the
+snapshot, the outer `.claude/skills/` points at the
+inner. Both gitignored.
 
-**Never overwrite an existing committed skill** of the same name.
-If the adopter repo already has e.g. `.github/skills/pr-triage`
-(an old-name in-repo copy), surface the conflict and stop. The
-user resolves manually — likely by deleting the stale copy and
-re-running.
+**Never overwrite an existing committed skill** of the same
+name. Surface conflicts and stop.
 
-Show the symlinks the skill is about to create, ask the user
-to confirm, then create them.
+Show the symlinks the skill is about to create, ask the
+user to confirm, then create them.
 
-## Step 5 — Scaffold `.apache-steward-overrides/`
+## Step 9 — Scaffold `.apache-steward-overrides/` (FRESH only)
 
-Create `<repo-root>/.apache-steward-overrides/` (directory) if
-it doesn't exist, with a small `README.md` inside that explains
-the contract:
+Create `<repo-root>/.apache-steward-overrides/` (directory)
+with a small `README.md` inside:
 
 ```markdown
 # apache-steward overrides
 
-Agent-readable instructions that **override** specific steps or
-behaviours of the apache-steward framework's skills, scoped to
+Agent-readable instructions that override specific steps or
+behaviours of apache-steward framework skills, scoped to
 this adopter repo. Each override file is named after the
 framework skill it modifies (e.g. `pr-management-triage.md`
 overrides the `pr-management-triage` skill).
 
-The framework skills consult this directory at run-time before
-executing default behaviour. See
+The framework skills consult this directory at run-time
+before executing default behaviour. See
 [`docs/setup/agentic-overrides.md`](https://github.com/apache/airflow-steward/blob/main/docs/setup/agentic-overrides.md)
 in the framework for the full contract.
 
 **Hard rule**: never modify the snapshot under
-`<repo-root>/.apache-steward/`. Local mods go here. Framework
-changes go via PR to `apache/airflow-steward`.
+`<repo-root>/.apache-steward/`. Local mods go here.
+Framework changes go via PR to `apache/airflow-steward`.
 ```
 
-This directory is **committed** (the whole point is for
-overrides to ship with the adopter repo).
+This directory is **committed** (overrides ship with the
+adopter repo).
 
-## Step 6 — Worktree-aware post-checkout hook
+## Step 10 — Worktree-aware post-checkout hook (FRESH only)
 
-Install a `post-checkout` git hook at
+Install
 `<repo-root>/.git/hooks/post-checkout` that re-creates the
-gitignored symlinks if a fresh worktree is checked out off
-this repo. (The snapshot itself is gitignored and won't follow
-the worktree, but the hook keeps the symlink shape consistent.)
+gitignored symlinks if a fresh worktree is checked out. The
+hook is a one-liner that re-invokes
+`/setup-steward verify --auto-fix-symlinks`. Surface the
+hook content to the user before writing.
 
-The hook is a one-liner that re-invokes
-`/setup-steward verify --auto-fix-symlinks` against the new
-worktree path.
+## Step 11 — Project doc updates (FRESH only)
 
-Surface the hook content to the user before writing.
+Add (or extend) a brief paragraph in the adopter's
+`README.md` or `CONTRIBUTING.md` (whichever already mentions
+agents / skills) noting:
 
-## Step 7 — Project doc updates
-
-Add (or extend) a brief paragraph in the adopter's `README.md`
-or `CONTRIBUTING.md` (whichever already mentions agents /
-skills) noting that this repo adopts apache-steward via the
-snapshot mechanism, and pointing at:
-
-- [`apache-steward`'s top-level README](https://github.com/apache/airflow-steward) for the framework's overview;
-- the local `.apache-steward-overrides/` for adopter-specific
-  modifications.
+- the project adopts apache-steward via the snapshot
+  mechanism;
+- a fresh clone needs `/setup-steward` to populate the
+  framework before any framework skill is invocable;
+- adopter-specific modifications live in
+  `.apache-steward-overrides/`.
 
 Surface the doc diff to the user before writing.
 
-## Step 8 — Sanity check
+## Step 12 — Sanity check
 
-Run [`verify.md`](verify.md)'s checklist as a final step. Every
-check should be ✓ before the skill reports success.
+Run [`verify.md`](verify.md)'s checklist as a final step.
+Every check should be ✓ before the skill reports success.
 
 ## Output to the user
 
 A summary of what was written:
 
 ```text
-✓ Snapshot installed at .apache-steward/ (commit <SHA>)
-✓ .gitignore updated (.apache-steward/, .claude/skills/security-*, ...)
-✓ Symlinks created:
-  .claude/skills/security-issue-import → .apache-steward/.claude/skills/security-issue-import/
-  .claude/skills/security-issue-sync → ...
-  ...
-✓ .apache-steward-overrides/ scaffold created (committed)
+✓ Method:   <method>
+✓ Source:   <url>@<ref>
+✓ Snapshot: .apache-steward/ (commit <SHA>)
+✓ Locks:    .apache-steward.lock (committed) + .apache-steward.local.lock (gitignored)
+✓ Symlinks: <list of created symlinks>
+✓ Overrides scaffold: .apache-steward-overrides/ (committed)
 ✓ post-checkout hook installed
-✓ README.md updated with adoption note
+✓ <repo>/README.md updated with adoption note
 
 Committed (you'll see in `git status`):
   .gitignore
   .apache-steward.lock
   .apache-steward-overrides/README.md
-  .claude/skills/setup-steward/   (this skill itself)
+  <adopter-skills-dir>/setup-steward/   (this skill itself)
   README.md (or CONTRIBUTING.md)
 
 Gitignored (do NOT commit):
   .apache-steward/
-  .claude/skills/security-*
-  .claude/skills/pr-management-*  (depending on family pick)
-  ...
+  .apache-steward.local.lock
+  .claude/skills/{security,pr-management,setup-isolated-setup,setup-shared-config-sync}-*
+  (and same patterns under .github/skills/ for double-symlinked layouts)
 ```
 
-Then suggest the user `git add` the committed files and open a
-PR.
+Then suggest the user `git add` the committed files and open
+a PR.
 
 ## Failure modes
 
-- **Existing `<repo-root>/.apache-steward/`** → suggest
+- **Existing `<repo-root>/.apache-steward/` and
+  `<committed-lock>` are out of sync** → drift; suggest
   `/setup-steward upgrade`.
-- **Existing committed skill conflicts with a framework skill
-  symlink** → stop, name the conflict, let the user resolve.
-- **Network failure on the snapshot download** → stop, surface
-  the curl/git error. The user retries.
-- **`.gitignore` already mentions `.apache-steward/` but no
-  snapshot is present** → either a partial adopt or a manual
-  cleanup. Re-run is safe; the skill detects this and proceeds.
+- **Existing committed skill conflicts with a framework
+  skill symlink** → stop, name the conflict, let the user
+  resolve.
+- **Network failure on the snapshot download** → stop,
+  surface the curl/git error.
+- **`<committed-lock>` references a method/URL the runtime
+  cannot reach** (e.g. svn-zip URL 404) → surface, ask the
+  user whether the project has retired that release; the
+  user updates `<committed-lock>` deliberately and re-runs.

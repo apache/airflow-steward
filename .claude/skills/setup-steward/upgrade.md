@@ -1,148 +1,220 @@
 <!-- SPDX-License-Identifier: Apache-2.0
      https://www.apache.org/legal/release-policy.html -->
 
-# upgrade — refresh the gitignored snapshot + reconcile overrides
+# upgrade — refresh the gitignored snapshot per the committed lock
 
-Refresh `<repo-root>/.apache-steward/` to a newer framework
-version, surface what changed, and reconcile any agentic
-overrides against the new framework structure.
+The upgrade flow is **drift-driven**. It detects mismatch
+between `<committed-lock>` (project pin) and `<local-lock>`
+(per-machine fetch), then re-installs per the committed lock,
+refreshes symlinks, and reconciles overrides.
+
+Two trigger paths land here:
+
+1. **User-initiated** — explicit `/setup-steward upgrade`,
+   e.g. after a colleague bumped `<committed-lock>` to a
+   new framework version and the user wants to align.
+2. **Drift-triggered from a framework skill** — any
+   framework skill (or `/setup-steward verify`) detected
+   drift on its pre-flight check and the user accepted the
+   proposal to upgrade.
+
+Both paths run the same flow.
 
 ## Inputs
 
-- `from:<git-ref>` — bring the snapshot to a specific framework
-  ref (default: latest `main`).
-- `dry-run` — show what would change without modifying anything.
+- `from:<git-ref>` / `from:<version>` — bring the snapshot
+  to a specific framework ref **for this run only**. Does
+  NOT update `<committed-lock>` (use a project-level commit
+  for that). Useful for testing a candidate version before
+  pinning it.
+- `bump-committed` — also update `<committed-lock>` to the
+  new ref. Use when this run is the project-level decision
+  to move to a newer version (the diff lands in the user's
+  next commit).
+- `dry-run` — show what would change without modifying
+  anything.
 
 ## Step 0 — Pre-flight
 
-1. Read `<repo-root>/.apache-steward.lock` for the current
-   pinned commit SHA. If missing, the repo isn't adopted —
-   suggest `/setup-steward adopt` and stop.
-2. Read `<repo-root>/.apache-steward/` to confirm the snapshot
-   is on disk. If missing (gitignored, fresh clone),
-   re-download to the locked SHA first — that's the
-   recover-snapshot path, not an upgrade. Then continue.
+1. Read `<committed-lock>`. If missing, the repo isn't
+   adopted — suggest `/setup-steward adopt` and stop.
+2. Read `<local-lock>`. If missing (gitignored, fresh
+   clone), the local install hasn't been initialised yet —
+   route as a recover-snapshot install per the committed
+   lock, not as an upgrade. Continue at Step 3.
 
-## Step 1 — Compare locked vs upstream
+## Step 1 — Compute drift
 
-Fetch upstream's latest SHA for the configured ref:
+Compare `<committed-lock>` to `<local-lock>` and to upstream
+where applicable:
 
-```bash
-git ls-remote https://github.com/apache/airflow-steward.git \
-  refs/heads/main
-```
+| Method | Drift signal |
+|---|---|
+| `git-branch` | `<local-lock>.fetched_commit` vs upstream's current tip of `<committed-lock>.ref` (the branch). Drift if upstream has commits the local snapshot does not. |
+| `git-tag` | `<committed-lock>.ref` vs `<local-lock>.source_ref`. Drift if they differ. |
+| `svn-zip` | `<committed-lock>.ref` (version) vs `<local-lock>.source_ref`. Drift if they differ. Also: if `sha512` differs, surface as a security-flagged drift (the released zip changed under the same version — investigate). |
 
-If the locked SHA matches upstream, surface that and stop —
-the snapshot is up to date. The user can re-invoke later.
+Also check method change: if
+`<committed-lock>.method != <local-lock>.source_method`, the
+project switched install methods — surface as a drift that
+needs a full re-install.
 
-Otherwise, list the commits between locked and upstream
-(shallow log via the GitHub API or by re-cloning into a temp
-dir; both work).
+If no drift detected, surface and stop — the local snapshot
+matches the committed pin, no upgrade needed.
 
 ## Step 2 — Surface what changed
 
-Show the user:
+For each kind of drift, present:
 
-- The commit list (`git log --oneline <locked>..<upstream>`).
-- Files touched in the framework `.claude/skills/` directory,
-  grouped by skill family. Call out any change to a skill the
-  adopter has an override for (overrides may need
-  reconciliation — see Step 4).
-- Any change to the `setup-steward` skill itself in the
-  framework — that means the adopter's *committed* copy may
-  have drifted. Surface as an extra note; the adopter chooses
-  whether to re-copy.
+- **Commits between `<local>` and `<committed>`** — for
+  `git-branch` and `git-tag` methods, list the commit log
+  (`git log --oneline <local-commit>..<committed-commit>`)
+  via the GitHub API or by re-cloning to a temp dir.
+- **Files touched in the framework's `.claude/skills/`** —
+  grouped by skill family. Call out any change to a skill
+  the adopter has an override for (the override will need
+  reconciliation in Step 5).
+- **`setup-steward` skill changed in the framework** —
+  surface as a separate note. The adopter's *committed*
+  copy of `setup-steward` may need re-copying from the new
+  snapshot; that is an explicit project-level decision, not
+  auto-applied.
 
-Ask for explicit confirmation before refreshing.
+Ask for explicit confirmation before deleting and re-
+installing.
 
-## Step 3 — Refresh the snapshot
-
-Replace `<repo-root>/.apache-steward/` with a fresh
-`--depth=1` clone at the new ref:
+## Step 3 — Delete the old snapshot
 
 ```bash
 rm -rf .apache-steward
-git clone --depth=1 \
-  --branch <ref> \
-  https://github.com/apache/airflow-steward.git \
-  .apache-steward
 ```
 
-Update `.apache-steward.lock` with the new SHA + date.
+The snapshot is gitignored — destroying it loses no
+committed work. Do this **before** the new install to avoid
+"new layered on top of old" partial state.
 
-If the user is on a UNIX system with hardlink-aware tools, an
-optimization is to clone alongside and `mv` — but a simple
-nuke-and-clone is the canonical path and is what the skill
-defaults to. The snapshot is gitignored anyway, so destroying
-it loses no committed work.
+## Step 4 — Install per the committed lock
 
-## Step 4 — Reconcile overrides
+Per `<committed-lock>.method`:
+
+- **`git-branch`** — `git clone --depth=1 --branch
+  <committed.ref> <committed.url> .apache-steward`. If
+  `from:<git-ref>` was passed, use that branch instead of
+  the committed one (this run only).
+- **`git-tag`** — `git clone --depth=1 --branch
+  <committed.ref> <committed.url> .apache-steward`. If
+  `from:<git-ref>` overrides, use it.
+- **`svn-zip`** — `curl` the zip + verify `sha512` +
+  `unzip` to `.apache-steward/`. The verification step is
+  **mandatory**; mismatched SHA-512 stops the upgrade and
+  surfaces the discrepancy.
+
+After install, capture the actual on-disk state for the
+new `<local-lock>`:
+
+- `source_method`, `source_url`, `source_ref` — from
+  whatever method was used in this run (committed lock or
+  `from:` override).
+- `fetched_commit` — `git -C .apache-steward rev-parse
+  HEAD` for git methods; the version for svn-zip.
+- `fetched_at` — current ISO-8601 timestamp.
+
+## Step 5 — Reconcile overrides
 
 For each file in `<repo-root>/.apache-steward-overrides/`:
 
-1. Check the corresponding framework skill exists in the new
-   snapshot. If not (skill renamed or removed), surface as a
-   conflict — the override may now apply to nothing. The user
-   either updates the override's target skill name or removes
-   the override.
-2. If the framework skill's structure changed in a way the
-   override anchors against (e.g. the override invalidates
-   "Step 5 — Land the valid/invalid consensus" but the
-   framework renumbered or restructured steps), surface as a
-   conflict. The user re-anchors the override against the new
-   structure.
+1. **Target skill check** — does the named framework skill
+   exist in the new snapshot? If not (skill renamed or
+   removed):
+   - Surface as conflict.
+   - The user updates the override's target skill name OR
+     deletes the override.
+2. **Anchor check** — if the override references framework
+   structure (step numbers, golden rules, decision-table
+   rows) that has changed in the new framework version:
+   - Surface as conflict, with the specific anchors that
+     have moved.
+   - The user re-anchors the override against the new
+     structure.
 
-The skill **does not** auto-rewrite overrides. It surfaces
-conflicts and lets the user decide; agentic interpretation
-means the right call is human judgement, not pattern-matching.
+The skill **does not** auto-rewrite overrides. Agentic
+interpretation means the right call is human judgement, not
+pattern-matching.
 
-## Step 5 — Re-create symlinks
+## Step 6 — Refresh framework-skill symlinks
 
 Walk `<adopter-skills-dir>` looking for stale symlinks that
 point at framework skills no longer in the new snapshot
-(rename, removal). For each, ask the user to either:
+(rename, removal). For each:
 
-- Remove the stale symlink (renamed-away skill is gone), or
-- Re-symlink to the new name (if the framework documented a
-  rename).
+- If renamed (the framework documented a rename in its
+  release notes), offer to re-symlink to the new name.
+- If removed, offer to remove the stale symlink.
 
 Then walk the new snapshot for any new framework skills in
 the families the adopter previously picked, and offer to
 symlink them in.
 
-## Step 6 — Sanity check
+For the double-symlinked convention, refresh both layers.
+
+## Step 7 — Update `<local-lock>`
+
+Write the new local lock with the values captured in Step
+4.
+
+## Step 8 — (optional) Update `<committed-lock>`
+
+If `bump-committed` was passed, update
+`<committed-lock>.ref` (and per-method extras: `commit` for
+tag, `sha512` for svn-zip) to the new fetch. Surface the
+diff to the user before writing.
+
+Without `bump-committed`, the committed lock is unchanged —
+this upgrade is a *local* sync to the project pin.
+
+## Step 9 — Sanity check
 
 Run [`verify.md`](verify.md)'s checklist as a final step.
 
 ## Output to the user
 
 ```text
-Snapshot refreshed: <old-SHA> → <new-SHA>
-  X commits pulled (see list above)
-  Y framework skills changed
-  Z framework skills added
-  W framework skills renamed/removed (see Step 5)
+Drift remediated:
+  Method:    <method>
+  Project:   <committed.ref>      (committed)
+  Local:     <local.fetched-commit-or-version>  → <new>
+  Snapshot:  refreshed at .apache-steward/
 
-Overrides reconciled:
-  ✓ <list of overrides whose target skill is unchanged>
-  ⚠ <list of overrides flagged for re-anchoring>
+Symlinks:
+  ✓ <list of unchanged symlinks>
+  + <list of newly-symlinked framework skills>
+  - <list of removed stale symlinks>
 
-.apache-steward.lock updated. Symlinks refreshed.
+Overrides:
+  ✓ <list of overrides whose target is unchanged>
+  ⚠ <list of overrides flagged for re-anchoring> (open the
+     file and update against the new framework structure)
 
 Recommended follow-ups:
   - Run /setup-isolated-setup-update if the secure-setup blast
     radius (settings.json, agent-isolation/, pinned-versions.toml)
     appears in the diff.
-  - For each ⚠ override, open the file and re-anchor against the
-    new framework structure.
+  - Open .apache-steward-overrides/<name>.md for any ⚠ entry above.
 ```
 
 ## Failure modes
 
-- **`.apache-steward.lock` missing** → repo not adopted yet;
-  suggest `/setup-steward adopt`.
+- **`<committed-lock>` missing** → repo not adopted; suggest
+  `/setup-steward adopt`.
 - **Network failure** → stop, surface error, user retries.
-- **Conflict during reconcile** → not a failure per se; the
-  skill surfaces the conflict and finishes the upgrade up to
-  the conflict. The user's next step is editing the override
-  files.
+  The skill never leaves a half-deleted snapshot — Step 3's
+  `rm -rf` runs only after Step 2's user confirmation.
+- **SHA-512 mismatch on svn-zip** → stop. The released zip
+  has changed content under the same version, which is a
+  serious signal. The user investigates (re-check the
+  project's announcement, re-fetch the official KEYS,
+  consider whether the project re-released).
+- **Conflict during reconcile** → not a failure per se. The
+  skill surfaces the conflict and finishes the upgrade up
+  to Step 7. The user's next step is editing the override
+  file.
