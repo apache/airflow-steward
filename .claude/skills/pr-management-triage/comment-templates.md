@@ -26,7 +26,7 @@ Placeholders:
 All templates use the canonical link to the quality-criteria
 document:
 
-```
+```markdown
 [Pull Request quality criteria](https://github.com/<upstream>/blob/main/contributing-docs/05_pull_requests.rst#pull-request-quality-criteria)
 ```
 
@@ -421,7 +421,7 @@ bad-faith actor a footnote to argue with.
 one bullet per violation returned by the classifier. Each
 bullet has the form:
 
-```
+```markdown
 - :x: **<category>** — <explanation>. See [docs](<doc_link>).
 ```
 

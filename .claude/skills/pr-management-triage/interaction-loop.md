@@ -74,7 +74,7 @@ For each group, present one screen of information. The goal is
 a decision in under 15 seconds when the suggestion looks right,
 or a natural path to per-PR inspection when it doesn't.
 
-```
+```text
 ─────────────────────────────────────────────────────
 Group 3 of 8  —  deterministic_flag → draft  —  5 PRs
 
@@ -155,7 +155,7 @@ step in place of `[A]`/`[E]`.
 When a PR is pulled out of a group (via `[P]`, `[E]`, or
 because its group mandates per-PR), present the full detail:
 
-```
+```text
 ─────────────────────────────────────────────────────
 PR #65471   "Add support for new db dialect"
 Author: @eve  (tier: new, 2 merged / 5 total on this repo)
@@ -307,7 +307,7 @@ the drill-in, it's instant.
 When `[A]` triggers batched mutations, show live progress as a
 short table that updates in-place:
 
-```
+```text
 Applying action: draft  (5 PRs, parallelism: 5)
 
   #65401 @alice — posting comment… done
@@ -330,7 +330,7 @@ before moving on.
 On exit (either `[Q]` or after the last group), print a
 session summary:
 
-```
+```text
 Session summary — 2026-04-22 09:42 UTC → 10:07 UTC (25m)
 
 PRs presented:  47

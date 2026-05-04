@@ -44,7 +44,7 @@ Every skill that talks to Gmail does a one-call pre-flight in Step 0
 to confirm the MCP is reachable and the user's account subscribes to
 the project's security list:
 
-```
+```text
 mcp__claude_ai_Gmail__search_threads(
   query='list:<security-list-domain>',
   pageSize=1,
@@ -65,7 +65,7 @@ fix the setup rather than guessing.
 
 ### Search threads
 
-```
+```text
 mcp__claude_ai_Gmail__search_threads(
   query='<gmail search expression>',
   pageSize=<N>,
@@ -82,7 +82,7 @@ the skills use, see [`search-queries.md`](search-queries.md).
 
 ### Get thread
 
-```
+```text
 mcp__claude_ai_Gmail__get_thread(
   threadId='<threadId>',
   messageFormat='FULL_CONTENT',   # or 'METADATA' when bodies are not needed
@@ -119,7 +119,7 @@ created via this backend always start a new conversation on the
 subject + `In-Reply-To` / `References` matching, which usually works
 but is not guaranteed.
 
-```
+```text
 mcp__claude_ai_Gmail__create_draft(
   subject='Re: <root subject of the inbound message>',
   to=['<primary>'],
@@ -184,7 +184,7 @@ For the ASF-security-relay special case (different `to` /
 
 ### List drafts
 
-```
+```text
 mcp__claude_ai_Gmail__list_drafts(
   query='<optional filter>',    # e.g. 'list:<security-list-domain>'
 )

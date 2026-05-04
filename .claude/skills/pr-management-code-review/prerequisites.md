@@ -25,7 +25,7 @@ the target repo (`<upstream>` by default). Without
 collaborator access, the eventual `gh pr review` mutation in
 [`posting.md`](posting.md) returns:
 
-```
+```text
 HTTP 403: Resource not accessible by integration
 ```
 

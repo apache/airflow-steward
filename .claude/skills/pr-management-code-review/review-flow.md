@@ -28,7 +28,7 @@ multi-line headline. Per Golden rule 10 in `SKILL.md`, the PR
 number is always printed alongside its full URL so the
 maintainer can click straight through:
 
-```
+```text
 PR #65934 — Fix scheduler N+1 on serialized Dag load
   https://github.com/<upstream>/pull/65934
   Author: alice (CONTRIBUTOR, [external])

@@ -152,7 +152,7 @@ is picked up and its tools appear in the deferred-tool list.
 
 In a Claude Code session, run:
 
-```
+```text
 mcp__ponymail__login()
 ```
 
@@ -164,7 +164,7 @@ Code sessions until the cookie expires.
 
 Verify:
 
-```
+```text
 mcp__ponymail__auth_status()
 ```
 
@@ -177,7 +177,7 @@ lists but returns empty results for private-list queries.
 Pull the list overview to confirm the session sees the expected
 lists:
 
-```
+```text
 mcp__ponymail__list_lists()
 ```
 

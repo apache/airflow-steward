@@ -235,7 +235,7 @@ at the root of its tracker repository. The framework refers to this
 directory via the placeholder `<project-config>`. Concretely, an
 adopting project lays out:
 
-```
+```text
 <adopter-tracker-repo>/
 └── .apache-steward/
     ├── apache-steward/         # (submodule) clone of this framework
@@ -374,13 +374,13 @@ if a hook is failing, fix the underlying issue or update the hook configuration 
   itself. **Re-read this rule before preparing every `git commit`.**
   Use a `Generated-by:` trailer instead. The form is:
 
-  ```
+  ```text
   Generated-by: <agent name and version>
   ```
 
   Concrete example for Claude Code:
 
-  ```
+  ```text
   Generated-by: Claude Code (Opus 4.7)
   ```
 
@@ -862,7 +862,7 @@ not as bare text. The canonical link is the adopting project's CVE-tool
 record URL, which any security team member can click through to the
 live CVE record we control:
 
-```
+```text
 https://cveprocess.apache.org/cve5/<CVE-ID>
 ```
 
@@ -876,7 +876,7 @@ CVE record is visible on public databases), additionally link to the public
 `cve.org` / MITRE record so non-security-team readers can see the public
 description without needing access to the ASF tool:
 
-```
+```text
 https://www.cve.org/CVERecord?id=<CVE-ID>
 ```
 
@@ -967,7 +967,7 @@ messages, internal notes, `SKILL.md` files — render it as a
 **clickable markdown link**, not as a bare `#NNN` or
 `<tracker>#NNN`. The URL format is:
 
-```
+```text
 https://github.com/<tracker>/issues/<N>
 https://github.com/<tracker>/pull/<N>
 https://github.com/<tracker>/issues/<N>#issuecomment-<C>

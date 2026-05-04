@@ -193,7 +193,7 @@ let them pick which one to keep.
 Construct the new body by concatenating the old body + a ruler + the
 new entry, with exactly one blank line on each side of the ruler:
 
-```
+```text
 <old body>
 
 ---
@@ -229,7 +229,7 @@ arbitrary comment, and the `--input` flag is needed because
 Only if Step 1 returned no existing rollup. Prepend the marker line
 and emit the new entry as the rollup's first entry:
 
-```
+```markdown
 <!-- airflow-s status rollup v1 — all bot-authored status updates fold into this single comment. -->
 <new entry>
 ```
@@ -292,7 +292,7 @@ For each foldable legacy comment, in chronological order:
 1. **Reconstruct the entry shape.** Take the legacy body and wrap it
    in the rollup's `<details>` envelope:
 
-   ```
+   ```html
    <details><summary><createdAt date> · @<author.login> · <Action></summary>
 
    <legacy body — verbatim, left-trimmed>
