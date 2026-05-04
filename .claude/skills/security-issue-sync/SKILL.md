@@ -1615,10 +1615,12 @@ will change and *why*. Group them by category:
   section of [`AGENTS.md`](../../../AGENTS.md).
 
   **Never send.** Always create a draft. Prefer attaching it to the
-  inbound mail thread by `threadId` (from Step 1c); if Step 1c
-  could not resolve a `threadId`, fall back to a subject-matched
-  draft (`threadId` omitted, `subject: Re: <root subject>`) per the
-  threading rule in
+  inbound mail thread (the default `claude_ai_mcp` backend resolves
+  the latest message ID from the inbound `threadId` and passes it as
+  `replyToMessageId`; the opt-in `oauth_curl` backend uses
+  `--thread-id` directly). If Step 1c could not resolve a `threadId`,
+  fall back to a subject-matched draft (thread-attachment parameter
+  omitted, `subject: Re: <root subject>`) per the threading rule in
   [`tools/gmail/threading.md`](../../../tools/gmail/threading.md).
   Surface which path was taken in the proposal. The Gmail MCP's
   no-update-no-delete limitation — and the resulting rule that
@@ -1840,48 +1842,47 @@ before moving on to the next item. Use:
   `updateProjectV2ItemFieldValue`). Re-fetch the option IDs via the
   introspection query in the same reference if a write mutation
   starts returning `not found`.
-- **Gmail draft:** create via the project's preferred drafting
-  backend per the precedence rule in
-  [`tools/gmail/draft-backends.md`](../../../tools/gmail/draft-backends.md#how-the-skills-pick-a-backend).
-  **`oauth_curl` is preferred whenever its credentials are on disk**
-  (probe order: `tools.gmail.oauth_credentials_path` →
-  `$GMAIL_OAUTH_CREDENTIALS` → default `~/.config/apache-steward/gmail-oauth.json`),
-  regardless of what `tools.gmail.draft_backend` is set to. The
-  config field acts as an explicit override only when set to
-  `claude_ai_mcp_force`. Per-backend call shape:
+- **Gmail draft:** create via the project's configured drafting
+  backend per [`tools/gmail/draft-backends.md`](../../../tools/gmail/draft-backends.md#how-the-skills-pick-a-backend).
+  The default and recommended backend is `claude_ai_mcp` with
+  thread attachment via `replyToMessageId`. Per-backend call shape:
 
-  - **`oauth_curl`** (preferred) — invoke
+  - **`claude_ai_mcp`** (default) — first call
+    `mcp__claude_ai_Gmail__get_thread(threadId=<from Step 1c>,
+    messageFormat='MINIMAL')` to resolve the chronologically-last
+    message ID; then call `mcp__claude_ai_Gmail__create_draft` with
+    `subject="Re: <root subject>"`, the standard `to` / `cc` / `body`,
+    and `replyToMessageId=<that message id>`. The draft attaches to
+    the inbound thread on the sender's Gmail and surfaces in both the
+    conversation view and the global Drafts folder.
+  - **`oauth_curl`** (opt-in for users who set
+    `tools.gmail.draft_backend: oauth_curl` and have credentials at
+    `tools.gmail.oauth_credentials_path` /
+    `$GMAIL_OAUTH_CREDENTIALS` / default
+    `~/.config/apache-steward/gmail-oauth.json`) — invoke
     `uv run --project <framework>/tools/gmail/oauth-draft oauth-draft-create`
     (see [`tools/gmail/oauth-draft/README.md`](../../../tools/gmail/oauth-draft/README.md))
     with `--thread-id` from Step 1c, the standard `--to` / `--cc`,
-    `--subject "Re: <root subject>"`, and a `--body-file`. Threads
-    on every client (including the sender's own Gmail view).
-  - **`claude_ai_mcp`** (fallback only when oauth credentials are
-    not configured) — call `mcp__claude_ai_Gmail__create_draft` with
-    the same subject/to/cc/body. The MCP does not accept `threadId`,
-    so threading relies on subject-matched fallback; see the
-    [fallback rule](../../../tools/gmail/threading.md#fallback--subject-matched-draft-when-threadid-is-unavailable).
+    `--subject "Re: <root subject>"`, and a `--body-file`.
 
   **Before drafting, check for an existing pending draft on the
   thread.** Run **both** `mcp__claude_ai_Gmail__list_drafts` (catches
-  `claude_ai_mcp` drafts which surface in the global Drafts folder)
-  **and** `mcp__claude_ai_Gmail__get_thread` on the inbound `threadId`
-  with `messageFormat: MINIMAL`, scanning each message for a `DRAFT`
-  label (catches `oauth_curl` drafts which attach by `threadId` and
-  may not surface in the global Drafts folder when several pile up).
-  Per-thread detection is required when oauth credentials are
-  configured — `list_drafts` alone misses thread-attached drafts.
-  See the *Detecting drafts that already exist on a thread* section
-  of [`draft-backends.md`](../../../tools/gmail/draft-backends.md#detecting-drafts-that-already-exist-on-a-thread).
+  drafts in the global Drafts folder) **and**
+  `mcp__claude_ai_Gmail__get_thread` on the inbound `threadId` with
+  `messageFormat: MINIMAL`, scanning each message for a `DRAFT` label
+  (catches thread-attached drafts that may pile up and hide from the
+  global Drafts folder, regardless of backend). `list_drafts` alone
+  misses thread-attached drafts under pile-up. See the *Detecting
+  drafts that already exist on a thread* section of
+  [`draft-backends.md`](../../../tools/gmail/draft-backends.md#detecting-drafts-that-already-exist-on-a-thread).
 
   **Surface which backend and which threading path the draft took**
-  (`threadId`-attached via `oauth_curl`, or subject fallback via
-  `claude_ai_mcp`) in the proposal so the user can see the threading
-  at a glance; record the backend + reason on the tracker's status
-  comment when subject fallback kicks in (so a future triager
-  understands why the threading degraded). **Never send** — both
-  backends create drafts only. Tell the user the draft is waiting
-  for their review in Gmail.
+  (thread-attached vs subject fallback) in the proposal so the user
+  can see the threading at a glance; record the backend + reason on
+  the tracker's status comment when subject fallback kicks in (so a
+  future triager understands why the threading degraded). **Never
+  send** — both backends create drafts only. Tell the user the
+  draft is waiting for their review in Gmail.
 
 If any command fails, stop the apply loop, report the failure, and ask the user
 how to proceed — do not guess.

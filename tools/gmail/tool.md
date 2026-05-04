@@ -31,8 +31,8 @@ file in this directory:
 | Capability | File | What it covers |
 |---|---|---|
 | MCP operations | [`operations.md`](operations.md) | The `mcp__claude_ai_Gmail__*` tool catalogue (search, read, draft, list) + the no-update / no-delete limitation |
-| Drafting backends | [`draft-backends.md`](draft-backends.md) | The two drafting backends (claude.ai Gmail MCP vs OAuth + `curl`), why both exist, and the `tools.gmail.draft_backend` config knob |
-| Threading | [`threading.md`](threading.md) | The *"always pass `threadId` when the backend supports it"* rule — how drafts stay on the inbound thread across reporter replies, ASF-security relays, PMC credit questions, follow-ups |
+| Drafting backends | [`draft-backends.md`](draft-backends.md) | The two drafting backends (claude.ai Gmail MCP — default and recommended, with thread attachment via `replyToMessageId`; OAuth + `curl` — opt-in for bulk operations and `threadId`-keyed drafts), why both exist, and the `tools.gmail.draft_backend` config knob |
+| Threading | [`threading.md`](threading.md) | The *"always attach the draft to the inbound thread when possible"* rule — how drafts stay on the inbound thread across reporter replies, ASF-security relays, PMC credit questions, follow-ups |
 | ASF-security-relay drafting | [`asf-relay.md`](asf-relay.md) | Special-case drafting rules when the inbound report is relayed by the ASF security team rather than sent by the external reporter directly |
 | Search queries | [`search-queries.md`](search-queries.md) | Gmail search-operator cheat-sheet + skill-specific query templates (candidate-listing, reporter-thread lookup, CVE-review comments) |
 
@@ -79,19 +79,21 @@ on is:
    thread IDs.
 2. **Read** — given a thread ID, return the full message history.
 3. **Draft** — given a thread ID, create an unsent reply on the
-   inbound thread with thread attachment **where the backend
-   supports it**; otherwise fall back to a subject-matched draft
-   (`Re: <root subject>` + `In-Reply-To` / `References` headers so
-   the recipient's client still threads it). The two backends
-   available today are documented in
-   [`draft-backends.md`](draft-backends.md).
+   inbound thread with thread attachment (the default
+   `claude_ai_mcp` backend resolves the thread's latest message ID
+   and attaches via `replyToMessageId`; the opt-in `oauth_curl`
+   backend attaches by `threadId`); fall back to a subject-matched
+   draft (`Re: <root subject>` + `In-Reply-To` / `References`
+   headers so the recipient's client still threads it) when the
+   thread cannot be resolved. The two backends available today are
+   documented in [`draft-backends.md`](draft-backends.md).
 4. **List drafts** — so stale drafts can be detected before the
    skills forward-flag them in every new sync comment.
 
-The threading semantics — *"prefer thread attachment when
-available; fall back to same-subject matching, never fabricate a
-new subject"* — are non-negotiable regardless of backend; see
-[`threading.md`](threading.md).
+The threading semantics — *"attach the draft to the inbound thread
+when possible; fall back to same-subject matching when not, never
+fabricate a new subject"* — are non-negotiable regardless of
+backend; see [`threading.md`](threading.md).
 
 ## Confidentiality
 

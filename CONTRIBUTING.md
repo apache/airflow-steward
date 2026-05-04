@@ -120,7 +120,7 @@ four — no hard-coded project assumptions anywhere.
 │   ├── gmail/
 │   │   ├── tool.md                # Adapter overview
 │   │   ├── operations.md          # MCP call signatures + no-update-no-delete rule
-│   │   ├── threading.md           # threadId and subject-matched fallback
+│   │   ├── threading.md           # Thread attachment and subject-matched fallback
 │   │   ├── search-queries.md      # Canonical reusable query templates
 │   │   ├── ponymail-archive.md
 │   │   └── asf-relay.md
