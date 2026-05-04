@@ -189,11 +189,36 @@ Before touching any candidate thread, verify:
    when enabled but unauthenticated). See
    [`tools/ponymail/tool.md`](../../../tools/ponymail/tool.md)
    for the one-time setup instructions.
+4. **Privacy-LLM contract.** This skill reads `<security-list>`
+   bodies that may contain third-party PII the reporter
+   discloses about other people. Before fetching any body,
+   load `<project-config>/privacy-llm.md` (template at
+   [`projects/_template/privacy-llm.md`](../../../projects/_template/privacy-llm.md))
+   and verify:
+   - `~/.config/apache-steward/` is writable (the redactor's
+     mapping file lives there);
+   - the configured collaborator source is reachable via
+     `gh api` (default: `<tracker>` from `project.md`);
+   - the redaction-tuning knobs (collaborator exemption,
+     enabled field types) are loaded into the skill's
+     observed-state bag — they apply at filter-time below.
+
+   Each subsequent body fetch in Steps 4 / 7 / 7g (template-
+   field extraction, draft assembly, recap) follows the
+   redact-after-fetch protocol in
+   [`tools/privacy-llm/wiring.md`](../../../tools/privacy-llm/wiring.md#redact-after-fetch-protocol);
+   the receipt-of-confirmation draft assembly follows the
+   [reveal-before-send protocol](../../../tools/privacy-llm/wiring.md#reveal-before-send-protocol)
+   when (and only when) the draft references a third-party
+   identifier.
 
 If the Gmail or `gh` check fails (PonyMail degrades quietly), do
 **not** proceed — the skill would fail mid-flow otherwise, leaving
 half-built state (a draft on the wrong thread, or a tracker with
-no receipt reply). Fail fast instead.
+no receipt reply). Fail fast instead. A privacy-llm pre-flight
+failure is also a hard stop — the redactor's mapping store and
+the collaborator-source lookup are both load-bearing for every
+subsequent body read.
 
 ---
 
@@ -693,6 +718,35 @@ expects. Most fields the reporter did not explicitly supply stay as
 `_No response_`; the subsequent `security-issue-sync` run will prompt
 the triager to fill them as the discussion progresses.
 
+**Apply the redact-after-fetch protocol BEFORE extracting fields.**
+Every body fetched in Steps 2 / 2b / 3 (via `mcp__claude_ai_Gmail__get_thread`
+with `messageFormat: FULL_CONTENT`) goes through the redactor per
+[`tools/privacy-llm/wiring.md`](../../../tools/privacy-llm/wiring.md#redact-after-fetch-protocol)
+before its content is used for field extraction. Concretely:
+
+1. Resolve the collaborator set once for this skill run via
+   `gh api repos/<tracker>/collaborators --jq '.[].login'`
+   (the configured collaborator source from
+   `<project-config>/privacy-llm.md` — default `<tracker>`).
+2. For each candidate body, identify third-party PII candidates
+   (names / emails / handles / etc. that appear in the body or
+   signature, OTHER than the reporter from the `From:` header).
+3. Filter out the reporter and any collaborator (apply the
+   *Collaborator exemption* knob from `<project-config>/privacy-llm.md`
+   — default `enabled`, so collaborators flow through; set
+   `disabled` redacts them too).
+4. Pass the remaining set as `--field <type>:<value>` arguments
+   to `pii-redact`, capture the redacted body for use in this
+   step's field extraction below. The reporter's own values
+   (name, email, etc.) are NEVER redacted — they flow through
+   in the clear.
+
+The "issue description" template field below is sourced from the
+**redacted body**, not the raw body. Skill docs and proposals
+reviewed by the user in Step 5 / 6 will show third-party
+identifiers (`N-…`, `E-…`) where the reporter named someone
+else; the user can run `pii-list` to see the mapping if needed.
+
 The generic body-field schema (role → field-name contract, empty-field
 convention, body-field surgery pattern) lives in
 [`tools/github/issue-template.md`](../../../tools/github/issue-template.md);
@@ -971,7 +1025,19 @@ For each confirmed `Report` / `ASF-security relay`:
    workflow being correctly configured. The mutation is a no-op when
    the item is already on the board with the same Status.
 
-4. Draft the receipt-of-confirmation reply. **The draft must be
+4. Draft the receipt-of-confirmation reply. **Apply the
+   reveal-before-send protocol if (and only if) the rendered
+   draft body carries any third-party identifiers** (per the
+   Step 4 redact-after-fetch above; the receipt template
+   typically references only the reporter's own values, so most
+   drafts need no reveal — but when the reporter's body quoted
+   another individual the redactor mapped, that identifier may
+   appear in the receipt's quoted-context section). The reveal
+   protocol is in
+   [`tools/privacy-llm/wiring.md`](../../../tools/privacy-llm/wiring.md#reveal-before-send-protocol);
+   the `tools/gmail/operations.md` *Hard rules that apply to
+   both backends* section also requires this step before the
+   create-draft tool call. **The draft must be
    created on the inbound Gmail thread** via the project's configured
    drafting backend per
    [`tools/gmail/draft-backends.md`](../../../tools/gmail/draft-backends.md#how-the-skills-pick-a-backend).

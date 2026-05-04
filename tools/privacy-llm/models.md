@@ -75,8 +75,9 @@ implies.
 ## The pre-flight check
 
 Skills that may read `<private-list>` content (or any private
-content beyond `<security-list>` reporter PII) run this check at
-Step 0:
+content beyond `<security-list>` — recall the redactor handles
+*third-party* PII inside `<security-list>` mail, leaving the
+reporter's own identity intact) run this check at Step 0:
 
 ```text
 1. Read <project-config>/privacy-llm.md, if present.

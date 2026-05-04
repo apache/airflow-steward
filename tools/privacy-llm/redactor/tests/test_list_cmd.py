@@ -30,7 +30,7 @@ def _seed(path: pathlib.Path) -> None:
     save_mapping_atomic(
         path,
         {
-            "R-abcdef": Entry(identifier="R-abcdef", type="reporter", value="Jane Smith"),
+            "N-abcdef": Entry(identifier="N-abcdef", type="name", value="Jane Smith"),
             "E-fedcba": Entry(identifier="E-fedcba", type="email", value="jane@example.com"),
         },
     )
@@ -63,8 +63,8 @@ def test_list_json_format(tmp_path: pathlib.Path, monkeypatch):
     assert rc == 0
     payload = json.loads(out)
     assert payload["version"] == 1
-    assert "R-abcdef" in payload["entries"]
-    assert payload["entries"]["R-abcdef"]["value"] == "Jane Smith"
+    assert "N-abcdef" in payload["entries"]
+    assert payload["entries"]["N-abcdef"]["value"] == "Jane Smith"
 
 
 def test_list_empty_text(tmp_path: pathlib.Path, monkeypatch):

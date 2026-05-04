@@ -167,8 +167,22 @@ Before any work, verify:
    Both hard stops are deliberate — the skill must not paper over
    a CVE-allocation or a published-advisory state by silently
    labelling and closing.
+4. **Privacy-LLM contract.** This skill drafts a closing reply
+   on the inbound `<security-list>` Gmail thread, so it reads
+   the original report's body to mine the team's reasoning
+   (Step 3) and assembles an outbound draft (Step 6). Before
+   either, load `<project-config>/privacy-llm.md` and verify
+   the pre-flight items in
+   [`tools/privacy-llm/wiring.md`](../../../tools/privacy-llm/wiring.md#step-0--pre-flight).
+   The Step 3 read follows the
+   [redact-after-fetch protocol](../../../tools/privacy-llm/wiring.md#redact-after-fetch-protocol);
+   the Step 6 draft follows the
+   [reveal-before-send protocol](../../../tools/privacy-llm/wiring.md#reveal-before-send-protocol)
+   when (and only when) the closing reply references a
+   third-party identifier.
 
-If `gh` fails or any hard stop fires, do **not** proceed.
+If `gh` fails or any hard stop fires, do **not** proceed. A
+privacy-llm pre-flight failure is also a hard stop.
 
 ---
 

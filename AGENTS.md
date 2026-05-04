@@ -662,18 +662,27 @@ Setup recipes for the supported variants are in
 
 Three rules every skill follows:
 
-**Reporter PII never enters any LLM in the clear.** The
-reporter's name, email, phone, IP, personal handle, and other PII
-are replaced with hash-prefixed identifiers (`R-a3f9d2`,
-`E-b8c247`, …) immediately after fetch and before any LLM-bound
-step — including Claude's own context. The mapping from
-identifier to real value lives at
+**Third-party PII in `<security-list>` reports gets redacted —
+the reporter's own identity does not.** The reporter sent the
+mail to `<security-list>` and is operationally known to the
+security team (the team replies to them, credits them in the
+CVE, and references them across the tracker discussion). Their
+name, email, phone, etc. flow through the agent's context as-is.
+**What gets redacted** is PII the reporter discloses about
+*other people* — third-party researchers they collaborated with,
+victims they observed the bug affecting, named individuals
+called out in the body — replaced with hash-prefixed identifiers
+(`N-a3f9d2`, `E-b8c247`, …). **Exception:** if the named
+individual is already a collaborator on the `<tracker>` repo
+(resolved via `gh api repos/<tracker>/collaborators`), their
+identity is already public/known by their collaborator status
+and is **not** redacted — there is no privacy gain from masking
+them. The mapping from identifier to real value lives at
 `~/.config/apache-steward/pii-mapping.json` (per the home-dir
 credentials rule in [Local setup](#local-setup)) and is never
 sent to any LLM. Reveal-to-real-name happens only at the
-outbound boundary, when a draft to the reporter is being assembled.
-The contract is in
-[`tools/privacy-llm/pii.md`](tools/privacy-llm/pii.md).
+outbound boundary, when a draft is being assembled. The contract
+is in [`tools/privacy-llm/pii.md`](tools/privacy-llm/pii.md).
 
 **`<private-list>` content never reaches a non-approved LLM.**
 PMC-private foundation list content (the project's

@@ -57,9 +57,9 @@ def test_hash_value_is_deterministic_across_case_and_whitespace():
 
 
 def test_generate_identifier_default_length():
-    ident, extended = generate_identifier("R", "Jane Smith", existing={})
+    ident, extended = generate_identifier("N", "Jane Smith", existing={})
     prefix, hex_part = ident.split("-", 1)
-    assert prefix == "R"
+    assert prefix == "N"
     assert len(hex_part) == DEFAULT_HEX_LEN
     assert all(c in "0123456789abcdef" for c in hex_part)
     assert extended is False
@@ -67,40 +67,40 @@ def test_generate_identifier_default_length():
 
 def test_generate_identifier_idempotent_for_same_value():
     existing: dict[str, Entry] = {}
-    ident_a, _ = generate_identifier("R", "Jane Smith", existing)
+    ident_a, _ = generate_identifier("N", "Jane Smith", existing)
     # Idempotency check needs the entry to exist in the map.
-    existing[ident_a] = Entry(identifier=ident_a, type="reporter", value="Jane Smith")
-    ident_b, _ = generate_identifier("R", "Jane Smith", existing)
+    existing[ident_a] = Entry(identifier=ident_a, type="name", value="Jane Smith")
+    ident_b, _ = generate_identifier("N", "Jane Smith", existing)
     assert ident_a == ident_b
 
 
 def test_generate_identifier_idempotent_normalises_input():
     """Same value with different case / whitespace gets the same identifier."""
     existing: dict[str, Entry] = {}
-    ident_a, _ = generate_identifier("R", "Jane Smith", existing)
-    existing[ident_a] = Entry(identifier=ident_a, type="reporter", value="Jane Smith")
-    ident_b, _ = generate_identifier("R", "  jane smith  ", existing)
+    ident_a, _ = generate_identifier("N", "Jane Smith", existing)
+    existing[ident_a] = Entry(identifier=ident_a, type="name", value="Jane Smith")
+    ident_b, _ = generate_identifier("N", "  jane smith  ", existing)
     assert ident_a == ident_b
 
 
 def test_generate_identifier_extends_on_collision():
     """Force a collision by pre-seeding the existing map."""
     # Compute the natural identifier for "Jane Smith".
-    natural_ident, _ = generate_identifier("R", "Jane Smith", existing={})
+    natural_ident, _ = generate_identifier("N", "Jane Smith", existing={})
     # Pretend that identifier is already taken by a *different*
     # value (idempotency check is by value, so a different value
     # at the same identifier triggers extension for the new one).
     pre_seeded = {
         natural_ident: Entry(
             identifier=natural_ident,
-            type="reporter",
+            type="name",
             value="some other reporter",
         ),
     }
-    new_ident, extended = generate_identifier("R", "Jane Smith", pre_seeded)
+    new_ident, extended = generate_identifier("N", "Jane Smith", pre_seeded)
     assert extended is True
     assert new_ident != natural_ident
-    assert new_ident.startswith("R-")
+    assert new_ident.startswith("N-")
     # Extended hex is longer than the default.
     _prefix, hex_part = new_ident.split("-", 1)
     assert len(hex_part) > DEFAULT_HEX_LEN
@@ -116,21 +116,21 @@ def test_generate_identifier_rejects_unknown_type():
 
 def test_upsert_creates_then_returns_existing():
     mapping: dict[str, Entry] = {}
-    a = upsert(mapping, "R", "Jane Smith")
-    b = upsert(mapping, "R", "Jane Smith")
+    a = upsert(mapping, "N", "Jane Smith")
+    b = upsert(mapping, "N", "Jane Smith")
     assert a is b or a == b
     assert len(mapping) == 1
     assert a.value == "Jane Smith"
-    assert a.type == "reporter"
+    assert a.type == "name"
 
 
 def test_upsert_distinguishes_types_for_same_value():
     """A reporter named ``foo`` and an email ``foo`` get distinct entries."""
     mapping: dict[str, Entry] = {}
-    r = upsert(mapping, "R", "foo")
+    r = upsert(mapping, "N", "foo")
     e = upsert(mapping, "E", "foo")
     assert r.identifier != e.identifier
-    assert r.identifier.startswith("R-")
+    assert r.identifier.startswith("N-")
     assert e.identifier.startswith("E-")
 
 
@@ -140,7 +140,7 @@ def test_upsert_distinguishes_types_for_same_value():
 def test_save_and_load_round_trip(tmp_path: pathlib.Path):
     path = tmp_path / "pii.json"
     mapping: dict[str, Entry] = {}
-    upsert(mapping, "R", "Jane Smith")
+    upsert(mapping, "N", "Jane Smith")
     upsert(mapping, "E", "jane@example.com")
 
     save_mapping_atomic(path, mapping)
@@ -151,7 +151,7 @@ def test_save_and_load_round_trip(tmp_path: pathlib.Path):
 def test_save_creates_parent_dir(tmp_path: pathlib.Path):
     path = tmp_path / "deeper" / "nested" / "pii.json"
     mapping: dict[str, Entry] = {}
-    upsert(mapping, "R", "Jane Smith")
+    upsert(mapping, "N", "Jane Smith")
     save_mapping_atomic(path, mapping)
     assert path.exists()
 
@@ -159,7 +159,7 @@ def test_save_creates_parent_dir(tmp_path: pathlib.Path):
 def test_save_writes_mode_0o600(tmp_path: pathlib.Path):
     path = tmp_path / "pii.json"
     mapping: dict[str, Entry] = {}
-    upsert(mapping, "R", "Jane Smith")
+    upsert(mapping, "N", "Jane Smith")
     save_mapping_atomic(path, mapping)
     mode = path.stat().st_mode & 0o777
     assert mode == 0o600
@@ -168,7 +168,7 @@ def test_save_writes_mode_0o600(tmp_path: pathlib.Path):
 def test_save_serialises_with_version_and_entries(tmp_path: pathlib.Path):
     path = tmp_path / "pii.json"
     mapping: dict[str, Entry] = {}
-    upsert(mapping, "R", "Jane Smith")
+    upsert(mapping, "N", "Jane Smith")
     save_mapping_atomic(path, mapping)
     raw = json.loads(path.read_text())
     assert raw["version"] == MAPPING_VERSION
@@ -199,7 +199,7 @@ def test_load_rejects_malformed_entry(tmp_path: pathlib.Path):
         json.dumps(
             {
                 "version": MAPPING_VERSION,
-                "entries": {"R-abcdef": {"type": "reporter"}},  # missing value
+                "entries": {"N-abcdef": {"type": "name"}},  # missing value
             }
         )
     )
