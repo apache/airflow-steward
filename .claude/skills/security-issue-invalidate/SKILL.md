@@ -136,7 +136,7 @@ Before running, the skill needs:
 
 See [Prerequisites for running the agent skills](../../../README.md#prerequisites-for-running-the-agent-skills)
 in `README.md` for overall setup and the
-[`oauth_curl` vs `claude_ai_mcp` precedence rule](../../../tools/gmail/draft-backends.md#how-the-skills-pick-a-backend)
+[`claude_ai_mcp` (default) vs `oauth_curl` (opt-in) backend rule](../../../tools/gmail/draft-backends.md#how-the-skills-pick-a-backend)
 for the Gmail draft path.
 
 ---
@@ -405,9 +405,9 @@ For `security@`-imported trackers:
      value comes from
      [`<project-config>/project.md`](../../../<project-config>/project.md#gmail-and-ponymail).
 2. **Subject:** `Re: <root subject>`. Never invent a fresh
-   subject — the reply lands on the inbound thread (when
-   `oauth_curl` is the backend) or is subject-matched into it
-   (when `claude_ai_mcp` is the backend).
+   subject — the reply lands on the inbound thread via
+   thread attachment (`replyToMessageId` for `claude_ai_mcp`,
+   `--thread-id` for `oauth_curl`).
 3. **Body:**
    - Spine: the canned section picked in Step 4, verbatim.
    - Augmentation: a clearly-marked block filling the
@@ -427,12 +427,14 @@ For `security@`-imported trackers:
      the team's position once, clearly, with reasoning. Do not
      re-open the discussion with phrases like *"happy to
      discuss further"* — close the loop.
-4. **Backend selection:** probe for `oauth_curl` credentials
-   first (default path
-   `~/.config/apache-steward/gmail-oauth.json`) per
-   [`tools/gmail/draft-backends.md`](../../../tools/gmail/draft-backends.md#how-the-skills-pick-a-backend);
-   fall back to `claude_ai_mcp` (subject-matched) when
-   credentials are not on disk.
+4. **Backend selection:** use the project's configured
+   drafting backend per
+   [`tools/gmail/draft-backends.md`](../../../tools/gmail/draft-backends.md#how-the-skills-pick-a-backend).
+   Default is `claude_ai_mcp` with `replyToMessageId` thread
+   attachment; the opt-in `oauth_curl` backend is used when
+   `tools.gmail.draft_backend: oauth_curl` is set and
+   credentials are on disk (default path
+   `~/.config/apache-steward/gmail-oauth.json`).
 5. **Existing-draft check.** Before drafting, scan the inbound
    thread for an existing pending draft per the
    [*Detecting drafts that already exist on a thread*](../../../tools/gmail/draft-backends.md#detecting-drafts-that-already-exist-on-a-thread)
@@ -576,14 +578,18 @@ Skip if PR-imported or the user chose `silent`.
 
 Use the backend chosen in Step 5d:
 
+- **`claude_ai_mcp`:** call `mcp__claude_ai_Gmail__get_thread`
+  on `<tracker.threadId>` with `messageFormat: MINIMAL`, take
+  the chronologically-last message's `id`, and call
+  `mcp__claude_ai_Gmail__create_draft` with `to=<reporterEmail>`,
+  `cc=<security-list>`, `subject='Re: <root subject>'`,
+  `body=<file>`, and `replyToMessageId=<that message id>`. The
+  draft lands attached to the inbound thread.
 - **`oauth_curl`:** call the `oauth_curl drafts:create` script
   per [`draft-backends.md`](../../../tools/gmail/draft-backends.md)
   with `threadId=<tracker.threadId>`, `to=<reporterEmail>`,
   `cc=<security-list>`, `subject='Re: <root subject>'`,
   `body=<file>`. The draft lands attached to the inbound thread.
-- **`claude_ai_mcp`:** call
-  `mcp__claude_ai_Gmail__create_draft` with the same fields;
-  Gmail subject-matches it onto the inbound thread.
 
 Capture the returned `draftId`. Update the rollup entry's
 *Reporter notification* line with the actual draft ID

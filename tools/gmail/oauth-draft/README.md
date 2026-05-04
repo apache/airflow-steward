@@ -38,14 +38,13 @@ user-provided OAuth refresh token. Three console scripts:
 | Console script | Purpose |
 |---|---|
 | `oauth-draft-setup` | One-time interactive OAuth consent flow that writes the credentials JSON. |
-| `oauth-draft-create` | Create a Gmail draft with **`threadId` attachment** (the claude.ai Gmail MCP cannot do this). |
-| `oauth-draft-mark-read` | Bulk-modify Gmail threads matching a search query (default: mark as read by removing the `UNREAD` label). |
+| `oauth-draft-create` | Create a Gmail draft with `threadId` attachment. (As of the `replyToMessageId` parameter on the claude.ai Gmail MCP `create_draft`, the MCP can also produce thread-attached drafts — see [`../draft-backends.md`](../draft-backends.md). This script remains useful when you have a `threadId` on hand and would rather skip the extra `get_thread` round-trip the MCP path requires, and is the only path that lets the skills delete drafts via the Gmail API afterwards.) |
+| `oauth-draft-mark-read` | Bulk-modify Gmail threads matching a search query (default: mark as read by removing the `UNREAD` label). No MCP equivalent today. |
 
-The behavioural contract for the `oauth_curl` drafting backend and
-the surrounding policy live in
-[`../draft-backends.md`](../draft-backends.md). This README covers
-local-setup, day-to-day invocation, and the project's own
-test/lint workflow.
+The default and recommended drafting backend is the claude.ai Gmail
+MCP — see [`../draft-backends.md`](../draft-backends.md) for when to
+opt into `oauth_curl`. This README covers local-setup, day-to-day
+invocation, and the project's own test/lint workflow.
 
 ## Run
 

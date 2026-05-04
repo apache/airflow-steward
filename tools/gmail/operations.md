@@ -104,41 +104,57 @@ in `.apache-steward-overrides/user.md` under
 in [`draft-backends.md`](draft-backends.md); the call shape per
 backend is here.
 
-| Backend | Value | `threadId` attach? |
+| Backend | Value | Thread attach? |
 |---|---|---|
-| claude.ai Gmail MCP | `claude_ai_mcp` (default) | **no** (see below) |
-| OAuth + `curl` | `oauth_curl` | **yes** |
+| claude.ai Gmail MCP | `claude_ai_mcp` (default) | **yes** — via `replyToMessageId` |
+| OAuth + `curl` | `oauth_curl` | **yes** — via `threadId` |
 
 ### Create draft — `claude_ai_mcp` backend
 
-The claude.ai Gmail MCP's `create_draft` tool does **not** accept a
-`threadId` parameter. The Gmail REST API supports it on
-`drafts.create`, but the MCP does not plumb it through. Drafts
-created via this backend always start a new conversation on the
-**sender's** Gmail side; recipients' mail clients thread-attach via
-subject + `In-Reply-To` / `References` matching, which usually works
-but is not guaranteed.
+The claude.ai Gmail MCP's `create_draft` tool accepts a
+`replyToMessageId` parameter (a Gmail *message* ID, not a thread ID).
+When supplied, Gmail attaches the draft to the conversation that
+contains that message — server-side, on the sender's Gmail. The new
+draft is visible in both the conversation view and the global Drafts
+folder, and the original message body is appended to the draft's body
+(standard "reply" composition). Recipients' mail clients thread-attach
+via the subject + `In-Reply-To` / `References` headers Gmail synthesises
+from the parent message.
 
 ```text
+# 1. Resolve the message to reply to. The skills always reply to the
+#    chronologically-last message on the inbound thread (see
+#    threading.md):
+mcp__claude_ai_Gmail__get_thread(
+  threadId='<inbound-threadId>',
+  messageFormat='MINIMAL',
+)
+# → take messages[-1].id as <reply-to-message-id>
+
+# 2. Create the draft with replyToMessageId set:
 mcp__claude_ai_Gmail__create_draft(
   subject='Re: <root subject of the inbound message>',
   to=['<primary>'],
   cc=['<security-list>', ...],
   body='<body>',
+  replyToMessageId='<reply-to-message-id>',
 )
 ```
 
+- **`replyToMessageId` is the message ID of the latest message on the
+  inbound thread.** Resolve it from `get_thread` rather than guessing
+  — Gmail does not accept a `threadId` here.
 - **Subject is always `Re: <root subject>`**, never fabricated. A
-  drifted subject defeats subject-based threading on every client.
+  drifted subject defeats subject-based threading on every client and
+  is a separate signal Gmail's UI uses to render the conversation
+  header.
 - **Never send.** The skills only *create* drafts; a human
   review-and-send step is required before every outbound message.
-- **Subject-fallback threading is the only path.** See the
-  [fallback rule](threading.md#fallback--subject-matched-draft-when-threadid-is-unavailable)
+- **Fallback** — when the inbound `threadId` cannot be resolved or
+  the latest message is not retrievable, omit `replyToMessageId` and
+  let the draft thread by subject only. See the
+  [fallback rule](threading.md#fallback--subject-matched-draft-when-replytomessageid-is-unavailable)
   in `threading.md` for when this applies and when it does not.
-
-When the user needs `threadId`-attached drafts (so the draft threads
-on their own Gmail view and the drafts queue stays in lock-step with
-the inbound thread), switch the backend to `oauth_curl` — see below.
 
 ### Create draft — `oauth_curl` backend
 

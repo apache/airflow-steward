@@ -972,18 +972,17 @@ For each confirmed `Report` / `ASF-security relay`:
    the item is already on the board with the same Status.
 
 4. Draft the receipt-of-confirmation reply. **The draft must be
-   created on the inbound Gmail thread** — always pass the candidate's
-   `threadId` to the project's preferred drafting backend per the
-   precedence rule in
-   [`tools/gmail/draft-backends.md`](../../../tools/gmail/draft-backends.md#how-the-skills-pick-a-backend):
-   **probe for `oauth_curl` credentials first** (default path
-   `~/.config/apache-steward/gmail-oauth.json`); use `oauth_curl` when
-   present so the draft is `threadId`-attached, only fall back to
-   `claude_ai_mcp` (subject-matched) when oauth credentials are not
-   on disk. The `tools.gmail.draft_backend` config field acts as an
-   explicit override only when set to `claude_ai_mcp_force`. Surface
-   in the proposal which backend was used and which path the draft
-   took (`threadId`-attached vs subject fallback).
+   created on the inbound Gmail thread** via the project's configured
+   drafting backend per
+   [`tools/gmail/draft-backends.md`](../../../tools/gmail/draft-backends.md#how-the-skills-pick-a-backend).
+   The default `claude_ai_mcp` backend resolves the candidate's
+   chronologically-last message ID (call
+   `mcp__claude_ai_Gmail__get_thread(threadId=<candidate>,
+   messageFormat='MINIMAL')` and take `messages[-1].id`) and passes
+   it to `mcp__claude_ai_Gmail__create_draft` as `replyToMessageId`.
+   The opt-in `oauth_curl` backend uses `--thread-id` directly.
+   Surface in the proposal which backend was used and which path the
+   draft took (thread-attached vs subject fallback).
 
    **Before drafting, check for an existing pending draft** on the
    inbound thread per the *Detecting drafts that already exist on a
@@ -991,9 +990,10 @@ For each confirmed `Report` / `ASF-security relay`:
    [`draft-backends.md`](../../../tools/gmail/draft-backends.md#detecting-drafts-that-already-exist-on-a-thread)
    — run **both** `mcp__claude_ai_Gmail__list_drafts` and
    `mcp__claude_ai_Gmail__get_thread` (scan messages for `DRAFT`
-   labels) so `oauth_curl`-attached drafts are not missed. If a
-   pending draft already exists, surface it to the user instead of
-   silently shadowing it with a second draft.
+   labels) so thread-attached drafts that may have piled up and
+   hidden from the global Drafts folder are not missed. If a pending
+   draft already exists, surface it to the user instead of silently
+   shadowing it with a second draft.
 
    Never fabricate a new subject — subject is always
    `Re: <root subject>`, even when the recipient changes.

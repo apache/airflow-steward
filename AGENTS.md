@@ -924,13 +924,17 @@ under this rule.
 ### Threading: drafts stay on the inbound Gmail thread
 
 Every drafted email that relates to a tracking issue **should**
-attach to the original inbound Gmail thread. The preferred path is
-to pass the inbound `threadId` to `create_draft`; the pragmatic
-fallback — when the `threadId` cannot be resolved — is to omit it
-and create the draft with the matching `Re: <root subject>` line,
-which most clients still thread by subject. The full rule (when
-each path applies, when to stop instead, how to surface the
-degraded threading in the skill's proposal) lives in
+attach to the original inbound Gmail thread. On the default
+`claude_ai_mcp` backend, that means resolving the thread's latest
+message ID (via `get_thread`) and passing it to `create_draft` as
+`replyToMessageId`; on the opt-in `oauth_curl` backend it means
+passing the `threadId` to `oauth-draft-create --thread-id`. The
+pragmatic fallback — when the inbound thread cannot be resolved —
+is to omit the thread-attachment parameter and create the draft
+with the matching `Re: <root subject>` line, which most clients
+still thread by subject. The full rule (when each path applies,
+when to stop instead, how to surface the degraded threading in the
+skill's proposal) lives in
 [`tools/gmail/threading.md`](tools/gmail/threading.md).
 
 ### ASF-security-relay reports: a special case for drafting
@@ -939,8 +943,8 @@ Some reports reach the project's security list via the ASF security
 team (from `security@apache.org`, or a personal `@apache.org` address
 of an ASF-security-team member) rather than from the external reporter
 directly. The drafting rules for that case — different `To:`, same
-threading behaviour (prefer `threadId`, fall back to the inbound
-subject), terse body — live in
+threading behaviour (attach to the inbound thread, fall back to the
+inbound subject when the thread cannot be resolved), terse body — live in
 [`tools/gmail/asf-relay.md`](tools/gmail/asf-relay.md). The detection
 signals the `security-issue-import` skill uses to classify a candidate
 as a relay live in that skill's Step 3.
