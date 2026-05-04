@@ -14,6 +14,7 @@
     - [What public surfaces still must not contain](#what-public-surfaces-still-must-not-contain)
     - [Where the URLs are routinely OK to use](#where-the-urls-are-routinely-ok-to-use)
     - [Other ASF projects — never name or describe their vulnerabilities](#other-asf-projects--never-name-or-describe-their-vulnerabilities)
+  - [Privacy-LLM — what data goes through which model](#privacy-llm--what-data-goes-through-which-model)
   - [Assessing reports](#assessing-reports)
     - [Reporter-supplied CVSS scores are informational only — never propagate them](#reporter-supplied-cvss-scores-are-informational-only--never-propagate-them)
     - [CVE references must never point at non-public mailing-list threads](#cve-references-must-never-point-at-non-public-mailing-list-threads)
@@ -312,6 +313,51 @@ projects is a config change, not a code change.
 
 ## Local setup
 
+**`prek install` MUST be run before any other work in this
+repository — including the first commit on a fresh clone.** This
+repository uses [`prek`](https://github.com/j178/prek) (a fast,
+Rust-based drop-in replacement for `pre-commit`) to run pre-commit
+hooks that keep the documentation consistent — regenerating the
+`doctoc` tables of contents, stripping trailing whitespace,
+checking line endings, blocking accidentally committed secrets,
+and running the per-sub-tool `ruff` / `mypy` / `pytest` quality
+gates. The hook configuration lives in
+[`.pre-commit-config.yaml`](.pre-commit-config.yaml).
+
+```bash
+uv tool install prek   # or: pipx install prek
+prek install           # installs the git hook into .git/hooks/pre-commit
+```
+
+**Verify before every commit (agents and humans alike).** Before
+preparing any `git commit` — including the first commit on a
+fresh clone — confirm `.git/hooks/pre-commit` exists. If it does
+not, run `prek install` immediately; do **not** proceed to the
+commit step before the hook is in place. The CI re-runs the same
+hooks against every push (`prek` workflow at
+[`.github/workflows/`](.github/workflows/)) and rejects any commit
+whose contents do not match the hook's output, so a missing local
+hook silently turns into a CI failure on push. The pre-flight
+check is one line:
+
+```bash
+test -x .git/hooks/pre-commit || prek install
+```
+
+Run the hooks on demand:
+
+```bash
+prek run --all-files                 # run all hooks against every file
+prek run doctoc --all-files          # only regenerate TOCs
+prek run --from-ref airflow-s        # run against everything changed vs the base branch
+```
+
+If a hook modifies files (for example, `doctoc` regenerating a
+TOC), the commit is aborted; re-stage the modified files and
+commit again. **Do not bypass the hooks with `--no-verify`** —
+if a hook is failing, fix the underlying issue or update the
+hook configuration in the same PR.
+
 **Always run `git submodule update --init --recursive` after pulling
 the adopter tracker repository.** The framework lives at
 `<adopter-tracker>/.apache-steward/apache-steward/` as a git
@@ -359,32 +405,6 @@ follow the pattern. If a credential is found in-tree (legacy,
 copy-paste from upstream docs, generated to a temp scratch path),
 relocate it to a home-dir path and update the tool to read from
 there — never leave it in place "because it's already there".
-
-This repository uses [`prek`](https://github.com/j178/prek) (a fast, Rust-based drop-in
-replacement for `pre-commit`) to run pre-commit hooks that keep the documentation
-consistent — regenerating the `doctoc` tables of contents, stripping trailing whitespace,
-checking line endings, and blocking accidentally committed secrets. The hook configuration
-lives in [`.pre-commit-config.yaml`](.pre-commit-config.yaml).
-
-Install `prek` once and enable the hooks in your local clone before making any changes:
-
-```bash
-uv tool install prek   # or: pipx install prek
-prek install           # installs the git hook into .git/hooks/pre-commit
-```
-
-After that, every `git commit` in this repo will run the hooks automatically. You can also
-run them on demand:
-
-```bash
-prek run --all-files                 # run all hooks against every file
-prek run doctoc --all-files          # only regenerate TOCs
-prek run --from-ref airflow-s        # run against everything changed vs the base branch
-```
-
-If a hook modifies files (for example, `doctoc` regenerating a TOC), the commit is aborted;
-re-stage the modified files and commit again. **Do not bypass the hooks with `--no-verify`** —
-if a hook is failing, fix the underlying issue or update the hook configuration in the same PR.
 
 ## Commit and PR conventions
 
@@ -623,6 +643,73 @@ remove it or rewrite it in the de-identified form above. When in
 doubt, leave it out — the cost of omitting useful context is
 low, the cost of leaking another project's private information is
 not.
+
+## Privacy-LLM — what data goes through which model
+
+The confidentiality rules above govern *human-visible* surfaces
+(public PRs, public issue comments, public mailing-list replies).
+A second, layered set of rules governs *machine-routed* surfaces
+— the LLM context the agent operates in, any LLM API call a
+skill makes, any delegated-summarisation hop a future skill might
+add. Both apply.
+
+The framework's privacy-LLM contract is enforced via
+[`tools/privacy-llm/`](tools/privacy-llm/tool.md) and configured
+per-adopter in `<project-config>/privacy-llm.md` (template at
+[`projects/_template/privacy-llm.md`](projects/_template/privacy-llm.md)).
+Setup recipes for the supported variants are in
+[`docs/setup/privacy-llm.md`](docs/setup/privacy-llm.md).
+
+Three rules every skill follows:
+
+**Reporter PII never enters any LLM in the clear.** The
+reporter's name, email, phone, IP, personal handle, and other PII
+are replaced with hash-prefixed identifiers (`R-a3f9d2`,
+`E-b8c247`, …) immediately after fetch and before any LLM-bound
+step — including Claude's own context. The mapping from
+identifier to real value lives at
+`~/.config/apache-steward/pii-mapping.json` (per the home-dir
+credentials rule in [Local setup](#local-setup)) and is never
+sent to any LLM. Reveal-to-real-name happens only at the
+outbound boundary, when a draft to the reporter is being assembled.
+The contract is in
+[`tools/privacy-llm/pii.md`](tools/privacy-llm/pii.md).
+
+**`<private-list>` content never reaches a non-approved LLM.**
+PMC-private foundation list content (the project's
+`<private-list>` and any other PMC-private list the security
+team reads) is wholly private — body and PII alike. Skills that
+may read this content run a Step 0 pre-flight gate: if any LLM
+in the active stack is not in the approved-model registry, the
+skill stops. The default-approved set is Claude Code itself,
+anything at `*.apache.org`, local-only inference (Ollama / vLLM
+on `127.0.0.1`), and air-gapped on-prem endpoints. Everything
+else (AWS Bedrock, direct Anthropic API, Vertex, OpenAI, …) is
+opt-in, declared explicitly in `<project-config>/privacy-llm.md`
+with a data-residency contract link and a PMC-member approval
+line. The contract is in
+[`tools/privacy-llm/models.md`](tools/privacy-llm/models.md).
+
+**Adding a new LLM hop is a deliberate act, not an emergent one.**
+The pre-flight gate is conservative: any single unapproved entry
+in the active stack stops the skill. This makes it impossible
+for a skill to silently grow a second LLM dependency without the
+adopter's security team approving it in
+`<project-config>/privacy-llm.md`. When a skill needs to
+delegate to another LLM (a summarizer for long mail threads, a
+classifier, an outbound moderation step), the adopter wires the
+endpoint per the appropriate variant in
+[`docs/setup/privacy-llm.md`](docs/setup/privacy-llm.md) **before**
+the skill that uses it runs.
+
+**Status — provisional pending ASF Legal.** The default-approved
+list above reflects the framework maintainer's working position;
+ASF Legal Affairs has not yet ratified an authoritative
+approved-LLM list for foundation private data. When such a list
+lands, the registry will be updated to point at it as
+source-of-truth. Until then,
+[`tools/privacy-llm/models.md`](tools/privacy-llm/models.md) is
+the framework's source-of-truth and the rationale-of-record.
 
 ## Assessing reports
 

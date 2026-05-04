@@ -153,3 +153,30 @@ repos:
         entry: uv run --directory tools/gmail/oauth-draft pytest
         files: ^tools/gmail/oauth-draft/(src|tests|pyproject\.toml)
         pass_filenames: false
+
+  - repo: local
+    hooks:
+      - id: redactor-ruff-check
+        name: ruff check (redactor)
+        language: system
+        entry: uv run --directory tools/privacy-llm/redactor ruff check
+        files: ^tools/privacy-llm/redactor/(src|tests|pyproject\.toml)
+        pass_filenames: false
+      - id: redactor-ruff-format
+        name: ruff format (redactor)
+        language: system
+        entry: uv run --directory tools/privacy-llm/redactor ruff format --check
+        files: ^tools/privacy-llm/redactor/(src|tests|pyproject\.toml)
+        pass_filenames: false
+      - id: redactor-mypy
+        name: mypy (redactor)
+        language: system
+        entry: uv run --directory tools/privacy-llm/redactor mypy
+        files: ^tools/privacy-llm/redactor/(src|tests|pyproject\.toml)
+        pass_filenames: false
+      - id: redactor-pytest
+        name: pytest (redactor)
+        language: system
+        entry: uv run --directory tools/privacy-llm/redactor pytest
+        files: ^tools/privacy-llm/redactor/(src|tests|pyproject\.toml)
+        pass_filenames: false
