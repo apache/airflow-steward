@@ -93,10 +93,20 @@ Two notes on the boundaries:
 
 [`MISSION.md` § Mode B](../MISSION.md#technical-scope) names this
 the highest-value mode and the one off-the-shelf agent tooling
-skips. Implementation is tracked as future work; spec, tone
-guide, and adopter configuration template land in a follow-up
-PR before any skill code, so the project's tone choices are
-reviewable independently from the runtime behaviour.
+skips. Per MISSION sequencing, the spec — tone guide, hand-off
+protocol, adopter contract — lands ahead of any skill code so
+the project's tone choices are reviewable independently from
+the runtime behaviour.
+
+| Doc | Purpose |
+|---|---|
+| [`docs/mentoring/README.md`](mentoring/README.md) | Family overview, current status, planned shape. |
+| [`docs/mentoring/spec.md`](mentoring/spec.md) | What the future skill should do: scope, triggers, register, hand-off, adopter knobs. |
+| [`projects/_template/mentoring-config.md`](../projects/_template/mentoring-config.md) | Adopter-config scaffold the future skill will read. |
+
+A prototype skill (`pr-management-mentor`, working name) lands
+in a follow-up PR after the spec is reviewed; it ships flagged
+`mode: B` + `experimental`.
 
 The closest existing surface is
 [`pr-management-triage/comment-templates.md`](../.claude/skills/pr-management-triage/comment-templates.md),
