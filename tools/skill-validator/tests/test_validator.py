@@ -111,6 +111,40 @@ class TestValidateFrontmatter:
         violations = list(validate_frontmatter(path, text))
         assert any("MIT" in v.message for v in violations)
 
+    def test_valid_mode(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        for mode in ("A", "B", "C"):
+            text = (
+                "---\n"
+                "name: foo\n"
+                "description: bar\n"
+                "license: Apache-2.0\n"
+                f"mode: {mode}\n"
+                "---\n"
+            )
+            violations = list(validate_frontmatter(path, text))
+            assert violations == [], f"mode '{mode}' should be valid"
+
+    def test_invalid_mode(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        text = (
+            "---\n"
+            "name: foo\n"
+            "description: bar\n"
+            "license: Apache-2.0\n"
+            "mode: D\n"
+            "---\n"
+        )
+        violations = list(validate_frontmatter(path, text))
+        assert any("mode" in v.message and "'D'" in v.message for v in violations)
+
+    def test_mode_optional(self, tmp_path: Path) -> None:
+        # Skills without a mode (e.g. setup-* infrastructure) must not fail.
+        path = tmp_path / "SKILL.md"
+        text = "---\nname: foo\ndescription: bar\nlicense: Apache-2.0\n---\n"
+        violations = list(validate_frontmatter(path, text))
+        assert violations == []
+
 
 # ---------------------------------------------------------------------------
 # Heading / anchor helpers

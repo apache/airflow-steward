@@ -1,5 +1,6 @@
 ---
 name: maintainer-review
+mode: A
 description: |
   Walk a maintainer through deep code review of open pull requests on the configured `<upstream>` repo (default: read from `<project-config>/project.md → upstream_repo`). The
   default working list — referred to throughout the docs as **"my reviews"** — is the union of five signals on the

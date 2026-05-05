@@ -1,5 +1,6 @@
 ---
 name: security-issue-import-from-md
+mode: A
 description: |
   Open one or more `<tracker>` tracking issues from a markdown file
   containing a batch of security findings (typically the output of an
