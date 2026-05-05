@@ -44,12 +44,12 @@
 > - Apache Lexicon
 > - Apache Polyglot
 >
-> Until the rename lands on the GitHub side, every clone URL,
-> git-submodule reference, and CI integration still uses the
-> legacy `apache/airflow-steward` slug — all path examples in
-> this README and the linked docs use that slug verbatim. The
-> rename will only change the GitHub repository slug; existing
-> checkouts will keep working with a single `git remote set-url`.
+> Until the rename lands on the GitHub side, every clone URL and
+> CI integration still uses the legacy `apache/airflow-steward`
+> slug — all path examples in this README and the linked docs use
+> that slug verbatim. The rename will only change the GitHub
+> repository slug; existing checkouts will keep working with a
+> single `git remote set-url`.
 
 A reusable, project-agnostic framework for ASF-project automation.
 Currently in development for ASF projects + Python Core team

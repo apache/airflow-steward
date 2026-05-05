@@ -1564,9 +1564,10 @@ will change and *why*. Group them by category:
     parameterised with the CVE ID.
   - `FRAMEWORK_RECORD_MD_URL`, `FRAMEWORK_SYNC_SKILL_URL`,
     `FRAMEWORK_README_URL` — absolute GitHub URLs into
-    `apache/airflow-steward` `main`, since the framework lives in a
-    submodule that does not render through the parent-repo viewer
-    (per the absolute-URL rule used elsewhere in this repo).
+    `apache/airflow-steward` `main`, since the framework lives in
+    the gitignored snapshot at `<adopter-tracker>/.apache-steward/`
+    that does not render through the parent-repo viewer (per the
+    absolute-URL rule used elsewhere in this repo).
   - `CANNED_RESPONSES_URL` — absolute GitHub URL into the tracker
     repo's `<project-config>/canned-responses.md`.
 

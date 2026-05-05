@@ -60,10 +60,12 @@ top of [`README.md`](README.md) for the candidate list and
 timeline) is the **generic, project-agnostic framework**.
 It contains skills, tool adapters, generic process documentation,
 and a project-template scaffold — and **no project-specific
-content**. Adopting projects pull this repository in as a submodule
-of their tracker repo (under `<adopter-tracker>/.apache-steward/apache-steward/`)
-and configure their project-specific bits in `<adopter-tracker>/.apache-steward/`
-alongside the submodule. The framework refers to that adopter-side
+content**. Adopting projects fetch this repository as a gitignored
+**snapshot** at `<adopter-tracker>/.apache-steward/` (managed by
+the [`setup-steward`](.claude/skills/setup-steward/SKILL.md) skill —
+see [`docs/setup/install-recipes.md`](docs/setup/install-recipes.md))
+and configure their project-specific bits alongside the snapshot
+in their adopter repo. The framework refers to that adopter-side
 configuration as `<project-config>`.
 
 The framework has two layers:
@@ -231,28 +233,30 @@ Two configuration layers tell the skills how this working tree is set
 up.
 
 **Project layer — shared, checked in.** Each adopting project keeps
-its project-specific configuration in a `.apache-steward/` directory
-at the root of its tracker repository. The framework refers to this
-directory via the placeholder `<project-config>`. Concretely, an
-adopting project lays out:
+its project-specific configuration in a `<project-config>/` directory
+in their tracker repository, alongside the gitignored framework
+snapshot at `.apache-steward/` (which `setup-steward` manages and
+which carries no adopter-specific content). The framework refers
+to the project-config directory via the `<project-config>`
+placeholder; the concrete path is the adopter's choice (the
+[`projects/_template/`](projects/_template/) scaffold is the
+starting point an adopter copies in). The directory contains:
 
 ```text
-<adopter-tracker-repo>/
-└── .apache-steward/
-    ├── apache-steward/         # (submodule) clone of this framework
-    ├── project.md              # project manifest — identity, repos,
-    │                           # mailing lists, CVE tooling, links to
-    │                           # the sibling files below
-    ├── canned-responses.md     # reporter-facing reply templates
-    ├── release-trains.md       # release-manager + security-team rosters
-    ├── security-model.md       # project's security policy
-    ├── milestones.md           # milestone-format conventions
-    ├── scope-labels.md         # scope label set + CVE product mapping
-    ├── naming-conventions.md
-    ├── title-normalization.md
-    ├── fix-workflow.md
-    ├── user.md.example         # template for the user layer below
-    └── user.md                 # gitignored — per-user
+<project-config>/                # adopter chooses path; committed
+├── project.md                   # project manifest — identity, repos,
+│                                # mailing lists, CVE tooling, links to
+│                                # the sibling files below
+├── canned-responses.md          # reporter-facing reply templates
+├── release-trains.md            # release-manager + security-team rosters
+├── security-model.md            # project's security policy
+├── milestones.md                # milestone-format conventions
+├── scope-labels.md              # scope label set + CVE product mapping
+├── naming-conventions.md
+├── title-normalization.md
+├── fix-workflow.md
+├── user.md.example              # template for the user layer below
+└── user.md                      # gitignored — per-user
 ```
 
 The project manifest (`<project-config>/project.md`) is the load-bearing
@@ -290,7 +294,7 @@ the active configuration before executing any command:
 | Placeholder | Resolves to | Source |
 |---|---|---|
 | `<project-config>` | The adopting project's `.apache-steward/` directory in its tracker repo. | Filesystem convention. |
-| `<framework>` | The framework's root — i.e. this repository. In adopting projects, `<project-config>/apache-steward/` (the submodule path); in framework standalone, `.` (the repository root). Used in `uv run` and other invocations that need to address the framework's `tools/<name>/` subtrees from a path the agent can resolve at the agent's current `cwd`. | Filesystem convention. |
+| `<framework>` | The framework's root — i.e. this repository. In adopting projects, `.apache-steward/` (the gitignored snapshot path managed by `setup-steward`); in framework standalone, `.` (the repository root). Used in `uv run` and other invocations that need to address the framework's `tools/<name>/` subtrees from a path the agent can resolve at the agent's current `cwd`. | Filesystem convention. |
 | `<tracker>` | The GitHub slug of the tracker repo (example: `airflow-s/airflow-s` for the Apache Airflow security team). | `<project-config>/project.md` → `tracker_repo` |
 | `<upstream>` | The GitHub slug of the upstream codebase the fixes land in (example: `apache/airflow`). | `<project-config>/project.md` → `upstream_repo` |
 | `<security-list>` | The project's security mailing list (example: `security@airflow.apache.org`). | `<project-config>/project.md` → `mailing_lists.security` |
@@ -358,22 +362,20 @@ commit again. **Do not bypass the hooks with `--no-verify`** —
 if a hook is failing, fix the underlying issue or update the
 hook configuration in the same PR.
 
-**Always run `git submodule update --init --recursive` after pulling
-the adopter tracker repository.** The framework lives at
-`<adopter-tracker>/.apache-steward/apache-steward/` as a git
-submodule (see [Repository purpose](#repository-purpose) above);
-plain `git pull` on the tracker advances the submodule *pointer*
-in the tracker's index but does **not** update the working tree
-of the submodule itself. Skills then run against the previous
-version of the framework — same skill names, stale skill bodies —
-and the failure mode is silent. Make `git submodule update --init
---recursive` part of muscle memory after every pull, or wire it
-into a post-merge hook (`.git/hooks/post-merge` →
-`#!/bin/sh\nexec git submodule update --init --recursive`). Same
-rule applies to the framework's own
-[`setup-steward upgrade`](.claude/skills/setup-steward/upgrade.md)
-skill: when invoked from inside an adopter tracker, it reminds
-the user to follow up with submodule update on the parent.
+**Keep the framework snapshot in sync with the project's pin.**
+The framework lives at `<adopter-tracker>/.apache-steward/` as a
+**gitignored snapshot** that
+[`setup-steward`](.claude/skills/setup-steward/SKILL.md) manages
+(see [Repository purpose](#repository-purpose) above). The
+project's pinned framework version is recorded in the committed
+`.apache-steward.lock`; the snapshot itself is fetched on first
+adoption and refreshed by `/setup-steward upgrade`. Every
+framework skill compares the gitignored `.apache-steward.local.lock`
+(per-machine fetch) against the committed `.apache-steward.lock`
+(project pin) at the top of its run; on drift, the skill surfaces
+the gap and proposes `/setup-steward upgrade`. There is **no**
+`git submodule update` step — the snapshot mechanism replaces
+that entirely.
 
 **Run the agent in the credential-isolation setup.** The skills
 operate against pre-disclosure CVE content; running Claude Code (or

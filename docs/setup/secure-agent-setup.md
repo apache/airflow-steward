@@ -89,10 +89,11 @@ privilege-elevating runs without you saying so.
 
 ```text
 1. Open Claude Code in your tracker repo (or any directory).
-2. If you consume the framework as a submodule of your tracker
-   (the canonical adopter pattern), run `/setup-steward verify`
-   to confirm `.apache-steward/`, the submodule, and the
-   project-config under it are wired correctly. Read-only —
+2. If you consume the framework as a gitignored snapshot managed
+   by `setup-steward` (the canonical adopter pattern), run
+   `/setup-steward verify` to confirm the snapshot at
+   `.apache-steward/`, the committed `.apache-steward.lock`, and
+   the project-config files are wired correctly. Read-only —
    surfaces gaps, never auto-fixes.
 3. Run /setup-isolated-setup-install — guided first-time install of
    the secure-agent setup (sandbox, hooks, status line,
@@ -841,7 +842,8 @@ sub-section that follows.
    above.
 2. Copy
    [`.claude/settings.json`](../../.claude/settings.json) from the framework
-   submodule into `<your-tracker>/.claude/settings.json`. Adjust:
+   snapshot at `<your-tracker>/.apache-steward/.claude/settings.json`
+   into `<your-tracker>/.claude/settings.json`. Adjust:
    - The `sandbox.network.allowedDomains` list — drop the framework
      domains you don't actually use, add any project-specific hosts.
    - The `sandbox.filesystem.allowRead` list — same: drop the
@@ -851,13 +853,13 @@ sub-section that follows.
      write-side commands you want to confirm explicitly (e.g. a
      custom release-publishing CLI).
 3. Make `claude-iso` available on your shell — either per-repo
-   (sourcing the script from the framework checkout) or globally
+   (sourcing the script from the framework snapshot) or globally
    (copying the script to `~/.claude/agent-isolation/` and
    sourcing from there). Both options are documented in
    [The clean-env wrapper](#the-clean-env-wrapper). When the
-   framework is consumed via the standard submodule path, the
+   framework is consumed via the standard snapshot path, the
    per-repo source path is
-   `<your-tracker>/.apache-steward/apache-steward/tools/agent-isolation/claude-iso.sh`.
+   `<your-tracker>/.apache-steward/tools/agent-isolation/claude-iso.sh`.
 4. Decide whether to gitignore `.claude/settings.local.json` in your
    tracker repo — Claude Code does this by default; verify with
    `git check-ignore .claude/settings.local.json`.

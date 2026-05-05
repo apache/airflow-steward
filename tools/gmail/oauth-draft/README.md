@@ -49,8 +49,7 @@ invocation, and the project's own test/lint workflow.
 ## Run
 
 From the framework's root (this repository when running standalone;
-the `.apache-steward/apache-steward/` submodule path inside an
-adopting tracker repo):
+the `.apache-steward/` snapshot path inside an adopting tracker repo):
 
 ```bash
 uv run --project tools/gmail/oauth-draft oauth-draft-create \
