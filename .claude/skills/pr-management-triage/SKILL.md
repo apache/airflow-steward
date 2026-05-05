@@ -121,12 +121,10 @@ This skill resolves project-specific content from the adopter's
 - [`<project-config>/pr-management-triage-comment-templates.md`](../../../projects/_template/pr-management-triage-comment-templates.md) — comment-body URLs (PR quality criteria, two-stage triage rationale), AI-attribution footer wording, project display name.
 - [`<project-config>/pr-management-triage-ci-check-map.md`](../../../projects/_template/pr-management-triage-ci-check-map.md) — CI-check name pattern → category name + doc-URL mapping for the violations comment.
 
-The framework currently ships with airflow-flavored defaults inline
-in the supporting files of this skill (comment-templates.md,
-classify-and-act.md, etc.). Follow-up work will move those out to
-the adopter config so the skill is fully project-agnostic — until
-then, non-airflow adopters override by forking the relevant
-supporting files into their own `.claude/skills/pr-management-triage/`.
+The skill reads all project-specific content (comment bodies, CI
+patterns, team handles, doc URLs) from the files listed above.
+No defaults are baked into the framework — every adopter provides
+their own values in `<project-config>/`.
 
 ---
 

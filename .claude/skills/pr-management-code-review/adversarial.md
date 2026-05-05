@@ -127,14 +127,14 @@ After the second reviewer returns, the assistant produces a
 source:
 
 ```yaml
-- file: providers/foo/src/airflow/providers/foo/hook.py
+- file: providers/foo/src/project/providers/foo/hook.py
   line: 142
   rule_source: .github/instructions/code-review.instructions.md
   rule_id: "Imports inside function bodies"
   source: both              # ← primary AND adversarial flagged this
   severity: minor
 
-- file: providers/foo/src/airflow/providers/foo/hook.py
+- file: providers/foo/src/project/providers/foo/hook.py
   line: 89
   rule_source: adversarial (security)
   rule_id: "Unbounded recursion on user-supplied JSON"

@@ -21,15 +21,20 @@ or section instead**. Summaries drift; links don't.
 
 | File | What it covers |
 |---|---|
-| [`.github/instructions/code-review.instructions.md`](../../../.github/instructions/code-review.instructions.md) | The rule set every <PROJECT> PR is reviewed against (architecture / DB / quality / testing / API / UI / generated files / AI-generated-code signals / quality signals). |
-| [`AGENTS.md`](../../../AGENTS.md) | Repo-wide AI/agent instructions (architecture boundaries, security model, coding standards, testing standards, commits & PR conventions). |
-| [`registry/AGENTS.md`](../../../registry/AGENTS.md) | Registry-tree-specific rules. |
-| [`dev/AGENTS.md`](../../../dev/AGENTS.md) | `dev/` scripts conventions. |
-| [`dev/ide_setup/AGENTS.md`](../../../dev/ide_setup/AGENTS.md) | IDE bootstrap conventions. |
-| [`providers/AGENTS.md`](../../../providers/AGENTS.md) | Provider-tree boundary, compat-layer, and provider-yaml expectations. |
-| [`providers/elasticsearch/AGENTS.md`](../../../providers/elasticsearch/AGENTS.md) | Elasticsearch-specific rules. |
-| [`providers/opensearch/AGENTS.md`](../../../providers/opensearch/AGENTS.md) | OpenSearch-specific rules. |
-| [`airflow-core/docs/security/security_model.rst`](../../../airflow-core/docs/security/security_model.rst) | The documented security model — what *is* and *isn't* a vulnerability. |
+| (read from `<project-config>/pr-management-code-review-criteria.md` → `repo_wide_source_files`) | The rule set every <PROJECT> PR is reviewed against. |
+
+The concrete list of source files is project-specific and lives in
+the adopter's `<project-config>/pr-management-code-review-criteria.md`.
+The table below shows the **shape** of a typical configuration;
+see `projects/_template/pr-management-code-review-criteria.md` for
+a concrete example.
+
+| File | What it covers |
+|---|---|
+| `.github/instructions/code-review.instructions.md` | Architecture / DB / quality / testing / API / UI / generated files / AI-generated-code signals / quality signals. |
+| `AGENTS.md` | Repo-wide AI/agent instructions (architecture boundaries, security model, coding standards, testing standards, commits & PR conventions). |
+| `<area>/AGENTS.md` | Per-area rules (e.g. `providers/AGENTS.md`, `registry/AGENTS.md`, `dev/AGENTS.md`). |
+| `<security-model-doc>` | The documented security model — what *is* and *isn't* a vulnerability. |
 
 The per-PR review flow re-runs `git ls-files` against the
 touched paths to discover any other `AGENTS.md` not in this
@@ -109,9 +114,9 @@ are still in effect.
 ## Security model — calibration
 
 Before flagging anything that looks security-flavoured, read
-the documented security model at
-[`airflow-core/docs/security/security_model.rst`](../../../airflow-core/docs/security/security_model.rst)
-and the
+the documented security model at the path declared in
+`<project-config>/pr-management-code-review-criteria.md` →
+`security_model_calibration.file`, and the
 [`AGENTS.md` § Security Model](../../../AGENTS.md#security-model)
 calibration guide. The latter is short and tells you how to
 distinguish:

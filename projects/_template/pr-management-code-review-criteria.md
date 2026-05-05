@@ -2,7 +2,7 @@
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
-- [TODO: `<Project Name>` — pr-management-code-review criteria](#todo-project-name--pr-management-code-review-criteria)
+- [Apache Airflow — pr-management-code-review criteria](#apache-airflow--pr-management-code-review-criteria)
   - [Repo-wide source files](#repo-wide-source-files)
   - [Per-area source files](#per-area-source-files)
   - [Security-model calibration](#security-model-calibration)
@@ -14,13 +14,16 @@
 <!-- SPDX-License-Identifier: Apache-2.0
      https://www.apache.org/licenses/LICENSE-2.0 -->
 
-# TODO: `<Project Name>` — pr-management-code-review criteria
+# Apache Airflow — pr-management-code-review criteria
 
-This file is the **navigation map** for the project's review
-criteria — the source files the
+This file is the **navigation map** for the Apache Airflow
+project's review criteria — the source files the
 [`pr-management-code-review`](../../.claude/skills/pr-management-code-review/SKILL.md)
-skill reads when forming its findings. The framework does not
-restate the rules; this file points at them.
+skill reads when forming its findings.  New adopters should copy
+this file into their own
+`<project-config>/pr-management-code-review-criteria.md` and
+replace every Airflow-specific path with their project's
+equivalents.
 
 The skill's review pass reads each source file at session start
 (and re-reads per-area files as PRs route into different trees)
@@ -35,22 +38,24 @@ At least one entry is required.
 
 | File | What it covers | Notes |
 |---|---|---|
-| TODO: e.g. `.github/instructions/code-review.instructions.md` | TODO: rule set every PR is reviewed against (architecture / DB / quality / testing / API / UI / generated files / AI-generated-code signals / quality signals) | |
-| TODO: e.g. `AGENTS.md` | TODO: repo-wide AI/agent instructions (architecture boundaries, security model, coding standards, testing standards, commits & PR conventions) | |
+| `.github/instructions/code-review.instructions.md` | The rule set every Apache Airflow PR is reviewed against (architecture / DB / quality / testing / API / UI / generated files / AI-generated-code signals / quality signals). | |
+| `AGENTS.md` | Repo-wide AI/agent instructions (architecture boundaries, security model, coding standards, testing standards, commits & PR conventions). | |
 
 ## Per-area source files
 
 Files that apply only when the PR touches a specific subtree.
-The skill auto-discovers any `AGENTS.md` (or project-equivalent
-filename) under the touched paths via `git ls-files`, but rows
-listed here are **always** loaded even if the PR doesn't directly
-touch the area — useful for files referenced by name throughout
-the repo-wide rules.
+The skill auto-discovers any `AGENTS.md` under the touched paths
+via `git ls-files`, but rows listed here are **always** loaded
+even if the PR doesn't directly touch the area.
 
 | File | When it applies | Notes |
 |---|---|---|
-| TODO: e.g. `providers/AGENTS.md` | TODO: PR touches `providers/<name>/` | |
-| TODO: e.g. `providers/elasticsearch/AGENTS.md` | TODO: PR touches `providers/elasticsearch/` | |
+| `registry/AGENTS.md` | PR touches `registry/` | Registry-tree-specific rules. |
+| `dev/AGENTS.md` | PR touches `dev/` | `dev/` scripts conventions. |
+| `dev/ide_setup/AGENTS.md` | PR touches `dev/ide_setup/` | IDE bootstrap conventions. |
+| `providers/AGENTS.md` | PR touches `providers/<name>/` | Provider-tree boundary, compat-layer, and provider-yaml expectations. |
+| `providers/elasticsearch/AGENTS.md` | PR touches `providers/elasticsearch/` | Elasticsearch-specific rules. |
+| `providers/opensearch/AGENTS.md` | PR touches `providers/opensearch/` | OpenSearch-specific rules. |
 
 ## Security-model calibration
 
@@ -61,7 +66,7 @@ deployment-hardening opportunities.
 
 | File | Used by |
 |---|---|
-| TODO: e.g. `airflow-core/docs/security/security_model.rst` | The `Security model — calibration` section of the skill's review-flow.md |
+| `airflow-core/docs/security/security_model.rst` | The `Security model — calibration` section of the skill's review-flow.md |
 
 ## Backports / version-specific PRs
 
@@ -71,29 +76,24 @@ on diff parity and cherry-pick conflicts.
 
 | Concept | Pattern | Notes |
 |---|---|---|
-| Backport branch pattern | TODO: e.g. `vX-Y-test` | Regex matched against the PR's base branch name. Skip if the project doesn't ship backport PRs. |
+| Backport branch pattern | `v\d+-\d+-test` | Regex matched against the PR's base branch name (e.g. `v3-0-test`). |
 
 ## Section anchors
 
 For projects whose review docs are structured around named
-sections (and where the skill should link out per-finding), list
-the section anchor URLs the framework expects.
+sections, list the section anchor URLs the framework expects.
+These are used when the skill links out per-finding.
 
 | Section | Anchor URL |
 |---|---|
-| Architecture boundaries | TODO |
-| Database / query correctness | TODO |
-| Code quality | TODO |
-| Testing | TODO |
-| API correctness | TODO |
-| UI (React/TypeScript) | TODO (skip if no UI) |
-| Generated files | TODO |
-| AI-generated code signals | TODO |
-| Quality signals to check | TODO |
-| Commits and PRs (newsfragments, commit messages, tracking issues) | TODO |
-| Security model | TODO |
-
-(If the project's review-criteria doc isn't structured this way,
-this section is optional — the skill will still load the source
-files and quote rules verbatim, just without per-section deep
-links.)
+| Architecture boundaries | `https://github.com/apache/airflow/blob/main/.github/instructions/code-review.instructions.md#architecture-boundaries` |
+| Database / query correctness | `https://github.com/apache/airflow/blob/main/.github/instructions/code-review.instructions.md#database-and-query-correctness` |
+| Code quality | `https://github.com/apache/airflow/blob/main/.github/instructions/code-review.instructions.md#code-quality-rules` |
+| Testing | `https://github.com/apache/airflow/blob/main/.github/instructions/code-review.instructions.md#testing-requirements` |
+| API correctness | `https://github.com/apache/airflow/blob/main/.github/instructions/code-review.instructions.md#api-correctness` |
+| UI (React/TypeScript) | `https://github.com/apache/airflow/blob/main/.github/instructions/code-review.instructions.md#ui-code-reacttypescript` |
+| Generated files | `https://github.com/apache/airflow/blob/main/.github/instructions/code-review.instructions.md#generated-files` |
+| AI-generated code signals | `https://github.com/apache/airflow/blob/main/.github/instructions/code-review.instructions.md#ai-generated-code-signals` |
+| Quality signals to check | `https://github.com/apache/airflow/blob/main/.github/instructions/code-review.instructions.md#quality-signals-to-check` |
+| Commits and PRs (newsfragments, commit messages, tracking issues) | `https://github.com/apache/airflow/blob/main/AGENTS.md#commits-and-prs` |
+| Security model | `https://github.com/apache/airflow/blob/main/AGENTS.md#security-model` |

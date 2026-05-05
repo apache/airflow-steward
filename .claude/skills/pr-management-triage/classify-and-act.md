@@ -169,9 +169,11 @@ after that timestamp.
 ### `static_check`
 
 Failed check name (case-insensitive substring match either
-direction) hits one of: `static check`, `pre-commit`, `prek`,
-`lint`, `mypy`, `ruff`, `black`, `flake8`, `pylint`, `isort`,
-`bandit`, `codespell`, `yamllint`, `shellcheck`.
+direction) hits one of: `static check`, `pre-commit`, `lint`,
+`mypy`, `ruff`, `black`, `flake8`, `pylint`, `isort`, `bandit`,
+`codespell`, `yamllint`, `shellcheck`.
+Additional patterns may be configured in
+`<project-config>/pr-management-triage-ci-check-map.md`.
 
 ### `recent_main_failures`
 
@@ -245,18 +247,19 @@ so it never reaches the guard. The row 1 / guard split is
 belt-and-braces — any first-time PR with no real CI is caught
 upstream.
 
-Real-CI patterns on `<upstream>`:
+Real-CI patterns are read from `<project-config>/pr-management-config.md`
+at session start (field `real_ci_patterns`, list of regex strings).
+The list below shows the **shape** of what a typical project might
+configure; concrete values live in the adopter config:
 
 - `Tests` (exact or as prefix)
 - `Tests \(.*\)` (matrix splits)
 - `Static checks` / `Pre-commit`
-- `Ruff` / `mypy-*`
-- `Build (CI|PROD) image`
-- `Helm tests`
-- `K8s tests`
-- `Docs build`
-- `CodeQL`
-- `Check newsfragment PR number`
+- `Lint` / `Type check`
+- `Build` / `Image`
+- `Docs`
+- `Security scan` (e.g. `CodeQL`, `bandit`, `trivy`)
+- Project-specific checks (e.g. `newsfragment`, `changelog`, `license`)
 
 Bot/labeler noise (`Mergeable`, `WIP`, `DCO`, `boring-cyborg`,
 `probot`, etc.) does NOT count.
@@ -308,7 +311,7 @@ body. Rules:
 
 Examples:
 
-> Only static-check failures (ruff, mypy-airflow-core) — suggest comment
+> Only static-check failures (ruff, mypy-core) — suggest comment
 >
 > 3/5 CI failures also appear in recent main-branch PRs — likely systemic, suggest rerun
 >

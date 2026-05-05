@@ -109,12 +109,10 @@ This skill resolves project-specific content from the adopter's
 
 - [`<project-config>/pr-management-code-review-criteria.md`](../../../projects/_template/pr-management-code-review-criteria.md) — list of the project's review-criteria source files (repo-wide AGENTS.md, code-review docs, per-area AGENTS.md), security-model calibration doc, backport-branch pattern, and section-anchor URLs the framework links per finding.
 
-The framework's [`criteria.md`](criteria.md) currently embeds
-airflow's source-file paths inline as the default. Follow-up work
-will move them out so the skill reads exclusively from the
-adopter config — until then, non-airflow adopters override by
-forking [`criteria.md`](criteria.md) into their own
-`.claude/skills/pr-management-code-review/`.
+The skill reads all project-specific content (source-file paths,
+security-model doc, backport-branch pattern, section anchors)
+from the file listed above.  No defaults are baked into the
+framework.
 
 ---
 
@@ -361,7 +359,7 @@ examples a maintainer can paste:
 | My-reviews **but** drop touching-mine (too noisy this morning) | `/pr-management-code-review no-touching-mine` |
 | My-reviews limited to scheduler-area, max 5 | `/pr-management-code-review area:scheduler max:5` |
 | My-reviews scoped to non-collaborator authors (extra-careful pass) | `/pr-management-code-review collab:false` |
-| The team queue (PRs where `<upstream>-providers-amazon` is requested) | `/pr-management-code-review team:airflow-providers-amazon` |
+| The team queue (PRs where `<upstream>-<team-name>` is requested) | `/pr-management-code-review team:project-team-name` |
 | The wider curated queue triage already promoted | `/pr-management-code-review ready` |
 | Stay body-only this session (no inline picker) | `/pr-management-code-review inline:off` |
 | Dry-run the queue — draft everything, post nothing | `/pr-management-code-review dry-run` |

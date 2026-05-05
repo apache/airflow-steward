@@ -78,7 +78,7 @@ negative cost (talking over a real maintainer call-out).
 ## Row 1 — `pending_workflow_approval`
 
 Single most sensitive category in the skill. Approving a workflow
-lets a first-time contributor's code run inside Airflow's CI with
+lets a first-time contributor's code run inside the project's CI with
 its secret material. The diff-review and flag-suspicious protocol
 is in [`workflow-approval.md`](workflow-approval.md).
 

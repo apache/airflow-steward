@@ -36,7 +36,7 @@ PR #65934 — Fix scheduler N+1 on serialized Dag load
   CI:     ✅ SUCCESS  •  Threads: 0 unresolved  •  Reviews: 0
   Files:  3 changed  +47 −12
   Labels: area:scheduler
-  Match:  [review-requested 2 days ago] [touches: airflow-core/src/airflow/jobs/scheduler_job_runner.py]
+  Match:  [review-requested 2 days ago] [touches: src/core/jobs/scheduler.py]
 ```
 
 The `Match:` line carries any of the five **match-reason
@@ -183,7 +183,7 @@ from it verbatim when raising a finding:
 For each finding, record:
 
 ```yaml
-- file: providers/foo/src/airflow/providers/foo/hook.py
+- file: providers/foo/src/project/providers/foo/hook.py
   line: 142
   rule_source: .github/instructions/code-review.instructions.md
   rule_section: "#code-quality-rules"

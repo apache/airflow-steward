@@ -288,8 +288,8 @@ the others).
 
 > *This review was drafted by an AI-assisted tool and
 > confirmed by an <PROJECT> maintainer. After you've
-> addressed the points above and pushed an update, an Apache
-> Airflow maintainer — a real person — will take the next look
+> addressed the points above and pushed an update, an <PROJECT>
+> maintainer — a real person — will take the next look
 > at the PR. The findings cite the project's review criteria;
 > if you think one of them is mis-applied, please reply on the
 > PR and a maintainer will weigh in.*

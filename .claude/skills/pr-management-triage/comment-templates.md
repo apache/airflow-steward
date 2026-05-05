@@ -24,10 +24,11 @@ Placeholders:
   comment
 
 All templates use the canonical link to the quality-criteria
-document:
+document (read from `<project-config>/pr-management-triage-comment-templates.md
+→ <quality_criteria_url>`):
 
 ```markdown
-[Pull Request quality criteria](https://github.com/<upstream>/blob/main/contributing-docs/05_pull_requests.rst#pull-request-quality-criteria)
+[Pull Request quality criteria](<quality_criteria_url>)
 ```
 
 Do not paraphrase this link — the literal text "Pull Request
@@ -51,8 +52,12 @@ a disclaimer but a pointer to the project's policy.
 ```markdown
 ---
 
-_Note: This comment was drafted by an AI-assisted triage tool and may contain mistakes. Once you have addressed the points above, an <PROJECT> maintainer — a real person — will take the next look at your PR. We use this [two-stage triage process](https://github.com/<upstream>/blob/main/contributing-docs/25_maintainer_pr_triage.md#why-the-first-pass-is-automated) so that our maintainers' limited time is spent where it matters most: the conversation with you._
+_Note: This comment was drafted by an AI-assisted triage tool and may contain mistakes. Once you have addressed the points above, an <PROJECT> maintainer — a real person — will take the next look at your PR. We use this [two-stage triage process](<two_stage_triage_rationale_url>) so that our maintainers' limited time is spent where it matters most: the conversation with you._
 ```
+
+(`<quality_criteria_url>`, `<two_stage_triage_rationale_url>`, and
+`<PROJECT>` are read from
+`<project-config>/pr-management-triage-comment-templates.md`.)
 
 Rules for the footer:
 
@@ -398,7 +403,7 @@ Posted on every currently-open PR by the flagged author as
 part of the per-author sweep — keep it short and non-accusatory.
 
 ```markdown
-This PR has been closed because of suspicious changes detected in it or in another PR by the same author. If you believe this is in error, please contact the Airflow maintainers on the [Airflow Slack](https://s.<project-website>-slack).
+This PR has been closed because of suspicious changes detected in it or in another PR by the same author. If you believe this is in error, please contact the <PROJECT> maintainers on the [<project_communication_channel>](<project_communication_url>).
 ```
 
 Do **not** enumerate which patterns triggered the flag in the
@@ -430,9 +435,9 @@ bullet has the form:
   `Merge conflicts`, `mypy (type checking)`,
   `Unresolved review comments`.
 - `<explanation>` — one short clause stating what's wrong
-  (e.g. *"Failing: mypy-airflow-core, mypy-providers"*).
+  (e.g. *"Failing: mypy-core, mypy-providers"*).
 - `<doc_link>` — link to the canonical doc that explains how to
-  fix this category. Do **not** inline `prek` / `breeze`
+  fix this category. Do **not** inline project-specific
   commands or step-by-step remediation prose in the bullet —
   the linked doc has them. Keep the bullet to one line.
 
@@ -440,24 +445,31 @@ The category / explanation / doc-link triples come from
 `assess_pr_checks` / `assess_pr_conflicts` /
 `assess_pr_unresolved_comments`-equivalent logic — this skill
 reproduces those deterministic assessments without the LLM
-layer. The canonical categories and their doc links are:
+layer.  The canonical categories and their doc links are read
+from `<project-config>/pr-management-triage-ci-check-map.md` at
+session start.  The skill matches failed check names against
+the patterns in that file (first-match-wins) and uses the
+corresponding category name + doc URL for the violation bullet.
 
-| Category | Signal | Doc link |
+The table below shows the **shape** of the mapping; concrete
+values live in the adopter config:
+
+| Category | Signal | Doc link source |
 |---|---|---|
-| `Merge conflicts` | `mergeable == CONFLICTING` | [Working with git — rebasing](https://github.com/<upstream>/blob/main/contributing-docs/10_working_with_git.rst) |
-| `Failing CI checks` (fallback) | `checks_state == FAILURE`, no failed names available | [Static checks](https://github.com/<upstream>/blob/main/contributing-docs/08_static_code_checks.rst) |
-| `Pre-commit / static checks` | failed check name matches `static checks`, `pre-commit`, `prek` | [Static checks](https://github.com/<upstream>/blob/main/contributing-docs/08_static_code_checks.rst) |
-| `Ruff (linting / formatting)` | `ruff` | [Static checks — ruff](https://github.com/<upstream>/blob/main/contributing-docs/08_static_code_checks.rst) |
-| `mypy (type checking)` | `mypy-*` | [Static checks — mypy](https://github.com/<upstream>/blob/main/contributing-docs/08_static_code_checks.rst) |
-| `Unit tests` | `unit test`, `test-` | [Testing](https://github.com/<upstream>/blob/main/contributing-docs/09_testing.rst) |
-| `Build docs` | `docs`, `spellcheck-docs`, `build-docs` | [Building documentation](https://github.com/<upstream>/blob/main/contributing-docs/11_documentation_building.rst) |
-| `Helm tests` | `helm` | [Helm tests](https://github.com/<upstream>/blob/main/contributing-docs/testing/helm_unit_tests.rst) |
-| `Kubernetes tests` | `k8s`, `kubernetes` | [K8s testing](https://github.com/<upstream>/blob/main/contributing-docs/testing/k8s_tests.rst) |
-| `Image build` | `build ci image`, `build prod image`, `ci-image`, `prod-image` | [Static checks](https://github.com/<upstream>/blob/main/contributing-docs/08_static_code_checks.rst) |
-| `Provider tests` | `provider` | [Provider testing](https://github.com/<upstream>/blob/main/contributing-docs/12_provider_distributions.rst) |
-| `Other failing CI checks` | anything uncategorised | [Static checks](https://github.com/<upstream>/blob/main/contributing-docs/08_static_code_checks.rst) |
-| `Unaddressed Copilot review` | classification `stale_copilot_review` — unresolved review thread by a `copilot*[bot]` login older than 7 days with no author reply | [Pull request quality criteria](https://github.com/<upstream>/blob/main/contributing-docs/05_pull_requests.rst#pull-request-quality-criteria) |
-| `Unresolved review comments` | `unresolved_threads > 0` | [Pull request quality criteria](https://github.com/<upstream>/blob/main/contributing-docs/05_pull_requests.rst#pull-request-quality-criteria) |
+| `Merge conflicts` | `mergeable == CONFLICTING` | `<project-config>/pr-management-triage-ci-check-map.md` → merge-conflicts row |
+| `Failing CI checks` (fallback) | `checks_state == FAILURE`, no failed names available | `<project-config>/pr-management-triage-ci-check-map.md` → catch-all row |
+| `Pre-commit / static checks` | failed check name matches `static checks`, `pre-commit`, `prek` | `<project-config>/pr-management-triage-ci-check-map.md` → corresponding row |
+| `Ruff (linting / formatting)` | `ruff` | `<project-config>/pr-management-triage-ci-check-map.md` → corresponding row |
+| `mypy (type checking)` | `mypy-*` | `<project-config>/pr-management-triage-ci-check-map.md` → corresponding row |
+| `Unit tests` | `unit test`, `test-` | `<project-config>/pr-management-triage-ci-check-map.md` → corresponding row |
+| `Build docs` | `docs`, `spellcheck-docs`, `build-docs` | `<project-config>/pr-management-triage-ci-check-map.md` → corresponding row |
+| `Helm tests` | `helm` | `<project-config>/pr-management-triage-ci-check-map.md` → corresponding row |
+| `Kubernetes tests` | `k8s`, `kubernetes` | `<project-config>/pr-management-triage-ci-check-map.md` → corresponding row |
+| `Image build` | `build ci image`, `build prod image`, `ci-image`, `prod-image` | `<project-config>/pr-management-triage-ci-check-map.md` → corresponding row |
+| `Provider tests` | `provider` | `<project-config>/pr-management-triage-ci-check-map.md` → corresponding row |
+| `Other failing CI checks` | anything uncategorised | `<project-config>/pr-management-triage-ci-check-map.md` → catch-all row |
+| `Unaddressed Copilot review` | classification `stale_copilot_review` — unresolved review thread by a `copilot*[bot]` login older than 7 days with no author reply | `<project-config>/pr-management-triage-comment-templates.md` → `<quality_criteria_url>` |
+| `Unresolved review comments` | `unresolved_threads > 0` | `<project-config>/pr-management-triage-comment-templates.md` → `<quality_criteria_url>` |
 
 When a category has multiple matching failed check names,
 list the first 5 and summarise the rest as `(+N more)`.
