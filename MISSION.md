@@ -1,0 +1,204 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [Apache `<PROJECT_NAME>`](#apache-project_name)
+  - [Abstract](#abstract)
+  - [Proposal](#proposal)
+  - [Proposed Names](#proposed-names)
+  - [Rationale](#rationale)
+  - [Initial Goals](#initial-goals)
+  - [Technical scope](#technical-scope)
+  - [Maintainer education — building agentic projects is a different craft](#maintainer-education--building-agentic-projects-is-a-different-craft)
+  - [Privacy, security, and supply-chain integrity — the top-most priority](#privacy-security-and-supply-chain-integrity--the-top-most-priority)
+  - [Affordability and vendor neutrality — the public-good commitment](#affordability-and-vendor-neutrality--the-public-good-commitment)
+  - [Initial PMC composition (target)](#initial-pmc-composition-target)
+  - [Required resources](#required-resources)
+  - [Source and IP](#source-and-ip)
+  - [External dependencies](#external-dependencies)
+  - [Cryptography](#cryptography)
+  - [Particular care](#particular-care)
+  - [Ask of the Board](#ask-of-the-board)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
+# Apache `<PROJECT_NAME>`
+
+> [!IMPORTANT]
+> **Draft** — this proposal is a working draft, actively being edited. Expect substantial changes; not yet ready for committee or Board review.
+
+> **Motto:** *"Give maintainers time back, so they can do what matters."*
+
+## Abstract
+
+Apache `<PROJECT_NAME>` is platform infrastructure for **agent-assisted repository maintainership** — across the ASF and equally for any open-source project that wants in. Three streams of day-to-day work:
+
+- **Security-issue handling** end-to-end — inbound triage, deduplication, agent-drafted reporter replies under human review, CVE allocation hand-off, audit-logged status tracking through publication.
+- **Issue and PR triage and management** — including audit-tool findings (Apache Verum, Apache Caer, equivalents) ingested as actionable issues.
+- **Conversational contributor mentoring** — meeting new contributors where they are.
+
+One conviction underneath: each project picks how much automation actually fits. The platform makes a range of automation levels possible without picking one for you, and "project" means both an ASF PMC and any non-ASF community — neither is a second-class citizen.
+
+## Proposal
+
+The Apache Software Foundation establishes the Apache `<PROJECT_NAME>` Project as a Top-Level Project by Board resolution, scope: agent-assisted repository-maintainership infrastructure under the Apache License, Version 2.0.
+
+## Proposed Names
+
+The initial committee will discuss and vote on the final name. Starting candidates (the list isn't closed — anyone on the initial committee can pitch a different name):
+
+- Apache Mentor
+- Apache Guild
+- Apache Minerva
+- Apache Magpie
+- Apache Beacon
+- Apache Compass
+- Apache Lexicon
+- Apache Polyglot
+
+## Rationale
+
+Open-source projects share the same shape of problem: contributors keep arriving, reviewers don't scale to match, and the highest-stakes work — security-issue handling — is the *most* manual, the *most* reviewer-intensive, and the *most* embarrassing to get wrong. The two complaints heard most loudly — **onboarding latency** and **review-cycle latency** — are the priorities the ASF Responsible AI Initiative names. `<PROJECT_NAME>` is the operational layer for those goals: not a position paper, working tools that PMCs and non-ASF projects can adopt today.
+
+Three design choices set the project apart from "just bolt a code-review bot on it":
+
+**Project autonomy is the structural starting point — and "project" includes non-ASF.** Four modes (A – triage, B – mentoring, C – agent-authored fix with human review, D – narrowly-scoped auto-merge) ship as separate, independently-toggleable skills. Each project picks the modes that match its culture and risk tolerance. ASF integrations (private lists, Vulnogram CVE flows, PMC roles, ASF release process) live behind clean configuration boundaries; non-ASF adopters swap them for whatever fits — a private GitHub repo, GitHub Security Advisories, a maintainer roster, their own release process. The platform is project-governance-agnostic by design — no foundation-mandated automation level survives contact with project culture, and we're not trying to make it.
+
+**Security-issue handling is a load-bearing use case, not a footnote on triage.** The work that became `<PROJECT_NAME>` started as a framework for handling ASF security reports — high-stakes, high-procedure, every-step-needs-an-audit-trail flows that turn out to be exactly what agent-assisted-with-human-gates is good at. Every Mode A/B/C/D capability has to clear the security-flow bar (private content stays private, every outbound draft has a human signature, every state change is logged) before it ships. Projects without a security process get a path to adopt one; projects that have one get tooling that respects the ceremony.
+
+**Mentoring is a first-class mode, not a side-effect of triage.** The lever the ASF — and the wider open-source world — actually needs and the one off-the-shelf agent tooling skips. Meets new contributors where they are, explains conventions, points at the relevant prior PR, asks the clarifying question *before* a reviewer burns time on it. This is where the Responsible AI Initiative's contributor-empowerment goal gets operationalised: the mode that produces the outcomes RAI is trying to measure, in the projects that volunteer for the eval.
+
+## Initial Goals
+
+- Stand up `github.com/apache/<PROJECT_NAME>` with project skeleton, CI, and contributor docs.
+- Provision standard ASF infrastructure: `private@`, `dev@`, `commits@`; GitHub Issues; site at `<PROJECT_NAME>.apache.org`.
+- Get modes A–C running against **3–4 friendly pilots within 3 months** — at least one ASF PMC running the full security-issue flow (Airflow, given the project's lineage), one ASF PMC running just triage + mentoring (Arrow or ATR), and **at least one non-ASF project from day one** (Python core has folks interested). Non-ASF in the first cohort, not later — the project-governance-agnosticism claim is only worth what it can prove.
+- Cut a first Apache release through the standard process within 3 months of resolution adoption, with artefacts usable directly by non-ASF adopters (no ASF-only assumption baked into the install path).
+- Wire modes A–C up to Apache Verum and Apache Caer findings, and to at least one non-ASF audit-tool equivalent (a CodeQL output stream is the likely first non-ASF case).
+- Settle on a contributor-sentiment evaluation methodology with Apache Plumb (separate proposal). Eval covers both ASF and non-ASF cohorts so the data isn't an internal-ASF artefact.
+- **Ship the privacy and security posture** as a release-blocking part of v1 — sandbox setup, clean-env wrapper, privacy-LLM gate, PII redactor, signed releases, pinned-tools manifest. Not a follow-up.
+- **Ship the maintainer-education stream** alongside v1 — pattern catalogue, "your first skill" path, first scheduled workshops. The platform is only as adoptable as the docs that go with it.
+- **Validate vendor-neutrality** in v1 pilots: at least one project running modes A–C against a frontier-model backend, one against fully-local inference (Ollama / vLLM), one against an Apache-hosted or Apache-aligned endpoint as it becomes available.
+
+## Technical scope
+
+A platform substrate — issue and PR ingestion, GitHub API write-back, conversation threading, audit logging, integration with adjacent systems (Gmail, PonyMail, Vulnogram, generic CVE submission, an extensible adapter layer so non-ASF adopters plug in their own equivalents) — with four modes built on top:
+
+**Mode A — triage assistant** for issues, security reports, and PRs. *On the security side:* spots inbound reports, classifies against prior triaged cases, surfaces likely duplicates, identifies anything that should not have been filed publicly, proposes initial routing to the security team. *On the regular side:* suggests labels, spots duplicates, links related discussions, proposes routing. Every output is a suggestion the human signs off on; nothing lands without review. Lowest risk surface.
+
+**Mode B — conversational mentoring**. Joins issue and PR threads in a deliberately teaching register: clarifying questions, pointers to project conventions and docs, an explanation of *why* a change is being asked for, paired examples from similar prior PRs, clean hand-off to a human reviewer when the question exceeds what an agent should answer. The differentiator and the highest-value mode — where the Responsible AI Initiative's empowerment outcome lives.
+
+**Mode C — agent-authored fixes with human review**. The agent drafts a fix for a well-scoped problem (a tracked issue, a triaged security report with team consensus on scope, an Apache Verum or Apache Caer finding, a failing test with an obvious cause, a documentation hole) and opens a PR. Every PR is reviewed and merged by a human committer; the agent never merges its own work. For security PRs the public surface strips CVE / private context per the project's disclosure policy, so the public surface stays clean until the embargo lifts.
+
+**Mode D — narrowly-scoped fix-and-merge**. Auto-merge restricted to objectively boring change classes — lint fixes, dependency bumps inside an allow-list, license-header insertion, formatting, broken-link repair. Per-project AND per-class opt-in; every auto-merged change is reversibly logged. **Not turned on** until A/B/C have been running for two quarters and contributor-sentiment data says the project is healthier, not just faster. Security-class changes are explicitly *out* of D — no auto-merge ever touches anything embargoed or CVE-tagged.
+
+The substrate also handles per-project config (which modes are on, eligible change classes, who reviews, how disputes route, where security reports come from, where audit findings come from, what the release process expects), full audit logging and rollback for every agent-authored change — security and non-security alike — and an integration hook for the Apache Plumb eval framework so the contributor-empowerment claim has measurable data behind it.
+
+## Maintainer education — building agentic projects is a different craft
+
+Most maintainers have never built an agentic application before. The mental model is genuinely different from what twenty years of writing services and CLIs trained us for: behaviour is **probabilistic, not deterministic**; prompts and skill files **are code** in every meaningful sense; **evaluating output is harder than testing a function**; the unit of authorship shifts from "a function in a file" to "a skill the agent invokes". The instincts that keep regular code reliable — strict types, tight tests, short functions, exhaustive branching — don't go away, but they're not enough on their own.
+
+`<PROJECT_NAME>` runs a maintainer-facing education stream as a **first-class part of the project**, not an afterthought wiki page:
+
+- **Pattern catalogue** — copy-pasteable skill / prompt / tool-use patterns with notes on what worked, what didn't, and why. The same way the early days of Python testing or distributed systems were taught: war stories with code attached.
+- **Eval-driven development examples** — how to think about correctness when "correct" is a distribution. Worked examples from real `<PROJECT_NAME>` modes; integration with Apache Plumb so the eval methodology is shared, not reinvented per-project.
+- **Workshops and pairing sessions** — scheduled office-hour sessions where maintainers from any project (ASF or not) can show up with their use case and pair with the `<PROJECT_NAME>` team. Recordings published.
+- **A "your first skill" path** — equivalent of "your first PR" docs, but for landing a working skill in your project. Aim: any motivated maintainer can take a working agentic skill from zero to merged in a weekend, without first having to learn LLM internals.
+
+Every `<PROJECT_NAME>` release ships with the docs and patterns the maintainers using it actually need. The steepness of this learning curve is currently one of the larger barriers to broader agentic adoption in open source; lowering it is part of the platform's job.
+
+## Privacy, security, and supply-chain integrity — the top-most priority
+
+Most maintainers asked about agentic tooling lead with the same fears, in roughly this order:
+
+- *Will my credentials end up in some model provider's training data?*
+- *Will pre-disclosure CVE content leak out of the agent's context?*
+- *What does the agent's dependency tree look like, and who controls it?*
+- *Can a malicious issue or PR comment talk the agent into running something I didn't authorise?*
+- *Can the agent quietly exfiltrate code or contributor data?*
+- *If something goes wrong, can I see what happened and undo it?*
+
+Not theoretical — the actual reason a lot of capable maintainers are *not* using agentic tools today, even when those tools would help. `<PROJECT_NAME>`'s response, baked into the project's foundation rather than retrofitted later:
+
+- **Clean-environment wrapper** around every agent invocation — no envvars from the surrounding shell unless explicitly allow-listed; no silent leakage of API keys, tokens, paths.
+- **Layered sandbox by default** — filesystem, network, and tool-permission rules enforced at the harness layer; sandbox bypasses surface a loud, visible warning before they run, never silently.
+- **Privacy-aware LLM routing** — private content (security reports, embargoed CVE detail, PMC-private mail) flows only to LLMs the project's PMC has explicitly approved, with a recorded data-residency contract. The framework refuses to route private bytes through a non-approved model. *Already implemented in the upstreamed framework that became `<PROJECT_NAME>`.*
+- **PII redaction at the boundary** — reporter identity flows where operationally needed (CVE credit, reply threads); third-party PII gets redacted to stable identifiers before any LLM context.
+- **Pinned, reviewed, signed dependencies** — every system tool (`bubblewrap`, `socat`, agent CLI) pinned to a version aged through a documented cooldown window. Bumps are PRs, not silent updates. Supply-chain risk treated like code change.
+- **Audit log every agent-authored action** — comments, labels, drafts, issues, PRs. Reversible where possible; flagged where not.
+- **Hard rule: external content is data, never instructions** — reporter mail, PR comments, GHSA forwards, attachments. Documented at the framework level, enforced at the skill level.
+
+The choice to land `<PROJECT_NAME>` at the ASF — rather than as an independent project or vendor offering — is load-bearing for this. **The ASF is a trust layer.** Maintainers who would (reasonably) hesitate to install a vendor's agent framework on their dev machine, or grant it access to their security mailing list, will more readily install one that comes through the same release process as the rest of their toolchain, signed by the same KEYS, governed by a PMC, held to the same software-grant and release-policy bar the foundation has been holding software to for a quarter-century. That trust extends to non-ASF adopters too: a community that trusts the ASF's release process inherits `<PROJECT_NAME>`'s privacy and supply-chain posture without having to audit it from scratch.
+
+This is the **first** priority — not the first among many. If a feature has to slow to keep this story honest, it slows.
+
+## Affordability and vendor neutrality — the public-good commitment
+
+Current state of agentic tooling for open source: maintainers doing the most agent-assisted work tend to have **expensive personal subscriptions** to one or more frontier-model providers, or **complimentary access** a vendor handed them. Both work, neither is sustainable, neither is fair. A maintainer in a country where a $200/month subscription is six weeks of pay does not get to participate. A project whose lead maintainer happens to have a vendor relationship gets capabilities its peer projects don't.
+
+The gap `<PROJECT_NAME>` exists to close, with an uncompromising long-term commitment:
+
+- **Vendor neutrality is non-negotiable, top to bottom.** Every mode runs against the project's chosen LLM, not a hard-coded one. The platform's contract with the model is well-defined enough that Claude, OpenAI, Anthropic-via-Bedrock, Google, locally-hosted Llama / Qwen / DeepSeek (Ollama, vLLM), and a future ASF-hosted endpoint are all valid backends with the same skill code on top. Skills are written against the contract, not the vendor.
+- **Local and self-hosted paths are first-class, not fallback.** A maintainer running Ollama gets the same skill catalogue as one running a frontier-model subscription. Local-only inference is also the simplest answer to most of the privacy concerns above — it never leaves the machine.
+- **An ASF-hosted inference endpoint is on the long-term roadmap** — `inference.apache.org` (name TBD): a community-affordable, foundation-governed, audit-logged inference layer any open-source maintainer (ASF or not) can use to participate in agentic development without paying a vendor or accepting a vendor's gift. The long-term shape of "release software for the public good" in the agentic era.
+- **Economics get documented honestly.** `<PROJECT_NAME>`'s docs include a "what does each mode actually cost to run" page — token counts per typical invocation, per mode, per model class — so a maintainer evaluating adoption can make an informed call instead of guessing. The same data informs the case for the ASF-hosted endpoint when the community is ready to ask the question.
+
+The ASF mission line — *"to provide software for the public good"* — has always meant the *running* software, not just the source code. For agentic tooling, the running software increasingly *is* the model, and the public-good commitment has to extend that far. **If `<PROJECT_NAME>` ends up being a thing only well-resourced maintainers can run, it has failed its core mission, regardless of how good the code is.**
+
+## Initial PMC composition (target)
+
+PMC composition matters more than most because the project's social stakes are higher than its technical stakes. The PMC will be filled from existing ASF members, and potentially Apache Airflow PMC members where implementation of A/B/C is already live and used — coordinated with Membership before the resolution is adopted.
+
+- **Size:** 7–9 members.
+- **Diversity:** at least three distinct organisational affiliations; no single employer holding a majority.
+- **Coverage:** at least two committers from each friendly-pilot PMC (Airflow, Arrow, ATR, or similar) for the user-side reality check; at least one committer with explicit responsibility for contributor experience, mentoring, and onboarding rather than just engineering; ASF Privacy and ASF Legal engaged from project start, given the contributor-data surface.
+- **Chair:** Jarek Potiuk, subject to PMC vote per Bylaws.
+
+ASF members for the roster:
+
+- Jarek Potiuk — Airflow PMC
+- Piotr Karwasz — Log4J PMC
+- Elad Kalif — Airflow PMC
+- Matthew Topol — Arrow PMC, Iceberg PMC
+- Pavan Kumar — Airflow PMC
+- Amogh Desai — Airflow PMC
+- Andrew Musselman — Mahout PMC
+- Justin Mclean — Incubator PMC, Training PMC
+- Jean-Baptiste Onofré — Incubator PMC, Polaris PMC, …
+
+The named PMC roster will accompany the resolution at the time of vote.
+
+## Required resources
+
+- **Mailing lists:** `private@<PROJECT_NAME>.apache.org`, `dev@<PROJECT_NAME>.apache.org`, `commits@<PROJECT_NAME>.apache.org`.
+- **Source control:** `github.com/apache/<PROJECT_NAME>`.
+- **Issue tracking:** GitHub Issues.
+- **Website:** `<PROJECT_NAME>.apache.org`.
+- **Release infrastructure:** `dist.apache.org` per standard ASF process.
+
+## Source and IP
+
+Green-field project. Existing project-agnostic code in the Apache Airflow PMC — already designed to be reusable in and outside the ASF — could be donated to speed implementation; some related ideas are implemented in Gofannon.
+
+## External dependencies
+
+A current SKILL-based implementation already covers PR triaging, security-issue management, and the maintainer review process — language-independent, since SKILLs are English. Standard Python ecosystem dependencies for the deterministic-output scripts. No AI SDK integration needed; the solution is pure agentic SKILL implementation understood by most AI CLIs. Apache-license compatibility verified.
+
+## Cryptography
+
+Standard TLS for HTTPS API calls. No novel cryptography. ECCN classification reviewed as not applicable.
+
+## Particular care
+
+The contributor experience is the most sensitive surface in any open-source project. Getting the tone wrong, mishandling a junior contributor, or letting an agent gatekeep where a human should is more damaging than any technical bug the project might ship — and the failure mode is not reversible by patch: a contributor who feels condescended-to by an agent and leaves does not get re-recruited.
+
+The project commits to:
+
+- **Mentoring-first sequencing** — Modes A and B before C and D.
+- **ASF Privacy and Legal involvement from project start**, not retrospectively.
+- **Contributor-sentiment evidence as a graduation criterion** for new automation modes alongside the standard technical-maturity criteria.
+- **Tight feedback loop** — the SKILL-based approach with human oversight lets agentic skills self-update from maintainer / triager feedback and contributor responses; mistakes get corrected and message tone is tuned to the communication style the PMC selects.
+
+## Ask of the Board
+
+Adopt the accompanying resolution establishing the Apache `<PROJECT_NAME>` Project as a Top-Level Project, with initial PMC roster as filed at the time of vote.

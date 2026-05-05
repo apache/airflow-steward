@@ -60,6 +60,13 @@ the marketplace path opens up. See
 [release-distribution](https://infra.apache.org/release-distribution.html)
 for the canonical distribution mechanism we will adopt.
 
+> [!IMPORTANT]
+> The motivation, scope, and design commitments behind this work
+> live in [`MISSION.md`](MISSION.md) — the **draft** project-
+> establishment proposal for an Apache Top-Level Project built on
+> this framework. Read that for the *why*; this README is the
+> *how* once you've decided to adopt.
+
 ## How adoption works
 
 The framework uses a **snapshot + agentic-override** adoption
@@ -203,6 +210,7 @@ maintenance:
 
 ## Cross-references
 
+- [`MISSION.md`](MISSION.md) — **draft** project-establishment proposal: motivation, scope, design commitments, initial PMC composition target.
 - [`docs/setup/agentic-overrides.md`](docs/setup/agentic-overrides.md) — the contract between adopters who write overrides and framework skills that read them.
 - [`docs/prerequisites.md`](docs/prerequisites.md) — what a maintainer needs installed before invoking any framework skill (Claude Code, Gmail MCP, GitHub auth, browser, `uv`, etc.).
 - [`AGENTS.md`](AGENTS.md) — agent instructions, placeholder convention, framework conventions.
