@@ -46,6 +46,8 @@ jobs:
             path: tools/gmail/oauth-draft
           - name: generate-cve-json
             path: tools/vulnogram/generate-cve-json
+          - name: skill-validator
+            path: tools/skill-validator
     # GitHub Actions log viewer renders ANSI colour escapes; without
     # an attached TTY most tools default to monochrome. `FORCE_COLOR`
     # is the de-facto signal honoured by uv, ruff, mypy, and pytest's
