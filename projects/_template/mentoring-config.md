@@ -41,8 +41,8 @@ link the comment should reference instead of paraphrasing.
 | Trigger | Link | One-line label |
 |---|---|---|
 | Missing version on bug report | https://airflow.apache.org/docs/apache-airflow/stable/start.html | "How to find your Airflow version" |
-| Missing repro | https://github.com/apache/airflow/blob/main/contributing-docs/quick-start.rst | "Quick-start for reproducing" |
-| First-time contributor PR setup | https://github.com/apache/airflow/blob/main/contributing-docs/02_how_to_pull_request.rst | "How to open a PR" |
+| Missing repro | https://github.com/apache/airflow/blob/main/contributing-docs/03_contributors_quick_start.rst | "Contributors quick start" |
+| First-time contributor PR setup | https://github.com/apache/airflow/blob/main/contributing-docs/05_pull_requests.rst | "How to open a PR" |
 
 ## Out-of-scope topics
 
