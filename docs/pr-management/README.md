@@ -31,11 +31,11 @@ triage + review pass:
    with inline comments, posts on confirmation.
 
 Why a framework skill family? These skills were originally
-maintained inside `apache/airflow` as `breeze pr auto-triage` and
-`breeze pr stats` — useful for any ASF project with a meaningful
-contributor-PR queue, but locked behind airflow-specific
-toolchain. Lifting them into the framework lets other adopters
-reuse the playbook with their own
+maintained inside one ASF project's developer-tooling repo as
+`breeze pr auto-triage` and `breeze pr stats` — useful for any
+ASF project with a meaningful contributor-PR queue, but locked
+behind that project's local toolchain. Lifting them into the
+framework lets other adopters reuse the playbook with their own
 [adopter-config files](../../projects/_template/) for project-specific
 knobs (committers team handle, area-label prefix, comment-template
 wording, CI-check → doc-URL map, review-criteria source files).
@@ -60,14 +60,12 @@ the adopter's `<project-config>/` directory:
 | [`pr-management-triage-ci-check-map.md`](../../projects/_template/pr-management-triage-ci-check-map.md) | `pr-management-triage` |
 | [`pr-management-code-review-criteria.md`](../../projects/_template/pr-management-code-review-criteria.md) | `pr-management-code-review` |
 
-The framework currently ships with airflow-flavoured defaults
-inline in the supporting files of each skill (e.g.
-[`pr-management-triage/comment-templates.md`](../../.claude/skills/pr-management-triage/comment-templates.md)
-embeds airflow's PR-quality-criteria URL). A follow-up PR will
-complete the extraction so the skills read exclusively from
-`<project-config>/`. Until then, non-airflow adopters override by
-forking the relevant supporting file into their own
-`.claude/skills/<skill-name>/`.
+The skills read project-specific defaults from the `<project-config>/`
+files above. Adopters customise by editing their copy of each
+template; illustrative examples in skill prose may still use the
+patterns that motivated the framework (monorepo `<area>/` layout,
+`area:*` labels, etc.) — the *behaviour* is config-driven, the
+*example wording* is not.
 
 ## Cross-references
 

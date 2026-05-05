@@ -1157,9 +1157,9 @@ bare-name occurrence to the user.
 
 ### Other editorial guidelines
 
-- Project-specific naming rules (e.g. *"use `Dag` not `DAG`"*,
-  *"thousands of contributors"*, acronym casing) live in the active
-  project's naming-conventions file — for Airflow, see
+- Project-specific naming rules (e.g. acronym casing,
+  contributor-base size phrasing, project-name capitalisation
+  conventions) live in
   [`<project-config>/naming-conventions.md`](<project-config>/naming-conventions.md).
 - Use em dashes (`—`) sparingly; prefer shorter sentences to dash-heavy ones.
 - Preserve the `doctoc` TOC markers at the top of each document. If you rename a heading, update
@@ -1217,8 +1217,7 @@ Currently available:
   yet, or when the issue has been closed as invalid / not-CVE-worthy / duplicate.
 - [`security-cve-allocate`](.claude/skills/security-cve-allocate/SKILL.md) — walks the
   user through allocating a CVE via the adopting project's CVE-tool
-  allocation form (for Airflow, ASF Vulnogram at
-  <https://cveprocess.apache.org/allocatecve>; see
+  allocation form (URL + tool declared in
   `<project-config>/project.md → CVE tooling`).
   **The allocation itself is PMC-gated** — only the adopting project's
   PMC members can submit the form. The skill asks up front whether

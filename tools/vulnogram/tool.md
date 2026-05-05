@@ -54,8 +54,9 @@ the project's CVE tool"*, *"walk the user through the allocation
 flow"*, *"capture the reviewer-comment signal"*. They then delegate
 to the project's declared `cve_tool`:
 
-- For Airflow (`cve_tool: vulnogram`), they delegate to the recipes in
-  this directory and to the generator under `generate-cve-json/`.
+- For adopters declaring `cve_tool: vulnogram`, the skills delegate
+  to the recipes in this directory and to the generator under
+  `generate-cve-json/`.
 - For a hypothetical project using a different CNA tool (a private
   Vulnogram instance, an in-house CNA system, a commercial CVE
   management platform), that project would:

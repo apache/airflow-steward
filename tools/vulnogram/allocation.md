@@ -59,17 +59,17 @@ button grey out.
   triager (or the PMC member) can then re-invoke `security-cve-allocate` with
   the CVE ID as an override to resume from the wire-back step.
 
-Concrete PMC-member handles live in the project's roster file (for
-Airflow, `<project-config>/release-trains.md`); the canonical live
-source is the ASF project page,
+Concrete PMC-member handles live in the project's roster file at
+`<project-config>/release-trains.md`; the canonical live source is
+the ASF project page,
 `https://projects.apache.org/committee.html?<project>`.
 
 ## Form fields and where the skill sources them
 
 | Vulnogram form field | Source in the tracker |
 |---|---|
-| **Title** | Tracker title, passed through the project's title-normalisation cascade (for Airflow, `<project-config>/title-normalization.md`). The CNA container already scopes the title to the product, so any project prefix (`<vendor>: <product>:` (e.g. `Apache Airflow:`) etc.) must be stripped before pasting. |
-| **Product** | Derived from the tracker's scope label via the per-project scope → product mapping (for Airflow, `<project-config>/scope-labels.md`). |
+| **Title** | Tracker title, passed through the project's title-normalisation cascade in [`<project-config>/title-normalization.md`](<project-config>/title-normalization.md). The CNA container already scopes the title to the product, so any project prefix (`<vendor>: <product>:`) must be stripped before pasting. |
+| **Product** | Derived from the tracker's scope label via the per-project scope → product mapping in [`<project-config>/scope-labels.md`](<project-config>/scope-labels.md). |
 | **CWE** | Tracker body's *cwe* field (role-name — `<project-config>/project.md` declares the concrete GitHub heading for this project). `_No response_` → the allocator fills it at form time. |
 | **Affected versions** | Tracker body's *affected-versions* field. |
 | **Summary** | Tracker body's *public-summary* field. |
@@ -97,9 +97,10 @@ are tool-agnostic; the Vulnogram-specific output is:
 
 ## Fatal mis-allocation — wrong product
 
-Allocating a CVE against the wrong product (e.g. `apache-airflow`
-when the fix actually lives in `apache-airflow-providers-smtp`) is a
-multi-hour cleanup involving Vulnogram support and the release
-manager. The `security-cve-allocate` skill's Step 1 blocker checks refuse to
+Allocating a CVE against the wrong product within a multi-package
+project family (e.g. against the project's umbrella package when
+the fix actually lives in a satellite / plugin / subproject
+package) is a multi-hour cleanup involving Vulnogram support and
+the release manager. The `security-cve-allocate` skill's Step 1 blocker checks refuse to
 proceed without a scope label precisely because of this — see the
 skill file for the hard-check details.

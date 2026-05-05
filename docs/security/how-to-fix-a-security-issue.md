@@ -13,9 +13,10 @@
 High-level overview of how the security team handles a vulnerability
 report from inbound email through published CVE. This page is
 project-agnostic; the concrete lists, repos, release trains, and
-tooling for the adopting project live under
-[`<project-config>/`](../../projects/) — for Airflow, see
-[`<project-config>/project.md`](<project-config>/project.md).
+tooling for the adopting project live in
+[`<project-config>/project.md`](<project-config>/project.md)
+(adopters bootstrap from the
+[`projects/_template/`](../../projects/_template/) scaffold).
 
 The end-to-end 16-step lifecycle is in [`README.md`](../../README.md). This
 page is the two-minute summary.
@@ -68,8 +69,9 @@ page is the two-minute summary.
 
 3. **CVE allocation.**
    A PMC member of the adopting project allocates a CVE through the
-   project's CVE tool (for Airflow, ASF Vulnogram). The allocation
-   is PMC-gated; non-PMC triagers use the
+   project's CVE tool (declared in
+   [`<project-config>/project.md → CVE tooling`](<project-config>/project.md#cve-tooling)).
+   The allocation is PMC-gated; non-PMC triagers use the
    [`security-cve-allocate`](../../.claude/skills/security-cve-allocate/SKILL.md) skill to
    produce a relay message for a PMC member to click through.
 
@@ -92,8 +94,9 @@ page is the two-minute summary.
    The security team encourages responsible vulnerability disclosure
    and continues to improve the project's security posture, security
    features, and handling process. The adopting project's security
-   model (for Airflow, [`<project-config>/security-model.md`](<project-config>/security-model.md))
-   is the authoritative reference for what counts as a vulnerability.
+   model — declared in
+   [`<project-config>/security-model.md`](<project-config>/security-model.md)
+   — is the authoritative reference for what counts as a vulnerability.
 
 ## Best practices
 
