@@ -155,11 +155,11 @@ If something is out-of-date or has drifted, name the concrete
 follow-up:
 
 - Framework checkout behind → run
-  [`setup-steward-upgrade`](../setup-steward-upgrade/SKILL.md),
-  which performs the `git pull --ff-only` after the same
-  pre-flight checks this skill recommends, surfaces what
-  arrived, and reminds the user to handle the parent-tracker
-  submodule pointer if applicable.
+  [`/setup-steward upgrade`](../setup-steward/upgrade.md),
+  which refreshes the gitignored snapshot per the committed
+  `.apache-steward.lock` after the same pre-flight checks this
+  skill recommends and surfaces what arrived in the new
+  snapshot.
 - Pinned-tool upgrade candidate worth adopting → manifest bump PR
   per [Bumping a pinned version](../../../docs/setup/secure-agent-setup.md#bumping-a-pinned-version).
 - User-scope script drift → re-`cp` from the framework checkout,

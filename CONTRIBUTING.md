@@ -23,8 +23,10 @@ Thanks for helping improve this repository. It is a reusable framework
 for running the ASF security-disclosure process as a set of agent-driven
 skills. Adopting projects ship a per-project configuration layer
 (`<project-config>/`) in their own tracker repo and consume this
-framework as a submodule — see [`projects/_template/`](projects/_template/)
-for the scaffold an adopter copies and fills in.
+framework as a gitignored snapshot managed by the
+[`setup-steward`](.claude/skills/setup-steward/SKILL.md) skill —
+see [`projects/_template/`](projects/_template/) for the scaffold
+an adopter copies and fills in.
 
 Before sending a patch, please skim this file end-to-end: it lays out
 the layering the repository depends on, and a patch that ignores the
