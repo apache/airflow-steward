@@ -108,8 +108,7 @@ the server side — only the project's PMC members can submit a CVE
 allocation. Non-PMC triagers can still run `security-cve-allocate`; the
 skill detects this up front (it asks *"are you a PMC member of
 `<PROJECT>`?"*) and produces a relay message for a PMC member to
-click through instead. For Airflow the concrete tool is ASF's
-Vulnogram at <https://cveprocess.apache.org/allocatecve>; see
+click through instead. The concrete tool + URL is declared in
 [`<project-config>/project.md → CVE tooling`](<project-config>/project.md#cve-tooling).
 
 The same PMC gate applies to ponymail URL lookups on private ASF
@@ -134,8 +133,7 @@ checks and tests, pushes a branch to your fork, and opens a PR via
   directory — the path comes from `.apache-steward-overrides/user.md →
   environment.upstream_clone`, set interactively the first time
   you run the skill;
-- the adopting project's dev toolchain installed per its contributing
-  docs — for Airflow see
+- the adopting project's dev toolchain installed per
   [`<project-config>/fix-workflow.md → Toolchain`](<project-config>/fix-workflow.md#toolchain);
 - a remote named for your GitHub fork that `gh pr create` can push
   to.

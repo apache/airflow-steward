@@ -187,9 +187,8 @@ attachment is regenerated so both finders land in `credits[]`.
 ### Step 6 — Allocate the CVE
 
 [`security-cve-allocate`](../../.claude/skills/security-cve-allocate/SKILL.md)
-opens the project's CVE allocation tool (for Airflow, ASF Vulnogram
-at <https://cveprocess.apache.org/allocatecve>; in general see
-[`<project-config>/project.md → CVE tooling`](<project-config>/project.md#cve-tooling)),
+opens the project's CVE allocation tool (URL + tool name declared
+in [`<project-config>/project.md → CVE tooling`](<project-config>/project.md#cve-tooling)),
 normalises the title per
 [`<project-config>/title-normalization.md`](<project-config>/title-normalization.md),
 and — if the triager isn't on the PMC — builds an `@`-mention relay
@@ -248,8 +247,8 @@ When the `<upstream>` PR merges, swap `pr created` → `pr merged`
 and set the milestone of the release the fix will ship in (per
 [`<project-config>/milestones.md`](<project-config>/milestones.md)).
 Close any private variant in `<tracker>`. The tracker waits at
-`pr merged` until the release ships — this can be hours (fast core
-patches) or weeks (provider waves on a fixed cadence).
+`pr merged` until the release ships — this can be hours (a hot-fix
+patch release) or weeks (a regular project-cadence release).
 
 ### Step 12 — Fix released
 

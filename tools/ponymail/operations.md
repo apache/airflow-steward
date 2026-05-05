@@ -288,7 +288,7 @@ mcp__ponymail__search_list(
 ```
 
 The `subject:` filter keeps the result set tight; the `query` adds
-the version string or the provider-wave cut date.
+the version string or the project's release-cadence cut date.
 
 ## Hard limitations
 
