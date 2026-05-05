@@ -47,6 +47,36 @@ github:
     allow_update_branch: true
     del_branch_on_merge: true
 
+  # External triage collaborators — GitHub IDs that get triage rights
+  # without being added to the apache org. ASF Infra caps this list
+  # at 10 entries; exceptions need a vp-infra@apache.org request.
+  collaborators:
+    - andreahlert
+
+  # Disable the GitHub Copilot automatic-code-review ruleset on the
+  # default branch. The framework's review workflow is human-driven
+  # (`pr-management-code-review` skill + maintainer review), and
+  # Copilot's per-PR comments duplicate / contradict that loop.
+  # The explicit `enabled: false` is required to actively remove the
+  # ruleset if it was ever previously configured (per the asf.yaml
+  # `copilot_code_review` directive).
+  copilot_code_review:
+    enabled: false
+
+  # Deployment environments — created here so an eventual release
+  # workflow can target them without touching the GitHub UI. The
+  # `atr-release` environment scaffolds release publishing through
+  # ASF Trusted Releases (ATR); the protected-branches policy
+  # ensures only `main` (and any future protected release branches)
+  # can deploy. Required reviewers can be added later if the
+  # release flow needs PMC sign-off at deploy time.
+  environments:
+    atr-release:
+      wait_timer: 0
+      prevent_self_review: true
+      deployment_branch_policy:
+        protected_branches: true
+
   # No `protected_branches:` block by design — branch protections are
   # configured directly in GitHub for now. Add here when the project's
   # release / branching policy stabilises.
