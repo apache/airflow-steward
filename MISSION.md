@@ -165,8 +165,19 @@ ASF members for the roster:
 - Andrew Musselman — Mahout PMC
 - Justin Mclean — Incubator PMC, Training PMC
 - Jean-Baptiste Onofré — Incubator PMC, Polaris PMC, …
+- Paul King — Groovy PMC, Grails PMC, Incubator PMC
 
 The named PMC roster will accompany the resolution at the time of vote.
+
+There are collaborators who are **not** ASF members yet *(wink)* but
+who have already contributed and will be involved as collaborators
+on the project from day one:
+
+- Bartosz Sławkowski — [@johnslavik](https://github.com/johnslavik)
+- Yeongook Choo — [@choo121600](https://github.com/choo121600)
+- Shahar Epstein — [@shahar1](https://github.com/shahar1)
+- Vincent Beck — [@vincbeck](https://github.com/vincbeck)
+- Buğra Öztürk — [@bugraoz93](https://github.com/bugraoz93)
 
 ## Required resources
 
