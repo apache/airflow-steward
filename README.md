@@ -189,11 +189,15 @@ Three skill families ship in the framework. Pick whichever the
 adopter wants to use; symlinks for the picked families land in
 the adopter's skill directory.
 
-| Family | Purpose | Detail |
-|---|---|---|
-| [**setup**](docs/setup/README.md) | Isolated agent setup, framework adoption + maintenance, shared-config sync. The prerequisite — at minimum the `setup-steward` skill itself runs out of this family. | 6 skills, [`docs/setup/`](docs/setup/) |
-| [**security**](docs/security/README.md) | 16-step security-issue handling lifecycle — from `security@` import through CVE publication. Maintainer-only. | 8 skills, [`docs/security/`](docs/security/) |
-| [**pr-management**](docs/pr-management/README.md) | Maintainer-facing PR-queue management — triage, stats, deep code review. | 3 skills, [`docs/pr-management/`](docs/pr-management/) |
+The **Modes** column maps each family to the MISSION agent-assistance
+taxonomy — see [`docs/modes.md`](docs/modes.md) for what each mode
+means and which modes are still proposed vs. shipping today.
+
+| Family | Modes | Purpose | Detail |
+|---|---|---|---|
+| [**setup**](docs/setup/README.md) | (infra) | Isolated agent setup, framework adoption + maintenance, shared-config sync. The prerequisite — at minimum the `setup-steward` skill itself runs out of this family. | 6 skills, [`docs/setup/`](docs/setup/) |
+| [**security**](docs/security/README.md) | A, C | 16-step security-issue handling lifecycle — from `security@` import through CVE publication. Maintainer-only. | 8 skills, [`docs/security/`](docs/security/) |
+| [**pr-management**](docs/pr-management/README.md) | A | Maintainer-facing PR-queue management — triage, stats, deep code review. | 3 skills, [`docs/pr-management/`](docs/pr-management/) |
 
 ## Maintenance
 

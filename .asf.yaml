@@ -18,7 +18,7 @@
 # https://cwiki.apache.org/confluence/display/INFRA/git+-+.asf.yaml+features
 ---
 github:
-  description: "Reusable framework for handling security vulnerabilities in Apache projects — agent skills, tracker conventions, and tooling."
+  description: "Agent-assisted maintainership framework for Apache projects — triage (Mode A) and agent-authored fixes with human review (Mode C); mentoring (Mode B) and narrowly-scoped auto-merge (Mode D) on the roadmap."
   homepage: "https://github.com/apache/airflow-steward"
   labels:
     # Note that GitHub only supports <=20 labels/topics per repo! Pipeline
