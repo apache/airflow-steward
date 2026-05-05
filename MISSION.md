@@ -82,7 +82,9 @@ Three design choices set the project apart from "just bolt a code-review bot on 
 
 ## Technical scope
 
-A platform substrate — issue and PR ingestion, GitHub API write-back, conversation threading, audit logging, integration with adjacent systems (Gmail, PonyMail, Vulnogram, generic CVE submission, an extensible adapter layer so non-ASF adopters plug in their own equivalents) — with four modes built on top:
+A platform substrate — issue and PR ingestion, GitHub API write-back, conversation threading, audit logging, integration with adjacent systems (Gmail, PonyMail, Vulnogram, generic CVE submission, an extensible adapter layer so non-ASF adopters plug in their own equivalents) — with four modes built on top.
+
+[`docs/modes.md`](docs/modes.md) is the honest snapshot mapping each mode below to the skills currently shipped, with a `stable / experimental / proposed / off` status legend.
 
 **Mode A — triage assistant** for issues, security reports, and PRs. *On the security side:* spots inbound reports, classifies against prior triaged cases, surfaces likely duplicates, identifies anything that should not have been filed publicly, proposes initial routing to the security team. *On the regular side:* suggests labels, spots duplicates, links related discussions, proposes routing. Every output is a suggestion the human signs off on; nothing lands without review. Lowest risk surface.
 
