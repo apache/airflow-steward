@@ -1,5 +1,6 @@
 ---
 name: pr-management-stats
+mode: A
 description: |
   Produce maintainer-facing statistics about open pull requests on
   the configured `<upstream>` repo (default: read from `<project-config>/project.md → upstream_repo`). Successor to

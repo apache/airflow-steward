@@ -1,5 +1,6 @@
 ---
 name: pr-management-triage
+mode: A
 description: |
   Sweep open pull requests on the configured `<upstream>` repo
   (default: read from `<project-config>/project.md →

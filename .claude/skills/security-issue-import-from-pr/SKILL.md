@@ -1,5 +1,6 @@
 ---
 name: security-issue-import-from-pr
+mode: A
 description: |
   Open a tracking issue in <tracker> for a security-relevant fix that
   has already been opened (or merged) as a public PR in <upstream>,

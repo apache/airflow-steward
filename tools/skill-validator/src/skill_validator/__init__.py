@@ -50,8 +50,11 @@ DOCS_DIR = Path("docs")
 PROJECTS_TEMPLATE_DIR = Path("projects/_template")
 
 REQUIRED_FRONTMATTER_KEYS = {"name", "description", "license"}
-OPTIONAL_FRONTMATTER_KEYS = {"when_to_use"}
+OPTIONAL_FRONTMATTER_KEYS = {"when_to_use", "mode"}
 ALLOWED_LICENSES = {"Apache-2.0"}
+# MISSION mode taxonomy — see docs/modes.md.
+# "D" deliberately excluded: Mode D (auto-merge) is off per MISSION sequencing.
+ALLOWED_MODES = {"A", "B", "C"}
 
 # Forbidden hardcoded project references (fixed strings, case-sensitive)
 FORBIDDEN_PATTERNS: list[str] = [
@@ -214,6 +217,13 @@ def validate_frontmatter(path: Path, text: str) -> Iterable[Violation]:
 
     if "license" in fm and fm["license"] not in ALLOWED_LICENSES:
         yield Violation(path, 1, f"frontmatter license '{fm['license']}' not in {ALLOWED_LICENSES}")
+
+    if "mode" in fm and fm["mode"] not in ALLOWED_MODES:
+        yield Violation(
+            path,
+            1,
+            f"frontmatter mode '{fm['mode']}' not in {sorted(ALLOWED_MODES)} (see docs/modes.md)",
+        )
 
 
 # ---------------------------------------------------------------------------
