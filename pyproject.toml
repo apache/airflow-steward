@@ -64,17 +64,6 @@ required-version = ">=0.11.8"
 # `.github/dependabot.yml`.
 exclude-newer = "7 days"
 
-# Per-package override: `uv` itself is exempt from the 7-day cooldown
-# above because the latest uv (which `required-version` pins to
-# `>=0.11.8`) was released within the last 7 days, and the global
-# cooldown would otherwise filter it out.
-#
-# TODO(remove on 2026-05-05): once 6 days have passed, uv 0.11.8
-# (released 2026-04-27) will be older than the 7-day window and the
-# global `exclude-newer` will cover it on its own — drop this
-# override to keep the config minimal.
-exclude-newer-package = { uv = "1 day" }
-
 # This pyproject.toml is purely a settings file; do not build or
 # install it as a package.
 package = false
