@@ -1,3 +1,27 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [Apache &lt;PROJECT_NAME&gt](#apache-ltproject_namegt)
+  - [Abstract](#abstract)
+  - [Proposal](#proposal)
+  - [Proposed Names](#proposed-names)
+  - [Rationale](#rationale)
+  - [Initial Goals](#initial-goals)
+  - [Technical scope](#technical-scope)
+  - [Maintainer education — building agentic projects is a different craft](#maintainer-education--building-agentic-projects-is-a-different-craft)
+  - [Privacy, security, and supply-chain integrity — the top-most priority](#privacy-security-and-supply-chain-integrity--the-top-most-priority)
+  - [Affordability and vendor neutrality — the public-good commitment](#affordability-and-vendor-neutrality--the-public-good-commitment)
+  - [Initial PMC composition (target)](#initial-pmc-composition-target)
+  - [Required resources](#required-resources)
+  - [Source and IP](#source-and-ip)
+  - [External dependencies](#external-dependencies)
+  - [Cryptography](#cryptography)
+  - [Particular care](#particular-care)
+  - [Ask of the Board](#ask-of-the-board)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Apache &lt;PROJECT_NAME&gt;
 
 > [!IMPORTANT]
