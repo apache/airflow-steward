@@ -49,7 +49,7 @@ sequencing commitments behind them.
 |---|---|---|---|
 | **A** — triage | Issues, security reports, PRs: spot, classify, route, surface duplicates. Every output is a suggestion the human signs off on. | stable (security) / experimental (pr-management) | 10 |
 | **B** — conversational mentoring | Joins issue and PR threads in a teaching register: clarifying questions, pointers to project conventions, paired examples from prior PRs, hand-off to a human when scope exceeds the agent. | proposed | 0 |
-| **C** — agent-authored fixes with human review | Agent drafts a fix for a well-scoped problem and opens a PR; every PR is reviewed and merged by a human committer. | partial (security-only) | 1 |
+| **C** — agent-authored fixes with human review | Agent drafts a fix for a well-scoped problem and opens a PR; every PR is reviewed and merged by a human committer. | stable (security-only); generic case proposed | 1 |
 | **D** — narrowly-scoped fix-and-merge | Auto-merge restricted to objectively boring change classes (lint, dependency bumps inside an allow-list, license-header insertion, formatting, broken-link repair). | off | 0 |
 
 A few skills sit **outside** the mode taxonomy by design — see
