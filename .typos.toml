@@ -43,6 +43,11 @@ dit = "dit"
 ick = "ick"
 kip = "kip"
 lose = "lose"
+# `asert` is a GitHub-handle suffix — Paul King's handle is
+# `paulk-asert` (Groovy / Grails / Incubator PMC member, listed
+# in `.asf.yaml` collaborators). typos flags it as a typo of
+# `assert`.
+asert = "asert"
 
 [default.extend-identifiers]
 # Identifiers that look like typos but are real symbol names.
