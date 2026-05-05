@@ -1,5 +1,8 @@
 # Apache &lt;PROJECT_NAME&gt;
 
+> [!IMPORTANT]
+> **Draft** — this proposal is a working draft, actively being edited. Expect substantial changes; not yet ready for committee or Board review.
+
 > **Motto:** *"Give maintainers time back, so they can do what matters."*
 
 ## Abstract
