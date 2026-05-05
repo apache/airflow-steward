@@ -136,7 +136,7 @@ ASF members for the roster:
 - Pavan Kumar — Airflow PMC
 - Amogh Desai — Airflow PMC
 - Andrew Musselman — Mahout PMC
-- Justin — Incubator PMC, Training PMC
+- Justin Mclean — Incubator PMC, Training PMC
 - Jean-Baptiste Onofré — Incubator PMC, Polaris PMC, …
 
 The named PMC roster will accompany the resolution at the time of vote.
