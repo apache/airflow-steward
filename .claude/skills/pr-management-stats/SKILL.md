@@ -11,6 +11,7 @@ when_to_use: |
   variation on "give me the maintainer view of the backlog". Good as a daily
   health check, before or after a triage sweep, or as an input to a planning
   session.
+license: Apache-2.0
 ---
 
 <!-- SPDX-License-Identifier: Apache-2.0

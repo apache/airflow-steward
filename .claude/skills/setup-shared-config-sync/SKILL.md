@@ -22,6 +22,7 @@ when_to_use: |
   drift on a script that the user keeps in `~/.claude-config/` and
   the user wants the framework's update propagated to every
   machine the sync repo is checked out on.
+license: Apache-2.0
 ---
 
 <!-- Placeholder convention (see AGENTS.md#placeholder-convention-used-in-skill-files):

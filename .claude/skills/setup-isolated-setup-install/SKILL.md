@@ -24,6 +24,7 @@ when_to_use: |
   `setup-isolated-setup-verify` (to confirm completeness) or
   `setup-isolated-setup-update` (to refresh against the framework's
   latest) instead.
+license: Apache-2.0
 ---
 
 <!-- Placeholder convention (see AGENTS.md#placeholder-convention-used-in-skill-files):

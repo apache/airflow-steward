@@ -20,6 +20,7 @@ when_to_use: |
   security relevance has already been agreed informally; this skill
   does not host a validity discussion. For reports that arrive on
   `<security-list>`, use `security-issue-import`.
+license: Apache-2.0
 ---
 
 <!-- Placeholder convention (see AGENTS.md#placeholder-convention-used-in-skill-files):

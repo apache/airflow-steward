@@ -21,6 +21,7 @@ when_to_use: |
   the advisory has already shipped (closing as invalid then is a
   retraction with public consequences and needs explicit team
   escalation).
+license: Apache-2.0
 ---
 
 <!-- Placeholder convention (see AGENTS.md#placeholder-convention-used-in-skill-files):
