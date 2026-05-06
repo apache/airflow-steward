@@ -51,9 +51,9 @@ github:
   # without being added to the apache org. ASF Infra caps this list
   # at 10 entries; exceptions need a vp-infra@apache.org request.
   collaborators:
-    - andreahlert
     # Non-ASF-members named in MISSION.md → "involved as
     # collaborators on the project from day one":
+    - andreahlert        # André Ahlert Junior
     - johnslavik         # Bartosz Sławkowski
     # The four below are listed in MISSION.md's non-ASF-members
     # section but are already Apache Airflow committers, so they
