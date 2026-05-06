@@ -61,7 +61,7 @@ github:
     # Airflow committer status — no `collaborators:` slot needed.
     # Kept here as a record of intent; uncomment if and when their
     # committer status changes.
-    # - choo121600       # Yeongook Choo (Airflow committer)
+    # - choo121600       # Yeonguk Choo (Airflow committer)
     # - shahar1          # Shahar Epstein (Airflow committer)
     # - vincbeck         # Vincent Beck (Airflow committer)
     # - bugraoz93        # Buğra Öztürk (Airflow committer)

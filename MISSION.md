@@ -177,7 +177,7 @@ who have already contributed and will be involved as collaborators
 on the project from day one:
 
 - Bartosz Sławkowski — [@johnslavik](https://github.com/johnslavik)
-- Yeongook Choo — [@choo121600](https://github.com/choo121600)
+- Yeonguk Choo — [@choo121600](https://github.com/choo121600)
 - Shahar Epstein — [@shahar1](https://github.com/shahar1)
 - Vincent Beck — [@vincbeck](https://github.com/vincbeck)
 - Buğra Öztürk — [@bugraoz93](https://github.com/bugraoz93)
