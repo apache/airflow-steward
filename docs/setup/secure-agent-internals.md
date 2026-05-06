@@ -9,6 +9,7 @@
   - [Linux: bubblewrap + user namespaces](#linux-bubblewrap--user-namespaces)
   - [macOS: Seatbelt](#macos-seatbelt)
   - [The blind spot: `Bash(curl *)` and DNS-over-HTTPS](#the-blind-spot-bashcurl--and-dns-over-https)
+    - [`permissions.deny` Bash patterns are advisory; the network allowlist is the real control](#permissionsdeny-bash-patterns-are-advisory-the-network-allowlist-is-the-real-control)
     - [macOS: `permissions.deny` first-command-only matching](#macos-permissionsdeny-first-command-only-matching)
   - [How the feedback mechanisms layer together](#how-the-feedback-mechanisms-layer-together)
   - [Residual risks](#residual-risks)
@@ -167,6 +168,48 @@ That is why the framework's `permissions.deny` list also
 contains `Bash(curl *)`, `Bash(wget *)`, and the various cloud
 CLIs — defence in depth against an exfiltration path that the
 sandbox alone does not close.
+
+### `permissions.deny` Bash patterns are advisory; the network allowlist is the real control
+
+The framework's `permissions.deny` list contains patterns like
+`Bash(curl *)`, `Bash(wget *)`, `Bash(aws *)`, etc. **These are
+advisory.** Bash command-prefix matching is straightforward to
+sidestep:
+
+- **Path-prefix wrappers** — `/usr/bin/curl ...`, `command curl
+  ...`, `env curl ...` skip the literal `curl` token Claude Code
+  matches on.
+- **Shell-quoted variants** — `c''url ...`, `cu\rl ...` are
+  parsed as `curl` by the shell but don't match the
+  pattern.
+- **Wrapper interpreters** — `bash -c 'curl ...'`,
+  `python3 -c 'import urllib.request; ...'`,
+  `node -e 'fetch(...)'` invoke the call from inside another
+  process whose first token is `bash` / `python3` / `node`,
+  not the denied one.
+- **Chained calls** (the macOS gap below) — even without any
+  of the above, the deny pattern only matches the *first*
+  command in a multi-command chain on macOS.
+
+**The actual exfiltration enforcement is the network allowlist.**
+On Linux, `socat`'s SNI proxy blocks egress to anything not in
+`sandbox.network.allowedDomains` regardless of which binary made
+the call or how the call was wrapped. Treat `permissions.deny`
+as a friction layer — useful for catching the sloppy injection,
+not a guarantee against a determined one. Adopters who care about
+the macOS gap should follow the mitigations later in this section.
+
+For the same reason, `permissions.ask` patterns (e.g. the
+`gh gist *`, `gh repo create *`, `gh api * --method *`,
+`gh secret *`, `gh ssh-key *` entries added in the wake of the
+2026-05 audit — see the gist at the *Audit findings* link in
+[`README.md`](../../README.md)) buy you a confirmation prompt for
+the *common* invocation form. They do not stop a determined
+attacker who can wrap the call. The `gh` CLI itself defaults to
+`api.github.com`, which is on `allowedDomains`, so the network
+layer does not bound `gh`-wrapped exfiltration the way it bounds
+arbitrary HTTPS — confirmation prompts and the human-in-the-loop
+on every state-mutating call are the load-bearing controls there.
 
 ### macOS: `permissions.deny` first-command-only matching
 
