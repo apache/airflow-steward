@@ -131,7 +131,11 @@ def _is_login_redirect(status: int, headers: dict[str, str]) -> bool:
     if status not in (301, 302, 303, 307, 308):
         return False
     location = headers.get("Location") or headers.get("location") or ""
-    return "oauth.apache.org" in location or "/users/login" in location
+    parsed = urllib.parse.urlparse(location)
+    host = (parsed.hostname or "").lower()
+    is_oauth_host = host == "oauth.apache.org" or host.endswith(".oauth.apache.org")
+    is_login_path = (parsed.path or "").startswith("/users/login")
+    return is_oauth_host or is_login_path
 
 
 def get_record(
