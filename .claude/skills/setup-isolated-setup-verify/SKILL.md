@@ -19,6 +19,7 @@ when_to_use: |
   time a previously-blocked Bash call appears to have succeeded
   (the "did a denial silently turn into an allow?" canary). Cheap
   to re-run; never destructive.
+license: Apache-2.0
 ---
 
 <!-- Placeholder convention (see AGENTS.md#placeholder-convention-used-in-skill-files):

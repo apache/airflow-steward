@@ -19,6 +19,7 @@ when_to_use: |
   blocked Bash call now appears to succeed. Recommended cadence
   per the doc: once per Claude Code upgrade or once a month,
   whichever comes first. Cheap to re-run; never destructive.
+license: Apache-2.0
 ---
 
 <!-- Placeholder convention (see AGENTS.md#placeholder-convention-used-in-skill-files):

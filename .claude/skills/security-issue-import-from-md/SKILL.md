@@ -22,6 +22,7 @@ when_to_use: |
   inbound report is best handled through the Gmail path
   (`security-issue-import`) or when there is a public PR to anchor
   the import on (`security-issue-import-from-pr`).
+license: Apache-2.0
 ---
 
 <!-- Placeholder convention (see AGENTS.md#placeholder-convention-used-in-skill-files):
