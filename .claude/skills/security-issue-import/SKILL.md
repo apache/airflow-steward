@@ -1002,7 +1002,7 @@ For each confirmed `Report` / `ASF-security relay`:
    strictly-greater backtick count than any code block inside the
    body, otherwise the renderer terminates the outer block early.
 
-   ```bash
+   `````bash
    cat > /tmp/issue-body-<threadId>.md <<'EOF'
    ### The issue description
 
@@ -1020,11 +1020,11 @@ For each confirmed `Report` / `ASF-security relay`:
 
    ### Short public summary for publish
 
-   _No response_
+   *No response*
 
    ### Affected versions
 
-   <extracted or _No response_>
+   <extracted or *No response*>
 
    ### Security mailing list thread
 
@@ -1032,7 +1032,7 @@ For each confirmed `Report` / `ASF-security relay`:
 
    ### Public advisory URL
 
-   _No response_
+   *No response*
 
    ### Reporter credited as
 
@@ -1040,15 +1040,15 @@ For each confirmed `Report` / `ASF-security relay`:
 
    ### PR with the fix
 
-   _No response_
+   *No response*
 
    ### Remediation developer
 
-   _No response_
+   *No response*
 
    ### CWE
 
-   _No response_
+   *No response*
 
    ### Severity
 
@@ -1056,14 +1056,14 @@ For each confirmed `Report` / `ASF-security relay`:
 
    ### CVE tool link
 
-   _No response_
+   *No response*
    EOF
-   ```
+   `````
 
 2. Create the issue with the `needs triage` and `security issue` labels.
    The title comes from an attacker-controlled email subject, so it
    **must not** be inlined into a single-quoted shell argument — a
-   subject like `RCE' --repo apache/airflow --title 'leaked` would
+   subject like `RCE' --repo <upstream> --title 'leaked` would
    break out of the quote and re-target the issue at a public repo.
    Write the title to a tempfile via `printf '%s'` (which never
    triggers shell expansion) and pass it via `gh api`'s `-F` form,
