@@ -111,7 +111,7 @@ LINK_PATTERN = re.compile(r"\[([^\]]+)\]\(([^)]+)\)")
 
 # Anchor slug generation — mirrors doctoc/GitHub logic loosely.
 ANCHOR_PATTERN = re.compile(r"[^\w\s-]+")
-ANCHOR_SPACE_PATTERN = re.compile(r"[\s]+")
+ANCHOR_SPACE_PATTERN = re.compile(r"\s")
 
 
 # ---------------------------------------------------------------------------

@@ -159,7 +159,17 @@ class TestSlugify:
         assert slugify("What's new?") == "whats-new"
 
     def test_multiple_spaces(self) -> None:
-        assert slugify("A  B   C") == "a-b-c"
+        # GitHub's anchor algorithm replaces each whitespace character with
+        # a dash one-for-one rather than collapsing runs. Doctoc and the
+        # GitHub renderer agree on this; the canonical case is em-dash
+        # headings, which strip to "" and leave two adjacent spaces.
+        assert slugify("A  B   C") == "a--b---c"
+
+    def test_em_dash_in_heading(self) -> None:
+        assert (
+            slugify("Mode B — conversational mentoring")
+            == "mode-b--conversational-mentoring"
+        )
 
 
 class TestExtractHeadings:
