@@ -129,7 +129,7 @@ source:
 ```yaml
 - file: providers/foo/src/project/providers/foo/hook.py
   line: 142
-  rule_source: .github/instructions/code-review.instructions.md
+  rule_source: <project-config>/pr-management-code-review-criteria.md → repo-wide source
   rule_id: "Imports inside function bodies"
   source: both              # ← primary AND adversarial flagged this
   severity: minor

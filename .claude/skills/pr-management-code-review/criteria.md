@@ -31,9 +31,9 @@ a concrete example.
 
 | File | What it covers |
 |---|---|
-| `.github/instructions/code-review.instructions.md` | Architecture / DB / quality / testing / API / UI / generated files / AI-generated-code signals / quality signals. |
+| `<repo_wide_review_criteria>` | The rule set every PR is reviewed against (typically architecture / DB / quality / testing / API / UI / generated files / AI-generated-code signals / quality signals). |
 | `AGENTS.md` | Repo-wide AI/agent instructions (architecture boundaries, security model, coding standards, testing standards, commits & PR conventions). |
-| `<area>/AGENTS.md` | Per-area rules (e.g. `providers/AGENTS.md`, `registry/AGENTS.md`, `dev/AGENTS.md`). |
+| `<area>/AGENTS.md` | Per-area rules (e.g. tree-specific or subsystem-specific overlays). |
 | `<security-model-doc>` | The documented security model — what *is* and *isn't* a vulnerability. |
 
 The per-PR review flow re-runs `git ls-files` against the
@@ -44,70 +44,52 @@ table; see [`review-flow.md#area-specific-overlay`](review-flow.md).
 
 ## Categories — link out to the source section
 
-The headings below mirror the section structure of the source
-files; click through for the actual rule text.
+The category headings below are the **abstract names** the skill
+uses when grouping findings. The concrete URL each one links to
+lives in the adopter's
+`<project-config>/pr-management-code-review-criteria.md` →
+`Section anchors` table — every adopter substitutes their own
+review-doc URLs there. The skill resolves a category to its URL
+at finding time by matching the heading verbatim against the
+adopter table's `Section` column.
 
-### Architecture boundaries
+If a category has no anchor row in the adopter config, the skill
+falls back to a plain reference (no clickable link) and surfaces
+the missing anchor as a one-line warning at the top of the
+review.
 
-[`code-review.instructions.md` § Architecture Boundaries](../../../.github/instructions/code-review.instructions.md#architecture-boundaries) ·
-[`AGENTS.md` § Architecture Boundaries](../../../AGENTS.md#architecture-boundaries)
+The canonical category list:
 
-### Database / query correctness
+- Architecture boundaries
+- Database / query correctness
+- Code quality
+- Testing
+- API correctness
+- UI (React/TypeScript)
+- Generated files
+- AI-generated code signals
+- Quality signals to check
+- Commits and PRs (newsfragments, commit messages, tracking issues)
+- Security model
 
-[`code-review.instructions.md` § Database and Query Correctness](../../../.github/instructions/code-review.instructions.md#database-and-query-correctness)
-
-### Code quality
-
-[`code-review.instructions.md` § Code Quality Rules](../../../.github/instructions/code-review.instructions.md#code-quality-rules) ·
-[`AGENTS.md` § Coding Standards](../../../AGENTS.md#coding-standards)
-
-### Testing
-
-[`code-review.instructions.md` § Testing Requirements](../../../.github/instructions/code-review.instructions.md#testing-requirements) ·
-[`AGENTS.md` § Testing Standards](../../../AGENTS.md#testing-standards)
-
-### API correctness
-
-[`code-review.instructions.md` § API Correctness](../../../.github/instructions/code-review.instructions.md#api-correctness)
-
-### UI (React/TypeScript)
-
-[`code-review.instructions.md` § UI Code (React/TypeScript)](../../../.github/instructions/code-review.instructions.md#ui-code-reacttypescript)
-
-### Generated files
-
-[`code-review.instructions.md` § Generated Files](../../../.github/instructions/code-review.instructions.md#generated-files)
-
-### AI-generated code signals
-
-[`code-review.instructions.md` § AI-Generated Code Signals](../../../.github/instructions/code-review.instructions.md#ai-generated-code-signals)
-
-### Quality signals to check
-
-[`code-review.instructions.md` § Quality Signals to Check](../../../.github/instructions/code-review.instructions.md#quality-signals-to-check)
-
-### Commits and PRs (newsfragments, commit messages, tracking issues)
-
-[`AGENTS.md` § Commits and PRs](../../../AGENTS.md#commits-and-prs)
+See
+[`projects/_template/pr-management-code-review-criteria.md` § Section anchors](../../../projects/_template/pr-management-code-review-criteria.md#section-anchors)
+for a worked example.
 
 ---
 
-## Provider-specific signals
+## Per-area / subtree-specific signals
 
-When a PR touches `providers/<name>/`, the skill reads (and
-quotes from) the provider-tree files in addition to the
-repo-wide ones:
+When a PR touches a subtree the adopter listed in
+`<project-config>/pr-management-code-review-criteria.md` →
+`Per-area source files`, the skill reads (and quotes from) those
+per-area files in addition to the repo-wide ones. The skill also
+auto-discovers any `AGENTS.md` under the touched paths via
+`git ls-files`, so an `AGENTS.md` not listed in the table is
+still loaded if the diff touches its tree.
 
-- [`providers/AGENTS.md`](../../../providers/AGENTS.md) — the
-  provider-boundary, compat-layer, and `provider.yaml`
-  expectations apply.
-- `providers/<name>/AGENTS.md` if present — provider-specific
-  rules (e.g.
-  [`providers/elasticsearch/AGENTS.md`](../../../providers/elasticsearch/AGENTS.md),
-  [`providers/opensearch/AGENTS.md`](../../../providers/opensearch/AGENTS.md)).
-
-If the provider's tree has no `AGENTS.md`, the repo-wide rules
-are still in effect.
+If a touched subtree has no `AGENTS.md` and no entry in the
+adopter table, only the repo-wide rules apply.
 
 ---
 
@@ -137,20 +119,28 @@ calibration explicitly. Don't paraphrase.
 
 ## Backports and version-specific PRs
 
-Branch `vX-Y-test` PRs are backports of already-merged `main`
-work. They aren't called out in the repo-wide files, so the
-calibration is local to this skill:
+If the adopter's
+`<project-config>/pr-management-code-review-criteria.md` declares
+a backport branch pattern (see its `Backports / version-specific
+PRs` table), PRs whose base branch matches the pattern are
+treated as backports of already-merged `main` work and get a
+lighter-touch calibration:
 
 - **Diff parity**: does this match what was merged on `main`?
 - **Cherry-pick conflicts**: did the resolution introduce new
   changes that need scrutiny?
 - **API/migration version markers**: backports should not
-  introduce new Cadwyn version bumps; if they do, that's a
-  finding (cite
-  [`code-review.instructions.md` § API Correctness](../../../.github/instructions/code-review.instructions.md#api-correctness)).
+  introduce new version bumps in any
+  versioning-sensitive subsystem the adopter calls out; if they
+  do, cite the relevant `API correctness` anchor from the
+  adopter's `Section anchors` table.
 
 For these PRs, prefer `COMMENT` over `REQUEST_CHANGES` unless
 the cherry-pick has clearly drifted from the `main` change.
+
+If the adopter config has no backport pattern declared, this
+section is a no-op and every PR is reviewed under the same
+calibration.
 
 ---
 
