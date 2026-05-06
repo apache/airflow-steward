@@ -7,9 +7,11 @@ description: |
   authenticated maintainer: PRs where review is requested from them, PRs that touch files they recently modified, PRs
   whose changed files they own per `CODEOWNERS`, PRs that `@`-mention them, and PRs they already submitted a real
   review on (triage comments do not count). Filters can narrow by area label, collaborator status, or to a single PR.
-  For each PR the skill reads the diff, applies the project's review criteria
-  ([.github/instructions/code-review.instructions.md](../../../.github/instructions/code-review.instructions.md)
-  and [AGENTS.md](../../../AGENTS.md)), runs any locally-configured adversarial reviewer (e.g. the OpenAI
+  For each PR the skill reads the diff, applies the project's
+  review criteria (the source files declared in
+  `<project-config>/pr-management-code-review-criteria.md`, plus
+  the project's repo-wide `AGENTS.md`), runs any
+  locally-configured adversarial reviewer (e.g. the OpenAI
   Codex plugin), surfaces findings, drafts an `approve` / `request-changes` / `comment` review with
   inline comments proposed by default, and — on the maintainer's confirmation — posts it via the
   `addPullRequestReview` mutation. This is the deep-review counterpart to the triage skill.
@@ -155,9 +157,11 @@ proposing to invoke a locally-installed adversarial reviewer.
 
 **Golden rule 3 — criteria are authoritative; this skill is a
 checker, not a re-interpreter.** The project's review criteria
-live in
-[`.github/instructions/code-review.instructions.md`](../../../.github/instructions/code-review.instructions.md)
-and [`AGENTS.md`](../../../AGENTS.md). When you find a violation,
+live in the source files declared in
+`<project-config>/pr-management-code-review-criteria.md` (see
+[`projects/_template/pr-management-code-review-criteria.md`](../../../projects/_template/pr-management-code-review-criteria.md)
+for the shape) and in the project's repo-wide
+[`AGENTS.md`](../../../AGENTS.md). When you find a violation,
 quote the **specific rule** from those files in the review
 finding. Do not invent new rules; do not soften documented ones.
 A summary checklist lives in [`criteria.md`](criteria.md) for
@@ -534,11 +538,11 @@ writes a session log to disk.
   [`posting.md`](posting.md), and never edits the contributor's
   branch.
 - **Bypassing the project's review criteria.** Findings cite
-  specific rules from
-  [`.github/instructions/code-review.instructions.md`](../../../.github/instructions/code-review.instructions.md)
-  and [`AGENTS.md`](../../../AGENTS.md). New review philosophies
-  belong in those files first; this skill picks them up
-  automatically once they land.
+  specific rules from the source files declared in
+  `<project-config>/pr-management-code-review-criteria.md` and
+  from the project's repo-wide [`AGENTS.md`](../../../AGENTS.md).
+  New review philosophies belong in those files first; this
+  skill picks them up automatically once they land.
 
 ---
 

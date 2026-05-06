@@ -185,7 +185,7 @@ For each finding, record:
 ```yaml
 - file: providers/foo/src/project/providers/foo/hook.py
   line: 142
-  rule_source: .github/instructions/code-review.instructions.md
+  rule_source: <project-config>/pr-management-code-review-criteria.md → repo-wide source
   rule_section: "#code-quality-rules"
   rule_id: |
     a short identifier copied verbatim from the source rule

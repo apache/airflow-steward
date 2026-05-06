@@ -217,7 +217,7 @@ For each `blocking` finding:
 ````markdown
 ### Blocking — [short rule name] (`file.py:142`)
 
-> [verbatim quote of the rule from .github/instructions/code-review.instructions.md or AGENTS.md]
+> [verbatim quote of the rule from one of the source files declared in `<project-config>/pr-management-code-review-criteria.md`]
 
 ```text
 [5–10 lines of context from the diff, with a `# ←` arrow at the offending line]
