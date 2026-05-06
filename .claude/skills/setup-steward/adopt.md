@@ -74,6 +74,15 @@ verbatim. Otherwise, prompt:
 | `git-tag` | Pin a specific tag | Frozen by tag |
 | `git-branch` | Track a branch tip (default: `main`) | Tracks tip — best during pre-release |
 
+**Prefer structured Q&A.** When the agent harness offers a
+structured-question tool (e.g. Claude Code's
+`AskUserQuestion`), use it for this prompt rather than free-
+form chat — single-select, three options, label = method
+name, description = the *When* + *Reproducibility* cells
+combined, recommend `git-branch` while the framework is in
+its pre-release phase. Free-form chat is the fallback when
+the harness has no structured-Q&A tool.
+
 The verbatim shell that fetches per each method is in
 [`docs/setup/install-recipes.md`](../../../docs/setup/install-recipes.md).
 The skill at this point can either:
@@ -143,9 +152,16 @@ prompt the user:
 - **`setup`** *(implicit)* — always installed because the
   snapshot carries it.
 
-Default to whichever family the user named in their
-initial "adopt" request (e.g. *"adopt apache-steward for PR
-triage"* → `pr-management`).
+**Prefer structured Q&A.** When the agent harness offers a
+structured-question tool, use a *multi-select* prompt for
+the two opt-in families (`security`, `pr-management`) — the
+families are not mutually exclusive. Pre-select whichever
+family the user named in their initial "adopt" request (e.g.
+*"adopt apache-steward for PR triage"* → `pr-management`
+pre-selected; the user can also tick `security`). If the
+user named no family, default to selecting both for an
+adopter that is a maintainer-driven repo, or to no
+pre-selection otherwise. Free-form chat is the fallback.
 
 ## Step 6 — Write `<local-lock>`
 
@@ -282,10 +298,75 @@ setup; the skills skip any block that is missing or marked `TODO`.
   Only used when `enabled: true`.
 ```
 
-Show the file to the user and offer to fill in the `TODO` fields
-interactively (one prompt per field, skipping any the user does not
-yet know). After the interactive fill, write the file to disk and
-git-add it.
+Show the file to the user and offer to fill in the `TODO` fields.
+Do **not** ask one blind question per field — auto-detect what you
+can, batch the rest, and skip questions that don't apply.
+
+### Auto-detect first
+
+- **`environment.upstream_clone`** — default to
+  `git rev-parse --show-toplevel`. Step 0 has already verified the
+  current working directory is the adopter repo (not the framework
+  itself), so this clone *is* the upstream clone. Surface the
+  detected path; the user only intervenes if they keep multiple
+  clones and want a different one as default.
+- **`environment.upstream_fork_remote`** — read `git remote -v`.
+  Apply this heuristic:
+  - If `upstream` exists and points to the project's canonical
+    repo, the *fork* is whatever non-`upstream` remote points at a
+    URL containing the user's GitHub handle. With the standard
+    `origin` = fork / `upstream` = canonical convention this is
+    `origin`, and no question is needed — surface the detected
+    value for confirmation.
+  - If multiple remotes look like forks, ask the user which to
+    pin, listing each candidate with its URL.
+  - If only `origin` exists and it points at the canonical repo
+    (legacy single-remote layout), leave the field as `TODO` and
+    note in the surfaced summary that the user has not configured
+    a fork remote yet.
+
+### Batch the rest in a structured Q&A
+
+When the agent harness offers a structured-question tool, ask the
+remaining unknowns in **one batch** rather than serially. The
+canonical batch is:
+
+1. **`role_flags.pmc_member`** — *single-select, default `No`*.
+   "Are you a PMC member of `<adopter>`?" Used by
+   `security-cve-allocate` to decide whether the user can submit
+   the CVE allocation form directly or needs to relay through a
+   PMC member.
+2. **Auto-detected env paths confirmation** — *single-select,
+   default "Use as detected"*. Only ask this if both
+   `upstream_clone` and `upstream_fork_remote` were auto-detected
+   above; if either fell back to TODO, skip the confirmation and
+   leave the relevant TODO in place. "Auto-detected
+   `upstream_clone=<path>`, `upstream_fork_remote=<remote>` — use
+   as detected, or customise?"
+3. **`tools.ponymail.enabled`** — *single-select, default `No`*.
+   "Enable PonyMail MCP as the primary mailing-list-archive
+   backend? (Gmail remains the fallback.)" Most adopters answer
+   `No` because they have not registered the PonyMail MCP in
+   their Claude Code `mcpServers` block.
+
+If the user picks `Yes` for Ponymail in (3), follow up with **one
+more** question — do not ask it upfront:
+
+4. **`tools.ponymail.private_lists`** — *free-text*. "List the
+   private mailing-list addresses PonyMail should query (one per
+   line, e.g. `security@<adopter>.apache.org`)."
+
+Free-form chat is the fallback when the harness has no
+structured-Q&A tool. In that case still respect the order above
+(auto-detection summary → unknowns → conditional follow-up); do
+not interrogate one TODO at a time.
+
+### Write and stage
+
+After the answers come back, write the file to disk with the
+collected values substituted in (leaving any unanswered field as
+`TODO` so the per-skill prompts can still pick it up later) and
+`git add` it.
 
 ## Step 10 — Worktree-aware post-checkout hook (FRESH only)
 
