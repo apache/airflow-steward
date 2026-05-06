@@ -51,13 +51,13 @@ query(
     }
   }
 }
-```
+```text
 
 ### `searchQuery`
 
 ```text
 is:pr is:open repo:<repo> sort:created-asc
-```
+```text
 
 Sort is `created-asc` (oldest PR first) so the age-bucket counts accumulate deterministically — same PR always lands in the same row in a re-run. `is:pr` filters out issues in the same search.
 
@@ -69,7 +69,7 @@ gh api graphql \
   -F batchSize=50 \
   -F cursor="$CURSOR" \
   --field query=@/tmp/pr-management-stats-open.graphql
-```
+```text
 
 ### Batch size
 
@@ -116,7 +116,7 @@ query(
     }
   }
 }
-```
+```text
 
 Notice `comments(last: 25)` — higher than the 10 used for open PRs because a triaged PR that was then closed will often have extra follow-up comments; we still need to find the original triage marker. If the marker isn't in the last 25 comments for a given PR, drop that PR from Table 1 (it wasn't triaged by the bot/viewer convention).
 
@@ -134,7 +134,7 @@ This pull request has had no activity from the author for over 4 weeks.
 @<author>, you are welcome to reopen this PR when you are ready to continue working on it. Thank you for your contribution!
 
 <!-- Pull Request quality criteria -->
-```
+```text
 
 In this case the visible body contains no "Pull Request quality criteria" text at all — the only marker is the HTML comment at the bottom. Running the same marker match against `bodyText` misses these entirely. A spot-check on a 40-PR sample from `<upstream>` found ~10% of triaged-marker comments were HTML-comment-only: invisible to a `bodyText`-based search.
 
@@ -174,7 +174,7 @@ Two stages:
 
 ```graphql
 query {
-  repository(owner:$owner,name:$repo) {
+  repository(owner:"apache",name:"airflow") {
     pr63407: pullRequest(number:63407) {
       number author{login} authorAssociation closedAt mergedAt state merged
       labels(first:30){nodes{name}}
@@ -184,7 +184,7 @@ query {
     # … 30 aliases per query
   }
 }
-```
+```text
 
 For each returned PR, apply the same marker check as [`classify.md`](classify.md) (`Pull Request quality criteria` substring in raw `body`, author in `OWNER/MEMBER/COLLABORATOR`). Record `responded_before_close` when the author has a comment after the triage marker and on or before `closedAt`.
 
@@ -201,7 +201,7 @@ When the maintainer explicitly asks for a quick approximation (`fast-closed` fla
 
 ```text
 is:pr -is:open repo:<repo> closed:>=<cutoff> sort:updated-desc
-```
+```text
 
 The fast path must print a clear caveat above Table 1: *"fast-closed mode: Table 1 uses the free-text search index which currently undercounts older triaged+merged PRs on `<upstream>`. Re-run without `fast-closed` for accurate numbers."*
 
@@ -209,7 +209,7 @@ The fast path must print a clear caveat above Table 1: *"fast-closed mode: Table
 
 ```text
 is:pr -is:open repo:<repo> closed:>=<cutoff> sort:updated-desc
-```
+```text
 
 `-is:open` matches both `closed` and `merged` states. `closed:>=` is GitHub's search qualifier for closed/merged date. `sort:updated-desc` keeps the most recent final actions at the top (so Ctrl-C'ing a long pagination returns the freshest portion).
 
@@ -221,7 +221,7 @@ gh api graphql \
   -F batchSize=50 \
   -F cursor="$CURSOR" \
   --field query=@/tmp/pr-management-stats-closed.graphql
-```
+```text
 
 ### Cutoff default
 
@@ -229,7 +229,7 @@ If the maintainer doesn't pass `since:<date>`, default to six weeks ago:
 
 ```bash
 cutoff=$(date -u -d "-42 days" +%Y-%m-%d)
-```
+```text
 
 Six weeks covers ~a sprint-and-a-half, which is long enough to smooth out day-to-day variation in closures without being so far back that the numbers lose meaning.
 
@@ -248,7 +248,7 @@ while : ; do
   cursor=$(echo  "$out" | jq -r '.data.search.pageInfo.endCursor')
   [ "$hasNext" = "true" ] || break
 done
-```
+```text
 
 Two safety valves:
 
@@ -284,6 +284,41 @@ sequence (e.g. `\z`, `\e`), even `strict=False` fails with
 
 ---
 
+## Ready-label timeline
+
+Needed for the dashboard's "Ready-for-review trend" chart (see [`aggregate.md#ready-for-review-trend-by-top-areas`](aggregate.md)). The open-PRs query above tells us *which* PRs currently carry the `ready for maintainer review` label, but not *when* the label was added. Without that timestamp the trend chart can't show growth.
+
+Run an aliased GraphQL query, **30 PRs per call**, that fetches each PR's `LabeledEvent` timeline filtered to the relevant label:
+
+```graphql
+query {
+  repository(owner:"<owner>",name:"<name>") {
+    pr12345: pullRequest(number:12345) {
+      number
+      timelineItems(last:50, itemTypes:[LABELED_EVENT]) {
+        nodes {
+          ... on LabeledEvent {
+            createdAt
+            label { name }
+          }
+        }
+      }
+    }
+    # … repeated for the other 29 PRs in the batch
+  }
+}
+```text
+
+Per-PR processing: pick the most recent `LabeledEvent` whose `label.name == "ready for maintainer review"`. That `createdAt` is the PR's `ready_at` timestamp. PRs that never had the label (shouldn't happen — input set is filtered to currently-labelled PRs) are dropped silently.
+
+`itemTypes:[LABELED_EVENT]` is critical — without it the timeline returns every event (commits, comments, reviews) and blows the complexity budget. With the filter, the per-PR cost is tiny.
+
+Budget: ~7 GraphQL calls for ~200 currently-ready PRs on `<upstream>`. Well under the per-session ceiling.
+
+Cache the per-PR `ready_at` in `/tmp/pr-management-stats-cache-<repo-slug>.json` keyed by `(pr_number, head_sha)` — same convention as the rest of the cache. The label-add timestamp is stable across head SHAs (it's a label event, not a commit event), so the cache hit rate is high.
+
+---
+
 ## Why no `statusCheckRollup` / `mergeable` / `reviewThreads`
 
 `pr-management-triage` needs all three for classification; `pr-management-stats` does not. Dropping them keeps the query complexity well below GitHub's per-page ceiling, which is how we can safely run `batchSize=50` here versus `20` in `pr-management-triage`. If a future stats column ever needs one of those fields, raise only that query's complexity — don't pull them into the default shape "just in case".
@@ -305,7 +340,7 @@ sequence (e.g. `\z`, `\e`), even `strict=False` fails with
     "prs": { "12300": {"state": "MERGED", "responded_before_close": true, "areas": ["scheduler"]} }
   }
 }
-```
+```text
 
 ### Invalidation
 
