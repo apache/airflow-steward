@@ -33,6 +33,15 @@
                                  USERS_LIST (parameterised on CVE_ID)
        FRAMEWORK_RECORD_MD_URL   Link to tools/vulnogram/record.md on
                                  the framework's GitHub
+       FRAMEWORK_OAUTH_API_README_URL  Link to tools/vulnogram/oauth-
+                                 api/README.md on the framework's
+                                 GitHub (the cookie-capture walkthrough
+                                 the API one-liner depends on)
+       FRAMEWORK_PROJECT_PATH    Substitution for `<framework>` in the
+                                 `uv run --project ...` invocations —
+                                 typically `.apache-steward/apache-
+                                 steward` for an adopter and `.` for
+                                 the framework standalone.
        FRAMEWORK_SYNC_SKILL_URL  Link to .claude/skills/sync-security-
                                  issue/SKILL.md on the framework's GitHub
        FRAMEWORK_README_URL      Link to README.md on the framework's
@@ -64,13 +73,33 @@ every body change by the [`security-issue-sync`](FRAMEWORK_SYNC_SKILL_URL) skill
 
 ### Step-by-step
 
-1. **First paste — `DRAFT` → `REVIEW`.** Open the [`#source` tab](SOURCE_TAB_URL) on the CVE record. Copy the embedded JSON from the tracker body above, paste into the form, **Save**. Move the record `DRAFT` → `REVIEW` via the Vulnogram UI.
-2. **Wait for CNA review.** Reviewer comments arrive by email on `SECURITY_LIST` with the CVE ID in the subject line. The `security-issue-sync` skill detects them automatically and proposes matching body-field updates on this tracker; the security team confirms and the embedded JSON regenerates. **If no reviewer comments arrive (common case), skip to step 4.** Otherwise, once the body has settled, re-paste the regenerated JSON into `#source` and **Save** again.
+Each *write* below is a `vulnogram-api-record-update` call by
+default (the API path bypasses the manual paste). The fallback —
+[`#source` tab](SOURCE_TAB_URL) → paste → **Save** — works
+identically for any operator who has not run `vulnogram-api-setup`
+or whose session has expired.
+
+1. **First write — `DRAFT` → `REVIEW`.** Run the API one-liner below (or fall back to opening [`#source`](SOURCE_TAB_URL) and pasting the JSON from the [tracker body](JSON_ANCHOR_URL)). Then move the record `DRAFT` → `REVIEW` via the Vulnogram UI button.
+
+   ```bash
+   uv run --project FRAMEWORK_PROJECT_PATH/tools/vulnogram/oauth-api vulnogram-api-record-update \
+     --cve-id CVE_ID --json-file <path-to-the-embedded-JSON>
+   ```
+
+   First-time setup: `uv run --project FRAMEWORK_PROJECT_PATH/tools/vulnogram/oauth-api vulnogram-api-setup` and follow the cookie-capture walkthrough in [`oauth-api/README.md`](FRAMEWORK_OAUTH_API_README_URL). When the session ages out, the call exits with `SessionExpired` and the same setup re-runs in ~30 s.
+
+2. **Wait for CNA review.** Reviewer comments arrive by email on `SECURITY_LIST` with the CVE ID in the subject line. The `security-issue-sync` skill detects them automatically and proposes matching body-field updates on this tracker; the security team confirms and the embedded JSON regenerates. **If no reviewer comments arrive (common case), skip to step 4.** Otherwise, once the body has settled, re-run the same `vulnogram-api-record-update` one-liner with the regenerated JSON (or, fallback, re-paste into [`#source`](SOURCE_TAB_URL) and **Save** again).
 3. **Set `READY`.** Vulnogram UI action — the record is now ready for the advisory-send step.
-4. **Preview the advisory email** on the [email tab](EMAIL_TAB_URL) of the CVE record. Inspect how the email will render: subject, body, recipient list. The preview surfaces formatting issues (truncation, broken markdown, missing patch links) that the JSON view does not. If anything needs to change, edit the corresponding body field on this tracker, wait for the JSON to regenerate, re-paste in `#source`, and re-preview before sending.
+4. **Preview the advisory email** on the [email tab](EMAIL_TAB_URL) of the CVE record. Inspect how the email will render: subject, body, recipient list. The preview surfaces formatting issues (truncation, broken markdown, missing patch links) that the JSON view does not. If anything needs to change, edit the corresponding body field on this tracker, wait for the JSON to regenerate, re-run the API one-liner (or re-paste in [`#source`](SOURCE_TAB_URL)), and re-preview before sending.
 5. **Send advisory emails** from Vulnogram. The form sends to `USERS_LIST` and `ANNOUNCE_LIST`. Then on this tracker, add the `announced - emails sent` label and remove `fix released`.
-6. **(automatic) Archive URL captured.** The `security-issue-sync` skill scans the [users-list archive](ARCHIVE_SCAN_URL) for the CVE ID on every run. Once it finds the advisory, it populates the *Public advisory URL* body field, regenerates the CVE JSON to carry the archive URL as a `vendor-advisory` reference, and adds the `announced` label — **and posts a follow-up comment on this tracker** giving you the explicit go-ahead for the final paste below.
-7. **Second paste — `REVIEW` → `PUBLIC`.** *Only after the follow-up comment in step 6 fires.* Re-open [`#source`](SOURCE_TAB_URL), paste the now-final JSON (carrying the archive URL in `references[]`), **Save**, move `REVIEW` → `PUBLIC` via the Vulnogram UI. The record propagates to `cve.org` once the state lands.
+6. **(automatic) Archive URL captured.** The `security-issue-sync` skill scans the [users-list archive](ARCHIVE_SCAN_URL) for the CVE ID on every run. Once it finds the advisory, it populates the *Public advisory URL* body field, regenerates the CVE JSON to carry the archive URL as a `vendor-advisory` reference, and adds the `announced` label — **and posts a follow-up comment on this tracker** giving you the explicit go-ahead for the final write below.
+7. **Second write — `REVIEW` → `PUBLIC`.** *Only after the follow-up comment in step 6 fires.* Re-run the API one-liner with the now-final JSON (carrying the archive URL in `references[]`), or, fallback, re-open [`#source`](SOURCE_TAB_URL) and paste. Then move `REVIEW` → `PUBLIC` via the Vulnogram UI button (this transition is intentionally human-only because it triggers the CNA-feed dispatch to `cve.org`).
+
+   ```bash
+   uv run --project FRAMEWORK_PROJECT_PATH/tools/vulnogram/oauth-api vulnogram-api-record-update \
+     --cve-id CVE_ID --json-file <path-to-the-final-JSON>
+   ```
+
 8. **Close the tracker** — close as completed; do not update any labels. The `security-issue-sync` skill archives the project-board item so the closed tracker leaves the active board.
 
 ---

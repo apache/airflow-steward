@@ -830,9 +830,10 @@ after apply) → release manager copy-pastes the updated JSON into
 Vulnogram's `#source` tab to address the reviewer's comment*. By
 proposing the body update directly, the sync saves the release
 manager from a round trip: they open the record once (to
-acknowledge / resolve the comment after pasting the new JSON),
-not twice (once to read the comment, once to paste after a
-separate human body edit).
+acknowledge / resolve the comment after re-writing the JSON via
+[`vulnogram-api-record-update`](../../../tools/vulnogram/oauth-api/README.md)
+or — fallback — the `#source` paste), not twice (once to read
+the comment, once to write after a separate human body edit).
 
 Map common review comments to body fields like this:
 
@@ -858,7 +859,9 @@ After the user confirms a body-update proposal and it lands,
 Step 5 of the apply loop runs `generate-cve-json --attach`
 automatically, so the attached CVE JSON is regenerated in the
 same sync run — the release manager's next action is just the
-Vulnogram paste.
+Vulnogram write (default:
+[`vulnogram-api-record-update`](../../../tools/vulnogram/oauth-api/README.md);
+fallback: the `#source` paste).
 
 Also include the standard *"Open the CVE record at
 `<URL>` and resolve the review comment"* line in Step 2c so the

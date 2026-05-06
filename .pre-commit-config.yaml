@@ -154,6 +154,36 @@ repos:
         files: ^tools/gmail/oauth-draft/(src|tests|pyproject\.toml)
         pass_filenames: false
 
+  # Project-local checks for the Vulnogram OAuth-API helpers at
+  # `tools/vulnogram/oauth-api/`. Same shape as the gmail/oauth-draft
+  # hooks above.
+  - repo: local
+    hooks:
+      - id: vulnogram-oauth-api-ruff-check
+        name: ruff check (vulnogram-oauth-api)
+        language: system
+        entry: uv run --directory tools/vulnogram/oauth-api ruff check
+        files: ^tools/vulnogram/oauth-api/(src|tests|pyproject\.toml)
+        pass_filenames: false
+      - id: vulnogram-oauth-api-ruff-format
+        name: ruff format (vulnogram-oauth-api)
+        language: system
+        entry: uv run --directory tools/vulnogram/oauth-api ruff format --check
+        files: ^tools/vulnogram/oauth-api/(src|tests|pyproject\.toml)
+        pass_filenames: false
+      - id: vulnogram-oauth-api-mypy
+        name: mypy (vulnogram-oauth-api)
+        language: system
+        entry: uv run --directory tools/vulnogram/oauth-api mypy
+        files: ^tools/vulnogram/oauth-api/(src|tests|pyproject\.toml)
+        pass_filenames: false
+      - id: vulnogram-oauth-api-pytest
+        name: pytest (vulnogram-oauth-api)
+        language: system
+        entry: uv run --directory tools/vulnogram/oauth-api pytest
+        files: ^tools/vulnogram/oauth-api/(src|tests|pyproject\.toml)
+        pass_filenames: false
+
   - repo: local
     hooks:
       - id: redactor-ruff-check
