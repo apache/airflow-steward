@@ -29,6 +29,7 @@ for the lifecycle.
 from __future__ import annotations
 
 import argparse
+import re
 import sys
 
 from redactor.mapping import (
@@ -66,21 +67,53 @@ def parse_field(spec: str) -> tuple[str, str]:
     )
 
 
+def _build_pattern(value: str) -> re.Pattern[str] | None:
+    """Build a case-insensitive, whitespace-normalised regex for ``value``.
+
+    Splits on Python ``str.split`` whitespace and rejoins with
+    ``[^\\S\\n]+`` (any in-line whitespace — space, tab, NBSP — but
+    *not* newline). This matches:
+
+    - ``Jane Smith`` → ``jane smith``, ``Jane  Smith`` (double-space),
+      ``Jane\\tSmith``, ``JANE SMITH``;
+
+    and deliberately does **not** match:
+
+    - ``Jane\\nSmith`` (paragraph break — the original text almost
+      never wraps a name across lines, and matching there risks
+      redacting unrelated lines that happen to share endpoints).
+
+    Returns ``None`` for empty values and whitespace-only values
+    (the caller skips those — preserves the prior empty-value
+    behaviour).
+    """
+    parts = [re.escape(p) for p in value.split()]
+    if not parts:
+        return None
+    return re.compile(r"[^\S\n]+".join(parts), re.IGNORECASE)
+
+
 def apply_redactions(text: str, fields: list[tuple[str, str, Entry]]) -> str:
     """Substitute every declared value with its identifier.
 
     Substitutes longer values first so that a value which is a
     substring of another (e.g. reporter ``Jane`` inside email
     ``jane@x.com``) does not break the longer match.
+
+    Matching is **case-insensitive** and **whitespace-normalised**
+    (variable-width spaces, tabs, NBSPs between tokens all match).
+    Values that span newlines are still matched only as supplied;
+    see :func:`_build_pattern` for the exact whitespace class.
     """
-    # Sort by raw value length descending — exact-string match,
-    # so longer values get substituted first and cannot be
-    # disrupted by a shorter substring substitution.
+    # Sort by raw value length descending so the longer match wins
+    # against substring overlap (e.g. reporter `Jane` vs email
+    # `jane@x.com`).
     fields_sorted = sorted(fields, key=lambda triple: len(triple[1]), reverse=True)
     for _type_code, value, entry in fields_sorted:
-        if not value:
+        pattern = _build_pattern(value)
+        if pattern is None:
             continue
-        text = text.replace(value, entry.identifier)
+        text = pattern.sub(entry.identifier, text)
     return text
 
 

@@ -177,3 +177,47 @@ def test_redact_returns_2_on_malformed_mapping_file(mapping_path, monkeypatch):
     monkeypatch.setattr("sys.stderr", io.StringIO())
     rc = redact.main(["--field", "name:Jane Smith"])
     assert rc == 2
+
+
+def test_redact_case_insensitive(mapping_path, monkeypatch):
+    """The matcher should redact lowercase / uppercase variants of the declared value."""
+    body = "Jane Smith reported. jane smith confirmed. JANE SMITH signed off."
+    out, _ = _run(monkeypatch, body, ["--field", "name:Jane Smith"])
+    mapping = load_mapping(mapping_path)
+    [entry] = mapping.values()
+    # All three case variants get the same identifier.
+    assert out.count(entry.identifier) == 3
+    assert "Jane Smith" not in out
+    assert "jane smith" not in out
+    assert "JANE SMITH" not in out
+
+
+def test_redact_whitespace_normalised(mapping_path, monkeypatch):
+    """The matcher should redact double-spaced and tab-separated variants of the declared value."""
+    body = "Hello Jane Smith. Hello Jane  Smith. Hello Jane\tSmith. Hello Jane\xa0Smith."
+    out, _ = _run(monkeypatch, body, ["--field", "name:Jane Smith"])
+    mapping = load_mapping(mapping_path)
+    [entry] = mapping.values()
+    # Single-space, double-space, tab, NBSP — four variants, same identifier.
+    assert out.count(entry.identifier) == 4
+    assert "Jane Smith" not in out
+    assert "Jane  Smith" not in out
+    assert "Jane\tSmith" not in out
+    assert "Jane\xa0Smith" not in out
+
+
+def test_redact_does_not_match_across_newlines(mapping_path, monkeypatch):
+    """The whitespace class is `[^\\S\\n]+` — newlines stop the match.
+
+    A name spanning a paragraph break almost never represents the
+    same person; matching there risks redacting unrelated content
+    that happens to share endpoint tokens.
+    """
+    body = "First Jane\nSecond Smith"
+    out, _ = _run(monkeypatch, body, ["--field", "name:Jane Smith"])
+    mapping = load_mapping(mapping_path)
+    [entry] = mapping.values()
+    # The body did NOT contain "Jane Smith" — declared name is absent
+    # in the literal in-line sense, so identifier should not appear.
+    assert entry.identifier not in out
+    assert out == body

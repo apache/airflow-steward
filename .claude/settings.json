@@ -75,7 +75,17 @@
       "Bash(gh release create *)",
       "Bash(gh api * -X *)",
       "Bash(gh api * -f *)",
-      "Bash(gh api * -F *)"
+      "Bash(gh api * -F *)",
+      "Bash(gh gist *)",
+      "Bash(gh repo create *)",
+      "Bash(gh repo edit *)",
+      "Bash(gh repo delete *)",
+      "Bash(gh api * --method *)",
+      "Bash(gh api * --input *)",
+      "Bash(gh secret *)",
+      "Bash(gh ssh-key *)",
+      "Bash(gh release upload *)",
+      "Bash(gh release delete *)"
     ]
   }
 }
