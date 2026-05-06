@@ -1,0 +1,230 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [vulnogram-api](#vulnogram-api)
+  - [Run](#run)
+  - [Setup — one-time](#setup--one-time)
+  - [How the session expires](#how-the-session-expires)
+  - [Confidentiality](#confidentiality)
+  - [Why this is "session cookie", not "Bearer token"](#why-this-is-session-cookie-not-bearer-token)
+  - [Test](#test)
+  - [Lint / type-check](#lint--type-check)
+  - [Referenced by](#referenced-by)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
+<!-- SPDX-License-Identifier: Apache-2.0
+     https://www.apache.org/legal/release-policy.html -->
+
+# vulnogram-api
+
+Small Python project that talks directly to the Vulnogram HTTP API
+on a user-provided ASF-OAuth session cookie. Three console scripts:
+
+| Console script | Purpose |
+|---|---|
+| `vulnogram-api-setup` | One-time interactive cookie capture — log into `cveprocess.apache.org` in a regular browser, copy the session cookie value via DevTools, paste it back into the script. |
+| `vulnogram-api-record-update` | POST a CVE JSON to `/cve5/<CVE-ID>` (the upsert endpoint). Replaces the release-manager copy-paste-into-`#source` step. |
+| `vulnogram-api-check` | Probe the stored session and report `valid` / `expired` / `not-configured`. Used by the agentic skills before proposing the API path. |
+
+This is the **default proposed path** in the release-manager
+checklist (see [`../record.md`](../record.md)) — but **not** the
+only path. The traditional copy-paste-into-`#source`-tab flow stays
+documented as a fallback for users who would rather not maintain
+a session-cookie file.
+
+The "OAuth" in the directory name refers to the **ASF-OAuth flow
+that gates `cveprocess.apache.org`** — Vulnogram itself does not
+implement OAuth; the ASF instance is fronted by `oauth.apache.org`,
+which sets a session cookie on `cveprocess.apache.org` once the
+operator has logged in. We capture that cookie and reuse it for
+the API calls.
+
+## Run
+
+From the framework's root (this repository when running standalone;
+the `.apache-steward/` snapshot path inside an adopting tracker repo):
+
+```bash
+uv run --project tools/vulnogram/oauth-api vulnogram-api-record-update \
+  --cve-id CVE-2026-12345 \
+  --json-file /path/to/cve-record.json
+```
+
+Skill files and framework docs reference the same invocation via the
+`<framework>` placeholder:
+
+```bash
+uv run --project <framework>/tools/vulnogram/oauth-api vulnogram-api-record-update \
+  --cve-id CVE-2026-12345 \
+  --json-file <path-to-generated-json>
+```
+
+`<framework>` substitutes to `.apache-steward/apache-steward` in
+adopting projects and to `.` in framework standalone — see the
+placeholder convention in
+[`AGENTS.md`](../../../AGENTS.md#placeholder-convention-used-in-skill-files).
+
+The other two scripts follow the same shape:
+
+```bash
+# Probe the stored session — exit 0/1/2/3 = valid/expired/not-configured/error
+uv run --project <framework>/tools/vulnogram/oauth-api vulnogram-api-check
+
+# Re-capture the session cookie after it expires
+uv run --project <framework>/tools/vulnogram/oauth-api vulnogram-api-setup
+```
+
+Per-flag help: `vulnogram-api-record-update --help`,
+`vulnogram-api-check --help`, `vulnogram-api-setup --help`.
+
+## Setup — one-time
+
+You need an ASF account that already has the *contributor* /
+*author* / *triager* role on the relevant Vulnogram section
+(`cve5` for the CVE 5.x records). The actual *Allocate* button on
+the `/allocatecve` form is still PMC-gated server-side; the API
+path here is for the **post-allocation paste workflow** (Steps
+1, 2, and 7 of the release-manager checklist in
+[`../record.md`](../record.md#release-manager-checklist)), which
+any authenticated section member can perform.
+
+1. **Open `https://cveprocess.apache.org/users/login` in a regular
+   browser** (Firefox, Chrome, Safari — anything with DevTools).
+   Complete the ASF OAuth flow normally: ASF username, password,
+   any 2FA your account has configured. After the redirect lands
+   you back on the `cveprocess.apache.org` home page, you have a
+   live session cookie.
+
+2. **Open DevTools and copy the session cookie value:**
+
+   - Chrome / Edge / Brave: F12 → *Application* tab → *Storage* →
+     *Cookies* → `https://cveprocess.apache.org`. Find the row named
+     **`connect.sid`**. Copy the *Value* column verbatim — it
+     typically starts with `s%3A` (a URL-encoded `s:`) and is long
+     (~ 100 characters).
+   - Firefox: F12 → *Storage* tab → *Cookies* →
+     `https://cveprocess.apache.org`. Same row name and copy
+     instructions.
+   - Safari: enable the *Develop* menu first
+     (Preferences → Advanced → *Show Develop menu in menu bar*),
+     then *Develop* → *Show Web Inspector* → *Storage* tab →
+     *Cookies*.
+
+3. **Run the setup script.** The cookie value is read via `getpass`
+   so it does not echo to the terminal:
+
+   ```bash
+   uv run --project <framework>/tools/vulnogram/oauth-api vulnogram-api-setup
+   ```
+
+   Optional flags:
+
+   | Flag | Purpose |
+   |---|---|
+   | `--host` | Vulnogram host. Default: `cveprocess.apache.org`. |
+   | `--cookie-name` | Session cookie name. Default: `connect.sid` (express-session's default). |
+   | `--from-address` | ASF account address baked into the session file (informational). Defaults to `$VULNOGRAM_FROM`, then `git config user.email`. |
+   | `--out` | Output path for the session file. Default: `~/.config/apache-steward/vulnogram-session.json`. |
+   | `--skip-validate` | Skip the live HTTP probe after writing. Use only if the host is unreachable from the box running setup but the cookie is known good. |
+
+   The script writes the session file atomically with mode 600 and
+   chmods the parent directory to 700. The cookie is the long-lived
+   secret of the API path; treat the file like an SSH private key.
+
+4. **Smoke-test by running the probe:**
+
+   ```bash
+   uv run --project <framework>/tools/vulnogram/oauth-api vulnogram-api-check
+   ```
+
+   Output `valid` (exit 0) means the session is live and the API
+   path is ready for use.
+
+## How the session expires
+
+The ASF-OAuth session has a server-side TTL the framework cannot
+control (typical sessions stay alive for a working day). When the
+cookie ages out, the next API call returns `SessionExpired`:
+
+```text
+✗ Vulnogram redirected to ASF OAuth login — session cookie expired.
+  Re-run `vulnogram-api-setup`.
+```
+
+Re-running setup is a 30-second operation: open the same
+`/users/login` URL in the browser (the OAuth flow remembers your
+account if your ASF SSO session is still live, so it is usually a
+single click), copy the new `connect.sid`, paste it back. The
+agentic skills detect `expired` automatically via `vulnogram-api-check`
+and surface the *"5-minute re-setup"* hint in the same proposal
+they would otherwise propose the API path in.
+
+## Confidentiality
+
+The session cookie grants the same record-edit access to
+`cveprocess.apache.org` that your browser session has. Treat it
+like an SSH key:
+
+- The setup script writes the file with mode 600 and chmods its
+  parent directory to 700; do not loosen those.
+- Do **not** commit the session file. The path lives outside the
+  repo tree by default (`~/.config/apache-steward/vulnogram-session.json`).
+- Sessions are server-side-revocable: log out from
+  `cveprocess.apache.org/users/logout` in any browser session and
+  the cookie value stored on disk is immediately useless.
+
+## Why this is "session cookie", not "Bearer token"
+
+Upstream Vulnogram (`Vulnogram/Vulnogram` on GitHub) ships only a
+local-username/password Passport strategy and a
+`csurf`-protected upsert endpoint. There is no upstream OAuth
+support and no upstream Bearer/API-token surface — the ASF
+deployment fronts Vulnogram with the standard `oauth.apache.org`
+SSO proxy, which sets a server-side session cookie after a
+successful OAuth login. That cookie is what authorises every
+subsequent request to `cveprocess.apache.org`, so the same cookie
+authorises the API calls this tool makes. (The CSRF protection
+on the upsert endpoint stays in place — the tool scrapes the
+per-page CSRF token before each POST, mirroring what Vulnogram's
+own browser client does in
+[`Vulnogram/Vulnogram@src/js/edit/actions.js`](https://github.com/Vulnogram/Vulnogram/blob/master/src/js/edit/actions.js).)
+
+If a future ASF-Infra change adds a proper Bearer-token API to
+`cveprocess.apache.org`, the migration would be a small one —
+swap the `Cookie:` header for `Authorization: Bearer …` in
+`tools/vulnogram/oauth-api/src/vulnogram_api/client.py`.
+
+## Test
+
+```bash
+cd tools/vulnogram/oauth-api
+uv run --group dev pytest
+```
+
+## Lint / type-check
+
+```bash
+cd tools/vulnogram/oauth-api
+uv run --group dev ruff check src tests
+uv run --group dev ruff format --check src tests
+uv run --group dev mypy
+```
+
+The `prek` hooks configured in `.pre-commit-config.yaml` at the
+repository root run `ruff check`, `ruff format --check`, `mypy`,
+and `pytest` on the project files automatically on every commit
+that touches them.
+
+## Referenced by
+
+- [`../record.md`](../record.md) — the release-manager checklist
+  proposes this tool by default for Steps 1, 2, and 7 (the JSON-
+  paste round-trips).
+- [`../release-manager-handoff-comment.md`](../release-manager-handoff-comment.md)
+  — the auto-posted hand-off comment template references the API
+  path as the default and the copy-paste flow as the fallback.
+- [`../../../.claude/skills/security-cve-allocate/SKILL.md`](../../../.claude/skills/security-cve-allocate/SKILL.md)
+  — the agent skill that runs `vulnogram-api-check` before
+  proposing the API path or the copy-paste fallback.
