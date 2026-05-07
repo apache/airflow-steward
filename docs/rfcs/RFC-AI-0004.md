@@ -29,7 +29,20 @@
     - [Why this is structurally different](#why-this-is-structurally-different)
     - [Five concrete consequences](#five-concrete-consequences-3)
     - [Anti-patterns to avoid](#anti-patterns-to-avoid-3)
-  - [How the four principles compose](#how-the-four-principles-compose)
+  - [Principle 5 — Write access and outbound messages require human review](#principle-5--write-access-and-outbound-messages-require-human-review)
+    - [Normative statement](#normative-statement-4)
+    - [Why the dedicated principle](#why-the-dedicated-principle)
+    - [Five concrete consequences](#five-concrete-consequences-4)
+    - [Anti-patterns to avoid](#anti-patterns-to-avoid-4)
+    - [Cross-references](#cross-references)
+  - [Principle 6 — Privacy by design](#principle-6--privacy-by-design)
+    - [Normative statement](#normative-statement-5)
+    - [Why this is its own principle](#why-this-is-its-own-principle)
+    - [Five concrete consequences](#five-concrete-consequences-5)
+    - [Vendor-neutrality of the privacy gate](#vendor-neutrality-of-the-privacy-gate)
+    - [Anti-patterns to avoid](#anti-patterns-to-avoid-5)
+    - [References to the broader privacy posture](#references-to-the-broader-privacy-posture)
+  - [How the six principles compose](#how-the-six-principles-compose)
   - [Adoption guidance for non-Steward projects](#adoption-guidance-for-non-steward-projects)
   - [What this RFC does NOT specify](#what-this-rfc-does-not-specify)
   - [References](#references)
@@ -60,16 +73,18 @@
 
 ## Abstract
 
-This RFC describes four principles that govern how AI agents should
+This RFC describes six principles that govern how AI agents should
 interact with open-source projects when **the human in the
 interaction is a project maintainer** — committer, PMC member,
-release manager, security-team member, triager. The four
+release manager, security-team member, triager. The six
 principles —
 **(1) human-in-the-loop on every state change**,
 **(2) secure sandbox by default**,
 **(3) vendor neutrality across LLM backends and project
-governance**, and
-**(4) conversational, correctable agentic skills** —
+governance**,
+**(4) conversational, correctable agentic skills**,
+**(5) write access and outbound messages require human review**, and
+**(6) privacy by design** —
 are framed as *a baseline*. They define the minimum trust posture
 under which agentic tooling can be ethically deployed against the
 public artefacts of a community-governed project (issues, PRs,
@@ -527,9 +542,286 @@ framework makes is from "user-of-tool" to
 
 ---
 
-## How the four principles compose
+## Principle 5 — Write access and outbound messages require human review
 
-The four principles are independently necessary; together they
+### Normative statement
+
+> Every operation that mutates state visible to parties outside
+> the maintainer's local machine — every `git push`, every
+> `gh issue create / edit / close / merge`, every label
+> add / remove, every label-driven workflow trigger, every
+> outbound email, every Slack / IRC / Matrix / mailing-list
+> post, every release artefact upload — MUST be reviewed by
+> the maintainer in its **final, post-render form** before it
+> is sent. The agent's role on the outbound path ends at
+> "draft prepared". The press of Enter / Send / Submit is the
+> maintainer's, on a surface where the maintainer can inspect
+> the literal bytes that will land.
+
+This principle is the operational specialisation of
+[Principle 1](#principle-1--human-in-the-loop-on-every-state-change)
+for the two highest-blast-radius surfaces: **write access to the
+project's source-of-truth** (the git repo, the issue tracker,
+the project board, the release surface) and **outbound
+communication on the project's behalf** (email to mailing
+lists, replies to security reporters, comments tagged with the
+maintainer's handle).
+
+### Why the dedicated principle
+
+The general HITL principle catches "the agent is mutating
+state". The two surfaces below need their own callout because
+they share three properties that make them especially unforgiving:
+
+1. **Public, attributed, and durable.** A merged PR carries the
+   maintainer's signature in the git history forever. A
+   reply on a public mailing list shows in the archive
+   forever. There is no quiet rollback; only a louder
+   correction.
+2. **Asymmetric reach.** A push to `main` propagates to every
+   downstream user; an email to `users@<project>` reaches
+   every subscriber. The cost of a wrong byte is multiplied
+   by the audience size.
+3. **Trust-load-bearing.** Maintainership is a trust
+   relationship. An outbound message in the maintainer's
+   voice that the maintainer did not author, and would not
+   have phrased that way, erodes that trust at exactly the
+   surface it lives on.
+
+### Five concrete consequences
+
+1. **Drafts, never sends.** Outbound messages (email,
+   mailing-list post, security-team relay, contributor reply)
+   are **drafted by the agent and saved in the
+   communication system's drafts folder**. The maintainer
+   opens the draft in the actual mail / IRC / chat client,
+   reads it as the recipient would, and presses Send.
+
+   - The framework's drafting backend writes a draft. It does
+     not — and the contract MUST explicitly forbid this — call
+     the *send* method on the same backend.
+   - "Send after timeout" / "auto-send unless cancelled" is a
+     send, not a draft. Forbidden.
+
+2. **`gh pr create --web` over `gh pr create`.** When opening a
+   public pull request, the framework's flow ends at *"opening
+   the browser at the PR-create page with the body
+   pre-populated"*. The maintainer reviews in the browser and
+   clicks the *Create pull request* button themselves. Same
+   for `gh issue create --web` and equivalent flows.
+
+3. **`--body-file` over `--body`** for any
+   `gh issue comment / gh pr comment / gh issue create / gh pr
+   review` invocation that *is* automated. The body must be a
+   file the maintainer reads before the call runs. String-form
+   `--body "$x"` re-introduces shell expansion at the wrong
+   layer and is forbidden — see
+   [Principle 2 — anti-patterns](#anti-patterns-to-avoid-1).
+
+4. **Confirmation surface shows the rendered output, not the
+   plan.** Before posting a PR review, the agent renders the
+   final review body (with all variable substitutions resolved,
+   markdown applied, line-numbered code references inlined)
+   and shows that to the maintainer for confirmation — not "I
+   plan to post a review with N comments". The maintainer
+   reads what GitHub will show, not what the agent intends.
+
+5. **Write tokens are clean-env injected, not shell-inherited.**
+   The agent's `gh` token, `git` push credentials, mailing-list
+   submission key, etc. are visible to the agent's subprocess
+   *only* because the project's clean-env wrapper deliberately
+   passes them through (see
+   [Principle 2 layer 0](#architecture-three-layers-layered)).
+   They are **not** inherited from the maintainer's interactive
+   shell. The framework's permission policy MUST forbid the
+   agent from reading the on-disk credential file directly
+   (`Read(~/.config/gh/**)`, `Read(~/.netrc)`, etc.); the
+   credential surface is **only** what the parent process
+   already negotiated and forwarded.
+
+### Anti-patterns to avoid
+
+- **"Auto-send drafts older than N hours."** A timer is not a
+  human review. Forbidden.
+- **CLI tools with both `draft` and `send` modes the agent can
+  pick from.** The framework's drafting tool MUST NOT expose
+  a send action at all; only the human's mail client can send.
+- **Posting to mailing lists from the agent.** Mailing lists
+  are write-once, archive-forever surfaces. Drafts go to the
+  maintainer's outbox; the maintainer presses Send.
+- **Bots that comment on issues with the maintainer's
+  handle.** A bot that operates as `@maintainer-handle` is
+  indistinguishable to readers from the maintainer. If the
+  comment has to be attributed to a human, a human writes it
+  (or signs off on a draft and posts it under their own
+  handle).
+- **Server-side approval tokens.** A pre-signed
+  "yes-go-ahead-and-send" token from a bot framework is a
+  delegation of the press-Send moment, not a confirmation.
+  Forbidden.
+
+### Cross-references
+
+- Principle 1's *Drafts, never sends* sub-rule and the
+  *audit-log of every confirmation* requirement.
+- Principle 2's `permissions.ask` layer for state-mutating
+  `gh` calls — that is how this principle is enforced at the
+  OS layer.
+- Principle 6 below — outbound messages can carry private
+  content; the privacy gate fires *before* the draft, this
+  principle fires *at the draft → send boundary*.
+
+---
+
+## Principle 6 — Privacy by design
+
+### Normative statement
+
+> Private content — security-issue reports, embargoed CVE
+> detail, PMC-private mail, contributor PII (full names, email
+> addresses, IPs), reporter-supplied test artefacts — MUST be
+> handled by the framework as if it had a chain-of-custody
+> requirement. Specifically: **(a) only LLMs the project's
+> PMC has explicitly approved may receive private content**;
+> **(b) PII MUST be redacted before any LLM read where the
+> content is not strictly needed for the task**;
+> **(c) the framework MUST provide a per-skill gate that
+> verifies the LLM-of-the-moment is approved before any
+> private read happens**;
+> **(d) every outbound public artefact (CVE record, public
+> advisory, public-PR description) MUST be mechanically
+> checked for private content leakage** before it leaves the
+> framework's control.
+
+### Why this is its own principle
+
+Privacy and security overlap but are not identical. Security
+(Principle 2) defends against the agent doing the wrong thing.
+Privacy defends against the agent doing the *right* thing
+*with the wrong audience*. A correctly-functioning agent that
+forwards a security report's reporter-PII to a non-approved
+external LLM has not been compromised — it has been used as
+designed against a privacy boundary the framework should have
+enforced.
+
+The reference implementation operationalises this principle in
+[`tools/privacy-llm/`](../../tools/privacy-llm/) — see
+[`docs/setup/privacy-llm.md`](../setup/privacy-llm.md) for the
+adopter-facing setup and
+[`tools/privacy-llm/wiring.md`](../../tools/privacy-llm/wiring.md)
+for the *redact-after-fetch* protocol that every skill reading
+Gmail private mail follows.
+
+### Five concrete consequences
+
+1. **Approved-LLM gate.** The project's PMC declares the set of
+   LLMs that may receive private content. The list is
+   per-PMC, not per-framework — Apache Steward's gate-check
+   tool (`tools/privacy-llm/checker/`) enforces the gate but
+   the *policy* is the project's. The reference list defaults
+   to "Claude Code trusted; `*.apache.org` auto-approved;
+   `localhost` for local-inference setups; everything else
+   requires explicit opt-in."
+
+2. **Redact-before-read.** When a skill fetches Gmail or
+   PonyMail private content, it pipes the fetched bytes
+   through the framework's PII redactor (`tools/privacy-llm/redactor/`)
+   *before* the LLM sees them. Reporter names → `N-<hash>`,
+   email addresses → `E-<hash>`, IPs → `IP-<hash>`. The
+   skill operates on the hash-prefixed identifiers; the
+   reverse map lives only on the maintainer's local disk
+   (mode 0600, never committed), and the *reveal* step
+   happens at draft-write time inside the maintainer's own
+   process, not inside an LLM call.
+
+3. **Reporter-PII is redacted, but reporter *credit* is not.**
+   The redaction is for in-context PII — the reporter's name
+   and email when the agent is reasoning about routing,
+   triage, deduplication. The reporter's *publicly-credited*
+   identity (e.g., "Reported by Jane Smith" in the CVE
+   record's `credits[]` field) is a deliberate output and
+   passes through unredacted, only after the maintainer
+   confirms the credit shape with the reporter on the
+   inbound thread.
+
+4. **Confidentiality scrub before public emission.** Every
+   skill that emits a public artefact (advisory email,
+   public PR body, public CVE-record JSON, GitHub Security
+   Advisory) MUST run a confidentiality scrub against the
+   draft body: regex match for `CVE-\d{4}-\d{4,7}` (forbidden
+   in pre-disclosure public PRs), reporter names from the
+   private mapping table, mailing-list addresses, and any
+   string the project's policy file enumerates as private.
+   The scrub fires before the draft is shown to the
+   maintainer; failures stop the flow with a specific
+   message.
+
+5. **Audit log is privacy-aware.** The audit log of agent
+   actions (Principle 1, consequence 5) MUST NOT contain
+   un-redacted PII or private content. Logs reference
+   redactor identifiers (`N-<hash>`) and the local mapping
+   resolves them only when a maintainer opens a specific
+   audit entry on their own machine.
+
+### Vendor-neutrality of the privacy gate
+
+The privacy gate's *policy* is set by the project's PMC; the
+gate's *implementation* is vendor-neutral by construction
+(Principle 3). A frontier-model backend, a local Ollama
+instance, and an Apache-aligned endpoint all pass through the
+same gate-check. The gate accepts or rejects based on the
+endpoint's hostname / identity, not on which company hosts it.
+
+### Anti-patterns to avoid
+
+- **Logging full email bodies for "debugging".** Audit logs
+  with un-redacted private content are a privacy incident
+  waiting for a backup tape to be misplaced. Redacted
+  identifiers only.
+- **"Just this once" approved-LLM bypasses.** A
+  one-off "let me run this through GPT-5 to see what it
+  thinks" is a policy violation. The PMC sets the list; the
+  maintainer does not have a personal exception.
+- **Reverse-mapping in LLM calls.** The redactor's reverse
+  map (hash → real PII) MUST stay in the maintainer's
+  local process. Sending it to an LLM defeats the
+  redaction.
+- **PII in commit messages.** Public commit messages and PR
+  bodies are durable public records. The confidentiality
+  scrub catches the obvious cases; skill authors must avoid
+  the non-obvious ones (the pattern catalogue at
+  [`tools/privacy-llm/pii.md`](../../tools/privacy-llm/pii.md)
+  enumerates them).
+
+### References to the broader privacy posture
+
+- The reference implementation:
+  [`tools/privacy-llm/`](../../tools/privacy-llm/) (the gate
+  + the redactor + the wiring contract).
+- The adopter-facing privacy setup:
+  [`docs/setup/privacy-llm.md`](../setup/privacy-llm.md).
+- The PII pattern catalogue:
+  [`tools/privacy-llm/pii.md`](../../tools/privacy-llm/pii.md).
+- The redact-after-fetch protocol every Gmail-reading skill
+  follows: [`tools/privacy-llm/wiring.md`](../../tools/privacy-llm/wiring.md).
+- **Cross-cutting privacy AIP** —
+  <!-- TODO: pin the specific AIP number when published. The
+  Apache Steward project intends to publish (or co-author with
+  the ASF Responsible AI Initiative) a foundation-level AIP on
+  *Privacy by Design for Agentic Tooling*. This RFC and the
+  AIP are intended to be sibling documents: this RFC sets
+  maintainer-side principles; the AIP sets foundation-level
+  policy. Until the AIP number is assigned, this section is
+  the canonical statement of the project's privacy posture. -->
+- The [ASF Privacy Policy](https://www.apache.org/foundation/privacy.html)
+  — foundation-level baseline every ASF project inherits;
+  this RFC layers agentic-specific obligations on top.
+
+---
+
+## How the six principles compose
+
+The six principles are independently necessary; together they
 form a cycle the maintainer can repeatedly apply:
 
 ```text
@@ -544,9 +836,13 @@ form a cycle the maintainer can repeatedly apply:
  │                              │
  └────── reads at runtime ──────┘
 
-         Sandbox is under everything.
+         Sandbox is under everything.                    (2)
          Vendor neutrality means any LLM
-         can play the [Skill] role.
+         can play the [Skill] role.                     (3)
+         Write / send is a maintainer click,
+         never the agent's.                             (5)
+         Private content stops at the
+         approved-LLM gate.                             (6)
 ```
 
 - **(1)** says the [Maintainer → confirms] arrow is mandatory.
@@ -555,13 +851,20 @@ form a cycle the maintainer can repeatedly apply:
   hosts — Claude Code today, a different host tomorrow.
 - **(4)** says the [Maintainer → corrects → Override → Skill]
   loop is how the framework gets better.
+- **(5)** says the *write* and *send* points on the
+  [Maintainer → confirms] arrow are non-delegable.
+- **(6)** says private content sees only LLMs the PMC has
+  approved, redacted before read, scrubbed before emission.
 
-Drop any one of the four and the system regresses to a
+Drop any one of the six and the system regresses to a
 recognisable bad pattern: drop (1) and you have an autonomous
 agent the maintainer is on the hook for; drop (2) and one
 prompt injection ruins the day; drop (3) and the project
 becomes a vendor's cost centre; drop (4) and the skill is a
-black box only the framework's authors can fix.
+black box only the framework's authors can fix; drop (5) and
+the agent is sending mail in the maintainer's voice; drop (6)
+and a security reporter's PII ends up in a vendor's training
+corpus.
 
 ---
 
