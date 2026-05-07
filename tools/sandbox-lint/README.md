@@ -18,9 +18,10 @@
 
 Lints `.claude/settings.json` against the shipped baseline at
 `tools/sandbox-lint/expected.json`, and against the security
-invariants documented in
-[`docs/security/threat-model.md`](../../docs/security/threat-model.md)
-(mitigation **M.29**).
+invariants documented in `docs/security/threat-model.md`
+(mitigation **M.29**). The threat-model document lands in a
+companion PR; the lint stands on its own and runs immediately on
+merge.
 
 ## What it checks
 
@@ -92,7 +93,6 @@ if the two diverge.
 A maintainer running an agent locally can edit `.claude/settings.json`
 to weaken the sandbox without ever opening a PR. This lint catches
 the *shipped* configuration but not local overrides during a single
-agent run. See
-[`docs/security/threat-model.md` X3 — Sandbox bypass via developer
-override](../../docs/security/threat-model.md#x3--sandbox-bypass-via-developer-override)
-and [residual risk #4](../../docs/security/threat-model.md#residual-risk-and-accepted-gaps).
+agent run. The companion threat-model document records this under
+section *X3, Sandbox bypass via developer override* and *Residual
+risk #4*; consult that document once it lands on `main`.

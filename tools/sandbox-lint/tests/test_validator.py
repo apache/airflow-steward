@@ -89,9 +89,9 @@ def test_diff_set_lists_order_insensitive(baseline: dict[str, Any]) -> None:
 
 def test_diff_detects_added_allowed_domain(baseline: dict[str, Any]) -> None:
     settings = copy.deepcopy(baseline)
-    settings["sandbox"]["network"]["allowedDomains"].append("evil.example.com")
+    settings["sandbox"]["network"]["allowedDomains"].append("sandbox-lint-test-extra-marker")
     diffs = deep_diff(settings, baseline)
-    assert any("evil.example.com" in d for d in diffs)
+    assert any("sandbox-lint-test-extra-marker" in d for d in diffs)
 
 
 def test_diff_detects_removed_deny_entry(baseline: dict[str, Any]) -> None:
@@ -211,7 +211,7 @@ def test_cli_fails_on_drift(tmp_path: Path, baseline: dict[str, Any]) -> None:
     settings_path = tmp_path / "settings.json"
     expected_path = tmp_path / "expected.json"
     drifted = copy.deepcopy(baseline)
-    drifted["sandbox"]["network"]["allowedDomains"].append("evil.example.com")
+    drifted["sandbox"]["network"]["allowedDomains"].append("sandbox-lint-test-extra-marker")
     _write_json(settings_path, drifted)
     _write_json(expected_path, baseline)
     rc = main(["--settings", str(settings_path), "--expected", str(expected_path)])
