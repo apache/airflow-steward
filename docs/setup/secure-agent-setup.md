@@ -340,12 +340,16 @@ below, annotated.
         "~/.gitconfig",               // git's user.name / user.email
         "~/.config/git/",             // git's per-host config
         "~/.config/gh/",              // gh CLI auth (token in hosts.yml)
-        "~/.cache/uv/",               // uv's HTTP cache
+        "~/.cache/",                  // dev tool caches (uv HTTP cache, prek logs, ruff/mypy caches)
         "~/.local/share/uv/",         // uv's tool venvs (prek, etc.)
         "~/.local/bin/",              // uv-installed tool entry points
         "~/.config/apache-steward/",  // Gmail OAuth refresh token (oauth-draft tool)
         "~/.gnupg/",                  // gpg keys (commit signing)
         "/run/user/*/gnupg/"          // gpg-agent socket dir (ssh-via-gpg-agent commit signing)
+      ],
+      "allowWrite": [
+        "~/.cache/",                  // uv lock files, prek log + state, ruff/mypy caches
+        "~/.local/share/uv/"          // uv's tool venvs (prek installs new hook envs here)
       ]
     },
     "network": {
@@ -848,7 +852,14 @@ sub-section that follows.
      domains you don't actually use, add any project-specific hosts.
    - The `sandbox.filesystem.allowRead` list — same: drop the
      dotfiles your project doesn't need, add any project-specific
-     paths the host requires.
+     paths the host requires. If you use Claude Code's `--worktree`
+     agent isolation, sibling agent worktrees live next to the active
+     one (e.g. `~/code/<project>/.claude/worktrees/agent-*/`), and
+     `git` operations on a worktree follow its `.git` file up to the
+     main repo's `.git/` directory. Both require read access to the
+     parent path that contains all worktrees and the main repo —
+     adopters who keep their checkout at, say, `~/code/<project>/`
+     should add that directory to `allowRead`.
    - The `permissions.ask` list — add any project-specific
      write-side commands you want to confirm explicitly (e.g. a
      custom release-publishing CLI).
