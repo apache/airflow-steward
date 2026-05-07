@@ -75,6 +75,94 @@ negative cost (talking over a real maintainer call-out).
 
 ---
 
+## Pre-filter 6 (maintainer co-drafted)
+
+F6 covers a different shape of "do not talk over a maintainer"
+than F5a/F5b: a draft PR that a maintainer (other than the
+viewer running the skill) has already substantively engaged
+with — typically by leaving a review with `CHANGES_REQUESTED`,
+posting a substantive comment outlining what is wrong, or both —
+and where the author has not yet responded with a new commit.
+
+The motivating cases are PRs the maintainer would already
+demote-and-comment on by hand and which the classifier, running
+later, would propose the same `draft` action for a second time.
+A few historical examples on `<upstream>` (each manually skipped
+to avoid a duplicate proposal):
+
+- `potiuk-drafted` `<upstream>#58149`
+- `vargacypher-drafted` `<upstream>#63260`
+- `bugraoz93-drafted` `<upstream>#64906`
+
+In each case the classifier wanted to emit a `deterministic_flag
+→ draft` proposal whose substance a different maintainer had
+already covered on the draft. F5a does not cover this: F5a
+expires after 72 hours and only fires when the **most recent**
+comment is by a collaborator. F5b does not cover this either:
+the maintainer engagement here is directed at the author, not at
+other maintainers. F6 closes the gap.
+
+### Why drafts only, not ready-for-review
+
+The F6 signal is "a maintainer is co-drafting this PR" — a
+collaborative state that only exists while the PR is `isDraft ==
+true`. Once a PR is promoted to ready-for-review the surrounding
+semantics flip: F4 already exempts ready PRs without regression,
+and a regression on a ready PR is exactly the moment we *want*
+the classifier to surface a signal to the maintainer queue, not
+suppress it. Limiting F6 to drafts keeps that signal path
+intact.
+
+### Why "after the last author commit", not a wall-clock TTL
+
+A wall-clock expiry (e.g. "ignore engagements older than 30
+days") would re-introduce the same duplicate-proposal problem
+F6 is meant to avoid: an old draft that a maintainer engaged
+with months ago, which the author has not pushed to since, is
+still in the same conversational state — re-proposing `draft`
+on it adds nothing. The right invalidation signal is **author
+activity**, not time: when the author pushes a new commit, the
+maintainer's prior critique may or may not be addressed and the
+classifier should re-evaluate. Anchoring F6 at
+`commits(last:1).committedDate` matches F5a's anchor and lets
+the eventual-resurfacing job stay where it belongs — the stale-
+sweep flow in [`stale-sweeps.md`](stale-sweeps.md), which acts
+on a different action (`stale_draft` → close), not on a
+duplicate `draft` proposal.
+
+### Why ≥ 80 chars on comments
+
+The threshold filters out emoji reactions, `+1`, `lgtm`, and
+single-sentence acknowledgements while letting through the
+typical maintainer critique ("Two things — the migration here
+needs a downgrade path, and the new helper duplicates X in
+`utils.py`. Converting to draft until those are addressed.").
+80 is empirical, not load-bearing; tune with feedback if real
+PRs slip through. Reviews are not gated on length because a
+review submission is itself a stronger commitment than a free-
+form comment — a maintainer who clicks through the review UI
+to attach `CHANGES_REQUESTED` has already engaged substantively
+even if the body is terse.
+
+### What F6 does not yet cover
+
+Two further signals would strengthen F6 but require new fields
+in the batch query:
+
+- A maintainer pushing commits to the author's branch (not
+  currently exposed — `commits(last:1)` returns committed-by
+  data but not the GitHub login of the pusher in a form the
+  query consumes).
+- A `convert_to_draft` timeline event authored by a maintainer
+  (would require pulling `timelineItems(itemTypes:
+  [CONVERT_TO_DRAFT_EVENT])`).
+
+Both are tracked as follow-ups; neither blocks the MVP because
+the historical examples that motivated F6 all surface via the
+review-or-comment signals F6 already inspects.
+
+---
+
 ## Row 1 — `pending_workflow_approval`
 
 Single most sensitive category in the skill. Approving a workflow

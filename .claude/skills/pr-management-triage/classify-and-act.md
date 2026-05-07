@@ -47,11 +47,15 @@ filter is skipped silently from the main triage flow.
 | F4 | Already marked ready, no regression | `labels` contains `ready for maintainer review` AND CI green AND `mergeable != CONFLICTING` AND no unresolved threads. Regression (any of: CI red, new conflict, new unresolved thread *after* the label was applied) bypasses this filter — surface as a regressed-passing entry so the maintainer can decide whether to pull the label. |
 | F5a | Recent collaborator comment (author cooldown) | Most recent comment is by a `COLLABORATOR`/`MEMBER`/`OWNER`, `createdAt < 72h` ago, AND posted after `commits(last:1).committedDate`. |
 | F5b | Maintainer-to-maintainer ping unanswered | Most recent collaborator comment `@`-mentions one or more logins other than the PR author AND none of those mentioned logins have posted on the PR or in `latestReviews` after that comment. Team mentions (e.g. `@<upstream>-committers`) are conservatively treated as F5b matches. |
+| F6 | Maintainer co-drafted | `isDraft == true` AND any of: (a) `latestReviews` has a node with `authorAssociation ∈ {OWNER, MEMBER, COLLABORATOR}` AND `author.login ≠ <viewer>` AND `state ∈ {COMMENTED, CHANGES_REQUESTED, APPROVED}` AND `submittedAt > commits(last:1).committedDate`; (b) `comments(last:10)` has a node with `authorAssociation ∈ {OWNER, MEMBER, COLLABORATOR}` AND `author.login ≠ <viewer>` AND `length(bodyText) ≥ 80` AND `createdAt > commits(last:1).committedDate`. Trivial signals (emoji-only, `+1`, `lgtm`, pure `@team` pings without prose) do not count — those are already covered by F5a/F5b or are below the substantive-engagement threshold. |
 
-F5a and F5b override every signal in the decision table — they
-are not weighed against conflicts, failing CI, or unresolved
-threads. See [`rationale.md#pre-filter-5-active-maintainer-conversation`](rationale.md#pre-filter-5-active-maintainer-conversation) for the
-why.
+F5a, F5b, and F6 override every signal in the decision table —
+they are not weighed against conflicts, failing CI, or unresolved
+threads. See
+[`rationale.md#pre-filter-5-active-maintainer-conversation`](rationale.md#pre-filter-5-active-maintainer-conversation)
+and
+[`rationale.md#pre-filter-6-maintainer-co-drafted`](rationale.md#pre-filter-6-maintainer-co-drafted)
+for the why.
 
 ---
 
