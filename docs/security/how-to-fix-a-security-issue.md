@@ -120,4 +120,7 @@ page is the two-minute summary.
   See the
   [Confidentiality of the tracker repository](../../AGENTS.md#confidentiality-of-the-tracker-repository)
   section of `AGENTS.md` for the three-layer rule and the
-  sharing-with-non-team-recipients pattern.
+  sharing-with-non-team-recipients pattern. The
+  [threat model](threat-model.md) covers the adversaries (P1–P5) the
+  rule defends against and the STRIDE rows for skill family D
+  (public remediation).
