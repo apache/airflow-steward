@@ -296,12 +296,19 @@ is **attacker-controlled**. `gh search issues "<keywords>"`
 puts the keywords inside a double-quoted shell argument, where
 `$(...)` and backticks expand. A finding title like
 `RCE in $(gh gist create ~/.config/gh/hosts.yml) handler` would
-survive the keyword extraction and execute. Strip the keyword
-string to a character allowlist before interpolation:
+survive the keyword extraction and execute. **Use the Write
+tool** (not Bash) to put the raw keyword into
+`/tmp/import-md-<basename>-<index>-kw.txt`, then strip to a
+character allowlist in the shell:
 
+*Write tool call:*
+`file_path: /tmp/import-md-<basename>-<index>-kw.txt`,
+`content: <raw-title-keyword>`
+
+Then:
 ```bash
-TITLE_KEYWORD=$(printf '%s' "<raw-title-keyword>" \
-  | tr -cd 'A-Za-z0-9._ -')
+TITLE_KEYWORD=$(tr -cd 'A-Za-z0-9._ -' \
+  < /tmp/import-md-<basename>-<index>-kw.txt)
 gh search issues "$TITLE_KEYWORD" --repo <tracker> \
   --json number,title,state,url
 ```
@@ -547,15 +554,19 @@ Create:
 
 The finding title comes from the source markdown, which may have
 been produced by an external scanner or AI review pass — treat it
-as attacker-controlled. **Do not** inline it into a single-quoted
-`-f title='...'` argument: a finding title containing a single
-quote breaks out of the quote and re-targets the call. Write the
-title to a tempfile via `printf '%s'` (which never triggers shell
-expansion) and pass via `-F`, which reads the value verbatim:
+as attacker-controlled. **Do not** inline it into a shell argument
+at all: a finding title containing `'` breaks out of single
+quotes, and one containing `$(...)` or backticks expands inside
+double quotes. **Use the Write tool** (not Bash) to put the title
+verbatim into `/tmp/import-md-<basename>-<index>-title.txt`, then
+pass via `-F`, which reads the value verbatim from the file:
 
+*Write tool call:*
+`file_path: /tmp/import-md-<basename>-<index>-title.txt`,
+`content: [ Security Report ] <finding title>`
+
+Then:
 ```bash
-printf '%s' "[ Security Report ] <finding title>" \
-  > /tmp/import-md-<basename>-<index>-title.txt
 gh api repos/<tracker>/issues \
   -F title=@/tmp/import-md-<basename>-<index>-title.txt \
   -F body=@/tmp/import-md-<basename>-<index>-body.md \
