@@ -47,11 +47,15 @@ filter is skipped silently from the main triage flow.
 | F4 | Already marked ready, no regression | `labels` contains `ready for maintainer review` AND CI green AND `mergeable != CONFLICTING` AND no unresolved threads. Regression (any of: CI red, new conflict, new unresolved thread *after* the label was applied) bypasses this filter — surface as a regressed-passing entry so the maintainer can decide whether to pull the label. |
 | F5a | Recent collaborator comment (author cooldown) | Most recent comment is by a `COLLABORATOR`/`MEMBER`/`OWNER`, `createdAt < 72h` ago, AND posted after `commits(last:1).committedDate`. |
 | F5b | Maintainer-to-maintainer ping unanswered | Most recent collaborator comment `@`-mentions one or more logins other than the PR author AND none of those mentioned logins have posted on the PR or in `latestReviews` after that comment. Team mentions (e.g. `@<upstream>-committers`) are conservatively treated as F5b matches. |
+| F6 | Maintainer co-drafted | `isDraft == true` AND any of: (a) `latestReviews` has a node with `authorAssociation ∈ {OWNER, MEMBER, COLLABORATOR}` AND `author.login ≠ <viewer>` AND `state ∈ {COMMENTED, CHANGES_REQUESTED, APPROVED}` AND `submittedAt > commits(last:1).committedDate` AND review body is non-empty (avoids the "review with only inline thread comments and an empty top-level body" false positive — those are already counted by row 14/15 unresolved-thread logic); (b) `comments(last:10)` has a node with `authorAssociation ∈ {OWNER, MEMBER, COLLABORATOR}` AND `author.login ≠ <viewer>` AND `length(bodyText) ≥ 80` AND `createdAt > commits(last:1).committedDate`. Trivial signals (emoji-only, `+1`, `lgtm`, pure `@team` pings without prose) do not count — those are already covered by F5a/F5b or are below the substantive-engagement threshold. **Stale-sweep classifications in [`stale-sweeps.md`](stale-sweeps.md) may still pull the PR back in** — F6 only suppresses duplicate-proposal rows from the decision table, not eventual-resurfacing on a different action. |
 
-F5a and F5b override every signal in the decision table — they
-are not weighed against conflicts, failing CI, or unresolved
-threads. See [`rationale.md#pre-filter-5-active-maintainer-conversation`](rationale.md#pre-filter-5-active-maintainer-conversation) for the
-why.
+F5a, F5b, and F6 override every signal in the decision table —
+they are not weighed against conflicts, failing CI, or unresolved
+threads. See
+[`rationale.md#pre-filter-5-active-maintainer-conversation`](rationale.md#pre-filter-5-active-maintainer-conversation)
+and
+[`rationale.md#pre-filter-6-maintainer-co-drafted`](rationale.md#pre-filter-6-maintainer-co-drafted)
+for the why.
 
 ---
 
@@ -339,7 +343,7 @@ applies — rows do not get to reach back for more data.
 
 | Decision rows / preconditions | Required fields |
 |---|---|
-| F5a, F5b, grace periods | `comments(last:10).nodes.{author.login,authorAssociation,bodyText,createdAt}`, `latestReviews.nodes.{author.login,submittedAt}`, `commits(last:1).nodes.commit.committedDate` |
+| F5a, F5b, F6, grace periods | `comments(last:10).nodes.{author.login,authorAssociation,bodyText,createdAt}`, `latestReviews.nodes.{state,author.login,authorAssociation,submittedAt}`, `commits(last:1).nodes.commit.committedDate`, viewer login |
 | Row 1 + Real-CI guard | `statusCheckRollup.state`, `statusCheckRollup.contexts`, `authorAssociation`, `head_sha` (REST `action_required` index keyed by `head_sha`) |
 | `copilot_review_stale` (row 2) | `reviewThreads.nodes.{isResolved,comments.nodes.{author.login,createdAt,url}}`, `comments(last:10).nodes.{author.login,createdAt}` |
 | `has_deterministic_signal`, `ci_failures_only`, `unresolved_threads_only`, `unresolved_threads_only_likely_addressed` (rows 8–17) | `mergeable`, `statusCheckRollup.{state,contexts}`, `reviewThreads.nodes.{isResolved,comments(first:5).nodes.{author.login,authorAssociation,createdAt}}`, `updatedAt`, `comments(last:10).nodes.{author.login,authorAssociation,createdAt}`, `commits(last:1).nodes.commit.committedDate`, `author.login` |
