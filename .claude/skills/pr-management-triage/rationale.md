@@ -102,6 +102,30 @@ comment is by a collaborator. F5b does not cover this either:
 the maintainer engagement here is directed at the author, not at
 other maintainers. F6 closes the gap.
 
+### Empirical check against the motivating examples
+
+Snapshotting the three PRs at the time of the issue (`<now>` =
+2026-05-07):
+
+| PR | Last author commit | Qualifying maintainer engagement after that anchor | F6 fires (viewer = potiuk)? |
+|---|---|---|---|
+| `<upstream>#63260` | 2026-03-22 (vargacypher) | `kaxil` comment 2026-04-15, body length 80 chars | yes — comment branch |
+| `<upstream>#64906` | 2026-04-11 (stephen-bracken) | `bugraoz93` comment 2026-04-20, body length 102 chars | yes — comment branch |
+| `<upstream>#58149` | 2026-01-23 (Philip Abernethy) | only `potiuk`'s own triage / closure comments | **no** — viewer-self engagement is excluded |
+
+`#58149` is therefore not addressed by F6 as written. It is a
+related-but-distinct concern: the viewer's *own* prior
+engagement on a draft is conceptually
+[`already_triaged`](classify-and-act.md#decision-table)
+territory (rows 3–5), and the duplicate-proposal symptom there
+is "viewer left a free-form drafting comment that doesn't carry
+the triage marker, so rows 3–5 don't recognise it." Closing
+that gap belongs in the marker-detection logic of rows 3–5 (or
+in the stale-sweep duplicate-suppression), not in F6 — F6's
+contract is "do not talk over a *different* maintainer." The
+issue tracking the marker-detection extension is
+[#79's first follow-up bullet](https://github.com/apache/airflow-steward/issues/79).
+
 ### Why drafts only, not ready-for-review
 
 The F6 signal is "a maintainer is co-drafting this PR" — a
