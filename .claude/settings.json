@@ -63,7 +63,9 @@
       "Bash(docker login *)",
       "Bash(npm publish *)",
       "Bash(pip install --upgrade *)",
-      "Bash(uv self update *)"
+      "Bash(uv self update *)",
+      "Bash(gh auth token*)",
+      "Bash(gh auth refresh*)"
     ],
     "ask": [
       "Bash(git push *)",
@@ -85,11 +87,14 @@
       "Bash(gh repo edit *)",
       "Bash(gh repo delete *)",
       "Bash(gh api * --method *)",
+      "Bash(gh api --method *)",
       "Bash(gh api * --input *)",
+      "Bash(gh api --input *)",
       "Bash(gh secret *)",
       "Bash(gh ssh-key *)",
       "Bash(gh release upload *)",
-      "Bash(gh release delete *)"
+      "Bash(gh release delete *)",
+      "Bash(gh workflow run *)"
     ]
   }
 }
