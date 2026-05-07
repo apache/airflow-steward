@@ -46,7 +46,7 @@
 | **Last updated** | 2026-05-02 |
 | **Discussion** | *TBD — link to mailing list thread once posted* |
 | **Reference implementation** | [`apache/airflow-steward`](https://github.com/apache/airflow-steward) |
-| **Related documents** | [`secure-agent-setup.md`](https://github.com/apache/airflow-steward/blob/main/secure-agent-setup.md), [`secure-agent-internals.md`](https://github.com/apache/airflow-steward/blob/main/secure-agent-internals.md) |
+| **Related documents** | [`secure-agent-setup.md`](https://github.com/apache/airflow-steward/blob/main/docs/setup/secure-agent-setup.md), [`secure-agent-internals.md`](https://github.com/apache/airflow-steward/blob/main/docs/setup/secure-agent-internals.md) |
 
 > **Note for Confluence editors.** This page combines two source documents (`secure-agent-setup.md` — the adopter install path, and `secure-agent-internals.md` — the threat model and mechanism). Image references (`images/session-*.png`, `images/sandbox-*.png`) point at PNG files in the source repo. Upload them as Confluence attachments and re-link from this page when publishing — the alt-text in each `![…]` reference is enough to reproduce the screenshot if needed.
 
@@ -469,7 +469,7 @@ This setup substantially shrinks the credential-leakage surface, but some risks 
 - [macOS Seatbelt / sandbox-exec](https://developer.apple.com/library/archive/documentation/Security/Conceptual/AppSandboxDesignGuide/AboutAppSandbox/AboutAppSandbox.html) — kernel-level syscall sandbox.
 - [Claude Code sandbox feature](https://docs.claude.com/en/docs/claude-code/) — the runtime-layer wrapping that this RFC builds on.
 - [`apache/airflow-steward`](https://github.com/apache/airflow-steward) — the reference implementation, including:
-  - [`secure-agent-setup.md`](https://github.com/apache/airflow-steward/blob/main/secure-agent-setup.md) — adopter-facing install path
-  - [`secure-agent-internals.md`](https://github.com/apache/airflow-steward/blob/main/secure-agent-internals.md) — threat model and mechanism
+  - [`secure-agent-setup.md`](https://github.com/apache/airflow-steward/blob/main/docs/setup/secure-agent-setup.md) — adopter-facing install path
+  - [`secure-agent-internals.md`](https://github.com/apache/airflow-steward/blob/main/docs/setup/secure-agent-internals.md) — threat model and mechanism
   - [`tools/agent-isolation/`](https://github.com/apache/airflow-steward/tree/main/tools/agent-isolation) — wrapper, hooks, status-line, pinned-versions manifest
   - [`.claude/settings.json`](https://github.com/apache/airflow-steward/blob/main/.claude/settings.json) — the dogfooded sandbox / permissions config

@@ -308,7 +308,7 @@ The general HITL principle catches "the agent is mutating state". The two surfac
 
 Privacy and security overlap but are not identical. Security (Principle 2) defends against the agent doing the wrong thing. Privacy defends against the agent doing the *right* thing *with the wrong audience*. A correctly-functioning agent that forwards a security report's reporter-PII to a non-approved external LLM has not been compromised — it has been used as designed against a privacy boundary the framework should have enforced.
 
-The reference implementation operationalises this principle in [`tools/privacy-llm/`](https://github.com/apache/airflow-steward/blob/main/tools/privacy-llm/) — see [`docs/setup/privacy-llm.md`](https://github.com/apache/airflow-steward/blob/main/docs/setup/privacy-llm.md) for the adopter-facing setup and [`tools/privacy-llm/wiring.md`](https://github.com/apache/airflow-steward/blob/main/docs/tools/privacy-llm/wiring.md) for the *redact-after-fetch* protocol that every skill reading Gmail private mail follows.
+The reference implementation operationalises this principle in [`tools/privacy-llm/`](https://github.com/apache/airflow-steward/blob/main/tools/privacy-llm/) — see [`docs/setup/privacy-llm.md`](https://github.com/apache/airflow-steward/blob/main/docs/setup/privacy-llm.md) for the adopter-facing setup and [`tools/privacy-llm/wiring.md`](https://github.com/apache/airflow-steward/blob/main/tools/privacy-llm/wiring.md) for the *redact-after-fetch* protocol that every skill reading Gmail private mail follows.
 
 ### Five concrete consequences
 
@@ -397,16 +397,13 @@ The Apache Steward (to be renamed) project is happy to consult on the lift — s
 - **Specific UI.** A terminal-based CLI, a CI bot, an IDE extension, a web dashboard — all are valid surfaces. The principles apply identically.
 - **Specific scaffolding library.** LangGraph, BAML, raw Anthropic SDK, raw OpenAI SDK, ollama-cli, llamafile — pick one. The skills are the contract; the runtime is an implementation detail.
 - **Pricing or hosting.** The project is the buyer; the vendor is the seller. The framework declines to express a preference on either.
-- **Mandatory model evaluation.** Per-skill eval is recommended but not required by this RFC. A separate RFC may cover evaluation methodology — see the [Apache Plumb](/confluence/display/ASFP/Apache+Plumb%3A+Top-Level+Project+Proposal) collaboration in [`MISSION.md`](https://github.com/apache/airflow-steward/blob/main/MISSION.md).
+- **Mandatory model evaluation.** Per-skill eval is recommended but not required by this RFC. A separate RFC may cover evaluation methodology — see the Apache Plumb collaboration in [`MISSION.md`](https://github.com/apache/airflow-steward/blob/main/MISSION.md).
 
 ---
 
 ## References
 
 ### Internal (this repository)
-
-- [RFC-AI-0002 Secure Agents setup](/confluence/display/ASFP/RFC-AI-0002+Secure+Agents+setup) - secure agents setup
-- [RFC-AI-0003 privacy-aware LLM routing for foundation private information](/confluence/display/ASFP/RFC-AI-0003+privacy-aware+LLM+routing+for+foundation+private+information)  - privacy RFC
 
 ### External
 
