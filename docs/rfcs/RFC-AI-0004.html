@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RFC-AI-0004 — Principles of agentic interaction for open-source maintainers</title>
+<meta name="description" content="Apache Steward RFC-AI-0004: four principles (Human-in-the-Loop, Secure Sandbox, Vendor Neutrality, Conversational Correctability) governing agent-mediated maintainer workflows on open-source projects.">
+<style>
+  :root {
+    --bg: #fbfbf8; --fg: #1a1a1a; --muted: #6b6b6b; --rule: #e0e0d8;
+    --link: #1f5fbf; --link-hover: #0c3d80;
+    --code-bg: #f3f0e8; --quote-bg: #f7f5ee; --quote-rule: #c9a227;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1a1a1a; --fg: #e8e6e0; --muted: #999; --rule: #333;
+      --link: #6daaff; --link-hover: #99c4ff;
+      --code-bg: #262626; --quote-bg: #232323; --quote-rule: #c9a227;
+    }
+  }
+  html { color-scheme: light dark; }
+  body { background: var(--bg); color: var(--fg);
+         font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif;
+         margin: 0; padding: 0; }
+  main { max-width: 760px; margin: 3em auto; padding: 0 1.5em; }
+  h1, h2, h3, h4 {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    font-weight: 600; line-height: 1.25;
+    margin-top: 1.8em; margin-bottom: 0.6em;
+  }
+  h1 { font-size: 1.9em; margin-top: 0.3em; }
+  h2 { font-size: 1.45em; border-bottom: 1px solid var(--rule); padding-bottom: 0.3em; }
+  h3 { font-size: 1.15em; }
+  h4 { font-size: 1em; color: var(--muted); }
+  p, ul, ol, blockquote, table { margin: 0.6em 0 1.0em; }
+  a { color: var(--link); text-decoration: none; border-bottom: 1px solid transparent; transition: border-color 120ms; }
+  a:hover { color: var(--link-hover); border-bottom-color: currentColor; }
+  blockquote {
+    border-left: 4px solid var(--quote-rule); background: var(--quote-bg);
+    padding: 0.6em 1.0em;
+  }
+  blockquote p:first-child { margin-top: 0; }
+  blockquote p:last-child { margin-bottom: 0; }
+  code {
+    font-family: "SF Mono", Menlo, Consolas, "DejaVu Sans Mono", monospace;
+    font-size: 0.92em; background: var(--code-bg);
+    padding: 0.08em 0.32em; border-radius: 3px;
+  }
+  pre {
+    background: var(--code-bg); padding: 0.9em 1em; overflow: auto;
+    border-radius: 4px; line-height: 1.4; font-size: 0.88em;
+  }
+  pre code { background: none; padding: 0; font-size: 1em; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.95em; }
+  th, td { border: 1px solid var(--rule); padding: 0.45em 0.7em; text-align: left; vertical-align: top; }
+  th { background: var(--code-bg); font-weight: 600; }
+  tr:nth-child(even) td { background: rgba(0,0,0,0.015); }
+  @media (prefers-color-scheme: dark) {
+    tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+  }
+  hr { border: none; border-top: 1px solid var(--rule); margin: 2.5em 0; }
+  .rfc-banner {
+    border-left: 4px solid var(--quote-rule); background: var(--quote-bg);
+    padding: 0.8em 1.2em; margin: 1em 0 2em;
+    font-size: 0.92em; color: var(--muted);
+  }
+  .rfc-banner strong { color: var(--fg); }
+  @media print {
+    body { background: white; color: black; }
+    main { max-width: none; margin: 0; padding: 1cm; }
+    h1, h2, h3, h4 { break-after: avoid; }
+    pre, blockquote, table { break-inside: avoid; }
+    a { color: black; border: none; }
+    a[href^="http"]::after { content: " (" attr(href) ")"; font-size: 0.8em; color: #666; }
+    .rfc-banner { background: #f5f5f5 !important; color: black !important; }
+  }
+</style>
+</head>
+<body>
+<main>
+<div class="rfc-banner">
+  <strong>Apache Steward — Request for Comments.</strong>
+  Self-contained HTML rendered from the Markdown source at
+  <code>docs/rfcs/RFC-AI-0004.md</code>; the Markdown is authoritative.
+  Comments via issue on
+  <a href="https://github.com/apache/airflow-steward/issues">apache/airflow-steward</a>
+  with the <code>area:docs</code> label.
+</div>
+<!-- SPDX-License-Identifier: Apache-2.0
+     https://www.apache.org/licenses/LICENSE-2.0 -->
+
+<h1>RFC-AI-0004: Principles of agentic interaction for open-source maintainers</h1>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>RFC</strong></td>
+<td>AI-0004</td>
+</tr>
+<tr>
+<td><strong>Title</strong></td>
+<td>Principles of agentic interaction for open-source maintainers</td>
+</tr>
+<tr>
+<td><strong>Status</strong></td>
+<td>Draft</td>
+</tr>
+<tr>
+<td><strong>Authors</strong></td>
+<td>The Apache Steward project (see <a href="../../MISSION.md"><code>MISSION.md</code></a> for roster)</td>
+</tr>
+<tr>
+<td><strong>Initial draft</strong></td>
+<td>2026-05-07</td>
+</tr>
+<tr>
+<td><strong>Supersedes</strong></td>
+<td>None</td>
+</tr>
+<tr>
+<td><strong>Superseded by</strong></td>
+<td>None</td>
+</tr>
+<tr>
+<td><strong>Reference implementation</strong></td>
+<td><a href="https://github.com/apache/airflow-steward"><code>apache/airflow-steward</code></a></td>
+</tr>
+<tr>
+<td><strong>License</strong></td>
+<td>Apache License 2.0</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>Abstract</h2>
+<p>This RFC describes four principles that govern how AI agents should
+interact with open-source projects when <strong>the human in the
+interaction is a project maintainer</strong> — committer, PMC member,
+release manager, security-team member, triager. The four
+principles —
+<strong>(1) human-in-the-loop on every state change</strong>,
+<strong>(2) secure sandbox by default</strong>,
+<strong>(3) vendor neutrality across LLM backends and project
+governance</strong>, and
+<strong>(4) conversational, correctable agentic skills</strong> —
+are framed as <em>a baseline</em>. They define the minimum trust posture
+under which agentic tooling can be ethically deployed against the
+public artefacts of a community-governed project (issues, PRs,
+mailing lists, releases, security reports, contributor data).</p>
+<p>The RFC is normative for the Apache Steward framework
+(<a href="https://github.com/apache/airflow-steward"><code>apache/airflow-steward</code></a>,
+the working draft of which is summarised in
+<a href="../../MISSION.md"><code>MISSION.md</code></a>) and is offered as a
+<strong>pattern other projects can adopt or adapt</strong> when integrating
+agentic tooling into their own maintainership workflow.</p>
+<p>It is <strong>not</strong> a specification of any particular implementation
+detail (LLM choice, prompt format, model size, scaffolding
+library). The principles are independent of those choices.</p>
+<hr />
+<h2>Status of this document</h2>
+<p>This is a <strong>Draft</strong>. The Apache Steward project's reference
+implementation operationalises every principle in this RFC, but
+the RFC itself is the project's first attempt to extract the
+principles from the implementation and frame them as a portable
+contract. The next two milestones are:</p>
+<ol>
+<li><strong>Public review</strong> — comments solicited from ASF Members,
+   non-ASF maintainers running similar agentic frameworks, and
+   the <a href="https://incubator.apache.org/projects/responsible-ai.html">ASF Responsible AI Initiative</a>
+   working group.</li>
+<li><strong>Pilot validation</strong> — the four principles tested against the
+   Apache Steward pilot cohort (one ASF PMC running the full
+   security-issue flow, one ASF PMC running just triage +
+   mentoring, at least one non-ASF project) before promotion
+   from <code>Draft</code> to <code>Stable</code>.</li>
+</ol>
+<p>Substantive comments → open an issue in
+<a href="https://github.com/apache/airflow-steward/issues"><code>apache/airflow-steward</code></a>
+with the label <code>area:docs</code>; the project's discussion thread
+will be linked here in the next revision.</p>
+<hr />
+<h2>Motivation</h2>
+<p>Maintainers of open-source projects increasingly find themselves
+at the receiving end of agent-shaped tooling — bots that triage,
+auto-mergers that touch their default branch, scanners that file
+issues, AI-suggested PRs that propose code. The volume of such
+tooling is growing faster than the conventions for <strong>how that
+tooling should behave</strong>. The result, today, is a stack of
+implicit choices made by individual tool authors that vary
+across projects in ways that erode trust:</p>
+<ul>
+<li>A maintainer cannot tell, from a tool's surface alone, whether
+  it operates <strong>autonomously</strong> or <strong>with confirmation</strong>, where
+  the boundary lies, and what the rollback story is.</li>
+<li>Sandbox posture varies wildly. Some agents read everything in
+  <code>~</code>; some read nothing. Some can <code>gh pr create</code>; some can
+  silently push to the default branch. The maintainer is on the
+  hook for figuring this out.</li>
+<li>Vendor lock-in is largely silent. A skill that "uses Claude"
+  is a skill that <em>requires</em> Claude — not a skill that happens
+  to use Claude today and would work on a local model
+  tomorrow. The lock-in is rarely surfaced as a choice.</li>
+<li>"How do I correct this?" has become an afterthought. The
+  maintainer who notices the agent is doing the wrong thing
+  often has no path to fix it short of opening an upstream PR
+  to the tool author.</li>
+</ul>
+<p>This RFC names the four shifts that, taken together, make
+agentic tooling acceptable on a maintainer-governed project.
+Each shift is independently necessary; the combination is
+sufficient.</p>
+<hr />
+<h2>Definitions</h2>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Definition</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Agent</strong></td>
+<td>A program that selects and executes actions to advance a maintainer-stated goal, where at least one of those actions is mediated by an LLM and where action selection is conditioned on natural-language conversation rather than a pre-coded flow chart.</td>
+</tr>
+<tr>
+<td><strong>Skill</strong></td>
+<td>A package of agent-readable text (typically a markdown file with YAML frontmatter and bundled scripts/references) that scopes the agent to a single workflow. The Apache Steward framework's skills (<code>security-issue-import</code>, <code>pr-management-triage</code>, etc.) are reference instances.</td>
+</tr>
+<tr>
+<td><strong>Maintainer</strong></td>
+<td>A human with write access (or comparable governance authority) on the target project. PMC members, committers, triagers, release managers all qualify; bots and agents do not.</td>
+</tr>
+<tr>
+<td><strong>State change</strong></td>
+<td>Any operation observable by parties outside the maintainer's local machine: posted comment, edited issue body, applied label, merged PR, sent email, written file under the repo's tracked path, etc. Operations that touch only the maintainer's <code>/tmp</code> or <code>~/.config/&lt;framework&gt;/</code> cache are <strong>not</strong> state changes.</td>
+</tr>
+<tr>
+<td><strong>Confirmation</strong></td>
+<td>An explicit, in-session, reversible-only-by-history act by the maintainer that authorises one specific state change. Standing approvals, "yes to all", and pre-approved-via-config are explicitly <strong>not</strong> confirmations.</td>
+</tr>
+<tr>
+<td><strong>Sandbox</strong></td>
+<td>An OS-level isolation boundary (filesystem namespacing, network filtering, syscall mediation) plus a tool-permissions layer plus a clean-environment wrapper, applied to every agent-launched subprocess.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>Principle 1 — Human-in-the-Loop on every state change</h2>
+<h3>Normative statement</h3>
+<blockquote>
+<p>Every state change an agent proposes against project artefacts
+MUST be presented to a maintainer as a <em>proposal</em>, and MUST NOT
+be applied until the maintainer issues an explicit per-proposal
+confirmation. The agent never confirms on the maintainer's
+behalf, never persists "always yes" approvals across sessions,
+and never bundles multiple state changes under one
+confirmation in a way that hides any single one from review.</p>
+</blockquote>
+<h3>Why this is the load-bearing principle</h3>
+<p>A skill that triages 200 PRs in 10 minutes is doing 200 state
+changes. If the maintainer is not in the loop on each one, what
+they are doing is <strong>delegating their committer authority to a
+program</strong>. That is not what "AI-assisted maintainership" should
+mean. The committer's signature on every artefact is the entire
+basis of the project's trust model; the agent does not own that
+signature.</p>
+<h3>Five concrete consequences</h3>
+<ol>
+<li>
+<p><strong>Propose-then-apply, always.</strong> The agent's natural unit of
+   work is "here is the proposal, will you confirm?". The
+   "apply" pass that follows confirmation is mechanical — no
+   reasoning, no surprises, no second proposal hidden inside.</p>
+</li>
+<li>
+<p><strong>Per-proposal confirmation, no batch yes.</strong> Multiple
+   state changes in the same response require a confirmation
+   surface that lets the maintainer say "1, 3, 4 yes; 2 no".
+   <code>all</code> as a one-keystroke shortcut is acceptable; the agent
+   must still surface every item before honouring it.</p>
+</li>
+<li>
+<p><strong>No standing pre-approvals.</strong> A skill MUST NOT support a
+   config switch that says "auto-approve every X-class
+   proposal". The boundary between Mode C (agent-authored fix
+   with human review) and Mode D (narrowly-scoped auto-merge)
+   is exactly this; Mode D is governed by a separate, much
+   stricter contract (see Principle 1, <em>narrow auto-merge
+   carve-out</em> below).</p>
+</li>
+<li>
+<p><strong>Drafts, never sends.</strong> Outbound communication (email,
+   chat) is <strong>drafted</strong> by the agent and stored in the
+   communication system's drafts folder. The maintainer
+   reviews and presses Send. The framework MUST NOT have a
+   "yes, send the draft" path that bypasses the human read.</p>
+</li>
+<li>
+<p><strong>Audit log of every confirmation.</strong> Every applied state
+   change writes a structured audit-log entry: timestamp,
+   maintainer identity, proposal text, applied diff,
+   triggering skill. Open-source maintenance is a
+   public-trust activity; the trail makes future review
+   possible.</p>
+</li>
+</ol>
+<h3>Narrow auto-merge carve-out</h3>
+<p>Mode D ("narrowly-scoped fix-and-merge", in Apache Steward's
+terminology) is the explicit exception. It permits auto-merge,
+but only after <strong>all</strong> of the following gate conditions hold:</p>
+<ul>
+<li>The change class is on a per-project, per-class allow-list
+  (lint fixes, dependency bumps within an allow-list, license
+  headers, formatting, broken-link repair). Security-class
+  changes are explicitly out.</li>
+<li>The project has been running Modes A/B/C with HITL
+  confirmation for at least two release cycles, and a
+  contributor-sentiment evaluation says the project is
+  healthier, not just faster.</li>
+<li>Every auto-merged change is reversibly logged; reverts are
+  one keystroke away.</li>
+</ul>
+<p>The carve-out exists because lint-rebase-format has marginal
+human value and should not require a human in the loop forever.
+It is <strong>off by default</strong> in the reference implementation. A
+project that turns it on without first running the manual loop
+has skipped the proof.</p>
+<h3>Anti-patterns to avoid</h3>
+<ul>
+<li><strong>Standing "always-yes" tokens.</strong> "Auto-approve all my agent's
+  proposals for the next week" is a delegation, not a
+  confirmation.</li>
+<li><strong>Implicit confirmation via inactivity.</strong> "Will apply in
+  10 seconds unless cancelled" is not a confirmation; it is a
+  default-yes that survives interruption.</li>
+<li><strong>Bundling.</strong> "I'll apply changes A, B, C, D, E now" with one
+  confirmation hides four of those changes from per-item review.</li>
+<li><strong>Server-side approval.</strong> A web endpoint that accepts a
+  pre-signed approval token bypasses the in-session boundary.
+  The approval lives in the maintainer's terminal, not in the
+  framework.</li>
+</ul>
+<hr />
+<h2>Principle 2 — Secure sandbox by default</h2>
+<h3>Normative statement</h3>
+<blockquote>
+<p>The agent's executing process MUST run inside an OS-level
+sandbox at all times. The sandbox MUST default-deny filesystem
+reads outside the project working tree and a small set of
+explicitly-permitted user-config paths, default-deny network
+egress to all hosts not on a project-declared allow-list, and
+default-deny invocation of binaries that the project's
+permission policy has not explicitly allowed. The sandbox is
+in addition to — not in replacement of — Principle 1's
+human-in-the-loop confirmation gate.</p>
+</blockquote>
+<h3>Why this is necessary</h3>
+<p>LLM-driven agents read attacker-controlled text every time they
+run. Email subjects, PR titles, scanner findings, public commit
+messages, mailing-list archives, third-party PR comments — all
+of these are content the agent treats as input and that an
+attacker can shape. <strong>No prompt-engineering technique
+neutralises this surface.</strong> The fallback when prompt
+engineering fails has to be the operating system telling the
+agent's subprocess "no, you cannot read <code>~/.aws/credentials</code>"
+or "no, you cannot connect to <code>attacker.example.com</code>".</p>
+<h3>Architecture: three layers, layered</h3>
+<p>The reference implementation
+(see <a href="../setup/secure-agent-internals.md"><code>docs/setup/secure-agent-internals.md</code></a>)
+uses a three-layer model. Other implementations MAY choose
+different mechanisms; the layering MUST be preserved:</p>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>What it stops</th>
+<th>Mechanism (reference)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>0. Clean environment</strong></td>
+<td>Inherited credential-shaped env vars (<code>$AWS_*</code>, <code>$GH_TOKEN</code>, <code>$ANTHROPIC_API_KEY</code>, …).</td>
+<td>A shell wrapper (<code>claude-iso</code>) that strips the agent's process env to a project-declared whitelist before exec.</td>
+</tr>
+<tr>
+<td><strong>1. Filesystem + network sandbox</strong></td>
+<td>Bash subprocess reads outside the project tree; outbound HTTPS to non-allowed hosts.</td>
+<td>Linux: <code>bubblewrap</code> user-namespace + <code>socat</code> SNI proxy. macOS: <code>sandbox-exec</code>.</td>
+</tr>
+<tr>
+<td><strong>2. Tool permissions</strong></td>
+<td>The agent's own Read/Edit/Write/Bash tools touching denied paths or binaries.</td>
+<td>The agent host's permission system (e.g., Claude Code's <code>permissions.deny</code>).</td>
+</tr>
+<tr>
+<td><strong>3. Forced confirmation</strong></td>
+<td>Visible-to-others writes that haven't been seen by a human.</td>
+<td><code>permissions.ask</code> for every state-mutating shell call (e.g., <code>gh pr create</code>, <code>gh issue edit</code>, <code>gh gist *</code>, <code>gh secret *</code>). Implements Principle 1 at the OS layer.</td>
+</tr>
+</tbody>
+</table>
+<h3>Five concrete consequences</h3>
+<ol>
+<li>
+<p><strong>Default deny, allow-list opt-in.</strong> New paths and new hosts
+   require an explicit project-policy edit, surfaced in code
+   review on the framework's <code>settings.json</code> (or equivalent).
+   "I'll just allow <code>~/</code>" is not an answer.</p>
+</li>
+<li>
+<p><strong>Permission patterns are advisory; the OS layer is the
+   enforcement.</strong> The deny list (<code>Bash(curl *)</code>, <code>Bash(wget *)</code>)
+   is a friction layer that catches sloppy injection. The
+   network allow-list is the actual control. Document this
+   honestly; do not pretend the permission layer is the boundary.</p>
+</li>
+<li>
+<p><strong>The clean-env wrapper is not optional.</strong> A maintainer who
+   typed <code>export GITHUB_TOKEN=…</code> in their shell once should not
+   have that token visible to every agent subprocess thereafter.
+   The wrapper is the only reason the agent's child <code>gh</code> call
+   does not see your personal access token by accident.</p>
+</li>
+<li>
+<p><strong>Tempfile + <code>printf '%s'</code> for attacker-controlled text</strong> —
+   any string that originated outside the framework (email
+   subject, PR title, scanner finding, reporter-supplied free
+   text) MUST NOT be inlined into a single- or double-quoted
+   shell argument. Write it to a tempfile via
+   <code>printf '%s' "$value" &gt; /tmp/x</code> (no expansion) and pass via
+   <code>gh api ... -F field=@/tmp/x</code> (verbatim from disk).</p>
+</li>
+<li>
+<p><strong>Wrap untrusted bodies as inert text</strong> when persisting them
+   to project-visible artefacts. A four-backtick fenced code
+   block defangs tracking pixels and markdown directives so
+   future re-reads in fresh agent contexts see them as data,
+   not instructions.</p>
+</li>
+</ol>
+<h3>Anti-patterns to avoid</h3>
+<ul>
+<li><strong><code>Bash(*)</code> and pray.</strong> A blanket allow-bash with a long
+  deny-list misses every wrapper-interpreter trick (<code>python3 -c</code>,
+  <code>node -e</code>, <code>bash -c '…'</code>, <code>c''url …</code>, <code>/usr/bin/curl …</code>,
+  chained pipelines on macOS). The deny-list is <em>advisory</em>; the
+  control is the network allow-list.</li>
+<li><strong><code>--body "$x"</code> interpolation.</strong> Shell expansion of
+  attacker-controlled text inside double quotes is the most
+  common shell-breakout vector and the prek hooks do not catch
+  it. Use <code>--body-file &lt;path&gt;</code> instead, always.</li>
+<li><strong>Implicit network egress.</strong> Allowing <code>github.com</code>
+  silently authorises <code>gh gist create</code> / <code>gh repo create
+  --public</code>. Confirmation prompts (<code>permissions.ask</code>) on every
+  state-mutating <code>gh</code> call are how Principle 1 meets Principle
+  2 at the OS layer.</li>
+</ul>
+<hr />
+<h2>Principle 3 — Vendor neutrality</h2>
+<h3>Normative statement</h3>
+<blockquote>
+<p>The framework MUST NOT bind a maintainer's workflow to any
+single LLM vendor, model size class, hosting provider, or
+project-governance model. A skill that "works with Claude"
+MUST be expressible in a form that other LLM agents can
+consume; a workflow that integrates an ASF release process
+MUST work, with config substitution only, against a non-ASF
+project's release process.</p>
+</blockquote>
+<h3>Two axes of neutrality</h3>
+<p><strong>Axis A — LLM backend neutrality.</strong> Skills are
+markdown-with-YAML, not vendor-specific prompts. The agentic
+host (Claude Code, Codex, Gemini CLI, a local-Ollama wrapper,
+a future Apache-aligned agent runtime) consumes the same
+skill file and behaves comparably. The reference implementation
+documents this explicitly: skills are "language-independent,
+since SKILLs are English; standard Python ecosystem
+dependencies for the deterministic-output scripts; no AI SDK
+integration needed".</p>
+<p><strong>Axis B — Project-governance neutrality.</strong> ASF integrations
+(private mailing lists, Vulnogram CVE flows, PMC roles, ASF
+release process) are configurable, not hardcoded. A non-ASF
+adopter swaps in a private GitHub repo, GitHub Security
+Advisories, a maintainer roster, their own release process —
+and the same skill executes. The reference implementation's
+placeholder convention (<code>&lt;tracker&gt;</code>, <code>&lt;upstream&gt;</code>,
+<code>&lt;security-list&gt;</code>, <code>&lt;private-list&gt;</code>) and the
+<code>&lt;project-config&gt;/</code> adapter dir are how this is operationalised.</p>
+<h3>Five concrete consequences</h3>
+<ol>
+<li>
+<p><strong>Pluggable backend.</strong> The framework's skills cite no
+   model name in their flow logic. "Use the strongest model
+   available" / "use a fast model for this lookup step" are
+   acceptable hints; "must be Claude Sonnet 4.5" is not.</p>
+</li>
+<li>
+<p><strong>Pluggable adapters.</strong> Private-mailing-list, CVE-tool,
+   release-process, and audit-finding ingest MUST live behind
+   adapter modules. The reference implementation's
+   <code>tools/&lt;adapter&gt;/</code> directories (<code>tools/vulnogram/</code>,
+   <code>tools/gmail/</code>, <code>tools/ponymail/</code>) are this pattern.</p>
+</li>
+<li>
+<p><strong>Pilot diversity.</strong> Validation runs (per the Apache
+   Steward MISSION.md) cover at least one frontier-model
+   backend, at least one fully-local inference setup
+   (Ollama / vLLM / equivalent), and at least one
+   Apache-hosted or Apache-aligned endpoint. A framework that
+   only validates against one vendor is a vendor-locked
+   framework that has not noticed yet.</p>
+</li>
+<li>
+<p><strong>Privacy-LLM gating is vendor-neutral by construction.</strong>
+   Private content (security reports, embargoed CVE detail,
+   PMC-private mail) flows only to LLMs the project's PMC has
+   explicitly approved. "Approved" is per-PMC, not
+   per-framework — the framework's contribution is the gate
+   check, not the policy. See
+   <a href="../../tools/privacy-llm/"><code>tools/privacy-llm/</code></a> for the
+   reference gate.</p>
+</li>
+<li>
+<p><strong>License + IP posture.</strong> Framework code AL2.0 / MIT.
+   Skills AL2.0. Generated artefacts (commit messages, PR
+   bodies, advisory drafts) inherit the maintainer's commit
+   licence; the framework MUST NOT introduce a vendor's
+   model-output licence by reference.</p>
+</li>
+</ol>
+<h3>Anti-patterns to avoid</h3>
+<ul>
+<li><strong>"Cloud-only"-shaped skills.</strong> A skill whose flow assumes a
+  remote model with internet round-trip is a skill that locks
+  the project to a vendor <em>and</em> breaks for offline / sovereign
+  / air-gapped pilots. Skill flows assume the agent runtime
+  exists; they do not assume what's behind it.</li>
+<li><strong>Vendor-named tools.</strong> A skill called <code>claude-pr-review</code> is
+  a skill that ages out the day a maintainer wants to use
+  another agent. Tools are named for what they do, not what
+  runs them.</li>
+<li><strong>Hardcoded ASF assumptions.</strong> <code>apache/&lt;project&gt;</code> strings
+  hardcoded into a skill make the skill ASF-only by accident.
+  Placeholder discipline (<code>&lt;upstream&gt;</code>, <code>&lt;tracker&gt;</code>,
+  <code>&lt;security-list&gt;</code>) is the cheapest way to keep the option
+  open.</li>
+</ul>
+<hr />
+<h2>Principle 4 — Conversational, correctable agentic skills</h2>
+<h3>Normative statement</h3>
+<blockquote>
+<p>The agent's behaviour MUST be expressed as <strong>agent-readable
+markdown</strong> (skill files) that the maintainer can read,
+understand, override locally, and contribute back upstream
+through the normal patch workflow. The conversation between
+maintainer and agent — including the corrections the
+maintainer makes when the agent gets it wrong — MUST be the
+primary mechanism by which the framework's skills evolve.</p>
+</blockquote>
+<h3>Why this is structurally different</h3>
+<p>The instinct from twenty years of writing services is to encode
+behaviour in code, configuration files, or YAML. <strong>An agent's
+prompts and skill files are code in every meaningful sense, but
+their "compile" step is the conversation that follows.</strong> The
+maintainer notices the agent is using the wrong tone in mentor
+replies, edits the skill's tone block, the next invocation
+behaves differently, and (after a stabilisation period) the
+edit is upstreamed.</p>
+<p>The shift the maintainer makes is from "this tool needs a code
+change" to "this skill needs a markdown edit". The shift the
+framework makes is from "user-of-tool" to
+"co-author-of-tool".</p>
+<h3>Five concrete consequences</h3>
+<ol>
+<li>
+<p><strong>Skills are markdown.</strong> Not YAML. Not JSON. Not a DSL.
+   Markdown with YAML frontmatter and inline code blocks. The
+   maintainer reads them like documentation; the agent reads
+   them like instructions; the diff between two revisions is
+   reviewable in the normal PR review surface.</p>
+</li>
+<li>
+<p><strong>Local override before upstream PR.</strong> The reference
+   implementation's <code>.apache-steward-overrides/&lt;skill&gt;.md</code>
+   convention lets a maintainer encode "for this project, do
+   X differently" without forking the framework. The override
+   file is committed in the adopter's repo; the framework
+   reads it at runtime and merges agent-readable
+   modifications before executing the default behaviour.</p>
+</li>
+<li>
+<p><strong>Upstream loop is first-class.</strong> When an override has
+   stabilised — typically after a few weeks of running — the
+   <code>setup-override-upstream</code> skill (or equivalent) walks the
+   maintainer through promoting the override into a framework
+   PR. Some overrides stay local forever (project-specific
+   policy); some belong upstream (general improvement). The
+   framework MUST surface the choice explicitly.</p>
+</li>
+<li>
+<p><strong>Correction is in-conversation.</strong> The maintainer says
+   "stop using <code>--repo</code> argument; my project uses
+   <code>--repository</code>" and the agent acknowledges, applies the
+   change in this session, and surfaces the override-file
+   path so the correction persists across sessions. The
+   maintainer is not expected to know the framework's source
+   layout to make a behaviour change stick.</p>
+</li>
+<li>
+<p><strong>Skills carry their own provenance.</strong> Every skill cites
+   what it does, what it does <strong>not</strong> do, the placeholders it
+   uses, the adapter-config knobs it consults, and (where
+   applicable) the upstream commit it was derived from. The
+   maintainer who reads the skill knows what they are trusting.</p>
+</li>
+</ol>
+<h3>Anti-patterns to avoid</h3>
+<ul>
+<li><strong>Black-box agents.</strong> "The agent does what the agent does"
+  is the worst possible posture. The maintainer must be able
+  to read <em>why</em> the agent is doing X and <em>change</em> the
+  governing instruction.</li>
+<li><strong>Forks as the correction mechanism.</strong> "Fork the framework,
+  fix the skill, run your fork" makes everyone the maintainer
+  of their own framework. The local-override path keeps the
+  maintainer in their lane.</li>
+<li><strong>Hidden state.</strong> A skill whose behaviour depends on
+  conversation history that is not surfaced in the skill file
+  cannot be corrected. State that lives only in the LLM's
+  context window is invisible to git; it cannot be reviewed,
+  cannot be diff'd, cannot be tested.</li>
+<li><strong>Implicit "training".</strong> A framework that quietly fine-tunes
+  on the maintainer's corrections without surfacing the
+  resulting drift is making model changes the maintainer did
+  not consent to. Corrections live in the skill files
+  (visible, version-controlled), not in the model weights
+  (invisible, opaque).</li>
+</ul>
+<hr />
+<h2>How the four principles compose</h2>
+<p>The four principles are independently necessary; together they
+form a cycle the maintainer can repeatedly apply:</p>
+<div class="codehilite"><pre><span></span><code>   ┌──────────────────────────────────────────────────────┐
+   │                                                      │
+   ▼                                                      │
+[Skill]  ─── proposes ──▶  [Maintainer]  ─── confirms ──▶ │
+ ▲                              │                         │
+ │                              │ corrects                │
+ │                              ▼                         │
+ │                        [Override file]  ─── upstream ──┘
+ │                              │
+ └────── reads at runtime ──────┘
+
+         Sandbox is under everything.
+         Vendor neutrality means any LLM
+         can play the [Skill] role.
+</code></pre></div>
+
+<ul>
+<li><strong>(1)</strong> says the [Maintainer → confirms] arrow is mandatory.</li>
+<li><strong>(2)</strong> says the [Skill] runs in a fenced room.</li>
+<li><strong>(3)</strong> says the [Skill] is portable across the agentic
+  hosts — Claude Code today, a different host tomorrow.</li>
+<li><strong>(4)</strong> says the [Maintainer → corrects → Override → Skill]
+  loop is how the framework gets better.</li>
+</ul>
+<p>Drop any one of the four and the system regresses to a
+recognisable bad pattern: drop (1) and you have an autonomous
+agent the maintainer is on the hook for; drop (2) and one
+prompt injection ruins the day; drop (3) and the project
+becomes a vendor's cost centre; drop (4) and the skill is a
+black box only the framework's authors can fix.</p>
+<hr />
+<h2>Adoption guidance for non-Steward projects</h2>
+<p>A project that wants to adopt these principles without adopting
+Apache Steward as a whole has the following minimum bar:</p>
+<ol>
+<li>
+<p><strong>Pick an agent host with HITL primitives.</strong> Claude Code,
+   Cursor's Composer, and Aider all support per-action
+   confirmation. Avoid hosts that default to "auto-apply
+   suggested changes".</p>
+</li>
+<li>
+<p><strong>Wrap the host in an OS sandbox.</strong> On Linux,
+   <code>bubblewrap</code> + a network-allow-list HTTP proxy is one
+   day's work. On macOS, a <code>sandbox-exec</code> profile is similar.
+   The agent's parent shell runs in the sandbox; every
+   subprocess inherits.</p>
+</li>
+<li>
+<p><strong>Treat skill files as code.</strong> Land them in a <code>skills/</code>
+   directory under your project's main repo or a sibling
+   <code>&lt;project&gt;-steward</code> repo. PR them. Review them. Diff
+   them. Don't hand-edit them on production machines without
+   committing.</p>
+</li>
+<li>
+<p><strong>Document the adapter boundaries.</strong> What is
+   project-specific (your release process, your CVE flow,
+   your private mailing list)? Move those into a
+   <code>&lt;project-config&gt;/</code> directory with documented placeholders
+   and let the skills consult them.</p>
+</li>
+<li>
+<p><strong>Pilot before scale.</strong> Run the agent against your
+   project's own backlog for a release cycle before letting
+   it touch contributor-facing artefacts at full speed. The
+   contributor-sentiment data you collect during the pilot is
+   the only honest signal that the framework is helping, not
+   just speeding up the harm.</p>
+</li>
+</ol>
+<p>The Apache Steward project is happy to consult on the lift —
+see <a href="../../MISSION.md"><code>MISSION.md</code></a> for the maintainer-
+education stream.</p>
+<hr />
+<h2>What this RFC does NOT specify</h2>
+<ul>
+<li><strong>Specific LLM choice.</strong> The principles are independent of
+  the model. Pick the model that meets the project's
+  privacy / cost / latency / sovereignty constraints.</li>
+<li><strong>Specific UI.</strong> A terminal-based CLI, a CI bot, an IDE
+  extension, a web dashboard — all are valid surfaces. The
+  principles apply identically.</li>
+<li><strong>Specific scaffolding library.</strong> LangGraph, BAML, raw
+  Anthropic SDK, raw OpenAI SDK, ollama-cli, llamafile — pick
+  one. The skills are the contract; the runtime is an
+  implementation detail.</li>
+<li><strong>Pricing or hosting.</strong> The project is the buyer; the
+  vendor is the seller. The framework declines to express a
+  preference on either.</li>
+<li><strong>Mandatory model evaluation.</strong> Per-skill eval is recommended
+  but not required by this RFC. A separate RFC may cover
+  evaluation methodology — see the
+  <a href="https://incubator.apache.org/projects/plumb.html">Apache Plumb</a>
+  collaboration in
+  <a href="../../MISSION.md"><code>MISSION.md</code></a>.</li>
+</ul>
+<hr />
+<h2>References</h2>
+<h3>Internal (this repository)</h3>
+<ul>
+<li><a href="../../MISSION.md"><code>MISSION.md</code></a> — Apache Steward TLP
+  proposal: motivation, scope, design commitments, initial
+  PMC composition target.</li>
+<li><a href="../../AGENTS.md"><code>AGENTS.md</code></a> — agent-authoring
+  conventions, placeholder convention, prompt-injection
+  absolute rule.</li>
+<li><a href="../setup/secure-agent-setup.md"><code>docs/setup/secure-agent-setup.md</code></a>
+  — adopter-facing install of the secure agent setup.</li>
+<li><a href="../setup/secure-agent-internals.md"><code>docs/setup/secure-agent-internals.md</code></a>
+  — the <em>why</em> behind every layer of the sandbox.</li>
+<li><a href="../setup/agentic-overrides.md"><code>docs/setup/agentic-overrides.md</code></a>
+  — the override → upstream loop that operationalises
+  Principle 4.</li>
+<li><a href="../modes.md"><code>docs/modes.md</code></a> — the A/B/C/D mode taxonomy
+  the principles ride on top of.</li>
+<li><a href="../../tools/privacy-llm/"><code>tools/privacy-llm/</code></a> — the
+  vendor-neutral privacy gate referenced in Principle 3.</li>
+</ul>
+<h3>External</h3>
+<ul>
+<li><a href="https://incubator.apache.org/projects/responsible-ai.html">Apache Software Foundation Responsible AI Initiative</a>
+  — the broader policy context this RFC participates in.</li>
+<li><a href="https://www.apache.org/legal/generative-tooling.html">ASF Generative-Tooling Policy</a>
+  — the licence and contribution-attribution baseline every
+  agentic-tooling RFC under the ASF umbrella inherits.</li>
+<li><a href="https://www.anthropic.com/responsible-scaling-policy">Anthropic Responsible Scaling Policy</a>
+  — vendor-side counterpart to the maintainer-side principles
+  in this RFC. The two are complementary; neither
+  substitutes the other.</li>
+</ul>
+<hr />
+<h2>Acknowledgements</h2>
+<p>This RFC distils principles operationalised in the Apache
+Steward reference implementation. The PMC roster and
+collaborator list (see <a href="../../MISSION.md"><code>MISSION.md</code></a>)
+includes the people whose discussion, code, and incident-review
+work shaped these principles. The framing of the principles
+here owes a particular debt to the 2026-05 prompt-injection
+audit
+(<a href="https://gist.github.com/andrew/0bc8bdaac6902656ccf3b1400ad160f0">gist</a>)
+that surfaced the Principle 2 specifics, and to the Mode A/B/C/D
+swimlane discussion that surfaced the carve-out structure of
+Principle 1.</p>
+</main>
+</body>
+</html>
