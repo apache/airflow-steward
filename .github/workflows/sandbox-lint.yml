@@ -1,0 +1,62 @@
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+# Implements mitigation M.29 from
+# `docs/security/threat-model.md`: every change to the agent-host
+# sandbox configuration in `.claude/settings.json` must be paired with
+# a matching update to the canonical baseline at
+# `tools/sandbox-lint/expected.json`, and the resulting configuration
+# must satisfy the security invariants encoded in the linter.
+---
+name: sandbox-lint
+
+on:  # yamllint disable-line rule:truthy
+  pull_request:
+    paths:
+      - ".claude/settings.json"
+      - "tools/sandbox-lint/**"
+      - ".github/workflows/sandbox-lint.yml"
+  push:
+    branches: [main]
+    paths:
+      - ".claude/settings.json"
+      - "tools/sandbox-lint/**"
+      - ".github/workflows/sandbox-lint.yml"
+
+permissions: {}
+
+jobs:
+  sandbox-lint:
+    name: lint .claude/settings.json against baseline
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      FORCE_COLOR: "1"
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@eac588ad8def6316056a12d4907a9d4d84ff7a3b  # v7.3.0
+        with:
+          enable-cache: true
+      # `--project` (not `--directory`) so the linter runs from the
+      # repository root; the default arguments resolve
+      # `.claude/settings.json` and `tools/sandbox-lint/expected.json`
+      # relative to cwd.
+      - name: Run sandbox-lint
+        run: uv run --project tools/sandbox-lint --group dev sandbox-lint

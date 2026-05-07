@@ -237,3 +237,35 @@ repos:
         entry: uv run --directory tools/privacy-llm/checker pytest
         files: ^tools/privacy-llm/checker/(src|tests|pyproject\.toml)
         pass_filenames: false
+
+  # Project-local checks for the sandbox-lint Python project at
+  # `tools/sandbox-lint/`. Same shape as the other tool hooks.
+  # The pytest hook also covers the lint of `.claude/settings.json`
+  # against `tools/sandbox-lint/expected.json` because the project's
+  # tests load both files at module scope.
+  - repo: local
+    hooks:
+      - id: sandbox-lint-ruff-check
+        name: ruff check (sandbox-lint)
+        language: system
+        entry: uv run --directory tools/sandbox-lint ruff check
+        files: ^tools/sandbox-lint/(src|tests|pyproject\.toml)
+        pass_filenames: false
+      - id: sandbox-lint-ruff-format
+        name: ruff format (sandbox-lint)
+        language: system
+        entry: uv run --directory tools/sandbox-lint ruff format --check
+        files: ^tools/sandbox-lint/(src|tests|pyproject\.toml)
+        pass_filenames: false
+      - id: sandbox-lint-mypy
+        name: mypy (sandbox-lint)
+        language: system
+        entry: uv run --directory tools/sandbox-lint mypy
+        files: ^tools/sandbox-lint/(src|tests|pyproject\.toml)
+        pass_filenames: false
+      - id: sandbox-lint-pytest
+        name: pytest (sandbox-lint)
+        language: system
+        entry: uv run --directory tools/sandbox-lint pytest
+        files: ^(tools/sandbox-lint/(src|tests|pyproject\.toml|expected\.json)|\.claude/settings\.json)
+        pass_filenames: false
