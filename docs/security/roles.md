@@ -122,6 +122,10 @@ lives in
 [`AGENTS.md` — Confidentiality of the tracker repository](../../AGENTS.md#confidentiality-of-the-tracker-repository).
 Read it before editing anything that might be seen outside the team.
 
+The [threat model](threat-model.md) enumerates the trust boundaries
+this rule defends and the adversaries each role should expect on
+those boundaries.
+
 ## For issue triagers — Steps 1–6
 
 You own the tracker from an inbound report on `<security-list>`

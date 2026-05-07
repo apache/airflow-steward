@@ -58,6 +58,10 @@ and reuse the skills verbatim.
 - [**`new-members-onboarding.md`**](new-members-onboarding.md) —
   onboarding for a new security-team member: tracker access, mail
   list subscription, expected reading, first triage shadow.
+- [**`threat-model.md`**](threat-model.md) — release-blocking
+  threat model for the security skill family: trust boundaries,
+  adversary personas, STRIDE matrix per skill, mitigation cross-
+  reference, residual risk, and the re-audit cadence.
 
 ## Adopter contract
 

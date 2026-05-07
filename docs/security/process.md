@@ -34,7 +34,9 @@
 The authoritative reference for the 16-step security-issue
 lifecycle and the label-lifecycle state diagram. The
 [role guides](roles.md) point into specific steps; the
-[security skills](../../.claude/skills/) execute the steps.
+[security skills](../../.claude/skills/) execute the steps; the
+[threat model](threat-model.md) maps the steps and skills to trust
+boundaries, adversaries, and mitigations.
 
 ## Process reference: the 16 steps
 
