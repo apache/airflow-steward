@@ -9,11 +9,11 @@
   - [Assumptions](#assumptions)
   - [Definitions](#definitions)
   - [Trust boundaries](#trust-boundaries)
-    - [B1 — Untrusted-input ↔ skill](#b1--untrusted-input--skill)
-    - [B2 — Skill ↔ private tracker](#b2--skill--private-tracker)
-    - [B3 — Private tracker ↔ public upstream](#b3--private-tracker--public-upstream)
-    - [B4 — Pre-disclosure ↔ post-disclosure](#b4--pre-disclosure--post-disclosure)
-    - [B5 — Agent host ↔ ASF infrastructure](#b5--agent-host--asf-infrastructure)
+    - [B1 — Untrusted-input and skill](#b1--untrusted-input-and-skill)
+    - [B2 — Skill and private tracker](#b2--skill-and-private-tracker)
+    - [B3 — Private tracker and public upstream](#b3--private-tracker-and-public-upstream)
+    - [B4 — Pre-disclosure and post-disclosure](#b4--pre-disclosure-and-post-disclosure)
+    - [B5 — Agent host and ASF infrastructure](#b5--agent-host-and-asf-infrastructure)
   - [Adversaries](#adversaries)
     - [P1 — Malicious reporter](#p1--malicious-reporter)
     - [P2 — Hostile public contributor](#p2--hostile-public-contributor)
@@ -166,7 +166,7 @@ and triggers a re-audit.
 
 ## Trust boundaries
 
-```
+```text
                                     ┌───────────────────────┐
                                     │    Public upstream    │
                                     │  (apache/<project>)   │
@@ -200,7 +200,7 @@ and triggers a re-audit.
                        └─────────────────────────┘
 ```
 
-### B1 — Untrusted-input ↔ skill
+### B1 — Untrusted-input and skill
 
 Any byte the agent reads that originated outside the framework is
 untrusted. The agent treats five untrusted-ingress sources as
@@ -222,7 +222,7 @@ who embeds prompt-injection text aimed at getting the agent to
 exfiltrate tracker contents, mis-classify the issue as invalid, or
 re-route the fix PR.
 
-### B2 — Skill ↔ private tracker
+### B2 — Skill and private tracker
 
 The tracker holds the confidential body of the report and the
 internal triage discussion. Crossing this boundary in the read
@@ -233,7 +233,7 @@ The threat is unauthorised modification (Tampering) and unauthorised
 read by a skill operating in a context where the user did not
 expect tracker access.
 
-### B3 — Private tracker ↔ public upstream
+### B3 — Private tracker and public upstream
 
 The confidentiality wall. The tracker is private; upstream is
 public. A skill that copies content from the tracker to upstream
@@ -249,7 +249,7 @@ without redaction breaks the wall. The framework's posture is:
 `security-issue-fix` is the only skill that legitimately crosses
 this boundary in the write direction during the embargo window.
 
-### B4 — Pre-disclosure ↔ post-disclosure
+### B4 — Pre-disclosure and post-disclosure
 
 The embargo wall is temporal, not topological. The same data crosses
 from confidential to public at advisory-publish time (Step 13).
@@ -259,7 +259,7 @@ tracker. The threat is premature disclosure — a skill that adds
 the CVE ID to a public PR title before the advisory is out, or
 that posts a credit note on the PR before Step 16 runs.
 
-### B5 — Agent host ↔ ASF infrastructure
+### B5 — Agent host and ASF infrastructure
 
 Egress from the agent host to ASF and CVE infrastructure. Constrained
 by `sandbox.network.allowedDomains`. The threat is two-way: an
@@ -407,7 +407,7 @@ Skills: [`security-issue-sync`](../../.claude/skills/security-issue-sync/SKILL.m
 | ID | STRIDE | Adversary | Boundary | Threat | Mitigation |
 |---|---|---|---|---|---|
 | B.1 | T | P1, P5 | B2 | Tracker comment from reporter or insider contains injection that flips a tracker from `valid` to `invalid` (or vice-versa). | M.1, M.7, M.11 (label transitions in `security-issue-sync` are computed from observed PR/release state, not from comment content). |
-| B.2 | I | P2 | B3 | `security-issue-sync` posts a public cross-reference (PR ↔ tracker) before the advisory ships, leaking embargo. | M.12 (the cross-reference is one-way: tracker → PR is added; PR → tracker is added only after Step 14). See [B3](#b3--private-tracker--public-upstream). |
+| B.2 | I | P2 | B3 | `security-issue-sync` posts a public cross-reference (PR ↔ tracker) before the advisory ships, leaking embargo. | M.12 (the cross-reference is one-way: tracker → PR is added; PR → tracker is added only after Step 14). See [B3](#b3--private-tracker-and-public-upstream). |
 | B.3 | I | P2 | B3 | `security-issue-deduplicate` mentions a duplicate-of issue ID by number in a public surface and the number leaks tracker existence. | M.13 (deduplicate is tracker-internal only; public PR descriptions reference CVE IDs, never tracker IDs). |
 | B.4 | T | P5 | B2 | An insider's edited canned response, when re-emitted by `security-issue-invalidate`, is more detailed than the template intended and confirms the existence of the issue. | M.3 (canned responses are project-template files reviewed by the security team; ad-hoc text requires human authoring). |
 | B.5 | E | P3 | B5 | A compromised dependency to `security-issue-sync` re-routes `gh api` calls. | M.14 (network allowlist; M.15 (per-skill `gh` scope budget). |
