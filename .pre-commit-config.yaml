@@ -269,3 +269,14 @@ repos:
         entry: uv run --directory tools/sandbox-lint pytest
         files: ^(tools/sandbox-lint/(src|tests|pyproject\.toml|expected\.json)|\.claude/settings\.json)
         pass_filenames: false
+
+  # Validate `.claude/skills/**` via the `skill-validate` CLI. Re-fires
+  # on validator-source changes so rule updates get re-applied.
+  - repo: local
+    hooks:
+      - id: skill-validate
+        name: skill-validate (.claude/skills/**)
+        language: system
+        entry: uv run --directory tools/skill-validator skill-validate
+        files: ^(\.claude/skills/.*\.md|tools/skill-validator/(src|pyproject\.toml))
+        pass_filenames: false
