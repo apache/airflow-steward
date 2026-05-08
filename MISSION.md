@@ -169,6 +169,7 @@ ASF members for the roster:
 - Jean-Baptiste Onofré — Incubator PMC, Polaris PMC, …
 - Paul King — Groovy PMC, Grails PMC, Incubator PMC
 - Evan Rusackas — Superset PMC
+- Russell Spitzer — Incubator PMC, Polaris PMC, Iceberg PMC
 
 The named PMC roster will accompany the resolution at the time of vote.
 
