@@ -77,6 +77,7 @@ github:
     - jbonofre           # Jean-Baptiste Onofré (Incubator PMC, Polaris PMC)
     - paulk-asert        # Paul King (Groovy PMC, Grails PMC, Incubator PMC)
     - rusackas           # Evan Rusackas (Superset PMC)
+    - russellspitzer     # Russell Spitzer (Incubator PMC, Polaris PMC, Iceberg PMC)
 
   # Disable the GitHub Copilot automatic-code-review ruleset on the
   # default branch. The framework's review workflow is human-driven
