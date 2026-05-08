@@ -5,6 +5,10 @@ logs
 .build
 .claude/worktrees/
 
+# Python
+__pycache__/
+*.py[cod]
+
 # Lychee link-checker result cache. The workflow restores this from
 # Actions cache between runs; checking it in would commit machine-
 # specific resolution data.
