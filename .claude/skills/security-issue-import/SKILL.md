@@ -1,6 +1,6 @@
 ---
 name: security-issue-import
-mode: A
+mode: Triage
 description: |
   Scan <security-list> for reports that have not yet been
   copied into <tracker> as tracking issues, present the proposed

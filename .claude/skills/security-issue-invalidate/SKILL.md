@@ -1,6 +1,6 @@
 ---
 name: security-issue-invalidate
-mode: A
+mode: Triage
 description: |
   Close an `<tracker>` tracking issue as invalid: apply the
   `invalid` label, remove the scope label, post a short closing

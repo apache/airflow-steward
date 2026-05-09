@@ -1,6 +1,6 @@
 ---
 name: security-issue-deduplicate
-mode: A
+mode: Triage
 description: |
   Merge two <tracker> tracking issues that describe the same
   root-cause vulnerability (typically discovered independently by two

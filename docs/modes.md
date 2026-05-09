@@ -5,10 +5,11 @@
 - [Modes — MISSION taxonomy mapped to current skills](#modes--mission-taxonomy-mapped-to-current-skills)
   - [Status legend](#status-legend)
   - [Modes at a glance](#modes-at-a-glance)
-  - [Mode A — triage](#mode-a--triage)
-  - [Mode B — conversational mentoring](#mode-b--conversational-mentoring)
-  - [Mode C — agent-authored fixes with human review](#mode-c--agent-authored-fixes-with-human-review)
-  - [Mode D — narrowly-scoped fix-and-merge](#mode-d--narrowly-scoped-fix-and-merge)
+  - [Triage](#triage)
+  - [Mentoring](#mentoring)
+  - [Drafting](#drafting)
+  - [Pairing](#pairing)
+  - [Auto-merge](#auto-merge)
   - [Outside the modes](#outside-the-modes)
   - [Mode lifecycle](#mode-lifecycle)
   - [Cross-references](#cross-references)
@@ -20,12 +21,14 @@
 
 # Modes — MISSION taxonomy mapped to current skills
 
-[`MISSION.md`](../MISSION.md) frames the framework around four
-toggleable **modes** of agent-assisted repository maintainership:
-**A** (triage), **B** (mentoring), **C** (agent-authored fixes
-with human review), and **D** (narrowly-scoped fix-and-merge).
-Each adopting project picks the modes that match its culture and
-risk tolerance.
+[`MISSION.md`](../MISSION.md) frames the framework around five
+toggleable **modes** of agent-assisted repository maintainership
+and development: **Triage**, **Mentoring**, **Drafting**
+(agent-authored fixes with human review), **Pairing**
+(developer-side dev-cycle skills with mentorship intrinsic), and
+**Auto-merge** (narrowly-scoped fix-and-merge). Each adopting
+project picks the modes that match its culture and risk
+tolerance.
 
 This document maps that taxonomy to the skills that currently
 ship in the framework. It is the **honest snapshot** — modes
@@ -41,21 +44,22 @@ sequencing commitments behind them.
 | **stable** | Implemented, in use by at least one adopter, behaviour expected to remain backward-compatible across minor framework versions. |
 | **experimental** | Implemented but not yet covered by an adopter pilot or contributor-sentiment evaluation; shape may change. |
 | **proposed** | Designed in [`MISSION.md`](../MISSION.md) but no skill yet exists; tracked for future implementation. |
-| **off** | Deliberately not implemented per a MISSION-level sequencing rule (Mode D). |
+| **off** | Deliberately not implemented per a MISSION-level sequencing rule (Auto-merge). |
 
 ## Modes at a glance
 
 | Mode | Purpose | Status | Skill count |
 |---|---|---|---|
-| **A** — triage | Issues, security reports, PRs: spot, classify, route, surface duplicates. Every output is a suggestion the human signs off on. | stable (security) / experimental (pr-management) | 10 |
-| **B** — conversational mentoring | Joins issue and PR threads in a teaching register: clarifying questions, pointers to project conventions, paired examples from prior PRs, hand-off to a human when scope exceeds the agent. | proposed | 0 |
-| **C** — agent-authored fixes with human review | Agent drafts a fix for a well-scoped problem and opens a PR; every PR is reviewed and merged by a human committer. | stable (security-only); generic case proposed | 1 |
-| **D** — narrowly-scoped fix-and-merge | Auto-merge restricted to objectively boring change classes (lint, dependency bumps inside an allow-list, license-header insertion, formatting, broken-link repair). | off | 0 |
+| **Triage** | Issues, security reports, PRs: spot, classify, route, surface duplicates. Every output is a suggestion the human signs off on. | stable (security) / experimental (pr-management) | 10 |
+| **Mentoring** | Joins issue and PR threads in a teaching register: clarifying questions, pointers to project conventions, paired examples from prior PRs, hand-off to a human when scope exceeds the agent. | proposed | 0 |
+| **Drafting** | Agent drafts a fix for a well-scoped problem and opens a PR; every PR is reviewed and merged by a human committer. | stable (security-only); generic case proposed | 1 |
+| **Pairing** | Developer-side dev-cycle skills with mentorship intrinsic — multi-agent review pipelines, self-review and pre-flight patterns, scoped fix drafting under the developer's driver's seat. | proposed | 0 |
+| **Auto-merge** | Auto-merge restricted to objectively boring change classes (lint, dependency bumps inside an allow-list, license-header insertion, formatting, broken-link repair). | off | 0 |
 
 A few skills sit **outside** the mode taxonomy by design — see
 [Outside the modes](#outside-the-modes) below.
 
-## Mode A — triage
+## Triage
 
 Inbound report and PR triage. The lowest-risk surface and the
 foundation everything else builds on. Skills propose labels,
@@ -81,21 +85,21 @@ Two notes on the boundaries:
 - `pr-management-code-review` is a deeper variant of triage —
   the agent reads diff and surrounding code rather than only
   metadata, but the output is still a suggestion for the human
-  reviewer. It belongs to Mode A by the same rule.
+  reviewer. It belongs to Triage by the same rule.
 - `security-cve-allocate` is procedural rather than classificatory
-  (CVE allocation happens after assessment), but it shares Mode A's
+  (CVE allocation happens after assessment), but it shares Triage's
   shape: the agent prepares a paste-ready artefact, the human
   PMC member submits it. Listed here for navigability.
 
-## Mode B — conversational mentoring
+## Mentoring
 
 **Status: proposed. No skill yet.**
 
-[`MISSION.md` § Mode B](../MISSION.md#technical-scope) names this
-the highest-value mode and the one off-the-shelf agent tooling
-skips. Per MISSION sequencing, the spec — tone guide, hand-off
-protocol, adopter contract — lands ahead of any skill code so
-the project's tone choices are reviewable independently from
+[`MISSION.md` § Mentoring](../MISSION.md#technical-scope) names this
+the highest-value project-side mode and the one off-the-shelf agent
+tooling skips. Per MISSION sequencing, the spec — tone guide,
+hand-off protocol, adopter contract — lands ahead of any skill code
+so the project's tone choices are reviewable independently from
 the runtime behaviour.
 
 | Doc | Purpose |
@@ -106,14 +110,14 @@ the runtime behaviour.
 
 A prototype skill (`pr-management-mentor`, working name) lands
 in a follow-up PR after the spec is reviewed; it ships flagged
-`mode: B` + `experimental`.
+`mode: Mentoring` + `experimental`.
 
 The closest existing surface is
 [`pr-management-triage/comment-templates.md`](../.claude/skills/pr-management-triage/comment-templates.md),
-which carries Mode A classification responses — informational,
-not pedagogical. It is **not** Mode B.
+which carries Triage classification responses — informational,
+not pedagogical. It is **not** Mentoring.
 
-## Mode C — agent-authored fixes with human review
+## Drafting
 
 The agent drafts a fix for a well-scoped problem (a tracked
 issue, a triaged security report with team consensus on scope, a
@@ -125,37 +129,71 @@ the agent never merges its own work.
 |---|---|---|
 | [`security-issue-fix`](../.claude/skills/security-issue-fix/SKILL.md) | Draft a fix PR in `<upstream>` from a triaged, CVE-allocated tracker. | stable (security-only) |
 
-**Generic Mode C is proposed.** [`MISSION.md`](../MISSION.md)
+**Generic Drafting is proposed.** [`MISSION.md`](../MISSION.md)
 names lint fixes, audit-tool findings (Apache Verum, Apache Caer,
 CodeQL, equivalents), failing tests with obvious causes, and
-documentation holes as in-scope for Mode C beyond the security
+documentation holes as in-scope for Drafting beyond the security
 case. None of those are implemented yet; security-issue-fix is
-the only Mode C skill in the framework today.
+the only Drafting skill in the framework today.
 
-For security-class Mode C PRs, the public surface strips CVE and
-private context per the project's disclosure policy, so the
+For security-class Drafting PRs, the public surface strips CVE
+and private context per the project's disclosure policy, so the
 public surface stays clean until the embargo lifts — see
 [`AGENTS.md` § Confidentiality](../AGENTS.md#confidentiality-of-the-tracker-repository)
 for the rules the skill enforces.
 
-## Mode D — narrowly-scoped fix-and-merge
+## Pairing
+
+**Status: proposed. No skill yet.**
+
+[`MISSION.md` § Pairing](../MISSION.md#technical-scope) introduces
+this mode as the developer-side counterpart to the project-side
+modes. Where Triage / Mentoring / Drafting / Auto-merge describe
+the agent's presence on the project's own infrastructure, Pairing
+skills run in the maintainer's or contributor's *own* dev loop —
+multi-agent review pipelines, self-review and pre-flight patterns,
+scoped fix drafting under the developer's driver's seat.
+**Mentorship is intrinsic** to Pairing skills: the agent handles
+the mechanical, implementation-detail review (formatting,
+conventions, lint-grade nits) so the human conversation between
+contributor and maintainer — and between peer maintainers —
+stays on design, reasoning, and the trade-offs the project cares
+about. Pairing skills are the platform's mechanism for protecting
+the **ASF contribution path** (contributor → committer → PMC)
+against being eroded by automation that replaces, rather than
+augments, the human-to-human relationships that path is built on.
+
+Pairing skills don't make state changes on behalf of the project;
+they share the same skill format and security posture as the
+project-side modes, so a maintainer who already trusts the
+framework for Triage gets the same posture for the patches they
+write themselves.
+
+**Sequencing.** Pairing ships before Auto-merge in the project's
+automation roadmap — full auto-merge of maintainer-driven changes
+follows only after Pairing has established that human reasoning
+and relationships, not implementation chatter, are the
+load-bearing parts of the workflow.
+
+## Auto-merge
 
 **Status: off. Deliberately not implemented.**
 
-[`MISSION.md` § Mode D](../MISSION.md#technical-scope) holds
-auto-merge off until Modes A, B, and C have been running for
-two quarters and contributor-sentiment data says the project is
-healthier, not just faster. Security-class changes are
-explicitly **out** of Mode D — no auto-merge ever touches
-anything embargoed or CVE-tagged.
+[`MISSION.md` § Auto-merge](../MISSION.md#technical-scope) holds
+auto-merge off until Triage, Mentoring, Drafting, and Pairing
+have been running for two quarters and contributor-sentiment
+data says the project is healthier, not just faster.
+Security-class changes are explicitly **out** of Auto-merge — no
+auto-merge ever touches anything embargoed or CVE-tagged.
 
 The framework's current `.asf.yaml` configuration reflects this
 posture: `pull_requests.allow_auto_merge` is set to `false`
 ([`.asf.yaml`](../.asf.yaml)).
 
-When Mode D ships, the eligible change classes will be declared
-per-adopter in `<project-config>/` and gated by an allow-list
-that the framework refuses to grow without an adopter PR.
+When Auto-merge ships, the eligible change classes will be
+declared per-adopter in `<project-config>/` and gated by an
+allow-list that the framework refuses to grow without an
+adopter PR.
 
 ## Outside the modes
 
@@ -191,11 +229,12 @@ A mode moves through four states as it matures:
    production, behaviour is backward-compatible across minor
    framework versions. The default state for skills shipped to
    adopters.
-4. **graduated-to-D-eligible** *(future state, Mode A/B/C only)* —
-   the mode has run stable for two quarters with positive
-   contributor-sentiment evidence, the framework will start
-   considering an equivalent change class for Mode D auto-merge.
-   This state does not exist yet because Mode D itself is off.
+4. **graduated-to-Auto-merge-eligible** *(future state; Triage,
+   Mentoring, Drafting, and Pairing only)* — the mode has run
+   stable for two quarters with positive contributor-sentiment
+   evidence, the framework will start considering an equivalent
+   change class for Auto-merge. This state does not exist yet
+   because Auto-merge itself is off.
 
 A mode can be **retracted** from any state. The retraction
 triggers MISSION names — sustained negative contributor
