@@ -82,7 +82,7 @@ Four design choices set the project apart from "just bolt a code-review bot on i
 - Settle on a contributor-sentiment evaluation methodology with Apache Plumb (separate proposal). Eval covers both ASF and non-ASF cohorts so the data isn't an internal-ASF artefact.
 - **Ship the privacy and security posture** as a release-blocking part of v1 — sandbox setup, clean-env wrapper, privacy-LLM gate, PII redactor, signed releases, pinned-tools manifest. Not a follow-up.
 - **Ship the maintainer-education stream** alongside v1 — pattern catalogue, "your first skill" path, first scheduled workshops. The platform is only as adoptable as the docs that go with it.
-- **Validate vendor-neutrality** in v1 pilots: at least one project running modes A–C against a frontier-model backend, one against fully-local inference (Ollama / vLLM), one against an Apache-hosted or Apache-aligned endpoint as it becomes available.
+- **Validate vendor-neutrality** in v1 pilots: at least one project running Triage, Mentoring, and Drafting against a frontier-model backend, one against fully-local inference (Ollama / vLLM), one against an Apache-hosted or Apache-aligned endpoint as it becomes available.
 
 ## Technical scope
 
