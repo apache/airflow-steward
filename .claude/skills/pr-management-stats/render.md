@@ -39,7 +39,7 @@ Four equally-sized cards, each one big number with a sub-label:
 
 | Card | Big number | Sub-label | Colour rule |
 |---|---|---|---|
-| **Repo Health** | the rating label (`✅ Healthy` / `⚠️ Needs attention` / `🔥 Action needed`) | "based on triage backlog + queue size" | green / amber / red, per [`aggregate.md#health-rating`](aggregate.md) |
+| **Repo Health** | the rating label (`✅ Healthy` / `⚠️ Needs attention` / `🔥 Action needed`) | "based on triage backlog + queue size" | green / amber / red, per [`aggregate.md#health-rating`](aggregate.md#health-rating) |
 | **Open PRs (non-bot)** | total open count | `<contrib_count> from contributors · <collab_count> collaborator-authored` | blue (informational) |
 | **Ready for review** | `len(ready_open)` | `<pct>% of contributor queue` | green |
 | **Untriaged non-drafts** | `len(untriaged_nondraft)` | `<X> are >4 weeks old` | red if >0 are >4w, amber if total > 30, green otherwise |
@@ -48,7 +48,7 @@ Card layout is responsive: 4-column on wide screens, 2-column on narrow, 1-colum
 
 ### 3. What needs attention (action panel)
 
-A vertical list of action cards built from the recommendation rules in [`#recommendation-rules`](#recommendation-rules) below. Each card has a coloured left border (red = high, amber = medium, grey = low), an icon, a one-line title, a 1–2-line detail explanation, and a monospace `code` block holding the exact slash-command the maintainer can paste.
+A vertical list of action cards built from the recommendation rules in [`#recommendation-rules`](#recommendation-rules) below. Each card has a coloured left border (red = high, amber = medium, grey = low), an icon, a one-line title, a 1–2-line detail explanation, and (when applicable) a monospace `code` block holding the exact slash-command the maintainer can paste. When a rule's `action` is `—` (no paste-clean command applies), the card omits the code block and shows title + detail only.
 
 If zero rules fire, render a single low-priority card with a `✨` icon and the body "No urgent actions detected. Queue is in healthy shape — periodic /pr-management-triage when convenient." Never leave the section visually empty.
 
@@ -99,7 +99,7 @@ Title: **Ready-for-review trend (last 6 weeks, top areas)**
 
 An inline SVG line chart with one line per top-pressure area (default: top 5, filtered to areas with ≥ 3 currently-ready PRs). Each line is **cumulative**: at week W it shows the count of PRs that *currently* carry the `ready for maintainer review` label and were labelled on or before W.
 
-Each area's line uses its pressure-band colour (red, amber, or grey per [`aggregate.md#pressure-score`](aggregate.md)). Same SVG dimensions as the opened-vs-closed chart (720×220px). The chart legend in the top-left lists each area name with its line colour swatch.
+Each area's line uses its pressure-band colour (red, amber, or grey per [`aggregate.md#pressure-score`](aggregate.md#pressure-score)). Same SVG dimensions as the opened-vs-closed chart (720×220px). The chart legend in the top-left lists each area name with its line colour swatch.
 
 Below the chart, a per-area summary list:
 
@@ -138,7 +138,7 @@ A healthy week is mostly green with thin amber/red segments. A red-dominated wee
 
 Title: **Pressure by area** (with a sub-line *"Pressure score = weighted sum of untriaged-old PRs per area. Higher score = more maintainer attention needed."*)
 
-Up to 8 rows, sorted by pressure score descending (filtering areas with < 3 contributor PRs). Each row is a horizontally-laid-out card with a coloured left border (red / amber / grey, severity bands per [`aggregate.md#pressure-score`](aggregate.md)) containing:
+Up to 8 rows, sorted by pressure score descending (filtering areas with < 3 contributor PRs). Each row is a horizontally-laid-out card with a coloured left border (red / amber / grey, severity bands per [`aggregate.md#pressure-score`](aggregate.md#pressure-score)) containing:
 
 - area name (cyan, bold, e.g. `providers`)
 - one-line stat: `<contrib_total> contributor PRs · <red>untriaged_4w</red> >4w · <amber>untriaged_1_4w</amber> 1-4w · <grey>untriaged_recent</grey> recent · <green>ready_pending</green> ready for review`
@@ -179,26 +179,28 @@ A bordered panel at the bottom explaining all the colours, columns, and computed
 
 The "What needs attention" panel is built from this fixed rule set, evaluated in order. Each rule that fires produces one entry in the panel.
 
-| # | Trigger | Priority | Icon | Title template | Action template |
-|---|---|---|---|---|---|
-| 1 | `len(untriaged_old) > 0` (any contributor non-draft >4w) | high | 🔥 | `Triage <N> non-draft contributor PRs older than 4 weeks` | `/pr-management-triage all PR issues  (focus on >4w bucket)` |
-| 2 | `len(untriaged_old) == 0 AND len(untriaged_med) > 0` (1-4w bucket non-empty) | medium | 👀 | `Triage <N> non-draft PRs aged 1-4 weeks` | `/pr-management-triage all PR issues` |
-| 3 | `len(stale_triaged_drafts) > 0` (drafts triaged ≥ 7d ago, no reply) | medium | 🗑️ | `Close <N> stale-triaged drafts (≥7d, no response)` | `/pr-management-triage stale  → sweep 1a` |
-| 4 | `len(ready_open) >= 50` | high | 📥 | `<N> PRs labeled "ready for maintainer review"` | `/maintainer-review (filter: ready for maintainer review)` |
-| 5 | `20 <= len(ready_open) < 50` | medium | 📥 | `<N> PRs in "ready for maintainer review" queue` | same as rule 4 |
-| 6 | `len(responded_no_ready) > 0` (triaged + responded but not ready-for-review) | medium | 🔄 | `<N> triaged PRs have author responses awaiting re-triage` | `/pr-management-triage all PR issues  (will surface as mark-ready-with-ping)` |
-| 7 | top area's `untriaged_4w + untriaged_1_4w >= 5` | medium | 📍 | `Area "<area>" has <total> contributor PRs (<X> untriaged >4w)` | `/pr-management-triage label:area:<area>` |
-| 8 | `velocity_drop > 30` (last_wk total - this_wk total) | low | 📉 | `PR closure velocity dropped <N> this week` | `No immediate action — check next week.` |
-| 9 | top ready-trend area's growth in last 7d ≥ 10 PRs | low | 📈 | `Ready-for-review queue in "<area>" grew by <N> this week` | `/maintainer-review label:area:<area>` |
-| 10 | weekly closed-by-reason `closed_no_response > merged` for 2+ recent weeks | medium | 🧹 | `Stale-sweep is dominating closures (last 2 weeks: <N> sweep-close vs <M> merged)` | review `/pr-management-triage stale` cadence — too many PRs reaching the sweep |
+`Action` and `Detail` are separate columns by design: `Action` is a literal paste-clean slash-command the maintainer runs (or `—` when no command applies); `Detail` is the prose explanation that goes in the card body. Mixing prose into `Action` would make the slash-command non-paste-clean and re-introduce the editorialising the skill is supposed to avoid.
+
+| # | Trigger | Priority | Icon | Title template | Detail template | Action |
+|---|---|---|---|---|---|---|
+| 1 | `len(untriaged_old) > 0` (any contributor non-draft >4w) | high | 🔥 | `Triage <N> non-draft contributor PRs older than 4 weeks` | Focus on the >4w bucket — those are the ones rotting longest. | `/pr-management-triage all PR issues` |
+| 2 | `len(untriaged_old) == 0 AND len(untriaged_med) > 0` (1-4w bucket non-empty) | medium | 👀 | `Triage <N> non-draft PRs aged 1-4 weeks` | The 1–4w bucket is the queue's leading edge; staying on top of it stops PRs from rolling into >4w. | `/pr-management-triage all PR issues` |
+| 3 | `len(stale_triaged_drafts) > 0` (drafts triaged ≥ 7d ago, no reply) | medium | 🗑️ | `Close <N> stale-triaged drafts (≥7d, no response)` | Closure path lives under the `stale` flow (sweep step 1a). | `/pr-management-triage stale` |
+| 4 | `len(ready_open) >= 50` | high | 📥 | `<N> PRs labeled "ready for maintainer review"` | The `ready for maintainer review` queue is past the triage stage; it needs maintainer review attention, not triage. | `/pr-management-code-review ready` |
+| 5 | `20 <= len(ready_open) < 50` | medium | 📥 | `<N> PRs in "ready for maintainer review" queue` | Same trigger family as rule 4 — banded by queue size so the priority drops once the queue is comfortable. | `/pr-management-code-review ready` |
+| 6 | `len(responded_no_ready) > 0` (triaged + responded but not ready-for-review) | medium | 🔄 | `<N> triaged PRs have author responses awaiting re-triage` | These will surface as mark-ready-with-ping inside the regular triage sweep. | `/pr-management-triage all PR issues` |
+| 7 | top area's `untriaged_4w + untriaged_1_4w >= 5` | medium | 📍 | `Area "<area>" has <total> contributor PRs (<X> untriaged >4w)` | One area is dominating the untriaged queue; scoping a triage pass to it clears the bulk of the load. | `/pr-management-triage label:area:<area>` |
+| 8 | `velocity_drop > 30` (last_wk total - this_wk total) | low | 📉 | `PR closure velocity dropped <N> this week` | No immediate action — re-check next week to see if the drop persists or was a one-off. | — |
+| 9 | top ready-trend area's growth in last 7d ≥ 10 PRs | low | 📈 | `Ready-for-review queue in "<area>" grew by <N> this week` | Growth concentrated in one area suggests it'd benefit from a focused review pass. | `/pr-management-code-review label:area:<area>` |
+| 10 | weekly closed-by-reason `closed_no_response > merged` for 2+ recent weeks | medium | 🧹 | `Stale-sweep is dominating closures (last 2 weeks: <N> sweep-close vs <M> merged)` | Too many PRs are reaching the stale sweep — review the `/pr-management-triage stale` cadence and whether earlier-stage interventions (mark-ready, ping) are firing. | — |
 
 Rules 1 and 2 are **mutually exclusive** (only one fires depending on whether any >4w PRs exist). Rules 4 and 5 are **mutually exclusive** (banding on `ready_open` count). All other rules can fire independently.
 
 When adding a new rule:
 
 - Prefer count-based triggers over percentage-based ones (counts are easier to reason about for the maintainer).
-- The action template must be a literal slash-command the maintainer can paste — never instructions like "consider running …".
-- Detail string should explain *why* the rule fired in one sentence, plus what command will help.
+- The `Action` cell must be a literal slash-command the maintainer can paste, with no parentheticals, prose, or unicode arrows. If the rule has no paste-clean command (e.g. "wait and re-check"), set `Action` to `—` and put the explanation in `Detail`.
+- The `Detail` cell explains *why* the rule fired and any context the maintainer needs to act on it; this is where parentheticals and cross-references live.
 
 ---
 
@@ -264,7 +266,7 @@ Plain text, before the first hero card:
 
 Structure: `<repo> — <open_count> open PRs (non-bot) · closed/merged since <cutoff> · viewer @<login> · <now>`.
 
-If the closed-since counts came from the lagging search index (see [`fetch.md#known-limitation`](fetch.md)), prepend a one-line caveat before the hero cards:
+If the closed-since counts came from the lagging search index (see [`fetch.md#known-limitation`](fetch.md#known-limitation)), prepend a one-line caveat before the hero cards:
 
 ```text
 ⚠ Closed-PR table built from GitHub's free-text search of the quality-criteria marker. The index lags — older triaged+merged PRs are likely undercounted. Pass accurate-closed for the hybrid REST + GraphQL path.
@@ -297,7 +299,7 @@ Lives inside the second collapsed `<details>` block. Title: `Triaged PRs — Sti
 
 One row per area where `total > 0`, sorted by `total` descending. `(no area)` last. Append a bold **TOTAL** row.
 
-`Total` is a **reference-only** column — it counts every open PR in the area (collaborator + contributor alike). Every other numeric column is **contributor-only** (see [`aggregate.md#counters`](aggregate.md)). This keeps draft-rate, triage-rate, and response-rate percentages meaningful: collaborator PRs bypass the triage funnel, so including them in the denominators would systematically understate how much of the contributor queue is ready, drafted, responded, etc.
+`Total` is a **reference-only** column — it counts every open PR in the area (collaborator + contributor alike). Every other numeric column is **contributor-only** (see [`aggregate.md#counters-per-area`](aggregate.md#counters-per-area)). This keeps draft-rate, triage-rate, and response-rate percentages meaningful: collaborator PRs bypass the triage funnel, so including them in the denominators would systematically understate how much of the contributor queue is ready, drafted, responded, etc.
 
 | Column | Source | Denominator | Colour |
 |---|---|---|---|
