@@ -89,18 +89,16 @@ github:
   copilot_code_review:
     enabled: false
 
-  # Deployment environments — created here so an eventual release
-  # workflow can target them without touching the GitHub UI. The
-  # `atr-release` environment scaffolds release publishing through
-  # ASF Trusted Releases (ATR); the protected-branches policy
-  # ensures only `main` (and any future protected release branches)
-  # can deploy. Required reviewers can be added later if the
-  # release flow needs PMC sign-off at deploy time.
-  environments:
-    atr-release:
-      wait_timer: 0
-      deployment_branch_policy:
-        protected_branches: true
+  # No `environments:` block by design — asfyaml's environment
+  # handler currently passes `prevent_self_review` as a kwarg to
+  # `Repository.create_environment()`, which the PyGithub version
+  # asfyaml ships does not accept ("Repository.create_environment()
+  # got an unexpected keyword argument 'prevent_self_review'"). The
+  # block is harmless to omit while no release workflow targets a
+  # deployment environment; re-add (with the `atr-release`
+  # protected-branches scaffold for ASF Trusted Releases) once the
+  # asfyaml / PyGithub interaction is fixed upstream and a release
+  # workflow exists that needs the environment.
 
   # No `protected_branches:` block by design — branch protections are
   # configured directly in GitHub for now. Add here when the project's
