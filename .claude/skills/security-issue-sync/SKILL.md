@@ -329,8 +329,8 @@ The skill needs:
   versions and to find advisory archive URLs.
 
 See
-[Prerequisites for running the agent skills](../../../README.md#prerequisites-for-running-the-agent-skills)
-in `README.md` for the overall setup.
+[Prerequisites for running the agent skills](../../../docs/prerequisites.md#prerequisites-for-running-the-agent-skills)
+in `docs/prerequisites.md` for the overall setup.
 
 ---
 
@@ -1236,7 +1236,7 @@ will change and *why*. Group them by category:
   since the last message we sent to the reporter, propose a Gmail draft that
   brings the reporter up to date.** The set of transitions that warrant a
   status update is enumerated authoritatively in
-  [`README.md` — Keeping the reporter informed](../../../README.md#keeping-the-reporter-informed);
+  [`docs/security/roles.md` — Keeping the reporter informed](../../../docs/security/roles.md#keeping-the-reporter-informed);
   the skill must draft an update when any of those has happened since our
   last message in the original mail thread, including the post-close
   *"CVE is live on cve.org"* transition surfaced by
@@ -1351,7 +1351,7 @@ will change and *why*. Group them by category:
   only sent by email. The two-channels rationale (email keeps the
   reporter, the issue record keeps the team and the release
   manager) lives in
-  [`README.md` — Recording status transitions on the tracker](../../../README.md#recording-status-transitions-on-the-tracker).
+  [`docs/security/roles.md` — Recording status transitions on the tracker](../../../docs/security/roles.md#recording-status-transitions-on-the-tracker).
 
   **The status record lives in a single rollup comment, not a new
   comment per sync.** The first bot-authored comment on a tracker
@@ -1663,7 +1663,7 @@ A single short paragraph describing what the user should do *after* these
 updates land, based on the process step. Examples:
 
 - *"Step 3: start the CVE-worthiness discussion in a comment on the issue, tagging at least one other security team member."*
-- *"Step 4: escalate to a wider audience — the discussion has been stalled for 34 days. Run the two-phase escalation per [`README.md` — Step 4](../../../README.md#step-4--escalate-stalled-discussions): phase 1 is a short call for ideas to `<private-list>` (no AI analysis), phase 2 — only if phase 1 stays silent for ~7 more days — is an AI-generated design-space analysis that the triager reviews before posting. The agent drafts both phases as proposals; the triager confirms the exact wording + the list of people to `@`-mention before anything is sent."*
+- *"Step 4: escalate to a wider audience — the discussion has been stalled for 34 days. Run the two-phase escalation per [`docs/security/process.md` — Step 4](../../../docs/security/process.md#step-4--escalate-stalled-discussions): phase 1 is a short call for ideas to `<private-list>` (no AI analysis), phase 2 — only if phase 1 stays silent for ~7 more days — is an AI-generated design-space analysis that the triager reviews before posting. The agent drafts both phases as proposals; the triager confirms the exact wording + the list of people to `@`-mention before anything is sent."*
 - *"Step 6: allocate a CVE. Run the [`security-cve-allocate`](../security-cve-allocate/SKILL.md) skill (it prints the ASF Vulnogram form URL plus a CVE-ready title and wires the allocated ID back into the tracker)."*
 - *"Step 10: close the private PR at <tracker>#NNN now that <upstream>#NNNN has merged."*
 - *"Step 11: `pr merged` — tracker parked until the release train ships. No action needed from the security team; the next sync run will detect the PyPI / Helm release and propose the `fix released` swap (Step 12)."*

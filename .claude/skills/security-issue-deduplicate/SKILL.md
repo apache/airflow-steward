@@ -150,8 +150,8 @@ does **not** auto-pick. Practical guidance to offer when asked:
   `uv run` call.
 
 See
-[Prerequisites for running the agent skills](../../../README.md#prerequisites-for-running-the-agent-skills)
-in `README.md`.
+[Prerequisites for running the agent skills](../../../docs/prerequisites.md#prerequisites-for-running-the-agent-skills)
+in `docs/prerequisites.md`.
 
 ---
 

@@ -44,19 +44,16 @@ table; see [`review-flow.md#area-specific-overlay`](review-flow.md).
 
 ## Categories — link out to the source section
 
-The category headings below are the **abstract names** the skill
-uses when grouping findings. The concrete URL each one links to
-lives in the adopter's
+The list below is the **abstract canonical category list** the
+skill uses when grouping findings. The concrete review-doc URL
+for each category lives in the adopter's
 `<project-config>/pr-management-code-review-criteria.md` →
-`Section anchors` table — every adopter substitutes their own
-review-doc URLs there. The skill resolves a category to its URL
-at finding time by matching the heading verbatim against the
-adopter table's `Section` column.
-
-If a category has no anchor row in the adopter config, the skill
-falls back to a plain reference (no clickable link) and surfaces
-the missing anchor as a one-line warning at the top of the
-review.
+`Section anchors` table; the skill resolves a category to its
+URL at finding time by matching the category name verbatim
+against that table's `Section` column. If a category has no
+anchor row, the skill falls back to a plain reference (no
+clickable link) and surfaces the missing anchor as a one-line
+warning at the top of the review.
 
 The canonical category list:
 
@@ -98,10 +95,10 @@ adopter table, only the repo-wide rules apply.
 Before flagging anything that looks security-flavoured, read
 the documented security model at the path declared in
 `<project-config>/pr-management-code-review-criteria.md` →
-`security_model_calibration.file`, and the
-[`AGENTS.md` § Security Model](../../../AGENTS.md#security-model)
-calibration guide. The latter is short and tells you how to
-distinguish:
+`security_model_calibration.file`. The framework's reference
+threat model lives at
+[`docs/security/threat-model.md`](../../../docs/security/threat-model.md);
+read both before deciding. Use the calibration to distinguish:
 
 1. an **actual vulnerability** that violates the documented
    model — flag as blocking,

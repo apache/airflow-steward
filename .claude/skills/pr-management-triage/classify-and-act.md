@@ -103,7 +103,7 @@ Action verbs are defined in [`actions.md`](actions.md).
   Action-side guard: see the `rebase` recipe in [`actions.md`](actions.md).
 - **Never `mark-ready` while workflow approval is pending.**
   Row 1 catches the upstream signal; the
-  [`mark-ready` action](actions.md#mark-ready) re-checks the
+  [`mark-ready` action](actions.md#mark-ready--add-ready-for-maintainer-review-label) re-checks the
   REST `action_required` index immediately before mutating
   (Golden rule 1b in [`SKILL.md`](SKILL.md)).
 - **Collaborator-authored PRs never get `draft`.** When

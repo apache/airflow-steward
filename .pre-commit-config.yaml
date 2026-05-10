@@ -270,13 +270,41 @@ repos:
         files: ^(tools/sandbox-lint/(src|tests|pyproject\.toml|expected\.json)|\.claude/settings\.json)
         pass_filenames: false
 
+  - repo: local
+    hooks:
+      - id: skill-validator-ruff-check
+        name: ruff check (skill-validator)
+        language: system
+        entry: uv run --directory tools/skill-validator ruff check
+        files: ^tools/skill-validator/(src|tests|pyproject\.toml)
+        pass_filenames: false
+      - id: skill-validator-ruff-format
+        name: ruff format (skill-validator)
+        language: system
+        entry: uv run --directory tools/skill-validator ruff format --check
+        files: ^tools/skill-validator/(src|tests|pyproject\.toml)
+        pass_filenames: false
+      - id: skill-validator-mypy
+        name: mypy (skill-validator)
+        language: system
+        entry: uv run --directory tools/skill-validator mypy
+        files: ^tools/skill-validator/(src|tests|pyproject\.toml)
+        pass_filenames: false
+      - id: skill-validator-pytest
+        name: pytest (skill-validator)
+        language: system
+        entry: uv run --directory tools/skill-validator pytest
+        files: ^tools/skill-validator/(src|tests|pyproject\.toml)
+        pass_filenames: false
+
   # Validate `.claude/skills/**` via the `skill-validate` CLI. Re-fires
   # on validator-source changes so rule updates get re-applied.
+  # `--project` (not `--directory`) so CWD stays at repo root.
   - repo: local
     hooks:
       - id: skill-validate
         name: skill-validate (.claude/skills/**)
         language: system
-        entry: uv run --directory tools/skill-validator skill-validate
+        entry: uv run --project tools/skill-validator skill-validate
         files: ^(\.claude/skills/.*\.md|tools/skill-validator/(src|pyproject\.toml))
         pass_filenames: false

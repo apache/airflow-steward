@@ -242,6 +242,5 @@ backstops:
 
 When a future audit surfaces a pattern that this checklist
 missed, the change is in two places: (a) add a pattern here,
-(b) audit existing skills for the new gap. See
-[`docs/SECURITY.md`](../../../docs/SECURITY.md) (when added)
-for the full audit-feedback loop.
+(b) audit existing skills for the new gap. `docs/SECURITY.md`
+(when added) will hold the full audit-feedback loop.

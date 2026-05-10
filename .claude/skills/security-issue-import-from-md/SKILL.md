@@ -160,8 +160,8 @@ Before running, the skill needs:
 No Gmail, no PonyMail, no `<upstream>` access. There is no inbound
 thread to read and no reporter to draft a reply to.
 
-See [Prerequisites for running the agent skills](../../../README.md#prerequisites-for-running-the-agent-skills)
-in `README.md` for overall setup.
+See [Prerequisites for running the agent skills](../../../docs/prerequisites.md#prerequisites-for-running-the-agent-skills)
+in `docs/prerequisites.md` for overall setup.
 
 ---
 
