@@ -138,7 +138,7 @@ The same flow, condensed to commands you run yourself:
 #    section: "Required tools (pinned versions)" below.
 sudo apt-get install --no-install-recommends \
     bubblewrap=0.11.1-* socat=1.8.1.1-*
-npm install -g --no-save @anthropic-ai/claude-code@2.1.123
+npm install -g --no-save @anthropic-ai/claude-code@2.1.138
 
 # 2. Project-scope `.claude/settings.json`. Copy the framework's
 #    sandbox / permissions.deny / permissions.ask / allowedDomains
@@ -195,7 +195,7 @@ The current pins live in machine-readable form in
 |---|---|---|---|---|
 | `bubblewrap` | 0.11.1 | 2026-03-21 | 7d (default) | Linux user-namespace sandbox (filesystem layer). Required on Linux; macOS uses Seatbelt instead. |
 | `socat` | 1.8.1.1 | 2026-03-13 | 7d (default) | TCP relay for the sandbox network allowlist. Linux only. |
-| `claude-code` | 2.1.123 | 2026-04-29 | 1d (override) | Agent runtime. Pin separately from any system claude install so behavioural changes don't drift the framework's effective security posture without review. |
+| `claude-code` | 2.1.138 | 2026-05-09 | 1d (override) | Agent runtime. Pin separately from any system claude install so behavioural changes don't drift the framework's effective security posture without review. |
 
 The pin date floor (`pinned_at` in the manifest) is the day the
 manifest was last touched; it is the framework's promise that every
@@ -234,7 +234,7 @@ version, no pin enforced — Homebrew rolls forward, so the
 
 ```bash
 # npm distribution (the only stable channel today)
-npm install -g --no-save @anthropic-ai/claude-code@2.1.123
+npm install -g --no-save @anthropic-ai/claude-code@2.1.138
 ```
 
 ### Distro-specific shortcut — Linux Mint 22.x / Ubuntu 24.04 Noble
