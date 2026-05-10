@@ -1,6 +1,6 @@
 ---
 name: security-issue-sync
-mode: A
+mode: Triage
 description: |
   Synchronize a security issue in <tracker> with the state of its
   GitHub discussion, the <security-list> mailing thread, and any

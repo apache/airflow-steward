@@ -53,8 +53,8 @@ REQUIRED_FRONTMATTER_KEYS = {"name", "description", "license"}
 OPTIONAL_FRONTMATTER_KEYS = {"when_to_use", "mode"}
 ALLOWED_LICENSES = {"Apache-2.0"}
 # MISSION mode taxonomy — see docs/modes.md.
-# "D" deliberately excluded: Mode D (auto-merge) is off per MISSION sequencing.
-ALLOWED_MODES = {"A", "B", "C"}
+# "Auto-merge" deliberately excluded: it is off per MISSION sequencing.
+ALLOWED_MODES = {"Triage", "Mentoring", "Drafting", "Pairing"}
 
 # Forbidden hardcoded project references (fixed strings, case-sensitive)
 FORBIDDEN_PATTERNS: list[str] = [

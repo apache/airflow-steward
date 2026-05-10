@@ -1,6 +1,6 @@
 ---
 name: security-issue-fix
-mode: C
+mode: Drafting
 description: |
   Attempt to fix a security issue tracked in <tracker> by
   implementing the change in a public <upstream> PR. Runs the

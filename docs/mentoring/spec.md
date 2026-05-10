@@ -2,7 +2,7 @@
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
-- [Mode B — conversational mentoring (spec)](#mode-b--conversational-mentoring-spec)
+- [Mentoring (spec)](#mentoring-spec)
   - [Status](#status)
   - [Scope](#scope)
   - [Triggers](#triggers)
@@ -20,21 +20,21 @@
 <!-- SPDX-License-Identifier: Apache-2.0
      https://www.apache.org/licenses/LICENSE-2.0 -->
 
-# Mode B — conversational mentoring (spec)
+# Mentoring (spec)
 
 ## Status
 
-Proposed. No skill code yet. This document defines what Mode B
+Proposed. No skill code yet. This document defines what Mentoring
 should do once it exists; it lands ahead of any skill so the
 project's tone choices and hand-off rules are reviewable
 independently from runtime behaviour. See
-[`MISSION.md` § Mode B](../../MISSION.md#technical-scope) and
-[`docs/modes.md` § Mode B](../modes.md#mode-b--conversational-mentoring)
+[`MISSION.md` § Mentoring](../../MISSION.md#technical-scope) and
+[`docs/modes.md` § Mentoring](../modes.md#mentoring)
 for sequencing.
 
 ## Scope
 
-Mode B joins issue and PR threads in a teaching register. The
+Mentoring joins issue and PR threads in a teaching register. The
 agent's job is to lower the barrier to a contributor's *next
 useful action*. Concretely, in scope:
 
@@ -56,21 +56,20 @@ useful action*. Concretely, in scope:
 
 Out of scope:
 
-- *Reviewing code*. That is Mode A's
+- *Reviewing code*. That is Triage's
   [`pr-management-code-review`](../../.claude/skills/pr-management-code-review/SKILL.md)
-  skill. Mode B does not approve, request changes, or post inline
+  skill. Mentoring does not approve, request changes, or post inline
   diff comments.
-- *Triage routing*. That is Mode A's
+- *Triage routing*. That is Triage's
   [`pr-management-triage`](../../.claude/skills/pr-management-triage/SKILL.md)
-  skill. Mode B does not assign labels, mark draft, or close PRs.
-- *Authoring fixes*. That is Mode C. Mode B does not open PRs or
+  skill. Mentoring does not assign labels, mark draft, or close PRs.
+- *Authoring fixes*. That is Drafting. Mentoring does not open PRs or
   edit code.
-- *Speaking for the maintainer team* on disputed decisions. Mode
-  B says "a maintainer will weigh in" and stops.
+- *Speaking for the maintainer team* on disputed decisions. Mentoring says "a maintainer will weigh in" and stops.
 
 ## Triggers
 
-Mode B never posts unprompted on a thread it has not been
+Mentoring never posts unprompted on a thread it has not been
 invoked on. The skill is opt-in per invocation. Three trigger
 paths:
 
@@ -84,7 +83,7 @@ paths:
    classifies a PR as "first contributor, missing repro" (or
    equivalent triage flag), the maintainer can chain
    `/pr-management-mentor` on that PR. The two skills compose;
-   Mode B does not run inside Mode A by default.
+   Mentoring does not run inside Triage by default.
 3. **Issue-thread invocation**. Same opt-in, on issues rather
    than PRs, for the "missing version / missing repro" case.
 
@@ -92,8 +91,8 @@ Why no auto-fire: posting a teaching-register comment without
 explicit human authorization risks the agent talking past a
 maintainer who is mid-conversation with the contributor, or
 posting on a thread where the maintainer has *deliberately* not
-replied yet. Auto-fire is a Mode-D-shaped problem and inherits
-Mode D's sequencing constraint.
+replied yet. Auto-fire is a Auto-merge-shaped problem and inherits
+Auto-merge's sequencing constraint.
 
 ## Teaching register — tone guide
 
@@ -131,7 +130,7 @@ feeling managed.
 - AI self-reference outside the attribution footer. The footer
   says it once; the body should not.
 - Speaking for the maintainer. "The maintainers will probably
-  want X" — Mode B does not predict maintainer decisions. It
+  want X" — Mentoring does not predict maintainer decisions. It
   says "a maintainer will reply on this; in the meantime,
   here's the convention" and stops.
 
@@ -153,12 +152,12 @@ documented two-stage process.
 The agent bows out and pings a human when:
 
 1. The contributor pushes back on a substantive design point.
-   Mode B answers "why is this convention" once. If the
-   contributor disagrees, Mode B does not argue; it pings the
+   Mentoring answers "why is this convention" once. If the
+   contributor disagrees, Mentoring does not argue; it pings the
    maintainer.
 2. The question touches security, embargoed work, deprecation
    timing, or anything not covered by public documentation.
-   Mode B does not improvise on these surfaces.
+   Mentoring does not improvise on these surfaces.
 3. The thread reaches `<max_agent_turns>` (configurable, default
    2). After that the agent stops engaging on the thread
    regardless of content.
@@ -191,7 +190,7 @@ Required keys:
 Surfaced here so reviewers can weigh in before the skill is
 built.
 
-- **Should Mode B post on the project's mailing list, or only
+- **Should Mentoring post on the project's mailing list, or only
   on GitHub threads?** Current draft: GitHub only. Mailing-list
   mentoring lives in the human maintainer's voice; the agent
   does not have a list-subscriber identity.
@@ -199,20 +198,20 @@ built.
   footer, or distinct?** Current draft: same wording, different
   step token. One contributor-trust calibration is easier to
   reason about than two.
-- **Should the maintainer review every Mode B draft, or can
+- **Should the maintainer review every Mentoring draft, or can
   they pre-authorize a class of comments (e.g., "always ok to
   ask for repro")?** Current draft: every draft is reviewed.
-  Pre-authorization is Mode-D-shaped and inherits the same
+  Pre-authorization is Auto-merge-shaped and inherits the same
   sequencing constraint.
 
 ## Cross-references
 
-- [`MISSION.md` § Mode B](../../MISSION.md#technical-scope) —
+- [`MISSION.md` § Mentoring](../../MISSION.md#technical-scope) —
   the mode definition + responsible-AI framing.
-- [`docs/modes.md` § Mode B](../modes.md#mode-b--conversational-mentoring) —
+- [`docs/modes.md` § Mentoring](../modes.md#mentoring) —
   current implementation status (proposed).
 - [`.claude/skills/pr-management-triage/comment-templates.md`](../../.claude/skills/pr-management-triage/comment-templates.md) —
   closest existing surface; informs the tone-footer convention
-  but is not Mode B.
+  but is not Mentoring.
 - [`AGENTS.md`](../../AGENTS.md) — repository-level rules every
   mode inherits.

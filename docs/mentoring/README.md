@@ -18,7 +18,7 @@
 spec — tone guide, hand-off protocol, adopter contract — ahead
 of any skill code so the project's tone choices are reviewable
 independently of runtime behaviour. See
-[`MISSION.md` § Mode B](../../MISSION.md#technical-scope) for
+[`MISSION.md` § Mentoring](../../MISSION.md#technical-scope) for
 the *why*.
 
 Why a framework skill family? Mentoring is named in
@@ -31,7 +31,7 @@ at once.
 
 ## Status
 
-Mode B is **proposed**. No SKILL.md exists yet. This directory
+Mentoring is **proposed**. No SKILL.md exists yet. This directory
 currently contains:
 
 - [**`spec.md`**](spec.md) — what the future skill should do:
@@ -39,7 +39,7 @@ currently contains:
 
 A prototype skill (`pr-management-mentor`, working name) lands
 in a follow-up PR after this spec is reviewed. The skill ships
-flagged `mode: B` + `experimental` per the
+flagged `mode: Mentoring` + `experimental` per the
 [mode lifecycle](../modes.md#mode-lifecycle).
 
 ## Adopter contract (proposed)
@@ -51,8 +51,8 @@ template at
 
 ## Cross-references
 
-- [`MISSION.md` § Mode B](../../MISSION.md#technical-scope) —
+- [`MISSION.md` § Mentoring](../../MISSION.md#technical-scope) —
   mode definition, RAI empowerment framing.
-- [`docs/modes.md` § Mode B](../modes.md#mode-b--conversational-mentoring) —
+- [`docs/modes.md` § Mentoring](../modes.md#mentoring) —
   implementation status.
 - [`spec.md`](spec.md) — full spec.

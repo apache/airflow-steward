@@ -1,6 +1,6 @@
 ---
 name: pr-management-mentor
-mode: B
+mode: Mentoring
 description: |
   Draft a teaching-register comment on a single GitHub issue or
   PR thread on the configured `<upstream>` repo (default: read
@@ -13,7 +13,7 @@ description: |
   maintainer confirmation before posting via `gh`. Does **not**
   triage (no labels, draft toggles, closes), review code (no
   diff comments, approve / request-changes), or open PRs — those
-  are Mode A and Mode C surfaces. Bows out and pings the
+  are Triage and Drafting surfaces. Bows out and pings the
   configured maintainer team when the thread reaches
   `max_agent_turns`, when the contributor pushes back on a
   substantive design point, when the topic enters
@@ -27,7 +27,7 @@ when_to_use: |
   contributor, missing repro / convention". Not appropriate for
   PRs already mid-review with a maintainer (the agent should
   not talk over a human reviewer), for security-sensitive
-  threads (Mode B always hands off these), or for any thread
+  threads (Mentoring always hands off these), or for any thread
   where the maintainer has *deliberately* not replied yet — ask
   before invoking.
 license: Apache-2.0
@@ -42,7 +42,7 @@ license: Apache-2.0
 
 # pr-management-mentor
 
-**Status: experimental.** First prototype of Mode B
+**Status: experimental.** First prototype of Mentoring
 ([conversational mentoring](../../../docs/mentoring/spec.md)). The
 skill exists to make the spec executable on a single thread at
 a time so we can iterate on tone wording, convention pointers,
@@ -58,7 +58,7 @@ answer, for the invoked thread, one question:
 > what does it say?*
 
 If the answer is "no" (thread is already on track, maintainer
-already engaging, scope exceeds Mode B), the skill says so and
+already engaging, scope exceeds Mentoring), the skill says so and
 exits without posting. The agent's silence is a feature, not a
 failure.
 
@@ -118,7 +118,7 @@ is short on purpose — one comment in, one decision out:
    audience.
 3. **Out-of-scope check**. If the thread title or recent
    comments touch any `out_of_scope_topics` entry, **do not
-   draft**. Surface "this thread is out of Mode B scope —
+   draft**. Surface "this thread is out of Mentoring scope —
    handing off" and run the [hand-off](hand-off.md) flow.
 4. **Maintainer-already-engaged check**. If a maintainer (login
    in the configured committers team, see `pr-management-config.md →
@@ -178,7 +178,7 @@ maintainer reads the thread.
 - **Triage.** No labels, no draft toggles, no closes.
   [`pr-management-triage`](../pr-management-triage/SKILL.md)
   owns that.
-- **Authoring fixes.** No PRs opened. That is Mode C.
+- **Authoring fixes.** No PRs opened. That is Drafting.
 - **Predicting maintainer decisions.** The skill never says
   "the maintainers will probably want X". It says "a
   maintainer will reply on this; in the meantime, here's the
@@ -188,7 +188,7 @@ maintainer reads the thread.
   voice; the agent does not have a list-subscriber identity.
 - **Auto-fire.** Every invocation is opt-in by a maintainer.
   No cron, no webhook, no auto-trigger. Auto-fire is a
-  Mode-D-shaped problem and inherits Mode D's sequencing
+  Auto-merge-shaped problem and inherits Auto-merge's sequencing
   constraint.
 
 ## Cross-references
@@ -197,10 +197,10 @@ maintainer reads the thread.
   the full spec this skill implements.
 - [`docs/mentoring/README.md`](../../../docs/mentoring/README.md) —
   family overview + status.
-- [`docs/modes.md` § Mode B](../../../docs/modes.md#mode-b--conversational-mentoring) —
+- [`docs/modes.md` § Mentoring](../../../docs/modes.md#mentoring) —
   current implementation status (experimental once this skill
   ships).
 - [`projects/_template/mentoring-config.md`](../../../projects/_template/mentoring-config.md) —
   adopter scaffold.
-- [`MISSION.md` § Mode B](../../../MISSION.md#technical-scope) —
+- [`MISSION.md` § Mentoring](../../../MISSION.md#technical-scope) —
   RAI empowerment framing.

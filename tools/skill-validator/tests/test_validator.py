@@ -113,7 +113,7 @@ class TestValidateFrontmatter:
 
     def test_valid_mode(self, tmp_path: Path) -> None:
         path = tmp_path / "SKILL.md"
-        for mode in ("A", "B", "C"):
+        for mode in ("Triage", "Mentoring", "Drafting", "Pairing"):
             text = (
                 "---\n"
                 "name: foo\n"
@@ -132,11 +132,11 @@ class TestValidateFrontmatter:
             "name: foo\n"
             "description: bar\n"
             "license: Apache-2.0\n"
-            "mode: D\n"
+            "mode: Auto-merge\n"
             "---\n"
         )
         violations = list(validate_frontmatter(path, text))
-        assert any("mode" in v.message and "'D'" in v.message for v in violations)
+        assert any("mode" in v.message and "'Auto-merge'" in v.message for v in violations)
 
     def test_mode_optional(self, tmp_path: Path) -> None:
         # Skills without a mode (e.g. setup-* infrastructure) must not fail.
@@ -167,8 +167,8 @@ class TestSlugify:
 
     def test_em_dash_in_heading(self) -> None:
         assert (
-            slugify("Mode B — conversational mentoring")
-            == "mode-b--conversational-mentoring"
+            slugify("Mentoring")
+            == "mentoring"
         )
 
 

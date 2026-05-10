@@ -2,7 +2,7 @@
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
-- [Apache Airflow — mentoring (Mode B) configuration](#apache-airflow--mentoring-mode-b-configuration)
+- [Apache Airflow — mentoring (Mentoring) configuration](#apache-airflow--mentoring-mentoring-configuration)
   - [Identifiers](#identifiers)
   - [Convention pointers](#convention-pointers)
   - [Out-of-scope topics](#out-of-scope-topics)
@@ -13,13 +13,13 @@
 <!-- SPDX-License-Identifier: Apache-2.0
      https://www.apache.org/licenses/LICENSE-2.0 -->
 
-# Apache Airflow — mentoring (Mode B) configuration
+# Apache Airflow — mentoring (Mentoring) configuration
 
-**This file is a placeholder ahead of the Mode B skill landing.**
-The skill does not exist yet (Mode B is proposed per
-[`docs/modes.md`](../../docs/modes.md#mode-b--conversational-mentoring)).
+**This file is a placeholder ahead of the Mentoring skill landing.**
+The skill does not exist yet (Mentoring is proposed per
+[`docs/modes.md`](../../docs/modes.md#mentoring)).
 The keys below match the
-[Mode B spec](../../docs/mentoring/spec.md#adopter-contract)
+[Mentoring spec](../../docs/mentoring/spec.md#adopter-contract)
 and are the values the future skill will read. New adopters
 should copy this file into their own
 `<project-config>/mentoring-config.md` and replace every
