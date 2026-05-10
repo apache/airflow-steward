@@ -106,6 +106,14 @@ FRAMEWORK_PLACEHOLDERS: tuple[str, ...] = (
     "<repo>",
 )
 
+# YAML block-scalar headers — must not be stored as scalar content,
+# else MAX_METADATA_CHARS measurements get inflated.
+YAML_BLOCK_SCALAR_HEADERS = {"|", ">", "|-", "|+", ">-", ">+"}
+
+# Per-skill description + when_to_use budget; Claude Code truncates past this.
+# https://code.claude.com/docs/en/skills#frontmatter-reference
+MAX_METADATA_CHARS = 1536
+
 # Markdown link pattern: [text](url)
 LINK_PATTERN = re.compile(r"\[([^\]]+)\]\(([^)]+)\)")
 
@@ -184,7 +192,8 @@ def parse_frontmatter(text: str) -> dict[str, str] | None:
                     result[current_key] = "\n".join(current_value_lines).strip()
                 key, _, value = line.partition(":")
                 current_key = key.strip()
-                current_value_lines = [value.strip()] if value.strip() else []
+                inline = value.strip()
+                current_value_lines = [inline] if inline and inline not in YAML_BLOCK_SCALAR_HEADERS else []
                 continue
             # Line without colon that is not indented — treat as folded scalar
             if current_key is not None:
@@ -227,6 +236,18 @@ def validate_frontmatter(path: Path, text: str) -> Iterable[Violation]:
             path,
             1,
             f"frontmatter mode '{fm['mode']}' not in {sorted(ALLOWED_MODES)} (see docs/modes.md)",
+        )
+
+    desc_len = len(fm.get("description", ""))
+    wtu_len = len(fm.get("when_to_use", ""))
+    total = desc_len + wtu_len
+    if total > MAX_METADATA_CHARS:
+        yield Violation(
+            path,
+            1,
+            f"description + when_to_use is {total} chars; "
+            f"Claude Code truncates past {MAX_METADATA_CHARS} "
+            f"(description={desc_len}, when_to_use={wtu_len})",
         )
 
 
