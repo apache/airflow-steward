@@ -6,6 +6,7 @@
   - [Project structure](#project-structure)
     - [Directory tree](#directory-tree)
   - [Getting set up](#getting-set-up)
+    - [Lightening the agent context](#lightening-the-agent-context)
   - [Making changes](#making-changes)
   - [Running the dev loop](#running-the-dev-loop)
   - [Opening a pull request](#opening-a-pull-request)
@@ -183,6 +184,48 @@ cannot accidentally publish your local configuration.
 Read [`.claude/skills/setup-steward/adopt.md`](.claude/skills/setup-steward/adopt.md) for the end-to-end
 configuration tutorial, including the placeholder convention and how
 the skills consume both layers.
+
+### Lightening the agent context
+
+Most skills in this repository are runtime workflows for adopters
+(security triage, PR management, CVE allocation). They have no use
+while you are *editing the framework itself*, but they still load
+into the agent's context window and crowd out the files you actually
+need to read.
+
+Opt out per skill by adding a `.claude/settings.local.json` to your
+clone (gitignored) and listing the skills you want disabled:
+
+```json
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "skillOverrides": {
+    "pr-management-code-review": "off",
+    "pr-management-mentor": "off",
+    "pr-management-stats": "off",
+    "pr-management-triage": "off",
+    "security-cve-allocate": "off",
+    "security-issue-deduplicate": "off",
+    "security-issue-fix": "off",
+    "security-issue-import": "off",
+    "security-issue-import-from-md": "off",
+    "security-issue-import-from-pr": "off",
+    "security-issue-invalidate": "off",
+    "security-issue-sync": "off",
+    "setup-isolated-setup-install": "off",
+    "setup-isolated-setup-update": "off",
+    "setup-isolated-setup-verify": "off",
+    "setup-override-upstream": "off",
+    "setup-shared-config-sync": "off",
+    "setup-steward": "off",
+    "write-skill": "on"
+  }
+}
+```
+
+The file is per-clone and per-user; nothing from it gets committed.
+Flip a skill back to `"on"` (or remove the entry) when you start
+working on that area.
 
 ## Making changes
 
