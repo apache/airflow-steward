@@ -126,7 +126,7 @@ The score is also used to bucket the area into a severity colour for the dashboa
 | 15–29 | medium | amber |
 | < 15 | low | grey |
 
-Tune the weights here in lockstep with the recommendation rules in [`render.md#recommendation-rules`](render.md) — they share the same notion of "what's urgent" and drift between the two would produce contradictory dashboard sections.
+Tune the weights here in lockstep with the recommendation rules in [`render.md#recommendation-rules`](render.md#recommendation-rules) — they share the same notion of "what's urgent" and drift between the two would produce contradictory dashboard sections.
 
 ---
 
@@ -149,7 +149,7 @@ Per window, count three metrics:
 |---|---|
 | `merged` | PR has `merged == true` AND `closedAt` falls in the window |
 | `closed` | PR has `merged == false` AND `closedAt` falls in the window |
-| `triaged_then_responded` | PR is triaged (per [`classify.md#triage-marker`](classify.md)) AND `closedAt` falls in the window AND the author commented after the triage comment |
+| `triaged_then_responded` | PR is triaged (per [`classify.md#triage-marker`](classify.md#triage-marker)) AND `closedAt` falls in the window AND the author commented after the triage comment |
 
 Render the bars oldest → newest (so the eye sweeps left-to-right matching natural time order). Each bar is a stacked `merged` (green) + `closed` (grey) segment, normalised to the maximum total in the 6-week window.
 
@@ -198,7 +198,7 @@ Net alone hides activity. A week with 100 opened and 100 closed has the same net
 
 The dashboard's "Ready-for-review trend" panel shows the cumulative count of currently-`ready for maintainer review` PRs over the last 6 weeks, broken down by the top-N highest-pressure areas (default N = 5; areas with fewer than 3 currently-ready PRs are excluded as noise).
 
-For each PR currently carrying the label, the **labeled-at timestamp** is the `createdAt` of the most recent `LabeledEvent` where `label.name == "ready for maintainer review"` from the PR's timeline (see [`fetch.md#ready-label-timeline`](fetch.md)).
+For each PR currently carrying the label, the **labeled-at timestamp** is the `createdAt` of the most recent `LabeledEvent` where `label.name == "ready for maintainer review"` from the PR's timeline (see [`fetch.md#ready-label-timeline`](fetch.md#ready-label-timeline)).
 
 For each top area `a` and each weekly bucket `w` in `0..5`:
 

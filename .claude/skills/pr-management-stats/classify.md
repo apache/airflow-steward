@@ -150,7 +150,7 @@ Count the PR as responded if it has the marker AND an author comment between tri
 
 ## Pressure weight
 
-Per-PR helper used by [`aggregate.md#pressure-score`](aggregate.md). Returns the integer weight a single contributor PR contributes to its area's pressure score. Pure function of fields already populated above; no extra fetches.
+Per-PR helper used by [`aggregate.md#pressure-score`](aggregate.md#pressure-score). Returns the integer weight a single contributor PR contributes to its area's pressure score. Pure function of fields already populated above; no extra fetches.
 
 ```text
 def pressure_weight(pr) -> int:
@@ -169,7 +169,7 @@ def pressure_weight(pr) -> int:
     return 1
 ```text
 
-The first-match-wins ordering matters: a ready-for-review PR that's also a stale triaged draft scores 1 (ready takes precedence — once it has the label, the maintainer is the gate, not the author). Keep this function in lockstep with the table in [`aggregate.md#pressure-score`](aggregate.md).
+The first-match-wins ordering matters: a ready-for-review PR that's also a stale triaged draft scores 1 (ready takes precedence — once it has the label, the maintainer is the gate, not the author). Keep this function in lockstep with the table in [`aggregate.md#pressure-score`](aggregate.md#pressure-score).
 
 ---
 

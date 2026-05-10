@@ -118,7 +118,7 @@ read-only and inherits everything from `pr-management-triage`'s contract.
 
 **Golden rule 5 — state the input scope up front.** Before rendering, print one line summarising what the stats cover: repo name, total open PR count, closed-since cutoff date, and viewer login. The numbers only make sense in context.
 
-**Golden rule 6 — recommendations are deterministic, not opinions.** Every action surfaced in the "What needs attention" panel comes from a fixed rule in [`render.md#recommendation-rules`](render.md). The skill never editorialises ("queue is doing well", "you should focus on X") — it surfaces the rule's trigger and the suggested next-step command. The maintainer reads the trigger and decides; the skill never decides for them. New rules are added by editing the rules table, not by adding free-text inside the renderer.
+**Golden rule 6 — recommendations are deterministic, not opinions.** Every action surfaced in the "What needs attention" panel comes from a fixed rule in [`render.md#recommendation-rules`](render.md#recommendation-rules). The skill never editorialises ("queue is doing well", "you should focus on X") — it surfaces the rule's trigger and the suggested next-step command. The maintainer reads the trigger and decides; the skill never decides for them. New rules are added by editing the rules table, not by adding free-text inside the renderer.
 
 **Golden rule 7 — actions link to other skills, never mutate.** Every recommendation's `action` field is the *exact* slash-command the maintainer can paste to do the work — almost always `/pr-management-triage`, `/maintainer-review`, or a focused variant with a label/PR-number filter. The stats skill itself remains pure-read (Golden rule 1); the dashboard makes downstream skills *one paste away* from running.
 
@@ -143,7 +143,7 @@ No per-PR drill-in — this skill is aggregate-only.
 
 1. `gh auth status` must succeed; capture the viewer login (needed for the triage-marker check in step 2).
 2. Run one GraphQL query that asks both for `viewer { login }` and for `repository(owner, name) { name }` to confirm the repo is reachable. `viewerPermission` is NOT required (this skill doesn't mutate) — skip the write-check that `pr-management-triage` does.
-3. Read or initialise the scratch cache at `/tmp/pr-management-stats-cache-<repo-slug>.json` (see [`aggregate.md#cache`](aggregate.md)). The cache stores the viewer login and a map of `pr_number → (head_sha, triage_status)` so a re-run inside the same session skips the per-PR enrichment.
+3. Read or initialise the scratch cache at `/tmp/pr-management-stats-cache-<repo-slug>.json` (see [`aggregate.md#cache`](aggregate.md#cache)). The cache stores the viewer login and a map of `pr_number → (head_sha, triage_status)` so a re-run inside the same session skips the per-PR enrichment.
 
 A failure at step 1 is a **stop**. Steps 2 and 3 degrade with warnings.
 
@@ -151,7 +151,7 @@ A failure at step 1 is a **stop**. Steps 2 and 3 degrade with warnings.
 
 ## Step 1 — Fetch open PRs
 
-Use the query template in [`fetch.md#open-prs`](fetch.md) to get every open PR with the fields needed for classification (labels, `isDraft`, `authorAssociation`, `createdAt`, last commit `committedDate`, last 10 comments for the triage-marker scan).
+Use the query template in [`fetch.md#open-prs`](fetch.md#open-prs) to get every open PR with the fields needed for classification (labels, `isDraft`, `authorAssociation`, `createdAt`, last commit `committedDate`, last 10 comments for the triage-marker scan).
 
 Paginate until `pageInfo.hasNextPage == false`. Batch size of 50 is safe (the open-PR selection set is lighter than `pr-management-triage`'s — no `statusCheckRollup`, no `reviewThreads`, no `latestReviews`). For a 300-PR backlog that's six GraphQL calls.
 
@@ -163,7 +163,7 @@ For each open PR, determine:
 
 - `is_triaged_waiting` — viewer's (or any collaborator's) comment contains the `Pull Request quality criteria` marker, the comment post-dates the PR's last commit, AND the author has NOT commented after it.
 - `is_triaged_responded` — same marker found, but the author HAS commented after it.
-- `is_drafted_by_triager` — the PR was converted to draft by the viewer at or after the triage comment (from the `ConvertToDraftEvent` timeline, optional — see [`classify.md#drafted-by-triager`](classify.md) for the cheaper heuristic).
+- `is_drafted_by_triager` — the PR was converted to draft by the viewer at or after the triage comment (from the `ConvertToDraftEvent` timeline, optional — see [`classify.md#drafted-by-triager`](classify.md#drafted-by-triager) for the cheaper heuristic).
 - `last_author_interaction_at` — most recent `commit.committedDate` OR author comment `createdAt`, whichever is later.
 
 Cache these per `(pr_number, head_sha)` so a subsequent run skips the scan.
@@ -172,7 +172,7 @@ Cache these per `(pr_number, head_sha)` so a subsequent run skips the scan.
 
 ## Step 3 — Fetch closed / merged triaged PRs since cutoff
 
-The second table is a separate search. Fetch closed or merged PRs whose comment history contains the triage marker since the configured cutoff date. Use the template in [`fetch.md#closed-merged-triaged`](fetch.md).
+The second table is a separate search. Fetch closed or merged PRs whose comment history contains the triage marker since the configured cutoff date. Use the template in [`fetch.md#closed-merged-triaged-prs`](fetch.md#closed-merged-triaged-prs).
 
 Cutoff defaults to `today - 6 weeks`. The cutoff should be configurable because a maintainer asking "how did last week's sweep do" wants `since:today-7d`, while a monthly report wants `since:today-30d`.
 
@@ -182,7 +182,7 @@ Cutoff defaults to `today - 6 weeks`. The cutoff should be configurable because 
 
 Group each PR by every `area:*` label it carries. A PR with `area:UI` and `area:scheduler` contributes to both groups. A PR with no `area:*` labels lands in a pseudo-area `(no area)`.
 
-Per area, compute the counters in [`aggregate.md#counters`](aggregate.md): total, drafts, non-drafts, contributors, triaged-waiting, triaged-responded, ready-for-review, drafted-by-triager, plus age-bucket histograms.
+Per area, compute the counters in [`aggregate.md#counters-per-area`](aggregate.md#counters-per-area): total, drafts, non-drafts, contributors, triaged-waiting, triaged-responded, ready-for-review, drafted-by-triager, plus age-bucket histograms.
 
 Also compute a `TOTAL` row where each PR is counted exactly once (NOT the sum of per-area counters — PRs with multiple `area:*` labels would double-count).
 
@@ -192,8 +192,8 @@ Also compute a `TOTAL` row where each PR is counted exactly once (NOT the sum of
 
 Pure function of the classified open-PR set. No network.
 
-1. Apply the **health rating** thresholds from [`aggregate.md#health-rating`](aggregate.md): each fired threshold is a "issue point". Map total points → `✅ Healthy` / `⚠️ Needs attention` / `🔥 Action needed`.
-2. Walk the **recommendation rules** from [`render.md#recommendation-rules`](render.md) in declared order. Each rule that fires produces one entry with `priority`, `icon`, `title`, `detail`, `action` (the exact slash command), and a count.
+1. Apply the **health rating** thresholds from [`aggregate.md#health-rating`](aggregate.md#health-rating): each fired threshold is a "issue point". Map total points → `✅ Healthy` / `⚠️ Needs attention` / `🔥 Action needed`.
+2. Walk the **recommendation rules** from [`render.md#recommendation-rules`](render.md#recommendation-rules) in declared order. Each rule that fires produces one entry with `priority`, `icon`, `title`, `detail`, `action` (an exact slash command, or `—` when no paste-clean command applies), and a count. `action` and `detail` are kept in separate columns so prose / parentheticals stay out of the slash command.
 3. The recommendation list is the input to the dashboard's "What needs attention" panel. If zero rules fire, surface the explicit "no urgent actions detected" panel — never leave the section empty.
 
 ---
@@ -204,7 +204,7 @@ Pure function of the closed/merged-since-cutoff PR set.
 
 For each of the last 6 weeks (rolling, anchored on the fetch-start `<now>`), bucket PRs by `closedAt` and count `merged` and `closed` separately. Also count the triaged-then-merged / triaged-then-closed / triaged-then-responded subsets — those are what feed the trend mini-stats below the velocity bars.
 
-See [`aggregate.md#weekly-velocity`](aggregate.md) for the exact bucket boundaries and the avg/peak summary computation.
+See [`aggregate.md#weekly-velocity`](aggregate.md#weekly-velocity) for the exact bucket boundaries and the avg/peak summary computation.
 
 ---
 
@@ -218,17 +218,17 @@ For each of the same six rolling weekly windows, compute:
 - `closed_total` — PR was closed/merged in the window (reuses the velocity buckets from Step 5b)
 - `net_delta = opened - closed_total`
 
-These per-week numbers feed the dashboard's "Opened vs closed momentum" line chart and the two-line "Net delta" summary below it. See [`aggregate.md#opened-vs-closed-weekly-buckets`](aggregate.md) for the exact spec.
+These per-week numbers feed the dashboard's "Opened vs closed momentum" line chart and the two-line "Net delta" summary below it. See [`aggregate.md#opened-vs-closed-weekly-buckets`](aggregate.md#opened-vs-closed-weekly-buckets) for the exact spec.
 
 ---
 
 ## Step 5d — Compute ready-for-review trend by top areas
 
-Needs one extra fetch (per [`fetch.md#ready-label-timeline`](fetch.md)): for each currently-`ready for maintainer review` PR, the timestamp of its most recent `LabeledEvent` adding that label. Aliased GraphQL, ~30 PRs per call.
+Needs one extra fetch (per [`fetch.md#ready-label-timeline`](fetch.md#ready-label-timeline)): for each currently-`ready for maintainer review` PR, the timestamp of its most recent `LabeledEvent` adding that label. Aliased GraphQL, ~30 PRs per call.
 
 Then for each top-pressure area (top 5 by Step 5f's score, filtered to areas with ≥ 3 currently-ready PRs), compute a 6-bucket cumulative count: `ready_count[a][w] = count of currently-ready PRs in area a where labeled_at <= w.end`.
 
-Feeds the dashboard's "Ready-for-review trend" multi-line chart. See [`aggregate.md#ready-for-review-trend-by-top-areas`](aggregate.md) for the exact spec and rendering rules.
+Feeds the dashboard's "Ready-for-review trend" multi-line chart. See [`aggregate.md#ready-for-review-trend-by-top-areas`](aggregate.md#ready-for-review-trend-by-top-areas) for the exact spec and rendering rules.
 
 ---
 
@@ -238,7 +238,7 @@ Pure function of the closed/merged-since-cutoff PR set (Step 3) — reuses the e
 
 For each weekly bucket, classify each closed PR into exactly one of four categories: `merged`, `closed-after-responded`, `closed-after-triage-no-response`, `closed-no-triage`. Sum per category per week.
 
-Feeds the dashboard's "Closed-by-triage-reason per week" stacked bar chart. See [`aggregate.md#closed-by-triage-reason-per-week`](aggregate.md) for the category definitions, colour map, and summary line.
+Feeds the dashboard's "Closed-by-triage-reason per week" stacked bar chart. See [`aggregate.md#closed-by-triage-reason-per-week`](aggregate.md#closed-by-triage-reason-per-week) for the category definitions, colour map, and summary line.
 
 ---
 
@@ -246,7 +246,7 @@ Feeds the dashboard's "Closed-by-triage-reason per week" stacked bar chart. See 
 
 Pure function of the classified open-PR set.
 
-Per area, compute a **pressure score** = weighted sum of urgent PR conditions. The weights are defined in [`aggregate.md#pressure-score`](aggregate.md):
+Per area, compute a **pressure score** = weighted sum of urgent PR conditions. The weights are defined in [`aggregate.md#pressure-score`](aggregate.md#pressure-score):
 
 - untriaged non-draft, > 4 weeks old → 5 pts
 - untriaged non-draft, 1–4 weeks old → 3 pts
@@ -261,7 +261,7 @@ Sort areas by score descending; render the top 8 (filtering areas with < 3 contr
 
 ## Step 6 — Render dashboard
 
-Render the maintainer dashboard per the layout in [`render.md#dashboard-layout`](render.md):
+Render the maintainer dashboard per the layout in [`render.md#dashboard-layout`](render.md#dashboard-layout):
 
 1. **Context line** — repo, open count, cutoff, viewer, timestamp.
 2. **Hero cards (4)** — health rating, total open, ready count, untriaged-non-draft count.
