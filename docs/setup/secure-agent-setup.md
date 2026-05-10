@@ -137,7 +137,7 @@ The same flow, condensed to commands you run yourself:
 #    `tools/agent-isolation/pinned-versions.toml`; canonical
 #    section: "Required tools (pinned versions)" below.
 sudo apt-get install --no-install-recommends \
-    bubblewrap=0.11.1-* socat=1.8.1.1-*
+    bubblewrap=0.11.2-* socat=1.8.1.1-*
 npm install -g --no-save @anthropic-ai/claude-code@2.1.138
 
 # 2. Project-scope `.claude/settings.json`. Copy the framework's
@@ -193,7 +193,7 @@ The current pins live in machine-readable form in
 
 | Tool | Pinned version | Released | Cooldown | Purpose |
 |---|---|---|---|---|
-| `bubblewrap` | 0.11.1 | 2026-03-21 | 7d (default) | Linux user-namespace sandbox (filesystem layer). Required on Linux; macOS uses Seatbelt instead. |
+| `bubblewrap` | 0.11.2 | 2026-04-23 | 7d (default) | Linux user-namespace sandbox (filesystem layer). Required on Linux; macOS uses Seatbelt instead. |
 | `socat` | 1.8.1.1 | 2026-03-13 | 7d (default) | TCP relay for the sandbox network allowlist. Linux only. |
 | `claude-code` | 2.1.138 | 2026-05-09 | 1d (override) | Agent runtime. Pin separately from any system claude install so behavioural changes don't drift the framework's effective security posture without review. |
 
@@ -213,7 +213,7 @@ distro. Choose whichever applies to your host.
 ```bash
 sudo apt-get update
 sudo apt-get install --no-install-recommends \
-    bubblewrap=0.11.1-* \
+    bubblewrap=0.11.2-* \
     socat=1.8.1.1-*
 ```
 
@@ -221,7 +221,7 @@ sudo apt-get install --no-install-recommends \
 
 ```bash
 sudo dnf install \
-    bubblewrap-0.11.1 \
+    bubblewrap-0.11.2 \
     socat-1.8.1.1
 ```
 
@@ -239,7 +239,7 @@ npm install -g --no-save @anthropic-ai/claude-code@2.1.138
 
 ### Distro-specific shortcut — Linux Mint 22.x / Ubuntu 24.04 Noble
 
-The pinned versions above (bubblewrap `0.11.1`, socat `1.8.1.1`) are
+The pinned versions above (bubblewrap `0.11.2`, socat `1.8.1.1`) are
 the *upstream* releases that have aged past the framework's 7-day
 cooldown. **They are not in Ubuntu Noble's main repos** — Noble
 ships `bubblewrap 0.9.0` (`0.9.0-1ubuntu0.1`) and
@@ -266,7 +266,7 @@ sandbox flags don't depend on a specific bubblewrap version (the
 `denyRead`/`allowRead` API has been stable since `0.6.x`).
 
 The framework's `tools/agent-isolation/check-tool-updates.sh` will
-still report upstream `0.11.1` / `1.8.1.1` as the pinned versions —
+still report upstream `0.11.2` / `1.8.1.1` as the pinned versions —
 that's the manifest's view of what's *upstream-current*, not what
 your distro shipped. If you want to silence the drift, override the
 manifest locally with a `pinned-versions.local.toml` (gitignored)
