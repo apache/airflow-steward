@@ -113,6 +113,10 @@ LINK_PATTERN = re.compile(r"\[([^\]]+)\]\(([^)]+)\)")
 ANCHOR_PATTERN = re.compile(r"[^\w\s-]+")
 ANCHOR_SPACE_PATTERN = re.compile(r"\s")
 
+# Skill docs use `<token>` placeholders per AGENTS.md (e.g. `<project-config>`).
+PLACEHOLDER_TOKEN_PATTERN = re.compile(r"<[A-Za-z][\w\- ]*>")
+ELLIPSIS_URLS = {"...", "…"}
+
 
 # ---------------------------------------------------------------------------
 # Data structures
@@ -240,14 +244,33 @@ def slugify(text: str) -> str:
 
 
 def extract_headings(text: str) -> set[str]:
-    """Return the set of anchor slugs for every heading in the text."""
+    """Return anchor slugs for every heading; duplicates get GitHub-style ``-N`` suffixes."""
     slugs: set[str] = set()
+    seen: dict[str, int] = {}
     for match in re.finditer(r"^(#{1,6})\s+(.+)$", text, re.MULTILINE):
-        heading_text = match.group(2).strip()
-        # Strip trailing markdown link syntax from heading text
-        heading_text = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", heading_text)
-        slugs.add(slugify(heading_text))
+        heading_text = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", match.group(2).strip())
+        base = slugify(heading_text)
+        count = seen.get(base, 0)
+        slugs.add(base if count == 0 else f"{base}-{count}")
+        seen[base] = count + 1
     return slugs
+
+
+_FENCED_CODE_RE = re.compile(r"^```[\s\S]*?^```", re.MULTILINE)
+_DOUBLE_BACKTICK_RE = re.compile(r"``[\s\S]+?``")
+_SINGLE_BACKTICK_RE = re.compile(r"`[^`\n]+`")
+
+
+def _code_spans(text: str) -> list[tuple[int, int]]:
+    """Return ``(start, end)`` ranges covering every code span in *text*."""
+    spans: list[tuple[int, int]] = []
+    for pattern in (_FENCED_CODE_RE, _DOUBLE_BACKTICK_RE):
+        spans.extend(m.span() for m in pattern.finditer(text))
+    for m in _SINGLE_BACKTICK_RE.finditer(text):
+        s, e = m.span()
+        if not any(os <= s < oe for os, oe in spans):
+            spans.append((s, e))
+    return spans
 
 
 def resolve_link(
@@ -275,6 +298,13 @@ def resolve_link(
     return target
 
 
+def is_placeholder_url(url: str) -> bool:
+    """Return True when *url* is a `<token>` placeholder or an ellipsis stand-in."""
+    if url in ELLIPSIS_URLS:
+        return True
+    return bool(PLACEHOLDER_TOKEN_PATTERN.search(url))
+
+
 def validate_links(
     path: Path,
     text: str,
@@ -283,13 +313,18 @@ def validate_links(
 ) -> Iterable[Violation]:
     """Validate all internal markdown links in a skill file."""
     headings = extract_headings(text)
+    code_spans = _code_spans(text)
 
     for match in LINK_PATTERN.finditer(text):
         url = match.group(2)
-        line_no = text[: match.start()].count("\n") + 1
+        start = match.start()
+        line_no = text[:start].count("\n") + 1
 
-        # Skip external links
+        if any(s <= start < e for s, e in code_spans):
+            continue
         if url.startswith(("http://", "https://", "mailto:")):
+            continue
+        if is_placeholder_url(url):
             continue
 
         target = resolve_link(path, url, skill_dirs, doc_files)
@@ -378,42 +413,54 @@ def validate_placeholders(path: Path, text: str) -> Iterable[Violation]:
 # ---------------------------------------------------------------------------
 
 
-def collect_files_to_check() -> list[Path]:
+def find_repo_root(start: Path | None = None) -> Path:
+    """Walk up from *start* (or CWD) until ``.claude/skills/`` is found.
+
+    Defense in depth: lets the validator work even when the entry point
+    runs from inside a subtree (e.g. ``uv run --directory``), which
+    historically caused the suite to silently scan an empty path.
+    """
+    cur = (start or Path.cwd()).resolve()
+    for candidate in (cur, *cur.parents):
+        if (candidate / SKILLS_DIR).is_dir():
+            return candidate
+    return cur
+
+
+def collect_files_to_check(root: Path | None = None) -> list[Path]:
     """Return every .md file under .claude/skills/ that should be validated."""
-    files: list[Path] = []
-    skills_base = SKILLS_DIR.resolve()
-    if skills_base.exists():
-        for p in skills_base.rglob("*.md"):
-            files.append(p)
-    return files
+    base = (root or find_repo_root()) / SKILLS_DIR
+    if not base.exists():
+        return []
+    return list(base.rglob("*.md"))
 
 
-def collect_skill_dirs() -> set[Path]:
+def collect_skill_dirs(root: Path | None = None) -> set[Path]:
     """Return the set of skill directories (immediate children of .claude/skills)."""
-    dirs: set[Path] = set()
-    if SKILLS_DIR.exists():
-        for p in SKILLS_DIR.iterdir():
-            if p.is_dir():
-                dirs.add(p.resolve())
-    return dirs
+    base = (root or find_repo_root()) / SKILLS_DIR
+    if not base.exists():
+        return set()
+    return {p.resolve() for p in base.iterdir() if p.is_dir()}
 
 
-def collect_doc_files() -> set[Path]:
+def collect_doc_files(root: Path | None = None) -> set[Path]:
     """Return every .md file under docs/ and projects/_template/."""
+    repo_root = root or find_repo_root()
     files: set[Path] = set()
-    for base in (DOCS_DIR, PROJECTS_TEMPLATE_DIR):
+    for rel in (DOCS_DIR, PROJECTS_TEMPLATE_DIR):
+        base = repo_root / rel
         if base.exists():
-            for p in base.rglob("*.md"):
-                files.add(p.resolve())
+            files.update(p.resolve() for p in base.rglob("*.md"))
     return files
 
 
-def run_validation() -> list[Violation]:
+def run_validation(root: Path | None = None) -> list[Violation]:
     """Run the full validation suite and return all violations."""
+    repo_root = root or find_repo_root()
     violations: list[Violation] = []
-    files = collect_files_to_check()
-    skill_dirs = collect_skill_dirs()
-    doc_files = collect_doc_files()
+    files = collect_files_to_check(repo_root)
+    skill_dirs = collect_skill_dirs(repo_root)
+    doc_files = collect_doc_files(repo_root)
 
     for path in files:
         try:

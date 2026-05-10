@@ -153,7 +153,7 @@ bot checks (`Mergeable`, `WIP`, `DCO`, `boring-cyborg`) while
 `action_required`; trusting the rollup there fills the
 maintainer-review queue with PRs whose real CI never ran. The
 guard applies identically to the
-[`mark-ready-with-ping`](actions.md#mark-ready-with-ping)
+[`mark-ready-with-ping`](actions.md#mark-ready-with-ping--promote-a-likely-addressed-pr--ping-reviewers)
 action — any code path that adds the `ready for maintainer
 review` label runs the REST check first.
 Implementation recipe: [`actions.md#mark-ready`](actions.md).

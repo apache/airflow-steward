@@ -168,8 +168,8 @@ tracker only to discover you cannot push the branch.
   resolution and `gh` API calls.
 
 See
-[Prerequisites for running the agent skills](../../../README.md#prerequisites-for-running-the-agent-skills)
-in `README.md` for the overall setup.
+[Prerequisites for running the agent skills](../../../docs/prerequisites.md#prerequisites-for-running-the-agent-skills)
+in `docs/prerequisites.md` for the overall setup.
 
 ---
 
@@ -333,8 +333,8 @@ touching any files:
 1. Resolve the clone path from the user's
    `.apache-steward-overrides/user.md` →
    `environment.upstream_clone` (see
-   [`config/README.md`](../../../config/README.md) for the config
-   layer explainer). If the file is missing, the key is unset, or
+   [`AGENTS.md` § Per-project and per-user configuration](../../../AGENTS.md#per-project-and-per-user-configuration)
+   for the config-layer explainer). If the file is missing, the key is unset, or
    the stored path does not resolve to a git repo with a remote
    pointing at `<upstream>` or the user's fork, **ask the user
    for the path interactively** and offer to save their answer back

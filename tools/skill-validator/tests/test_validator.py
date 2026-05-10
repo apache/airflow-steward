@@ -26,6 +26,7 @@ import pytest
 from skill_validator import (
     FORBIDDEN_PATTERNS,
     extract_headings,
+    find_repo_root,
     parse_frontmatter,
     resolve_link,
     run_validation,
@@ -114,27 +115,13 @@ class TestValidateFrontmatter:
     def test_valid_mode(self, tmp_path: Path) -> None:
         path = tmp_path / "SKILL.md"
         for mode in ("Triage", "Mentoring", "Drafting", "Pairing"):
-            text = (
-                "---\n"
-                "name: foo\n"
-                "description: bar\n"
-                "license: Apache-2.0\n"
-                f"mode: {mode}\n"
-                "---\n"
-            )
+            text = f"---\nname: foo\ndescription: bar\nlicense: Apache-2.0\nmode: {mode}\n---\n"
             violations = list(validate_frontmatter(path, text))
             assert violations == [], f"mode '{mode}' should be valid"
 
     def test_invalid_mode(self, tmp_path: Path) -> None:
         path = tmp_path / "SKILL.md"
-        text = (
-            "---\n"
-            "name: foo\n"
-            "description: bar\n"
-            "license: Apache-2.0\n"
-            "mode: Auto-merge\n"
-            "---\n"
-        )
+        text = "---\nname: foo\ndescription: bar\nlicense: Apache-2.0\nmode: Auto-merge\n---\n"
         violations = list(validate_frontmatter(path, text))
         assert any("mode" in v.message and "'Auto-merge'" in v.message for v in violations)
 
@@ -166,10 +153,7 @@ class TestSlugify:
         assert slugify("A  B   C") == "a--b---c"
 
     def test_em_dash_in_heading(self) -> None:
-        assert (
-            slugify("Mentoring")
-            == "mentoring"
-        )
+        assert slugify("Mentoring") == "mentoring"
 
 
 class TestExtractHeadings:
@@ -266,6 +250,57 @@ class TestValidateLinks:
         violations = list(validate_links(path, text, set(), set()))
         assert violations == []
 
+    def test_framework_placeholder_url_ignored(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        text = "[doc](<project-config>/project.md)\n[doc2](../../../<project-config>/release-trains.md)\n"
+        violations = list(validate_links(path, text, set(), set()))
+        assert violations == []
+
+    def test_template_token_url_ignored(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        text = "[a](<doc_url>)\n[b](<URL into the public source>)\n"
+        violations = list(validate_links(path, text, set(), set()))
+        assert violations == []
+
+    def test_anchor_with_placeholder_ignored(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        text = "[link](#issuecomment-<id>)\n[link2](other.md#issuecomment-<id>)\n"
+        violations = list(validate_links(path, text, set(), set()))
+        assert violations == []
+
+    def test_ellipsis_url_ignored(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        text = "[continues](...)\n[continues](…)\n"
+        violations = list(validate_links(path, text, set(), set()))
+        assert violations == []
+
+    def test_link_inside_inline_code_ignored(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        text = "Use ``[text](url)`` form for emails.\n"
+        violations = list(validate_links(path, text, set(), set()))
+        assert violations == []
+
+    def test_link_inside_single_backtick_ignored(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        text = "Write `[text](missing.md)` literally.\n"
+        violations = list(validate_links(path, text, set(), set()))
+        assert violations == []
+
+    def test_link_inside_fenced_code_ignored(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        text = "```\nsee [doc](missing.md) here\n```\n"
+        violations = list(validate_links(path, text, set(), set()))
+        assert violations == []
+
+    def test_duplicate_heading_anchor_resolves(self, tmp_path: Path) -> None:
+        base = tmp_path
+        source = base / "SKILL.md"
+        target = base / "other.md"
+        target.write_text("# Setup\n# Setup\n# Setup\n", encoding="utf-8")
+        text = "[a](other.md#setup)\n[b](other.md#setup-1)\n[c](other.md#setup-2)\n"
+        violations = list(validate_links(source, text, {base}, set()))
+        assert violations == []
+
 
 # ---------------------------------------------------------------------------
 # Placeholder validation
@@ -299,6 +334,23 @@ class TestValidatePlaceholders:
         text = "For example: apache/airflow is the upstream.\n"
         violations = list(validate_placeholders(path, text))
         assert violations == []
+
+
+# ---------------------------------------------------------------------------
+# Repo-root detection
+# ---------------------------------------------------------------------------
+
+
+class TestFindRepoRoot:
+    def test_locates_root_from_validator_subtree(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        # Regression: the silent-pass bug fired only when CWD was inside the validator subtree.
+        repo = Path(__file__).resolve().parents[3]
+        assert (repo / ".claude" / "skills").is_dir(), "test setup precondition"
+        monkeypatch.chdir(repo / "tools" / "skill-validator")
+        assert find_repo_root() == repo
+
+    def test_explicit_start_outside_repo(self, tmp_path: Path) -> None:
+        assert find_repo_root(tmp_path) == tmp_path.resolve()
 
 
 # ---------------------------------------------------------------------------

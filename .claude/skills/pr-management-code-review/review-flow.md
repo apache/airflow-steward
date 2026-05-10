@@ -156,27 +156,22 @@ as a finding (don't fail the review on it alone).
 ## Step 4 — Examine the diff
 
 **Read** the diff line-by-line, classifying findings into the
-categories from [`criteria.md`](criteria.md). The skill does
-**not** carry its own copy of the rules — for each category,
-read the source section linked from `criteria.md` and quote
-from it verbatim when raising a finding:
+canonical categories listed in [`criteria.md`](criteria.md). The
+skill does **not** carry its own copy of the rules — for each
+category, look up the source URL in the adopter's
+[`<project-config>/pr-management-code-review-criteria.md` § Section anchors](<project-config>/pr-management-code-review-criteria.md#section-anchors)
+table, read that source section, and quote from it verbatim
+when raising a finding. The categories the skill expects to
+match against are:
 
-1. **Architecture boundaries** — see
-   [`criteria.md` § Architecture boundaries](criteria.md#architecture-boundaries).
-2. **Database / query correctness** —
-   [`criteria.md` § Database / query correctness](criteria.md#database--query-correctness).
-3. **Code quality** —
-   [`criteria.md` § Code quality](criteria.md#code-quality).
-4. **Testing** —
-   [`criteria.md` § Testing](criteria.md#testing).
-5. **API correctness** —
-   [`criteria.md` § API correctness](criteria.md#api-correctness).
-6. **UI** —
-   [`criteria.md` § UI (React/TypeScript)](criteria.md#ui-reacttypescript).
-7. **Generated files** —
-   [`criteria.md` § Generated files](criteria.md#generated-files).
-8. **AI-generated code signals** —
-   [`criteria.md` § AI-generated code signals](criteria.md#ai-generated-code-signals).
+1. **Architecture boundaries**
+2. **Database / query correctness**
+3. **Code quality**
+4. **Testing**
+5. **API correctness**
+6. **UI (React/TypeScript)**
+7. **Generated files**
+8. **AI-generated code signals**
 9. **Per-area `AGENTS.md` rules** — anything specific to the
    touched tree (the per-PR `AGENTS.md` discovery in Step 2).
 
@@ -226,7 +221,7 @@ the finding; restating drifts.
   documented model treats as one (worker reaching DB,
   scheduler running user code, SQL injection, missing
   migration on a public-API change). Calibrate against
-  [`AGENTS.md` § Security Model](../../../AGENTS.md#security-model)
+  [`docs/security/threat-model.md`](../../../docs/security/threat-model.md)
   before assigning.
 
 A single `blocking` finding pushes the disposition to

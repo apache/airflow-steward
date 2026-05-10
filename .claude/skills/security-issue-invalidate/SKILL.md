@@ -38,7 +38,7 @@ license: Apache-2.0
 This skill is the **terminal-disposition apply step** for the
 `invalid` close on an `<tracker>` tracker. It does not host the
 discussion that decides invalidity — that happens at Step 5 of the
-[handling process](../../../README.md#step-5--validity-decision)
+[handling process](../../../docs/security/process.md#step-5--land-the-validinvalid-consensus)
 in the tracker's comments. Once the team has reached a
 consensus-invalid decision, this skill applies it: labels the
 tracker `invalid`, posts a short public-facing closing comment,
@@ -148,8 +148,8 @@ Before running, the skill needs:
   surfaces the missing draft as a follow-up the user must do
   manually before the close is fully complete.
 
-See [Prerequisites for running the agent skills](../../../README.md#prerequisites-for-running-the-agent-skills)
-in `README.md` for overall setup and the
+See [Prerequisites for running the agent skills](../../../docs/prerequisites.md#prerequisites-for-running-the-agent-skills)
+in `docs/prerequisites.md` for overall setup and the
 [`claude_ai_mcp` (default) vs `oauth_curl` (opt-in) backend rule](../../../tools/gmail/draft-backends.md#how-the-skills-pick-a-backend)
 for the Gmail draft path.
 
@@ -457,7 +457,7 @@ For `security@`-imported trackers:
      leak. Cite the public Security Model and any public CVEs
      instead.
    - **Polite-but-firm.** Per
-     [`AGENTS.md`](../../../AGENTS.md#tone-and-register), state
+     [`AGENTS.md`](../../../AGENTS.md#tone-polite-but-firm--no-room-to-wiggle), state
      the team's position once, clearly, with reasoning. Do not
      re-open the discussion with phrases like *"happy to
      discuss further"* — close the loop.
