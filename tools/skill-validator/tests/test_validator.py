@@ -25,6 +25,7 @@ import pytest
 
 from skill_validator import (
     FORBIDDEN_PATTERNS,
+    MAX_METADATA_CHARS,
     extract_headings,
     find_repo_root,
     parse_frontmatter,
@@ -131,6 +132,29 @@ class TestValidateFrontmatter:
         text = "---\nname: foo\ndescription: bar\nlicense: Apache-2.0\n---\n"
         violations = list(validate_frontmatter(path, text))
         assert violations == []
+
+    def test_metadata_under_limit(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        desc = "a" * 800
+        wtu = "b" * 700
+        text = f"---\nname: foo\ndescription: {desc}\nwhen_to_use: {wtu}\nlicense: Apache-2.0\n---\n"
+        violations = list(validate_frontmatter(path, text))
+        assert violations == []
+
+    def test_metadata_over_limit(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        desc = "a" * 1000
+        wtu = "b" * (MAX_METADATA_CHARS - 1000 + 1)
+        text = f"---\nname: foo\ndescription: {desc}\nwhen_to_use: {wtu}\nlicense: Apache-2.0\n---\n"
+        violations = list(validate_frontmatter(path, text))
+        assert any("truncates" in v.message and str(MAX_METADATA_CHARS) in v.message for v in violations)
+
+    def test_metadata_block_scalar_indicator_not_counted(self) -> None:
+        text = f"---\nname: foo\ndescription: |\n  {'a' * 100}\nlicense: Apache-2.0\n---\n"
+        fm = parse_frontmatter(text)
+        assert fm is not None
+        assert not fm["description"].startswith("|")
+        assert len(fm["description"]) == 100
 
 
 # ---------------------------------------------------------------------------
