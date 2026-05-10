@@ -2,25 +2,16 @@
 name: maintainer-review
 mode: Triage
 description: |
-  Walk a maintainer through deep code review of open pull requests on the configured `<upstream>` repo (default: read from `<project-config>/project.md → upstream_repo`). The
-  default working list — referred to throughout the docs as **"my reviews"** — is the union of five signals on the
-  authenticated maintainer: PRs where review is requested from them, PRs that touch files they recently modified, PRs
-  whose changed files they own per `CODEOWNERS`, PRs that `@`-mention them, and PRs they already submitted a real
-  review on (triage comments do not count). Filters can narrow by area label, collaborator status, or to a single PR.
-  For each PR the skill reads the diff, applies the project's
-  review criteria (the source files declared in
-  `<project-config>/pr-management-code-review-criteria.md`, plus
-  the project's repo-wide `AGENTS.md`), runs any
-  locally-configured adversarial reviewer (e.g. the OpenAI
-  Codex plugin), surfaces findings, drafts an `approve` / `request-changes` / `comment` review with
-  inline comments proposed by default, and — on the maintainer's confirmation — posts it via the
-  `addPullRequestReview` mutation. This is the deep-review counterpart to the triage skill.
+  Walk a maintainer through deep, sequential code review of open pull requests on the configured `<upstream>` repo.
+  Defaults to the **"my reviews"** queue (the union of five maintainer signals — see the Inputs table); selectors can
+  narrow to a single PR, an area label, or a collaborator subset. Drafts an `approve` / `request-changes` / `comment`
+  review per PR and posts on the maintainer's confirmation. Deep-review counterpart to the triage skill.
 when_to_use: |
-  Invoke when a maintainer says "review my PRs", "go through the PRs assigned to me", "review my queue", "review the
-  area:scheduler PRs", "review PR NNN", "do my review pass", or any variation on "look over the code on PRs I'm
-  responsible for, one at a time." Distinct from `pr-management-triage`, which decides *whether* to engage with a PR. This skill is
-  invoked **after** triage has produced PRs marked `ready for maintainer review` (or any other curated selector) and a
-  human reviewer is doing the actual code review.
+  Invoke when a maintainer says "review my PRs", "go through my review queue", "review PR NNN", "review the
+  area:scheduler PRs", "do my review pass", or any variation on "look over PRs I'm responsible for, one at a time."
+  Also fires on "review my CODEOWNER PRs", "pair this PR with Codex / adversarial review", and "review the
+  ready-for-maintainer-review queue". Distinct from `pr-management-triage` (which decides *whether* to engage);
+  this skill runs **after** triage has produced reviewable PRs.
 license: Apache-2.0
 ---
 <!-- SPDX-License-Identifier: Apache-2.0
