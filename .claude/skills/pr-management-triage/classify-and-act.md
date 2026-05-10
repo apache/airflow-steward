@@ -44,7 +44,7 @@ filter is skipped silently from the main triage flow.
 | F1 | Author is collaborator/member/owner | `authorAssociation ∈ {OWNER, MEMBER, COLLABORATOR}` (override: `authors:all` or `authors:collaborators`) |
 | F2 | Author is a known bot | login is `dependabot`, `dependabot[bot]`, `renovate[bot]`, `github-actions`, `github-actions[bot]`, or matches `*[bot]` |
 | F3 | Draft and not stale | `isDraft == true` and any activity within the last 14 days. Stale-sweep classifications in [`stale-sweeps.md`](stale-sweeps.md) may still pull the PR back in. |
-| F4 | Already marked ready, no regression | `labels` contains `ready for maintainer review` AND CI green AND `mergeable != CONFLICTING` AND no unresolved threads. Regression (any of: CI red, new conflict, new unresolved thread *after* the label was applied) bypasses this filter — surface as a regressed-passing entry so the maintainer can decide whether to pull the label. |
+| F4 | Already marked ready, no regression | `labels` contains `ready for maintainer review` AND CI green AND `mergeable != CONFLICTING` AND no unresolved threads. **Regression bypasses this filter** — any of: CI red, new conflict, or new unresolved thread whose triggering event (failing check `startedAt`, conflict detection, thread `createdAt`) is *after* the label-add timestamp. The typical case is a contributor pushing a rebase or fixup commit to a ready-for-review PR that re-introduces deterministic failures. PRs bypassing F4 fall through to the decision table normally; the cross-cutting [`strip-ready-on-downgrade` hard rule](#hard-rules-cross-cutting-the-table) ensures the label comes off if a `deterministic_flag` row fires. |
 | F5a | Recent collaborator comment (author cooldown) | Most recent comment is by a `COLLABORATOR`/`MEMBER`/`OWNER`, `createdAt < 72h` ago, AND posted after `commits(last:1).committedDate`. |
 | F5b | Maintainer-to-maintainer ping unanswered | Most recent collaborator comment `@`-mentions one or more logins other than the PR author AND none of those mentioned logins have posted on the PR or in `latestReviews` after that comment. Team mentions (e.g. `@<upstream>-committers`) are conservatively treated as F5b matches. |
 | F6 | Maintainer co-drafted | `isDraft == true` AND any of: (a) `latestReviews` has a node with `authorAssociation ∈ {OWNER, MEMBER, COLLABORATOR}` AND `author.login ≠ <viewer>` AND `state ∈ {COMMENTED, CHANGES_REQUESTED, APPROVED}` AND `submittedAt > commits(last:1).committedDate` AND review body is non-empty (avoids the "review with only inline thread comments and an empty top-level body" false positive — those are already counted by row 14/15 unresolved-thread logic); (b) `comments(last:10)` has a node with `authorAssociation ∈ {OWNER, MEMBER, COLLABORATOR}` AND `author.login ≠ <viewer>` AND `length(bodyText) ≥ 80` AND `createdAt > commits(last:1).committedDate`. Trivial signals (emoji-only, `+1`, `lgtm`, pure `@team` pings without prose) do not count — those are already covered by F5a/F5b or are below the substantive-engagement threshold. **Stale-sweep classifications in [`stale-sweeps.md`](stale-sweeps.md) may still pull the PR back in** — F6 only suppresses duplicate-proposal rows from the decision table, not eventual-resurfacing on a different action. |
@@ -116,6 +116,23 @@ Action verbs are defined in [`actions.md`](actions.md).
   Implementations evaluate row 22's precondition immediately
   before evaluating row 19; the row's table position (last) is
   documentary, not evaluation order.
+- **`strip-ready-on-downgrade`: strip `ready for maintainer
+  review` when a regressed PR matches a `deterministic_flag`
+  row.** When a PR carrying the `ready for maintainer review`
+  label bypasses [F4](#pre-filters) (rebased / pushed with new
+  deterministic failures) and matches any `deterministic_flag`
+  row whose action is `draft`, `comment`, or `close`, the
+  action MUST also remove the label. The label's contract is
+  "no maintainer time wasted on quality issues" — leaving it on
+  a PR we are now flagging *is* the false-positive the label is
+  meant to prevent, and it lets a regressed PR keep priority in
+  the review queue. Actions `rerun`, `rebase`, and `ping` do
+  NOT strip the label: those classify the regression as
+  transient (flaky CI, missing base merge, reviewer hasn't
+  responded) and the label is still informative if the
+  follow-up succeeds. Implementation: see
+  [`actions.md#draft`](actions.md#draft--convert-to-draft-and-post-violations-comment)
+  and [`actions.md#comment`](actions.md#comment--post-violations--stale-review--ping-comment).
 
 ---
 

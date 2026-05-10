@@ -45,18 +45,50 @@ On the `gh pr ready --undo` failing: surface the error, **do
 not** post the comment. A comment that says "converted to draft"
 on a still-open PR is a worse state than no comment at all.
 
+### If the PR carries `ready for maintainer review`
+
+The PR bypassed F4 because of post-label regression (rebase /
+push re-introduced a deterministic failure — see
+[`strip-ready-on-downgrade`](classify-and-act.md#hard-rules-cross-cutting-the-table)).
+Strip the label as the **first** mutation, before converting
+to draft, so the queue position is corrected even if a later
+step fails:
+
+```bash
+# 0. Remove the now-stale ready-for-review label (idempotent —
+#    a 422 "Label does not exist on this issue" is benign; log
+#    and continue).
+gh pr edit <N> --repo <repo> --remove-label "ready for maintainer review"
+
+# 1. Convert to draft
+gh pr ready <N> --repo <repo> --undo
+
+# 2. Post the violations comment
+gh pr comment <N> --repo <repo> --body-file /tmp/pr-<N>-draft-body.md
+```
+
+If step 0 fails with anything other than the benign "label not
+applied" / "label not found" response, surface the error and
+proceed to the draft + comment anyway — the label-removal
+failure is a soft signal (the maintainer may need to clean up
+manually), but stranding the PR in a half-state would be
+worse. The maintainer-facing preview should note when step 0
+will run so the proposal is honest about both state changes.
+
 ### If the PR is already a draft
 
 Skip the `gh pr ready --undo` step. Post only the comment. The
 decision table in [`classify-and-act.md`](classify-and-act.md)
 should have chosen `comment` instead in this case, but
-double-check here as a guard.
+double-check here as a guard. The label-removal step (when
+applicable) still runs first.
 
 ### Collaborator-authored PRs
 
 Do not draft a collaborator's PR. If somehow the action landed
 as `draft` for a collaborator, fall back to `comment` with the
-same body — no draft flip.
+same body — no draft flip. The label-removal step (when
+applicable) still runs.
 
 ---
 
@@ -78,6 +110,31 @@ gh pr comment <N> --repo <repo> --body-file /tmp/pr-<N>-comment.md
 For a `ping` action, `@`-mention every stale reviewer plus the
 PR author in the body — do not let the ping go without naming
 the people it's for.
+
+### If the PR carries `ready for maintainer review` (deterministic_flag only)
+
+When the upstream classification is `deterministic_flag` and the
+PR carries the label (regression bypass of F4 — see
+[`strip-ready-on-downgrade`](classify-and-act.md#hard-rules-cross-cutting-the-table)),
+strip the label **before** posting the comment:
+
+```bash
+# 0. Remove the now-stale ready-for-review label.
+gh pr edit <N> --repo <repo> --remove-label "ready for maintainer review"
+
+# 1. Post the violations comment
+gh pr comment <N> --repo <repo> --body-file /tmp/pr-<N>-comment.md
+```
+
+A 422 "label not applied" / "label not found" is benign — log
+and continue with the comment.
+
+This applies only to the `deterministic_flag` → `comment`
+branch (typically the collaborator-mode fallback from `draft`,
+or static-check-only failures). `stale_review` and explicit
+`ping` actions do NOT strip the label — those are transient
+signals and the ready-for-review queue position is still valid
+information for the reviewer.
 
 ---
 
@@ -452,8 +509,8 @@ For every action that includes a comment, post the comment
 
 | Action | Order |
 |---|---|
-| `draft` | convert to draft → post comment |
-| `comment` | post comment |
+| `draft` | (*if F4-regression: remove ready-for-review label*) → convert to draft → post comment |
+| `comment` | (*if F4-regression on `deterministic_flag`: remove ready-for-review label*) → post comment |
 | `close` | post comment → close → label |
 | `flag-suspicious` | post comment → close → label *(per PR in the batch)* |
 | `mark-ready` | label only |
