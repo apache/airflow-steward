@@ -55,8 +55,8 @@
 pinned_at = "2026-05-10"
 
 [tools.bubblewrap]
-version = "0.11.1"
-released = "2026-03-21"
+version = "0.11.2"
+released = "2026-04-23"
 purpose = """
 Linux user-namespace sandbox. The strongest layer of credential
 isolation: enforces the `denyRead` / `allowRead` filesystem rules
@@ -70,10 +70,10 @@ upstream_releases = "https://api.github.com/repos/containers/bubblewrap/releases
 # Install commands per distro (use the package manager's syntax for
 # requesting a specific version where supported). See
 # `docs/setup/secure-agent-setup.md` for adopter-facing install steps.
-install.apt = "apt-get install --no-install-recommends bubblewrap=0.11.1-*"
-install.dnf = "dnf install bubblewrap-0.11.1"
+install.apt = "apt-get install --no-install-recommends bubblewrap=0.11.2-*"
+install.dnf = "dnf install bubblewrap-0.11.2"
 install.brew = "# macOS does not need bubblewrap; it uses Seatbelt."
-install.from_source = "https://github.com/containers/bubblewrap/releases/tag/v0.11.1"
+install.from_source = "https://github.com/containers/bubblewrap/releases/tag/v0.11.2"
 
 [tools.socat]
 version = "1.8.1.1"
