@@ -52,7 +52,7 @@
 
 # When this file was last touched. The check script uses this as the
 # minimum age the entries below claim to satisfy.
-pinned_at = "2026-05-01"
+pinned_at = "2026-05-10"
 
 [tools.bubblewrap]
 version = "0.11.1"
@@ -91,8 +91,8 @@ install.dnf = "dnf install socat-1.8.1.1"
 install.from_source = "http://www.dest-unreach.org/socat/download/socat-1.8.1.1.tar.gz"
 
 [tools.claude-code]
-version = "2.1.123"
-released = "2026-04-29"
+version = "2.1.138"
+released = "2026-05-09"
 # Override the framework-wide 7-day default. Claude Code releases
 # cadence is high (multiple releases per week) and any regression
 # that affects the framework's permission-rule semantics, sandbox
@@ -118,5 +118,5 @@ upstream_releases = "https://api.github.com/repos/anthropics/claude-code/release
 # Claude Code is distributed via npm; use `--no-save` so the global
 # install doesn't drift the local lockfile of any project the user
 # installs from.
-install.npm = "npm install -g --no-save @anthropic-ai/claude-code@2.1.123"
-install.brew = "# brew tap anthropics/claude-code; brew install claude-code@2.1.123 (when available)"
+install.npm = "npm install -g --no-save @anthropic-ai/claude-code@2.1.138"
+install.brew = "# brew tap anthropics/claude-code; brew install claude-code@2.1.138 (when available)"
