@@ -2,27 +2,23 @@
 name: security-issue-fix
 mode: Drafting
 description: |
-  Attempt to fix a security issue tracked in <tracker> by
-  implementing the change in a public <upstream> PR. Runs the
-  security-issue-sync skill first to reconcile the issue's state, then
-  analyses the discussion to decide whether the issue is easily fixable
-  (clear consensus, small scope, known location). If it is, proposes an
-  implementation plan, waits for explicit user confirmation, writes the
-  change in the user's local <upstream> clone, runs the local checks
-  and tests, opens a PR from the user's fork via `gh pr create --web`,
-  and updates the <tracker> tracking issue with the new PR link and any
-  relevant labels. Public PR content is checked to make sure it does
-  **not** reveal the CVE, the security nature of the change, or any link
-  back to <tracker>.
+  Attempt to fix a security issue tracked in `<tracker>` by
+  implementing the change in a public `<upstream>` PR. Runs
+  `security-issue-sync` first to reconcile the issue's state,
+  proposes an implementation plan, and on explicit user
+  confirmation writes the change, opens a PR from the user's
+  fork, and updates the `<tracker>` tracking issue. Public PR
+  content is scrubbed so it does **not** reveal the CVE, the
+  security nature of the change, or any link back to
+  `<tracker>`.
 when_to_use: |
-  Invoke when a security team member says "try to fix issue NNN", "see
-  if you can land a fix for NNN", "draft a PR for NNN", or similar —
-  *after* the issue has been triaged and the team has a rough consensus
-  on what the fix should look like. Not appropriate for issues that are
-  still being assessed, for reports that haven't been classified as
-  valid vulnerabilities, or for changes that require private
-  code-review in `<tracker>` itself (the private-PR fallback
-  in process step 9 of README.md).
+  Invoke when a security team member says "try to fix issue
+  NNN", "see if you can land a fix for NNN", "draft a PR for
+  NNN", or similar — *after* the issue has been triaged and
+  the team has a rough consensus on what the fix should look
+  like. Skip for issues still being assessed, reports not yet
+  classified as valid vulnerabilities, or changes that require
+  the private-PR fallback in process step 9 of README.md.
 argument-hint: "[issue-number]"
 license: Apache-2.0
 ---
