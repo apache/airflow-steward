@@ -1,5 +1,32 @@
-<!-- SPDX-License-Identifier: Apache-2.0
-     https://www.apache.org/legal/release-policy.html -->
+---
+name: security-issue-triage
+mode: Triage
+description: |
+  For each open `<tracker>` issue carrying the `needs triage` label,
+  read body + comments, apply the project's Security Model framing, and
+  classify the candidate disposition into one of five classes (VALID,
+  DEFENSE-IN-DEPTH, INFO-ONLY, NOT-CVE-WORTHY, PROBABLE-DUP). On user
+  confirmation posts a standalone top-level comment that invites the
+  security team to react. Read-only on tracker state — no label flips,
+  closes, body PATCHes, or CVE allocations. Composes with
+  security-issue-import (on-ramp), security-cve-allocate /
+  security-issue-invalidate / security-issue-deduplicate (post-consensus
+  actions), and security-issue-sync (applies state change after
+  consensus). Supports --retriage for re-litigating passed-triage
+  decisions when substantive new activity lands.
+when_to_use: |
+  Invoke when a security team member says "triage open issues", "start
+  triage discussions on the new trackers", or "propose dispositions for
+  the needs-triage queue". Also appropriate after a batch import via
+  `/security-issue-import` lands new trackers, or as a periodic sweep
+  on stale needs-triage trackers. Use --retriage when a passed-triage
+  decision needs re-litigating after new comment activity. Not
+  appropriate after team consensus on validity has already landed — at
+  that point invoke `/security-cve-allocate` (VALID),
+  `/security-issue-invalidate` (INFO-ONLY / NOT-CVE-WORTHY), or
+  `/security-issue-deduplicate` (PROBABLE-DUP) directly.
+license: Apache-2.0
+---
 
 <!-- Placeholder convention (see AGENTS.md#placeholder-convention-used-in-skill-files):
      <project-config> → adopting project's `.apache-steward/` directory
