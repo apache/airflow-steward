@@ -247,7 +247,8 @@ is the anti-pattern this file exists to prevent.
 Before classification runs, fetch one REST call per page:
 
 ```bash
-gh api "repos/<owner>/<repo>/actions/runs?event=pull_request&status=action_required&per_page=100"
+gh api "repos/<owner>/<repo>/actions/runs?event=pull_request&per_page=100" \
+  --jq '.workflow_runs[] | select(.conclusion == "action_required")'
 ```
 
 This lists **every** workflow run across the repo that is
@@ -255,6 +256,16 @@ awaiting maintainer approval. Index the response by `head_sha`;
 any PR on the current page whose head SHA appears in the index
 is `pending_workflow_approval` (see
 [`classify-and-act.md#decision-table`](classify-and-act.md), row 1).
+
+**Why the post-filter, not `?status=action_required`.** The
+GitHub Actions API returns runs awaiting approval as
+`status: "completed"` with `conclusion: "action_required"` (the
+run has *finished* the queueing phase and is now blocked
+pending approval). The query parameter `?status=action_required`
+matches no runs in this state and silently returns an empty
+result, which lets `pending_workflow_approval` PRs slip through
+classification as `passing`. The post-filter on `conclusion`
+is the only correct way to enumerate them.
 
 Why this is mandatory, not "fallback":
 
