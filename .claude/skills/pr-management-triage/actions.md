@@ -189,10 +189,14 @@ the maintainer queue fills with PRs whose CI has not actually
 executed.
 
 ```bash
-# Pre-check: index action_required runs repo-wide, then look up head SHA
+# Pre-check: index action_required runs at the head SHA.
+# Note: runs awaiting approval are returned as `status: "completed"`
+# with `conclusion: "action_required"`. The query parameter
+# `?status=action_required` matches no runs and would silently
+# return an empty result — post-filter on `conclusion` instead.
 head_sha=$(gh api "repos/<owner>/<repo>/pulls/<N>" --jq '.head.sha')
-pending=$(gh api "repos/<owner>/<repo>/actions/runs?head_sha=${head_sha}&status=action_required&per_page=10" \
-  --jq '.workflow_runs | length')
+pending=$(gh api "repos/<owner>/<repo>/actions/runs?head_sha=${head_sha}&per_page=20" \
+  --jq '[.workflow_runs[] | select(.conclusion == "action_required")] | length')
 if [ "$pending" -gt 0 ]; then
   echo "refuse mark-ready: <N> has ${pending} workflow run(s) awaiting approval at ${head_sha}" >&2
   # Reclassify: this PR is really pending_workflow_approval, route accordingly.
@@ -242,9 +246,12 @@ mark-ready'ing without context.
 
 ```bash
 # 1. Pre-check: refuse if any workflow run is awaiting approval (same as mark-ready).
+#    Runs awaiting approval surface as `status: "completed"` +
+#    `conclusion: "action_required"` — `?status=action_required` matches
+#    none of them, so post-filter on `conclusion`.
 head_sha=$(gh api "repos/<owner>/<repo>/pulls/<N>" --jq '.head.sha')
-pending=$(gh api "repos/<owner>/<repo>/actions/runs?head_sha=${head_sha}&status=action_required&per_page=10" \
-  --jq '.workflow_runs | length')
+pending=$(gh api "repos/<owner>/<repo>/actions/runs?head_sha=${head_sha}&per_page=20" \
+  --jq '[.workflow_runs[] | select(.conclusion == "action_required")] | length')
 if [ "$pending" -gt 0 ]; then
   echo "refuse mark-ready-with-ping: <N> has ${pending} workflow run(s) awaiting approval at ${head_sha}" >&2
   # Reclassify: this PR is really pending_workflow_approval.
@@ -438,12 +445,12 @@ protocol. Only after the maintainer confirms the diff looks
 non-malicious, approve:
 
 ```bash
-# List pending workflow runs for this PR
-gh api repos/<owner>/<repo>/actions/runs \
-  -X GET \
-  -f head_sha=<head_sha> \
-  -f status=action_required \
-  --jq '.workflow_runs[].id' |
+# List pending workflow runs for this PR.
+# Runs awaiting approval are returned as `status: "completed"` with
+# `conclusion: "action_required"` — `?status=action_required` matches
+# none of them. Post-filter on `conclusion` to enumerate the real set.
+gh api "repos/<owner>/<repo>/actions/runs?head_sha=<head_sha>&per_page=20" \
+  --jq '.workflow_runs[] | select(.conclusion == "action_required") | .id' |
   while read run_id; do
     gh api -X POST "repos/<owner>/<repo>/actions/runs/${run_id}/approve"
   done
