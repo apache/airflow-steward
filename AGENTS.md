@@ -1192,6 +1192,23 @@ Currently available:
   Gmail `threadId`. This is Step 2 of the handling process in
   [`README.md`](README.md) and the first skill a triager runs in a morning
   sweep.
+- [`security-issue-triage`](.claude/skills/security-issue-triage/SKILL.md) —
+  the initial-triage discussion-starter that runs **between**
+  `security-issue-import` and the rest of the workflow. For each open
+  tracker carrying `needs triage`, reads body + comments, applies the
+  project's Security Model framing, and — on user confirmation — posts
+  a standalone top-level **triage-proposal comment** that classifies
+  the candidate disposition into one of five classes (`VALID` →
+  `security-cve-allocate`, `DEFENSE-IN-DEPTH` → public PR for
+  hardening, `INFO-ONLY` / `NOT-CVE-WORTHY` → `security-issue-invalidate`,
+  `PROBABLE-DUP` → `security-issue-deduplicate`) and `@`-mentions 2-3
+  security-team members per scope for input. **Read-only on tracker
+  state** — never flips `needs triage` to a scope label, never closes,
+  never allocates a CVE; the valid/invalid decision belongs to team
+  consensus, this skill opens the discussion that produces it.
+  Supports a `--retriage` mode for re-litigating passed-triage
+  decisions when substantive new comment activity lands. This is
+  Step 3 of the handling process in [`README.md`](README.md).
 - [`security-issue-deduplicate`](.claude/skills/security-issue-deduplicate/SKILL.md) —
   merges two tracking issues that describe the same root-cause
   vulnerability discovered independently by different reporters. Copies

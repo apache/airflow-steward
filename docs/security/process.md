@@ -144,6 +144,44 @@ responses from
 [`<project-config>/canned-responses.md`](<project-config>/canned-responses.md)
 for negative assessments so the tone stays polite-but-firm.
 
+For larger batches landed by `security-issue-import` (or the
+`-from-md` / `-from-pr` variants), the
+[`security-issue-triage`](../../.claude/skills/security-issue-triage/SKILL.md)
+skill automates the first half of this step: for each tracker
+in `Needs triage`, it reads the body + comments, applies the
+project's Security Model framing, and — on user confirmation —
+posts a top-level **triage-proposal comment** that classifies
+the candidate disposition into one of five classes and
+`@`-mentions 2-3 security-team members for input. The
+proposal-comment shape is:
+
+- a one-paragraph technical summary in the triager's own words;
+- the proposed class, with severity guess (the team scores
+  independently per the no-reporter-CVSS rule);
+- a one-sentence fix shape (or "why not" framing for negative
+  classes);
+- a specific question for the `@`-mentioned reviewers.
+
+The five disposition classes route to different next-steps once
+team consensus lands:
+
+| Class | Next step after consensus |
+|---|---|
+| `VALID` | [`security-cve-allocate`](../../.claude/skills/security-cve-allocate/SKILL.md) → Step 6 |
+| `DEFENSE-IN-DEPTH` | Close as wontfix + open a public PR for the hardening |
+| `INFO-ONLY` | [`security-issue-invalidate`](../../.claude/skills/security-issue-invalidate/SKILL.md) with the matching canned-response template |
+| `NOT-CVE-WORTHY` | [`security-issue-invalidate`](../../.claude/skills/security-issue-invalidate/SKILL.md) |
+| `PROBABLE-DUP` | [`security-issue-deduplicate`](../../.claude/skills/security-issue-deduplicate/SKILL.md) |
+
+The triage skill is **read-only** on tracker state — it never
+flips `needs triage` to a scope label, never closes, never
+allocates a CVE. The valid/invalid decision belongs to team
+consensus; this skill opens the discussion that produces it,
+and one of the next-step skills above (or a hand-applied label
+change via Step 5) lands the actual state transition. A
+`--retriage` mode is available for re-litigating passed-triage
+decisions when substantive new comment activity lands.
+
 ### Step 4 — Escalate stalled discussions
 
 If discussion stalls for ~30 days, escalate in **two phases**:
