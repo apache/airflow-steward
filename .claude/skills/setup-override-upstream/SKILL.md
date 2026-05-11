@@ -4,17 +4,13 @@ description: |
   Walk an adopter through promoting a local
   `.apache-steward-overrides/<skill>.md` file into a PR
   against `apache/airflow-steward`. Lists the adopter's
-  overrides, helps the user pick one, reads it alongside the
-  framework skill it modifies, helps decide whether the
-  change is generalisable (some overrides encode project-
-  specific decisions and should stay local), designs the
-  framework-level abstraction (configurable parameter,
-  optional step, changed default, etc.), implements it in
-  the user's local apache-steward clone, runs the
-  framework's pre-commit, and opens the PR. After the PR
-  merges and the adopter runs `/setup-steward upgrade`, the
-  override file in the adopter repo is no longer needed and
-  the skill prompts for its removal.
+  overrides, helps pick one, reads it alongside the framework
+  skill it modifies, decides whether the change is
+  generalisable, designs the framework-level abstraction,
+  implements it in the user's local apache-steward clone, and
+  opens the PR. After the PR merges and the adopter runs
+  `/setup-steward upgrade`, the override file is no longer
+  needed and the skill prompts for its removal.
 when_to_use: |
   Invoke when the user says "upstream my override", "promote
   this override to the framework", "convert my local
