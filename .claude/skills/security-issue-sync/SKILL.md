@@ -567,6 +567,16 @@ Process for finding the real reporter and the original thread:
      when drafting status updates,
    - the original subject line (you will reuse it for In-Reply-To threading).
 
+   **When the tracker records multiple inbound threads** — a primary
+   reporter thread *and* one or more forwarder/relay threads (huntr.com,
+   GHSA, HackerOne, ASF-security relay) — select the primary reporter's
+   thread per
+   [`tools/gmail/threading.md` — Selecting the inbound thread when multiple are recorded](../../../tools/gmail/threading.md#selecting-the-inbound-thread-when-multiple-are-recorded).
+   Default status-update drafts target the primary thread; the relay
+   thread is reserved for back-channel relay questions only. Surface
+   the primary/secondary selection in the Step 2b proposal so the user
+   sees which thread the draft will attach to.
+
 4. **Read the full thread** with
    `mcp__claude_ai_Gmail__gmail_read_thread <threadId>` and extract:
 

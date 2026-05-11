@@ -28,6 +28,23 @@ of confirmation, credit-preference request, status update — the
 threading rules from [`threading.md`](threading.md) all still apply;
 the differences are in the headers and body shape.
 
+**Scope of this file: relay thread is the *only* thread.** The
+relay-specific shape below (different `To:`, brevity, link to the
+external reference) applies when the inbound relay thread is the
+**only** thread recorded on the tracker — i.e. the external
+reporter never sent a direct message to the project's security
+list, so the relay is the only path back to them. When the tracker
+records **two threads** — a direct primary reporter thread *and* a
+separate forwarder/relay thread (typical when an external reporter
+filed directly *and* the same bug was later relayed by huntr.com /
+GHSA / ASF-security) — default drafts go to the **primary** thread
+per [`threading.md` — Selecting the inbound thread when multiple
+are recorded](threading.md#selecting-the-inbound-thread-when-multiple-are-recorded),
+and the relay-specific shape below applies only to the rarer
+back-channel message the project sends *through* the relay
+channel (e.g. *"please ask the external reporter to confirm a
+credit form for the advisory"*).
+
 Placeholder convention:
 
 - `<security-list>` — the project's security list. The concrete

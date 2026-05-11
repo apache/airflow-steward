@@ -4,6 +4,7 @@
 
 - [Gmail — drafts stay on the inbound thread](#gmail--drafts-stay-on-the-inbound-thread)
   - [The rule](#the-rule)
+  - [Selecting the inbound thread when multiple are recorded](#selecting-the-inbound-thread-when-multiple-are-recorded)
   - [Fallback — subject-matched draft when `replyToMessageId` is unavailable](#fallback--subject-matched-draft-when-replytomessageid-is-unavailable)
   - [Special case — ASF-security relay](#special-case--asf-security-relay)
 
@@ -72,6 +73,91 @@ like live here.
   addressed to a list. Threading does not require recipient
   overlap; it requires `threadId` or (as the fallback) a matching
   subject plus the right `In-Reply-To` / `References` headers.
+
+## Selecting the inbound thread when multiple are recorded
+
+A tracker's *Security mailing list thread* body field can hold
+more than one thread when:
+
+- a second reporter independently filed the same root-cause bug
+  through a different channel and
+  [`security-issue-deduplicate`](../../.claude/skills/security-issue-deduplicate/SKILL.md)
+  merged the two trackers (one line per reporter, per the dedupe
+  skill's body-field shape); or
+- an external reporter's report reached the project's security
+  list via a separate forwarder thread — e.g. a huntr.com bounty
+  relayed by `@apache/security`, a GHSA forward, a HackerOne
+  forward — *after* the original direct report had already been
+  imported, so the secondary thread was appended to record the
+  duplicate-of provenance.
+
+**The rule: default drafts go to the primary reporter's thread,
+never to a forwarder/relay thread.** The forwarder/relay thread
+is kept on the tracker for record-keeping and for back-channel
+relay questions only (e.g. *"please ask the external reporter to
+confirm a credit form"*) — see [`asf-relay.md`](asf-relay.md) for
+the relay-shape body language.
+
+The primary reporter is the one whose name appears in
+*Reporter credited as* without a relay annotation, whose direct
+email started the security-list thread chronologically first, and
+whose line in *Security mailing list thread* does **not** carry
+any of the forwarder signals below.
+
+**Forwarder/relay signals — match case-insensitively in the line's
+annotation text** (everything around the `threadId` reference):
+
+- `via huntr.com`, `via GHSA`, `via HackerOne`, `via bugcrowd`,
+  `via <any bounty platform>`
+- `ASF-relayed`, `ASF-security relay`, `ASF-security-relay`,
+  `relayed by @apache/security`, `relayed by`
+- `forwarder`, `forwarded by`, `relay`, `relayed`
+- `huntr.com bounty <id>-class duplicate`,
+  `<provider>-class duplicate`
+
+If a line has any of these signals it is **secondary**; the line
+without any of these signals (or — for legacy trackers that
+predate the convention — the chronologically-first thread
+mentioned) is **primary**.
+
+Worked example. The body field on a real tracker reads:
+
+```
+No public archive URL — tracked privately on Gmail thread `19dc8d4675dfc1f1`.
+Aymane Maguiti (huntr.com bounty `abdbcf11-…`-class duplicate, ASF-relayed by @apache/security on 2026-05-04T09:22:25Z): Gmail thread `19def0954b27ac31`.
+```
+
+- Line 1 → primary (no relay signal). Use `19dc8d4675dfc1f1` for
+  every default reply: receipt-of-confirmation, credit-question,
+  CVE-allocated status update, advisory-shipped follow-up.
+- Line 2 → secondary (matches `via huntr.com`-class, `ASF-relayed`).
+  Use `19def0954b27ac31` only when the project needs to relay a
+  question back through huntr.com to the external reporter and the
+  primary thread cannot deliver it.
+
+**Edge cases:**
+
+- **Only one thread recorded, with relay signals.** Classic
+  ASF-security-relay case. Follow [`asf-relay.md`](asf-relay.md);
+  there is no primary thread to fall back to.
+- **Only one thread recorded, no relay signals.** Standard
+  single-reporter case; the thread is the primary by default.
+- **Both lines carry relay signals.** Rare — typically a
+  third-party reporter relayed by two different channels.
+  Surface to the user before drafting; do not pick a "least
+  forwarded" line silently.
+- **Neither line carries a `threadId`** (PonyMail URL only, no
+  Gmail identifier). The tracker pre-dates the Gmail-threadId
+  convention; fall back to the rollup-comment `threadId` lookup
+  per the per-skill recipes.
+
+Surface the primary/secondary selection in the skill's proposal
+so the user sees which thread the draft attaches to (*"Drafting
+on primary reporter thread `19dc8d4675dfc1f1` (Vincent55); the
+secondary huntr.com-relay thread `19def0954b27ac31` was excluded
+from default reply targets."*). The user can override per draft
+if a specific message genuinely needs to go through the relay
+channel instead.
 
 ## Fallback — subject-matched draft when `replyToMessageId` is unavailable
 
