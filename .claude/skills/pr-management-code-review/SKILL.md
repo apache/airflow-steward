@@ -12,6 +12,7 @@ when_to_use: |
   Also fires on "review my CODEOWNER PRs", "pair this PR with Codex / adversarial review", and "review the
   ready-for-maintainer-review queue". Distinct from `pr-management-triage` (which decides *whether* to engage);
   this skill runs **after** triage has produced reviewable PRs.
+argument-hint: "[pr:N] [area:LBL] [collab:true|false] [team:NAME] [ready] [dry-run]"
 license: Apache-2.0
 ---
 <!-- SPDX-License-Identifier: Apache-2.0

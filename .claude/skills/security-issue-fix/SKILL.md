@@ -23,6 +23,7 @@ when_to_use: |
   valid vulnerabilities, or for changes that require private
   code-review in `<tracker>` itself (the private-PR fallback
   in process step 9 of README.md).
+argument-hint: "[issue-number]"
 license: Apache-2.0
 ---
 

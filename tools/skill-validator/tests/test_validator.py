@@ -149,6 +149,22 @@ class TestValidateFrontmatter:
         violations = list(validate_frontmatter(path, text))
         assert any("truncates" in v.message and str(MAX_METADATA_CHARS) in v.message for v in violations)
 
+    def test_argument_hint_accepted(self, tmp_path: Path) -> None:
+        # argument-hint is a Claude Code autocomplete-only field; it must not be
+        # rejected as an unknown key, and it must not count toward the
+        # description+when_to_use metadata budget.
+        path = tmp_path / "SKILL.md"
+        text = (
+            "---\n"
+            "name: foo\n"
+            "description: bar\n"
+            "license: Apache-2.0\n"
+            "argument-hint: [--quick|--standard|--deep] <idea>\n"
+            "---\n"
+        )
+        violations = list(validate_frontmatter(path, text))
+        assert violations == []
+
     def test_metadata_block_scalar_indicator_not_counted(self) -> None:
         text = f"---\nname: foo\ndescription: |\n  {'a' * 100}\nlicense: Apache-2.0\n---\n"
         fm = parse_frontmatter(text)
