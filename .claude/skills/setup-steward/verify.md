@@ -169,10 +169,28 @@ executable, and contains the
 
 ### 9. Project documentation mentions the framework
 
-`<repo-root>/README.md` (or another committed doc the
-adopter picked) mentions the steward adoption with a link
-into the framework. Cheap to skip if absent — surface as
-⚠ only.
+Two files to check (per
+[`adopt.md` Step 11](adopt.md#step-11--project-doc-updates-fresh-only)):
+
+- **`<repo-root>/README.md`** — should have a contributor-facing
+  section (typically `## Agent-assisted contribution
+  (apache-steward)`) that mentions the snapshot mechanism, the
+  `/setup-steward` invocation for fresh clones, the
+  `.apache-steward.lock` pin, and `.apache-steward-overrides/`.
+  Grep for `apache-steward` and `/setup-steward` together as a
+  proxy. ⚠ if either token is absent.
+- **`<repo-root>/AGENTS.md`** — if the file exists, it should
+  have an `## apache-steward framework` section that
+  cross-references the README section. Grep for
+  `apache-steward` and a link to the README anchor. ⚠ if the
+  file exists but lacks the section; not applicable if the
+  file does not exist (do not create one just to satisfy
+  the check).
+
+Cheap to skip if both are absent on a minimal repo — surface
+as ⚠ overall only, never ✗. `CONTRIBUTING.md` counts as a
+fallback for `README.md` if the adopter declared it so during
+adoption.
 
 ## After the report
 
