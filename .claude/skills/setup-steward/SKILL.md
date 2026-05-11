@@ -2,17 +2,17 @@
 name: setup-steward
 description: |
   Adopt and maintain the apache-steward framework in a project
-  repo using the snapshot-based adoption mechanism. The single
-  framework artefact that lives **committed** in an adopter's
-  repo — every other framework skill is a symlink into a
-  gitignored snapshot this skill manages. Sub-actions:
+  repo via the snapshot-based adoption mechanism. The only
+  framework skill committed in an adopter's repo — every other
+  skill is a symlink the adopt sub-action wires up.
+  Sub-actions:
     `/setup-steward`         — first-time adoption (default)
     `/setup-steward upgrade` — refresh the gitignored snapshot
                                 per the committed lock
     `/setup-steward verify`  — health check + drift detection
     `/setup-steward override <skill>` — open or scaffold an
-                               agentic override for a framework
-                               skill in `.apache-steward-overrides/`
+                                agentic override in
+                                `.apache-steward-overrides/`
     `/setup-steward unadopt` — reverse the adoption (snapshot,
                                locks, symlinks, hook, doc
                                sections, this skill itself);
@@ -21,14 +21,10 @@ description: |
 when_to_use: |
   Invoke when the user says "adopt apache-steward", "adopt
   apache/airflow-steward", "set up steward in this repo",
-  "follow .claude/skills/setup-steward", or the agent
-  equivalent triggered by following the framework's README
-  adoption instructions. Also for periodic maintenance:
-  "upgrade steward", "verify steward setup", "check steward
-  drift", "the snapshot is stale". This is the only framework
-  skill that should be **copied** into an adopter's repo
-  (every other framework skill is a symlink the adopt
-  sub-action wires up).
+  "follow .claude/skills/setup-steward", or follows the
+  framework's README adoption instructions. Also for periodic
+  maintenance: "upgrade steward", "verify steward setup",
+  "check steward drift", "the snapshot is stale".
 argument-hint: "[adopt|upgrade|verify|override skill-name|unadopt]"
 license: Apache-2.0
 ---
