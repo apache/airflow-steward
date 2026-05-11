@@ -2,26 +2,22 @@
 name: setup-shared-config-sync
 description: |
   Commit + push the user's shared Claude config to the
-  `~/.claude-config` private dotfile-style sync repo (per
-  `docs/setup/secure-agent-setup.md` → Syncing user-scope config across
-  machines). Inspects `~/.claude-config` for uncommitted local
-  edits and unpushed commits, drafts a commit message for any
-  unstaged changes, asks for explicit approval, then commits and
-  pushes. Pull-with-rebase is run *first* if the local checkout is
-  behind, so a push never overwrites concurrent work from another
-  machine. Never force-pushes; never rewrites already-pushed
-  history; never modifies a file outside `~/.claude-config/`.
+  `~/.claude-config` private dotfile-style sync repo. Inspects
+  for uncommitted local edits and unpushed commits, drafts a
+  commit message, and after explicit approval commits and
+  pushes. Runs `git pull --rebase` first if the local checkout
+  is behind, so a push never overwrites concurrent work from
+  another machine. Never force-pushes; never rewrites
+  already-pushed history; never modifies files outside
+  `~/.claude-config/`.
 when_to_use: |
   Invoke when the user says "sync my Claude config", "push my
   ~/.claude-config", "commit shared Claude config", or after
-  modifying a file that lives in `~/.claude-config/` —
-  `~/.claude-config/scripts/*.sh`,
-  `~/.claude-config/CLAUDE.md`,
-  `~/.claude-config/commands/*`, the `sync.sh` itself, etc. Also
-  appropriate after the `setup-isolated-setup-update` skill surfaces
-  drift on a script that the user keeps in `~/.claude-config/` and
-  the user wants the framework's update propagated to every
-  machine the sync repo is checked out on.
+  modifying a file in `~/.claude-config/` (scripts, CLAUDE.md,
+  commands, sync.sh). Also appropriate after
+  `setup-isolated-setup-update` surfaces drift on a script the
+  user keeps in `~/.claude-config/` and wants propagated to
+  other machines.
 license: Apache-2.0
 ---
 
