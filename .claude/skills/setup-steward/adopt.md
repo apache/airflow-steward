@@ -379,18 +379,121 @@ hook content to the user before writing.
 
 ## Step 11 — Project doc updates (FRESH only)
 
-Add (or extend) a brief paragraph in the adopter's
-`README.md` or `CONTRIBUTING.md` (whichever already mentions
-agents / skills) noting:
+Update two adopter-facing docs so contributors discover the
+framework before they hit a "skill not found" error:
 
-- the project adopts apache-steward via the snapshot
-  mechanism;
-- a fresh clone needs `/setup-steward` to populate the
-  framework before any framework skill is invocable;
-- adopter-specific modifications live in
-  `.apache-steward-overrides/`.
+1. **`README.md` (contributor-facing summary, REQUIRED if
+   the file exists).** This is the doc most fresh-clone
+   contributors read first. Add a dedicated section. If the
+   project uses PyPI-sync markers (e.g.
+   `<!-- START Contributing ... -->` / `<!-- END Contributing ... -->`),
+   place the new section **outside** any sync block so the
+   adoption note does not leak into the published PyPI
+   description.
 
-Surface the doc diff to the user before writing.
+   Suggested template — substitute the adopter's name and
+   the skill families they actually installed:
+
+   ```markdown
+   ## Agent-assisted contribution (apache-steward)
+
+   This repo adopts the
+   [`apache/airflow-steward`](https://github.com/apache/airflow-steward)
+   framework via a snapshot mechanism. The framework provides
+   maintainer-facing skills (e.g. `pr-management-triage`,
+   `pr-management-code-review`, `pr-management-stats`,
+   `pr-management-mentor`, and the `security-*` family)
+   exposed as agent skills in agent harnesses such as Claude
+   Code.
+
+   The framework is **not** vendored — it lives as a
+   gitignored snapshot under `.apache-steward/`, fetched on
+   demand from the version pinned in the committed
+   [`.apache-steward.lock`](.apache-steward.lock). The only
+   framework artefact committed to this repo is the
+   `setup-steward` skill at
+   [`.github/skills/setup-steward/`](.github/skills/setup-steward/);
+   everything else is a gitignored symlink the setup skill
+   wires up.
+
+   A fresh clone needs the snapshot populated before any
+   framework skill is invocable. In your agent harness, run:
+
+       /setup-steward
+
+   (or follow [`.claude/skills/setup-steward/`](.claude/skills/setup-steward/))
+   to fetch the snapshot per the committed lock, scaffold the
+   gitignored symlinks, and install the post-checkout hook
+   that re-creates them on each worktree checkout.
+
+   Adopter-specific modifications to framework workflows live
+   in [`.apache-steward-overrides/`](.apache-steward-overrides/)
+   (committed) — never edit the snapshot directly. Framework
+   changes go via PR to
+   [`apache/airflow-steward`](https://github.com/apache/airflow-steward).
+   ```
+
+   Trim the skill-family list to what was actually picked in
+   Step 5 (only mention `security-*` if the adopter installed
+   that family, etc.). Adjust the skill paths to the adopter's
+   convention (flat vs double-symlinked — see
+   [`conventions.md`](conventions.md)). Skip this sub-step
+   entirely if `README.md` does not exist.
+
+2. **`AGENTS.md` (agent-facing detail, ONLY if the file
+   already exists).** Agent harnesses load this file
+   automatically; a short section here tells the agent the
+   adoption is in place and where to find the contributor
+   summary. Cross-reference back to the `README.md` section
+   you just wrote so the agent lands on the human-readable
+   summary first.
+
+   Suggested template:
+
+   ```markdown
+   ## apache-steward framework
+
+   This repo adopts the
+   [`apache/airflow-steward`](https://github.com/apache/airflow-steward)
+   framework via the snapshot mechanism. The framework
+   provides the `pr-management-*` skills; they are gitignored
+   symlinks into the `.apache-steward/` snapshot directory.
+
+   A fresh clone needs the snapshot populated before any
+   framework skill is invocable. Run `/setup-steward` (or
+   follow [`.claude/skills/setup-steward/`](.claude/skills/setup-steward/))
+   to fetch it per the committed
+   [`.apache-steward.lock`](.apache-steward.lock). The
+   contributor-facing summary of the adoption + setup flow
+   lives in the
+   [Agent-assisted contribution section of `README.md`](README.md#agent-assisted-contribution-apache-steward).
+
+   Adopter-specific modifications to framework-skill
+   workflows live in
+   [`.apache-steward-overrides/`](.apache-steward-overrides/)
+   — never edit the snapshot directly. Framework changes go
+   via PR to
+   [`apache/airflow-steward`](https://github.com/apache/airflow-steward).
+   ```
+
+   Do not create `AGENTS.md` if it does not already exist —
+   the contributor-facing section in `README.md` is the
+   authoritative entry-point, and an empty `AGENTS.md` would
+   be more noise than signal.
+
+3. **`CONTRIBUTING.md` (fallback only).** If `README.md` is
+   absent or strictly off-limits (some projects vendor it
+   from another source and rebuild on release), add the
+   `README.md` template content here instead.
+
+**Doctoc and other auto-update hooks.** If the adopter
+runs `doctoc` or similar README-TOC hooks, expect the next
+commit to also touch the TOC block. Either run the hook
+yourself before staging or note it in the commit message.
+
+Surface the rendered diff (`git diff README.md AGENTS.md`)
+to the user before writing. The user confirms once for the
+whole doc set; do not ask separately per file.
 
 ## Step 12 — Sanity check
 
