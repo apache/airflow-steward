@@ -2,34 +2,24 @@
 name: pr-management-mentor
 mode: Mentoring
 description: |
-  Draft a teaching-register comment on a single GitHub issue or
-  PR thread on the configured `<upstream>` repo (default: read
-  from `<project-config>/project.md → upstream_repo`), aimed at a
+  Draft a teaching-register comment on a single GitHub issue
+  or PR thread on the configured `<upstream>` repo, aimed at a
   contributor who is missing repo context the maintainer would
   otherwise have to spell out. The skill reads the thread,
-  decides whether a mentoring intervention is warranted, drafts
-  one comment per the project's tone guide and convention
-  pointers, runs the tone checklist, then waits for explicit
-  maintainer confirmation before posting via `gh`. Does **not**
-  triage (no labels, draft toggles, closes), review code (no
-  diff comments, approve / request-changes), or open PRs — those
-  are Triage and Drafting surfaces. Bows out and pings the
-  configured maintainer team when the thread reaches
-  `max_agent_turns`, when the contributor pushes back on a
-  substantive design point, when the topic enters
-  `out_of_scope_topics`, or when the contributor explicitly asks
-  for a human.
+  decides whether a mentoring intervention is warranted,
+  drafts one comment per the project's tone guide and
+  convention pointers, and waits for explicit maintainer
+  confirmation before posting via `gh`. Hands off to the
+  configured maintainer team on the four hand-off triggers.
 when_to_use: |
   Invoke when a maintainer says "mentor PR NNN", "help the
-  reporter on issue NNN", "draft a clarifying comment for NNN",
-  "explain the convention to this contributor on NNN", or chains
-  this skill after `pr-management-triage` flags a PR as "first
-  contributor, missing repro / convention". Not appropriate for
-  PRs already mid-review with a maintainer (the agent should
-  not talk over a human reviewer), for security-sensitive
-  threads (Mentoring always hands off these), or for any thread
-  where the maintainer has *deliberately* not replied yet — ask
-  before invoking.
+  reporter on issue NNN", "draft a clarifying comment for
+  NNN", "explain the convention to this contributor on NNN",
+  or chains this skill after `pr-management-triage` flags a PR
+  as "first contributor, missing repro / convention". Skip
+  when a PR is already mid-review with a maintainer, when the
+  thread is security-sensitive, or when the maintainer has
+  *deliberately* not replied yet — ask before invoking.
 argument-hint: "[issue-or-pr-number]"
 license: Apache-2.0
 ---
