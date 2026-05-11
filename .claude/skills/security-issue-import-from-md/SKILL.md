@@ -2,26 +2,24 @@
 name: security-issue-import-from-md
 mode: Triage
 description: |
-  Open one or more `<tracker>` tracking issues from a markdown file
-  containing a batch of security findings (typically the output of an
-  AI security review or a third-party scanner). Each finding in the
-  file becomes one tracker, landing in the `Needs triage` board
-  column with the standard issue-template body fields populated from
-  the markdown sections. Unlike `security-issue-import` (Gmail) and
-  `security-issue-import-from-pr` (public PR), there is no inbound
-  reporter to reply to and no PR to inspect — the file itself is the
-  full report.
+  Open one or more `<tracker>` tracking issues from a markdown
+  file containing a batch of security findings (typically the
+  output of an AI security review or a third-party scanner).
+  Each finding becomes one tracker landing in the `Needs
+  triage` board column. Unlike `security-issue-import` (Gmail)
+  and `security-issue-import-from-pr` (public PR), there is no
+  inbound reporter to reply to and no PR to inspect — the file
+  itself is the full report.
 when_to_use: |
-  Invoke when a security team member says "import findings from
-  <path>", "import this scan output", "load these issues from a
-  markdown file", or hands the agent a `.md` file containing one or
-  more issue blocks separated by `---`. Typical sources: the output
-  of a `/security-review`-style AI pass over an upstream branch, a
-  third-party SAST report exported as markdown, or a security
-  consultant's findings document. Not appropriate when a single
-  inbound report is best handled through the Gmail path
-  (`security-issue-import`) or when there is a public PR to anchor
-  the import on (`security-issue-import-from-pr`).
+  Invoke when a security team member says "import findings
+  from <path>", "import this scan output", "load these issues
+  from a markdown file", or hands the agent a `.md` file with
+  one or more issue blocks separated by `---`. Typical sources:
+  AI security review output, third-party SAST report exported
+  as markdown, or a security consultant's findings document.
+  Skip when a single inbound report belongs on the Gmail path
+  (`security-issue-import`) or when there is a public PR to
+  anchor the import on (`security-issue-import-from-pr`).
 argument-hint: "[path-to-markdown-file]"
 license: Apache-2.0
 ---
