@@ -45,8 +45,8 @@ filter is skipped silently from the main triage flow.
 | F2 | Author is a known bot | login is `dependabot`, `dependabot[bot]`, `renovate[bot]`, `github-actions`, `github-actions[bot]`, or matches `*[bot]` |
 | F3 | Draft and not stale | `isDraft == true` and any activity within the last 14 days. Stale-sweep classifications in [`stale-sweeps.md`](stale-sweeps.md) may still pull the PR back in. |
 | F4 | Already marked ready, no regression | `labels` contains `ready for maintainer review` AND CI green AND `mergeable != CONFLICTING` AND no unresolved threads. **Regression bypasses this filter** — any of: CI red, new conflict, or new unresolved thread whose triggering event (failing check `startedAt`, conflict detection, thread `createdAt`) is *after* the label-add timestamp. The typical case is a contributor pushing a rebase or fixup commit to a ready-for-review PR that re-introduces deterministic failures. PRs bypassing F4 fall through to the decision table normally; the cross-cutting [`strip-ready-on-downgrade` hard rule](#hard-rules-cross-cutting-the-table) ensures the label comes off if a `deterministic_flag` row fires. |
-| F5a | Recent collaborator comment (author cooldown) | Most recent comment is by a `COLLABORATOR`/`MEMBER`/`OWNER`, `createdAt < 72h` ago, AND posted after `commits(last:1).committedDate`. |
-| F5b | Maintainer-to-maintainer ping unanswered | Most recent collaborator comment `@`-mentions one or more logins other than the PR author AND none of those mentioned logins have posted on the PR or in `latestReviews` after that comment. Team mentions (e.g. `@<upstream>-committers`) are conservatively treated as F5b matches. |
+| F5a | Recent collaborator comment (author cooldown) | Most recent comment from the **union of** general-issue comments (`comments(last:10)`) and **review-thread comments** (`reviewThreads.nodes.comments`) is by a `COLLABORATOR`/`MEMBER`/`OWNER`, `createdAt < 72h` ago, AND posted after `commits(last:1).committedDate`. The review-thread leg is essential — a maintainer asking a clarifying question in-thread is just as much an active conversation as a top-level comment, and treating only the latter routes the PR to `ping` / `mark-ready-with-ping` while the maintainer is still mid-sentence. |
+| F5b | Maintainer-to-maintainer ping unanswered | Most recent collaborator comment from the **union** described in F5a above `@`-mentions one or more logins other than the PR author AND none of those mentioned logins have posted on the PR (general comments **or** review threads) or in `latestReviews` after that comment. Team mentions (e.g. `@<upstream>-committers`) are conservatively treated as F5b matches. |
 | F6 | Maintainer co-drafted | `isDraft == true` AND any of: (a) `latestReviews` has a node with `authorAssociation ∈ {OWNER, MEMBER, COLLABORATOR}` AND `author.login ≠ <viewer>` AND `state ∈ {COMMENTED, CHANGES_REQUESTED, APPROVED}` AND `submittedAt > commits(last:1).committedDate` AND review body is non-empty (avoids the "review with only inline thread comments and an empty top-level body" false positive — those are already counted by row 14/15 unresolved-thread logic); (b) `comments(last:10)` has a node with `authorAssociation ∈ {OWNER, MEMBER, COLLABORATOR}` AND `author.login ≠ <viewer>` AND `length(bodyText) ≥ 80` AND `createdAt > commits(last:1).committedDate`. Trivial signals (emoji-only, `+1`, `lgtm`, pure `@team` pings without prose) do not count — those are already covered by F5a/F5b or are below the substantive-engagement threshold. **Stale-sweep classifications in [`stale-sweeps.md`](stale-sweeps.md) may still pull the PR back in** — F6 only suppresses duplicate-proposal rows from the decision table, not eventual-resurfacing on a different action. |
 
 F5a, F5b, and F6 override every signal in the decision table —
@@ -288,13 +288,23 @@ True when at least one of the following resolves the apparent
 `stale_review` (Row 18):
 
 - A comment by the PR author after the most recent
-  `CHANGES_REQUESTED` review (`comments(last:10)`) whose body
-  `@`-mentions the reviewer login.
-- A comment by the reviewer after the author's most recent
-  commit (`commits(last:1).committedDate`).
+  `CHANGES_REQUESTED` review (`comments(last:10)` or
+  `reviewThreads.nodes.comments`) whose body `@`-mentions the
+  reviewer login.
+- A comment by the reviewer (general or review-thread) after
+  the author's most recent commit
+  (`commits(last:1).committedDate`).
+- The PR author's most recent commit is **less than 24 hours
+  old**. The push itself is the follow-up — they're still
+  actively working through the reviewer's feedback. Pinging
+  immediately reads as the bot rushing them. (24 h is the
+  shortest gap that lets the author finish a fixup-and-push
+  cycle without an interruption; the broader F5a 72h cooldown
+  applies on the maintainer side.)
 
-Either signal indicates the conversation is alive and a fresh
-ping would talk over an existing nudge. False otherwise.
+Any of these signals indicates the conversation is alive and a
+fresh ping would talk over an existing exchange. False
+otherwise.
 
 ---
 
@@ -419,11 +429,11 @@ applies — rows do not get to reach back for more data.
 
 | Decision rows / preconditions | Required fields |
 |---|---|
-| F5a, F5b, F6, grace periods | `comments(last:10).nodes.{author.login,authorAssociation,bodyText,createdAt}`, `latestReviews.nodes.{state,author.login,authorAssociation,submittedAt}`, `commits(last:1).nodes.commit.committedDate`, viewer login |
+| F5a, F5b, F6, grace periods | `comments(last:10).nodes.{author.login,authorAssociation,bodyText,createdAt}`, `reviewThreads.nodes.comments(first:5).nodes.{author.login,authorAssociation,bodyText,createdAt}`, `latestReviews.nodes.{state,author.login,authorAssociation,submittedAt}`, `commits(last:1).nodes.commit.committedDate`, viewer login |
 | Row 1 + Real-CI guard | `statusCheckRollup.state`, `statusCheckRollup.contexts`, `authorAssociation`, `head_sha` (REST `action_required` index keyed by `head_sha`) |
 | `copilot_review_stale` (row 2) | `reviewThreads.nodes.{isResolved,comments.nodes.{author.login,createdAt,url}}`, `comments(last:10).nodes.{author.login,createdAt}` |
 | `has_deterministic_signal`, `ci_failures_only`, `unresolved_threads_only`, `unresolved_threads_only_likely_addressed` (rows 8–17) | `mergeable`, `statusCheckRollup.{state,contexts}`, `reviewThreads.nodes.{isResolved,comments(first:5).nodes.{author.login,authorAssociation,createdAt}}`, `updatedAt`, `comments(last:10).nodes.{author.login,authorAssociation,createdAt}`, `commits(last:1).nodes.commit.committedDate`, `author.login` |
-| Row 18 (`stale_review`) | `latestReviews.nodes.{state,author.login,submittedAt}`, `commits(last:1).nodes.commit.committedDate`, `comments(last:10)` |
+| Row 18 (`stale_review`) | `latestReviews.nodes.{state,author.login,submittedAt}`, `commits(last:1).nodes.commit.committedDate`, `comments(last:10)`, `reviewThreads.nodes.comments(first:5).nodes.{author.login,createdAt}` |
 | Rows 3–5 (`already_triaged` / `stale_draft` from triage marker) | `comments(last:10).nodes.{author.login,bodyText,createdAt}`, viewer login, `commits(last:1).nodes.commit.committedDate` |
 | Rows 19, 20 (`passing`) | `statusCheckRollup.state`, `statusCheckRollup.contexts`, `mergeable`, `reviewThreads.totalCount`, `labels` |
 
