@@ -1,29 +1,24 @@
 ---
 name: setup-isolated-setup-install
 description: |
-  Guide an adopter through the first-time install of the framework's
-  secure agent setup — pinned system tools (`bubblewrap`, `socat`,
-  `claude-code`), the project-scope `.claude/settings.json` (sandbox
-  block, `permissions.deny` / `permissions.ask` / `allowedDomains`),
-  the `claude-iso` clean-env wrapper, the `sandbox-bypass-warn` and
-  `sandbox-status-line` user-scope hooks, and the user-scope
-  `~/.claude/settings.json` wiring that turns those hooks on. The
-  skill walks every step interactively, surfaces sudo /
-  shell-rc-edit / settings-file-overwrite operations for explicit
-  approval before applying, and never auto-runs anything
-  privilege-elevating or destructive.
+  Guide an adopter through the first-time install of the
+  framework's secure agent setup — pinned system tools
+  (`bubblewrap`, `socat`, `claude-code`), project + user-scope
+  `.claude/settings.json` wiring, the `claude-iso` clean-env
+  wrapper, and the user-scope `sandbox-bypass-warn` /
+  `sandbox-status-line` hooks. Walks every step interactively;
+  never auto-runs sudo, shell-rc edits, or settings overwrites.
 when_to_use: |
   Invoke when the user says "set up the secure agent setup",
-  "first-time install of the secure config", "install the secure
-  setup in this tracker", "walk me through the secure-agent-setup
-  install", or starts working on a fresh adopter clone where
-  neither the project nor user-scope settings carry the
-  secure-config wiring yet. Also appropriate after a fresh OS
-  install / new dev machine where `~/.claude/scripts/` is empty.
-  Do **not** invoke when the secure setup is already in place — use
-  `setup-isolated-setup-verify` (to confirm completeness) or
-  `setup-isolated-setup-update` (to refresh against the framework's
-  latest) instead.
+  "first-time install of the secure config", "install the
+  secure setup in this tracker", "walk me through the
+  secure-agent-setup install", or starts working on a fresh
+  adopter clone without secure-config wiring. Also appropriate
+  after a fresh OS install / new dev machine where
+  `~/.claude/scripts/` is empty. Skip when the secure setup is
+  already in place — use `setup-isolated-setup-verify` (to
+  confirm completeness) or `setup-isolated-setup-update` (to
+  refresh against the framework's latest) instead.
 license: Apache-2.0
 ---
 
