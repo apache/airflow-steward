@@ -13,6 +13,11 @@ description: |
     `/setup-steward override <skill>` — open or scaffold an
                                agentic override for a framework
                                skill in `.apache-steward-overrides/`
+    `/setup-steward unadopt` — reverse the adoption (snapshot,
+                               locks, symlinks, hook, doc
+                               sections, this skill itself);
+                               preserves `.apache-steward-
+                               overrides/` by default
 when_to_use: |
   Invoke when the user says "adopt apache-steward", "adopt
   apache/airflow-steward", "set up steward in this repo",
@@ -24,7 +29,7 @@ when_to_use: |
   skill that should be **copied** into an adopter's repo
   (every other framework skill is a symlink the adopt
   sub-action wires up).
-argument-hint: "[adopt|upgrade|verify|override skill-name]"
+argument-hint: "[adopt|upgrade|verify|override skill-name|unadopt]"
 license: Apache-2.0
 ---
 
@@ -146,6 +151,7 @@ proposed `/setup-steward upgrade`.
 | [`verify.md`](verify.md) | Read-only health check — snapshot present + intact, both lock files in sync, symlinks point at live targets, `.gitignore` correct, `.apache-steward-overrides/` exists, drift status (committed vs local), the `setup-steward` skill itself is current. |
 | [`conventions.md`](conventions.md) | Adopter skills-dir convention auto-detection — flat `.claude/skills/<n>/`, the `.claude/skills/<n>` → `.github/skills/<n>/` double-symlink pattern (e.g. apache/airflow), or neither yet. |
 | [`overrides.md`](overrides.md) | Agentic-override file management — open / scaffold an override for a framework skill, list existing overrides, help reconcile when the framework changes the underlying skill's structure on upgrade. |
+| [`unadopt.md`](unadopt.md) | Reverse the adoption — remove snapshot, locks, symlinks, post-checkout hook, `.gitignore` entries, the adoption sections in `README.md` / `AGENTS.md` / `CONTRIBUTING.md`, and the committed `setup-steward` skill itself. Preserves `.apache-steward-overrides/` by default; `--purge-overrides` removes it too. Surfaces the full removal plan before any write. |
 
 ## Golden rules
 
@@ -241,6 +247,7 @@ The skill dispatches by the first positional argument:
 | `/setup-steward upgrade` | [`upgrade.md`](upgrade.md) | Refresh snapshot per `<committed-lock>` + reconcile overrides + refresh symlinks. |
 | `/setup-steward verify` | [`verify.md`](verify.md) | Read-only health check + drift status report. |
 | `/setup-steward override <skill>` | [`overrides.md`](overrides.md) | Open / scaffold an override file. |
+| `/setup-steward unadopt` | [`unadopt.md`](unadopt.md) | Reverse the adoption. Removes snapshot, locks, symlinks, hook, doc sections, and this skill itself. Preserves `.apache-steward-overrides/` unless `--purge-overrides` is passed. |
 
 If the snapshot is missing (no `<snapshot-dir>/`) and
 `<committed-lock>` exists, the skill treats any sub-action as
@@ -254,6 +261,7 @@ first, then continue.
 | `from:<git-ref>` / `from:<version>` | Adopt or upgrade from a specific framework ref or version. Used during `adopt` (overrides the user prompt) and `upgrade` (overrides the committed lock for *this run only* — does NOT update the committed lock). |
 | `method:<git-branch\|git-tag\|svn-zip>` | Pick the install method explicitly. Default during `adopt`: prompt the user. |
 | `skill-families:<list>` | Comma-separated families to symlink (`security`, `pr-management`). Default on `adopt`: prompt. Default on `upgrade`: re-symlink the families currently linked. |
+| `--purge-overrides` | *(unadopt only)* Also `git rm -r` `.apache-steward-overrides/`. Default: preserve. |
 | `dry-run` | Show what the skill would do without writing anything. |
 
 ## What this skill is NOT for
@@ -279,3 +287,4 @@ first, then continue.
 | Snapshot present but symlinks dangle | Adopter ran `git clone` but not `/setup-steward` after — symlinks are gitignored but persist in their target's absence on disk | `/setup-steward verify --auto-fix-symlinks` (or `/setup-steward adopt`, idempotent) |
 | Worktree off the adopter repo can't find framework skills | Worktrees off the adopter don't auto-inherit the gitignored snapshot | The `adopt` sub-action installs a `post-checkout` git hook that re-runs the snapshot install on worktree creation; verify the hook is present (`/setup-steward verify`) |
 | `git clone` of an upstream PR sees no framework skills | Expected — the snapshot is gitignored, so a fresh clone has no `<snapshot-dir>`. The clone needs `/setup-steward` once before any framework skill is invocable | `/setup-steward` |
+| Project decided to stop using apache-steward | The reverse of adoption — remove the snapshot, locks, symlinks, hook, doc sections, and the `setup-steward` skill itself. `.apache-steward-overrides/` is preserved by default | `/setup-steward unadopt` (add `--purge-overrides` to also drop the overrides directory) |
