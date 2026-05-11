@@ -2,27 +2,24 @@
 name: pr-management-triage
 mode: Triage
 description: |
-  Sweep open pull requests on the configured `<upstream>` repo
-  (default: read from `<project-config>/project.md →
-  upstream_repo`), classify each one against the project's quality
-  criteria, propose a disposition, and — on the maintainer's
-  confirmation — carry out the action via `gh`. Decides whether
-  each PR should be converted to draft with a quality-issues
-  comment, commented on, closed, rebased, have CI reruns
-  triggered, have a first-time-contributor workflow approved, be
-  pinged to a stale reviewer, or marked `ready for maintainer
-  review`. Does **not** perform code review (no LLM line comments,
-  no approve/request-changes submissions) — that lives in
-  [`pr-management-code-review`](../pr-management-code-review/SKILL.md).
+  Sweep open pull requests on the configured `<upstream>` repo,
+  classify each one against the project's quality criteria,
+  propose a disposition, and — on the maintainer's
+  confirmation — carry out the action via `gh`. Decides
+  whether each PR should be converted to draft, commented on,
+  closed, rebased, have CI reruns triggered, have a
+  first-time-contributor workflow approved, be pinged to a
+  stale reviewer, or marked `ready for maintainer review`.
+  Does **not** perform code review — that lives in
+  `pr-management-code-review`.
 when_to_use: |
-  Invoke when a maintainer says "triage the PR queue", "go through
-  new contributor PRs", "run the morning triage", "triage PR NNN",
-  "are there any stale PRs we should close", or any variation on
-  the "sweep the contributor PRs and tell me which ones need
-  action" theme. Also appropriate as a recurring morning sweep —
-  the skill is cheap against a one-page batch (default 20 PRs)
-  and is a no-op when every candidate is already triaged or inside
-  its grace window.
+  Invoke when a maintainer says "triage the PR queue", "go
+  through new contributor PRs", "run the morning triage",
+  "triage PR NNN", "are there any stale PRs we should close",
+  or "sweep the contributor PRs and tell me which ones need
+  action". Also appropriate as a recurring morning sweep — the
+  skill is a no-op when every candidate is already triaged or
+  inside its grace window.
 argument-hint: "[pr:N] [label:LBL] [author:LOGIN] [review-for-me] [stale] [repo:owner/name]"
 license: Apache-2.0
 ---
