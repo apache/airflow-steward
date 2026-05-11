@@ -93,7 +93,7 @@ Action verbs are defined in [`actions.md`](actions.md).
 | 19 | All of: `statusCheckRollup.state == SUCCESS`, `mergeable != CONFLICTING`, no unresolved threads, [Real-CI guard](#real-ci-guard) passes, label `ready for maintainer review` already present | `passing` | `skip` | Already marked ready for review |
 | 20 | All of: `statusCheckRollup.state == SUCCESS`, `mergeable != CONFLICTING`, no unresolved threads, [Real-CI guard](#real-ci-guard) passes | `passing` | `mark-ready` | All checks green, no conflicts, no unresolved threads — mark for deeper review |
 | 21 | Stale-sweep candidate (see [`stale-sweeps.md`](stale-sweeps.md)) AND no row 1–20 matched in this session | `stale_draft` / `inactive_open` / `stale_workflow_approval` | (per sweep) | (per sweep) |
-| 22 | Data inconsistency (rollup SUCCESS but `failed_checks` non-empty, or similar). Evaluated **before** rows 19-20 — see [hard rules](#hard-rules-cross-cutting-the-table) | n/a | `skip`                 | Data anomaly — rollup not yet settled, retry next page |
+| 22 | Data inconsistency: rollup `SUCCESS` with `failed_checks` non-empty, OR rollup `FAILURE` with `failed_checks` empty (e.g. only CANCELLED contexts visible, or rollup hasn't yet propagated the failing check-run). Evaluated **before** rows 17, 19-20 — see [hard rules](#hard-rules-cross-cutting-the-table) | n/a | `skip` | Data anomaly — rollup not yet settled, retry next page |
 
 ### Hard rules cross-cutting the table
 
@@ -110,12 +110,21 @@ Action verbs are defined in [`actions.md`](actions.md).
   `authors:collaborators` is active, fall back to `comment` with
   the same body. Row 9 / 17 / etc. emit `comment`, not `draft`,
   in that mode.
-- **Row 22 fires before rows 19-20.** A PR matching the row 22
-  precondition (rollup SUCCESS but `failed_checks` non-empty,
-  or similar inconsistency) must not reach the `passing` rows.
+- **Row 22 fires before rows 17, 19-20.** A PR matching the
+  row 22 precondition (rollup SUCCESS but `failed_checks`
+  non-empty; rollup FAILURE but `failed_checks` empty; or other
+  rollup-vs-context inconsistency) must reach neither the row
+  17 `deterministic_flag` fallback nor the `passing` rows.
   Implementations evaluate row 22's precondition immediately
-  before evaluating row 19; the row's table position (last) is
-  documentary, not evaluation order.
+  before evaluating row 17; the row's table position (last) is
+  documentary, not evaluation order. The rollup-FAILURE-with-
+  empty-`failed_checks` direction is naturally enforced by
+  [`has_deterministic_signal`](#has_deterministic_signal)'s
+  non-empty-`failed_checks` clause — that case fails every
+  decision row, falls through to row 22, and skips. The
+  rollup-SUCCESS-with-non-empty-`failed_checks` direction needs
+  the explicit pre-row-19 check, since the `passing` rows only
+  inspect `rollup.state`.
 - **`strip-ready-on-downgrade`: strip `ready for maintainer
   review` when a regressed PR matches a `deterministic_flag`
   row.** When a PR carrying the `ready for maintainer review`
@@ -146,8 +155,16 @@ once here so the table rows stay short and unambiguous.
 At least one of:
 
 - `mergeable == CONFLICTING`
-- `statusCheckRollup.state == FAILURE` AND PR is past its
-  [grace window](#grace-periods)
+- `statusCheckRollup.state == FAILURE` AND
+  [`failed_checks`](#failed_checks) is non-empty AND PR is past
+  its [grace window](#grace-periods). The non-empty
+  `failed_checks` clause routes rollup-FAILURE-without-
+  extractable-failed-checks (the rollup has rolled to FAILURE
+  but no contributing context is visible — typically because
+  the only completed contexts are CANCELLED, or the rollup
+  hasn't yet propagated the check-run that flipped it) to
+  [row 22](#decision-table) instead of cascading down to the
+  row 17 draft fallback with an empty violation list.
 - `reviewThreads.totalCount` ≥ 1 with `isResolved == false` AND
   the thread's reviewer is `COLLABORATOR`/`MEMBER`/`OWNER`
 
@@ -156,6 +173,38 @@ At least one of:
 `has_deterministic_signal` is true AND the *only* signal that
 fired is the CI-failure one (no `CONFLICTING`, no unresolved
 collaborator threads).
+
+### `failed_checks`
+
+The list of `statusCheckRollup.contexts` entries whose terminal
+state indicates a real failure attributable to the PR's code:
+
+- `CheckRun.conclusion ∈ {FAILURE, TIMED_OUT}`, OR
+- `StatusContext.state ∈ {FAILURE, ERROR}`.
+
+Excluded:
+
+- **`CheckRun.conclusion == CANCELLED`.** Cancellation is
+  almost always caused by a newer push superseding an in-flight
+  run, GitHub Actions concurrency-cancellation, or the
+  contributor cancelling manually — none of these signal that
+  the PR's current head SHA is broken. Cancelled contexts may
+  still pull `statusCheckRollup.state` to `FAILURE`, which is
+  why `has_deterministic_signal` requires `failed_checks`
+  non-empty rather than trusting the rollup state alone.
+- `CheckRun.conclusion ∈ {NEUTRAL, SKIPPED, STALE,
+  STARTUP_FAILURE, ACTION_REQUIRED}` — non-failure conclusions
+  or infra issues. `ACTION_REQUIRED` in particular is the
+  workflow-approval-pending signal handled by row 1, not a
+  per-check failure.
+- Pending checks (`status ∈ {QUEUED, IN_PROGRESS, PENDING}`
+  or `conclusion == null`) — counted separately as
+  `pending_checks` and not eligible for any deterministic-flag
+  row.
+
+Implementations may track `cancelled_checks` and
+`pending_checks` separately for diagnostics / reason templates,
+but only `failed_checks` feeds the decision table.
 
 ### `unresolved_threads_only`
 
