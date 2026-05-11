@@ -442,19 +442,44 @@ responsibility is clearly on the author.
 Two steps. **Inspect the diff first** — see
 [`workflow-approval.md`](workflow-approval.md) for the safety
 protocol. Only after the maintainer confirms the diff looks
-non-malicious, approve:
+non-malicious, **re-list the pending runs at action time** (the
+per-page `action_required` index built during fetch may be stale
+— another maintainer may have approved between fetch and now —
+and the optimistic-lock pattern below catches the no-op race
+without burning a useless mutation):
 
 ```bash
-# List pending workflow runs for this PR.
+# Re-list pending workflow runs for this PR at action time.
 # Runs awaiting approval are returned as `status: "completed"` with
 # `conclusion: "action_required"` — `?status=action_required` matches
 # none of them. Post-filter on `conclusion` to enumerate the real set.
-gh api "repos/<owner>/<repo>/actions/runs?head_sha=<head_sha>&per_page=20" \
-  --jq '.workflow_runs[] | select(.conclusion == "action_required") | .id' |
-  while read run_id; do
-    gh api -X POST "repos/<owner>/<repo>/actions/runs/${run_id}/approve"
-  done
+ids=$(gh api "repos/<owner>/<repo>/actions/runs?head_sha=<head_sha>&per_page=20" \
+        --jq '.workflow_runs[] | select(.conclusion == "action_required") | .id')
+
+if [ -z "$ids" ]; then
+  # Race: pending runs were approved between fetch and now (another
+  # maintainer, or auto-approval). Skip silently — the desired state
+  # ("CI is allowed to run for this contributor") is already true.
+  # Surface a one-line note to the maintainer so the no-op is visible.
+  echo "approve-workflow: no pending runs found at <head_sha> — already approved by someone else" >&2
+  exit 0
+fi
+
+while read -r run_id; do
+  [ -z "$run_id" ] && continue
+  gh api -X POST "repos/<owner>/<repo>/actions/runs/${run_id}/approve"
+done <<< "$ids"
 ```
+
+The optimistic-lock pattern is the same one
+[`mark-ready`](#mark-ready--add-ready-for-maintainer-review-label)
+uses (Golden rule 1b in [`SKILL.md`](SKILL.md)) — read the
+authoritative state immediately before mutating, exit cleanly
+if the desired state is already in place. Without it, a sweep
+that classified at T0 and acts at T0 + minutes (after the
+maintainer reviewed the diff) silently surfaces "exit=0, out=
+empty" with no guidance on whether the approval landed or
+nothing was there to approve in the first place.
 
 No comment is posted for `approve-workflow`. Approval is
 invisible to the contributor except for CI now running, which

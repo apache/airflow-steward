@@ -241,9 +241,19 @@ after that timestamp.
 Failed check name (case-insensitive substring match either
 direction) hits one of: `static check`, `pre-commit`, `lint`,
 `mypy`, `ruff`, `black`, `flake8`, `pylint`, `isort`, `bandit`,
-`codespell`, `yamllint`, `shellcheck`.
+`codespell`, `yamllint`, `shellcheck`, `spellcheck`,
+`spelling`, `build documentation`, `build docs`, `build-docs`.
 Additional patterns may be configured in
 `<project-config>/pr-management-triage-ci-check-map.md`.
+
+The doc-build / spellcheck patterns are included in the
+framework defaults because the failure mode is symmetric with
+the other static checks: the contributor introduced text the
+checker doesn't accept (a misspelled word, a broken docs
+include, a missing sphinx reference) and the fix is a code
+change, not a CI rerun. Without these patterns row 13 (`rerun`)
+fires on a single docs failure and the bot sends a useless
+rerun request that fails identically.
 
 ### `recent_main_failures`
 
