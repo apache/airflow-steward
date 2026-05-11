@@ -23,6 +23,7 @@ when_to_use: |
   the skill is cheap against a one-page batch (default 20 PRs)
   and is a no-op when every candidate is already triaged or inside
   its grace window.
+argument-hint: "[pr:N] [label:LBL] [author:LOGIN] [review-for-me] [stale] [repo:owner/name]"
 license: Apache-2.0
 ---
 <!-- SPDX-License-Identifier: Apache-2.0

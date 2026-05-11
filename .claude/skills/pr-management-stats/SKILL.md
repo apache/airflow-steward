@@ -11,6 +11,7 @@ when_to_use: |
   variation on "give me the maintainer view of the backlog". Good as a daily
   health check, before or after a triage sweep, or as an input to a planning
   session.
+argument-hint: "[repo:owner/name] [since:date] [clear-cache]"
 license: Apache-2.0
 ---
 

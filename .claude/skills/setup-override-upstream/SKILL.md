@@ -23,6 +23,7 @@ when_to_use: |
   this override", or similar — typically after running the
   override locally for a while and deciding the change is
   worth contributing back.
+argument-hint: "[skill-name]"
 license: Apache-2.0
 ---
 

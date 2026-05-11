@@ -22,6 +22,7 @@ when_to_use: |
   inbound report is best handled through the Gmail path
   (`security-issue-import`) or when there is a public PR to anchor
   the import on (`security-issue-import-from-pr`).
+argument-hint: "[path-to-markdown-file]"
 license: Apache-2.0
 ---
 

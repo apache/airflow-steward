@@ -15,6 +15,7 @@ when_to_use: |
   through issue NNN". Also appropriate as part of a recurring triage sweep
   where the team member wants to reconcile a batch of open issues with the
   current state of the world.
+argument-hint: "[issue-number]"
 license: Apache-2.0
 ---
 

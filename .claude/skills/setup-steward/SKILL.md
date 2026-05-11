@@ -24,6 +24,7 @@ when_to_use: |
   skill that should be **copied** into an adopter's repo
   (every other framework skill is a symlink the adopt
   sub-action wires up).
+argument-hint: "[adopt|upgrade|verify|override skill-name]"
 license: Apache-2.0
 ---
 

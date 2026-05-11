@@ -20,6 +20,7 @@ when_to_use: |
   security relevance has already been agreed informally; this skill
   does not host a validity discussion. For reports that arrive on
   `<security-list>`, use `security-issue-import`.
+argument-hint: "[pr-number] [repo:owner/name]"
 license: Apache-2.0
 ---
 

@@ -20,6 +20,7 @@ when_to_use: |
   no-op when every recent thread is already tracked or already
   answered-and-closed on-thread. Use `import last 30d` / `import all`
   (= 90d) for a wider backlog sweep when genuinely warranted.
+argument-hint: "[import] [last Nd|all] [skip threadId]"
 license: Apache-2.0
 ---
 

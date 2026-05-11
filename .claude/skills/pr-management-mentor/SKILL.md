@@ -30,6 +30,7 @@ when_to_use: |
   threads (Mentoring always hands off these), or for any thread
   where the maintainer has *deliberately* not replied yet — ask
   before invoking.
+argument-hint: "[issue-or-pr-number]"
 license: Apache-2.0
 ---
 <!-- SPDX-License-Identifier: Apache-2.0

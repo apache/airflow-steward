@@ -21,6 +21,7 @@ when_to_use: |
   the advisory has already shipped (closing as invalid then is a
   retraction with public consequences and needs explicit team
   escalation).
+argument-hint: "[issue-number]"
 license: Apache-2.0
 ---
 

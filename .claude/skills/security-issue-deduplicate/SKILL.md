@@ -17,6 +17,7 @@ when_to_use: |
   ID collision) between a new report and an existing tracker. Also
   appropriate as a periodic cleanup action when a triager spots two
   open trackers describing the same bug from different angles.
+argument-hint: "[kept-issue] [duplicate-issue]"
 license: Apache-2.0
 ---
 
