@@ -25,6 +25,7 @@
     - [Threading: drafts stay on the inbound Gmail thread](#threading-drafts-stay-on-the-inbound-gmail-thread)
     - [ASF-security-relay reports: a special case for drafting](#asf-security-relay-reports-a-special-case-for-drafting)
     - [Point reporters to the project's Security Model, don't re-explain it](#point-reporters-to-the-projects-security-model-dont-re-explain-it)
+    - [Reporter claims about dependencies: conditional language only](#reporter-claims-about-dependencies-conditional-language-only)
     - [Linking CVEs](#linking-cves)
     - [Linking tracker issues and PRs](#linking-tracker-issues-and-prs)
     - [Mentioning project maintainers and security-team members](#mentioning-project-maintainers-and-security-team-members)
@@ -1004,6 +1005,56 @@ When adding a new canned response, identify the matching chapter in the
 Security Model first. If no chapter covers the case, that is a signal
 the Security Model should be updated upstream (in the project's source
 repository) rather than duplicated in the canned responses.
+
+### Reporter claims about dependencies: conditional language only
+
+When a reporter says the vulnerability they found lives in **one of
+the project's dependencies** (a third-party library, a transitive
+package, an upstream tool the project bundles), drafted replies
+must **not adopt the claim as fact**. The project's security team
+has no authority to confirm a vulnerability in code it does not
+maintain — that judgement belongs to the dependency's own
+maintainers and CNAs.
+
+Use **conditional phrasing** in every reply that touches the
+claim:
+
+- ✗ *"Thanks for finding this vulnerability in `<library>`."* —
+  endorses the claim.
+- ✗ *"We've confirmed the issue in `<library>` is exploitable
+  through our usage."* — endorses the claim plus a downstream
+  consequence.
+- ✓ *"Thanks for the report. We're forwarding your finding to
+  `<library>`'s maintainers; if confirmed there, we will reassess
+  whether our usage exposes it."*
+- ✓ *"We will track the upstream report. Once `<library>` issues
+  an advisory, we will evaluate the impact on our deployment."*
+
+Why this matters:
+
+- The reporter can screenshot or forward a confirmation in our
+  voice as evidence of an unconfirmed vulnerability in a
+  third-party project — pressuring its maintainers and damaging
+  relationships the project depends on.
+- A wrong endorsement (the dependency maintainers disagree, or
+  the behaviour turns out to be intentional / not exploitable as
+  described) becomes a public correction the team has to retract.
+- We may not have the deployment context to know whether the
+  claimed primitive is reachable in our usage at all. A
+  conditional reply is honest about that.
+
+This rule pairs with
+[Reporter-supplied CVSS scores are informational only — never propagate them](#reporter-supplied-cvss-scores-are-informational-only--never-propagate-them):
+the team independently assesses anything that ends up attributed
+to the project's voice. Dependency claims are the same shape — a
+position from the reporter the team has not yet evaluated.
+
+When the report turns out to describe a real vulnerability in the
+project's **own** code that *happens to involve* a dependency
+(e.g. the project calls the dependency's API in a way that
+exposes a primitive), this rule no longer applies — that finding
+is the project's and the reply can state it plainly per the
+brevity rule above.
 
 ### Linking CVEs
 
