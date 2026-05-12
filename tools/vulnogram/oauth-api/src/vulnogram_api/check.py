@@ -99,7 +99,15 @@ def main(argv: list[str] | None = None) -> int:
     session = Session.load(creds_path)
     result = probe(session, section=args.section)
     if not args.quiet:
+        # Keep the first line a bare `valid` / `expired` / etc. so callers
+        # that exact-match the result token still parse cleanly (per the
+        # parse rules in `.claude/skills/security-issue-sync/SKILL.md`
+        # Step 5b). When a from-address is on file, surface it on a
+        # second line for audit-trail visibility — *"did I capture the
+        # cookie from the right @apache.org login?"*.
         print(result)
+        if result == "valid" and session.from_address:
+            print(f"logged in as {session.from_address}")
     if result == "valid":
         return 0
     if result == "expired":
