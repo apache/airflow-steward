@@ -187,7 +187,7 @@ who have already contributed and will be involved as collaborators
 on the project from day one:
 
 - André Ahlert Junior — [@andreahlert](https://github.com/andreahlert)
-- Bartosz Sławkowski — [@johnslavik](https://github.com/johnslavik)
+- Bartosz Sławecki — [@johnslavik](https://github.com/johnslavik)
 - Yeonguk Choo — [@choo121600](https://github.com/choo121600)
 - Shahar Epstein — [@shahar1](https://github.com/shahar1)
 - Vincent Beck — [@vincbeck](https://github.com/vincbeck)
