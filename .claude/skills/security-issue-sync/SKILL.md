@@ -1534,29 +1534,56 @@ will change and *why*. Group them by category:
   release actually ships. Do not propose it on subsequent runs once
   it has already been posted (idempotency check below).
 
-  **Idempotency.** Before proposing, scan the issue's existing
-  comments for the marker
+  **Idempotency + variant edit-in-place.** Before proposing, scan
+  the issue's existing comments for the marker
   ```html
   <!-- apache-steward: release-manager-handoff v1 -->
   ```
-  exactly. If a comment carrying this marker already exists, **do
-  not propose a re-post** — surface as *"hand-off comment already
-  posted on `<comment-url>` (skipping)"* in the observed-state dump
-  and move on. The marker is on line 1 of the comment body so a
-  literal `gh issue view --json comments --jq` filter can detect it
-  cheaply.
+  exactly. The marker is on line 1 of the comment body so a
+  literal `gh issue view --json comments --jq` filter detects it
+  cheaply. Three outcomes:
+
+  - **No marker found.** Propose a fresh POST of the appropriate
+    variant (per Step 5c's decision).
+  - **Marker found, current body matches the variant the skill
+    would render this run.** No-op; surface as *"hand-off comment
+    already posted on `<comment-url>` and matches the current
+    variant (skipping)"* in the observed-state dump.
+  - **Marker found, current body does NOT match the variant the
+    skill would render this run.** Propose a PATCH-in-place
+    (rewrite the body to the current variant). Common cases:
+    a previous sync posted the manual-paste variant and this
+    sync's OAuth push succeeded → flip to the OAuth-pushed
+    variant; or vice-versa (cookie expired between sync runs).
+    The PATCH preserves the comment URL, the timeline position,
+    and any notifications already delivered for it; the body
+    flip is what the RM cares about. Same PATCH-don't-post
+    rationale as the rollup-comment upsert.
 
   **Body source.** The comment body comes from the project's
-  configured CVE tool — the path is
-  `tools/<cve-tool>/release-manager-handoff-comment.md` where
-  `<cve-tool>` is the value of `cve_tool` in
-  [`<project-config>/project.md`](../../../<project-config>/project.md#cve-tooling)
-  (for projects on Vulnogram, that resolves to
-  [`tools/vulnogram/release-manager-handoff-comment.md`](../../../tools/vulnogram/release-manager-handoff-comment.md)).
-  The template is parameterised; the substitutions the skill
-  performs are listed in the template's HTML-comment header. Do not
-  fork or paraphrase the template body in the proposal — load it
-  verbatim, substitute the placeholders, post.
+  configured CVE tool, in two **variants** picked by Step 5c:
+
+  - **OAuth-pushed variant** —
+    `tools/<cve-tool>/release-manager-handoff-comment-oauth-pushed.md`
+    (for Vulnogram:
+    [`tools/vulnogram/release-manager-handoff-comment-oauth-pushed.md`](../../../tools/vulnogram/release-manager-handoff-comment-oauth-pushed.md)).
+    Used when Step 5b's `vulnogram-api-record-update` succeeded
+    this sync run.
+  - **Manual-paste variant (today's default)** —
+    `tools/<cve-tool>/release-manager-handoff-comment.md`
+    (for Vulnogram:
+    [`tools/vulnogram/release-manager-handoff-comment.md`](../../../tools/vulnogram/release-manager-handoff-comment.md)).
+    Used when Step 5b skipped (no credentials, expired session)
+    or the push failed.
+
+  Both variants carry the same marker on line 1, so idempotency
+  detection is unchanged. Both templates are parameterised; the
+  substitutions the skill performs are listed in each template's
+  HTML-comment header (the OAuth-pushed variant additionally
+  takes `PUSH_TIMESTAMP`). Do not fork or paraphrase the
+  template body in the proposal — load it verbatim, substitute
+  the placeholders, post or PATCH per the idempotency rules
+  above.
 
   **Resolving placeholders.** All values come from configuration or
   from the tracker itself, so there is no free-form drafting:
@@ -1588,11 +1615,16 @@ will change and *why*. Group them by category:
     repo's `<project-config>/canned-responses.md`.
 
   **Apply mechanic** — see the *Release-manager hand-off comment*
-  bullet in Step 4 below; it is a fresh `gh issue comment`, not a
-  PATCH on the rollup.
+  bullet in Step 4 below; depending on the idempotency outcome it
+  is either a fresh `gh issue comment` (first hand-off) or a
+  `gh api -X PATCH` on the existing comment's REST id (variant
+  flip). Neither path PATCHes the rollup.
 
-  **Recap.** Surface the new comment URL in the recap (Step 6) so
-  the user can click through and verify the post.
+  **Recap.** Surface the comment URL (new or PATCHed) in the recap
+  (Step 6) so the user can click through and verify the result.
+  When the path was a PATCH, the recap notes which variant the
+  body now carries (*"flipped to OAuth-pushed variant after this
+  sync's auto-push succeeded"* or vice-versa).
 
 - **Publication-ready notification comment** — when this sync pass
   proposes populating the *Public advisory URL* body field (Step 14
@@ -1828,34 +1860,70 @@ before moving on to the next item. Use:
   comment with `gh api -X DELETE
   repos/<tracker>/issues/comments/<id>`. Never delete before the
   PATCH lands.
-- **Release-manager hand-off comment:** load the body template from
-  `tools/<cve-tool>/release-manager-handoff-comment.md`, substitute
-  the placeholders (per the *Release-manager hand-off comment*
-  bullet in Step 2b), write the result to a temp file, then post:
+- **Release-manager hand-off comment:** pick the body template
+  per the variant decision from
+  [Step 5c](#step-5c--reconcile-the-release-manager-hand-off-comment) —
+  `tools/<cve-tool>/release-manager-handoff-comment-oauth-pushed.md`
+  when this sync run's `vulnogram-api-record-update` push succeeded,
+  `tools/<cve-tool>/release-manager-handoff-comment.md` (manual-paste)
+  otherwise. Substitute the placeholders (per the *Release-manager
+  hand-off comment* bullet in Step 2b; the OAuth-pushed variant also
+  takes `PUSH_TIMESTAMP`), write the result to a temp file. Then
+  decide POST vs PATCH by grepping the tracker's comment list for
+  the marker:
 
   ```bash
-  gh issue comment <N> --repo <tracker> \
-    --body-file <tmpfile>
+  existing=$(gh issue view <N> --repo <tracker> --json comments \
+    --jq '[.comments[] | select(.body | startswith("<!-- apache-steward: release-manager-handoff v1 -->"))] | .[0].id // empty')
   ```
 
-  This is a **fresh comment**, not a PATCH on the rollup. The
-  `<!-- apache-steward: release-manager-handoff v1 -->` marker on
-  line 1 of the template is what subsequent sync runs grep for to
-  enforce idempotency — preserve it verbatim. Capture the new
-  comment URL from the post for the Step 6 recap.
+  - **No marker found (first hand-off, or marker lost)** — POST a
+    fresh comment:
 
-  Before posting, **scrub the resolved body** for the same bare-
-  name → `@`-handle replacements documented for the rollup PATCH
-  above, so the `RM_HANDLE` substitution actually notifies the
-  release manager.
+    ```bash
+    gh issue comment <N> --repo <tracker> --body-file <tmpfile>
+    ```
+
+  - **Marker found** — fetch the existing body, compare against the
+    re-rendered body for the current variant, and PATCH-edit
+    in-place only if they differ (skip the round-trip when the
+    body is byte-identical):
+
+    ```bash
+    # extract the REST id (not the GraphQL node id)
+    rest_id=$(gh api repos/<tracker>/issues/comments \
+      --jq '.[] | select(.node_id == "<existing>") | .id')
+    # PATCH
+    jq -n --rawfile body <tmpfile> '{body: $body}' | \
+      gh api -X PATCH repos/<tracker>/issues/comments/${rest_id} \
+        --input - --jq '{id, updated_at}'
+    ```
+
+  The PATCH path is what powers the "OAuth-pushed today, manual-paste
+  next sync (because the cookie expired)" recovery: the existing
+  comment's body flips between variants in place, keeping a single
+  comment as the canonical RM-facing surface and avoiding the
+  "fresh duplicate buries the timeline" failure mode (same rationale
+  as the rollup-comment PATCH-don't-post rule).
+
+  Capture the comment URL (POST or PATCH) for the Step 6 recap.
+  Before posting / PATCHing, **scrub the resolved body** for the
+  same bare-name → `@`-handle replacements documented for the rollup
+  PATCH above, so the `RM_HANDLE` substitution actually notifies
+  the release manager.
 - **Publication-ready notification comment:** same recipe as the
-  hand-off comment above, but loading
-  `tools/<cve-tool>/release-manager-publication-comment.md`. The
-  marker is `<!-- apache-steward: release-manager-publication-ready v1 -->`.
+  hand-off comment above (same variant decision, same POST-vs-PATCH
+  logic, same scrub), but loading
+  `tools/<cve-tool>/release-manager-publication-comment-oauth-pushed.md`
+  or `tools/<cve-tool>/release-manager-publication-comment.md` based
+  on the same Step 5c variant choice. The marker is
+  `<!-- apache-steward: release-manager-publication-ready v1 -->`.
   Apply right after the *Public advisory URL* body-field update has
-  landed and the CVE JSON has been regenerated (Step 5) — that way
-  the comment's *"the JSON has been regenerated to include the
-  archive URL"* claim is true at the moment the RM reads it.
+  landed, the CVE JSON has been regenerated (Step 5a), and (when
+  applicable) the OAuth push has landed (Step 5b) — that way the
+  comment's *"the JSON has been regenerated to include the archive
+  URL and pushed to the record"* claim is true at the moment the
+  RM reads it.
 - **Close / reopen:** `gh issue close <N> --repo <tracker> --reason completed` (or `not planned`).
   When this is a GitHub-backed tracker that uses a project board,
   **always** follow a successful close with the **archive-from-board**
@@ -2062,6 +2130,128 @@ The script prints one of two lines on success:
 Capture the printed URL — it deep-links to the `## CVE JSON — paste-ready
 for <CVE>` heading anchor inside the body — and include it in the Step 6
 recap so the user has one-click access to the attached JSON.
+
+---
+
+## Step 5b — Push the regenerated JSON to Vulnogram via the OAuth API
+
+The regenerated JSON above is paste-ready for Vulnogram. **When the
+operator's machine has a valid Vulnogram OAuth session configured**
+(the one-time
+`uv run --project <framework>/tools/vulnogram/oauth-api vulnogram-api-setup`
+per machine — see
+[`tools/vulnogram/oauth-api/README.md`](../../../tools/vulnogram/oauth-api/README.md)),
+**sync pushes the JSON to the record directly** instead of leaving the
+paste step to the release manager. The push is mechanical and follows
+from the same JSON the user just approved as part of the body update;
+it does **not** advance the Vulnogram state machine
+(`DRAFT` → `REVIEW` → `READY` → `PUBLIC`) — those transitions stay
+with the RM because they include the CNA-feed dispatch trigger.
+
+### Decision flow
+
+1. **Skip-condition gate.** Skip 5b entirely when 5a was skipped
+   (no CVE allocated; tracker closed as invalid / duplicate / not
+   CVE worthy). There is no record to push to.
+
+2. **Probe the session** — `vulnogram-api-check`:
+
+   ```bash
+   uv run --project <framework>/tools/vulnogram/oauth-api vulnogram-api-check
+   ```
+
+   Three outcomes:
+
+   - **`valid`** → proceed to step 3.
+   - **`expired`** → skip the push, surface a one-line reminder in
+     the Step 6 recap: *"Vulnogram OAuth session expired — re-run
+     `vulnogram-api-setup` to restore automatic push; using
+     manual-paste hand-off this run."* Fall through to the
+     manual-paste hand-off variant for any 5c comment work below.
+   - **`not-configured`** → skip the push silently. Not every
+     operator runs the API path; that is fine, today's manual-paste
+     hand-off still works. Fall through to the manual-paste hand-off
+     variant for any 5c comment work below.
+
+3. **Extract the regenerated JSON.** The
+   [`generate-cve-json`](../../../tools/vulnogram/generate-cve-json/SKILL.md)
+   step in 5a embedded the JSON inside the tracker body between the
+   `<!-- generate-cve-json: cve=<CVE> version=v1 -->` /
+   `<!-- generate-cve-json:end ... -->` markers. Re-run the
+   generator with `--stdout` (no `--attach`) into a temporary file,
+   or extract from the body via `awk` between the markers — either
+   yields a byte-identical payload because the generator is
+   deterministic. Conventional path:
+   `/tmp/cve-<CVE-ID>-<N>.json`.
+
+4. **Push** — `vulnogram-api-record-update`:
+
+   ```bash
+   uv run --project <framework>/tools/vulnogram/oauth-api vulnogram-api-record-update \
+     --cve-id <CVE-ID> --json-file /tmp/cve-<CVE-ID>-<N>.json
+   ```
+
+   Capture the call's exit code and `stdout` / `stderr`:
+
+   - **`exit 0`** → push succeeded. Record the ISO-8601 timestamp
+     (`PUSH_TIMESTAMP`); the Step 5c comment work uses the
+     **OAuth-pushed variant** of the relevant template; the Step 6
+     recap includes *"CVE record auto-pushed to Vulnogram at
+     `PUSH_TIMESTAMP`."*
+   - **`exit ≠ 0`** → push failed. Surface the error verbatim in
+     the Step 6 recap and **fall back** to the manual-paste hand-off
+     for the Step 5c comment work. Do **not** retry on the same
+     sync run — a transient HTTP error or a schema rejection is
+     better surfaced once and re-tried on the next sync (after
+     either Gmail-side or body-side state has settled).
+
+5. **Idempotence note.** The Vulnogram upsert endpoint is
+   idempotent: re-posting the same JSON on a subsequent sync is a
+   no-op on Vulnogram's side. The sync skill does not need to
+   short-circuit "already pushed this JSON" — every successful
+   sync run that re-regenerated the JSON should re-push to keep
+   the record byte-identical to the tracker body.
+
+## Step 5c — Reconcile the release-manager hand-off comment
+
+The Step 12 (`pr merged` → `fix released`) **hand-off comment** and
+the Step 14 (advisory archived) **publication-ready notification**
+both come in two variants:
+
+| Variant | Template | When |
+|---|---|---|
+| Manual-paste (today's default) | [`tools/vulnogram/release-manager-handoff-comment.md`](../../../tools/vulnogram/release-manager-handoff-comment.md), [`tools/vulnogram/release-manager-publication-comment.md`](../../../tools/vulnogram/release-manager-publication-comment.md) | Step 5b skipped (`expired` / `not-configured`) or the push failed |
+| OAuth-pushed | [`tools/vulnogram/release-manager-handoff-comment-oauth-pushed.md`](../../../tools/vulnogram/release-manager-handoff-comment-oauth-pushed.md), [`tools/vulnogram/release-manager-publication-comment-oauth-pushed.md`](../../../tools/vulnogram/release-manager-publication-comment-oauth-pushed.md) | Step 5b's push succeeded this run |
+
+Both variants of each comment carry the **same marker** on line 1
+(`<!-- apache-steward: release-manager-handoff v1 -->` for the
+hand-off, `<!-- apache-steward: release-manager-publication-ready v1 -->`
+for the publication-ready). Idempotency detection still keys on the
+marker — the variant choice does not get its own marker. When the
+marker is found on the tracker, the existing comment's body is
+PATCH-edited in place to the variant that matches the current sync
+run's outcome (the rationale mirrors the rollup-comment PATCH-don't-
+post rule: a fresh duplicate comment buries the timeline). Concrete
+rules:
+
+- **First-time hand-off** (no existing comment, label transition
+  fires this run) → POST the appropriate variant.
+- **Subsequent sync, OAuth push succeeded this run** → PATCH the
+  existing comment to the OAuth-pushed body (refreshing the
+  `PUSH_TIMESTAMP` placeholder). If the existing comment is already
+  the OAuth-pushed variant, the only material change is the
+  timestamp — still PATCH; the timestamp is the audit trail.
+- **Subsequent sync, push failed (or skipped)** → PATCH the existing
+  comment to the manual-paste variant. The RM sees a fresh
+  "please paste" ask the moment the auto-push stops working,
+  which is the right escalation.
+- **Subsequent sync, no relevant transition fired and the JSON did
+  not change** → no PATCH. Idempotency: marker present, body
+  byte-identical, nothing to do.
+
+The apply mechanic for both POST and PATCH lives in Step 4 — see
+the *Release-manager hand-off comment* and *Publication-ready
+notification comment* bullets there.
 
 ---
 
