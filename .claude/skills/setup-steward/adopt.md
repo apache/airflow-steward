@@ -42,10 +42,25 @@ between automatically:
 
 1. Confirm we are in a git repo (`git rev-parse
    --show-toplevel`).
-2. Confirm we are **not** in `apache/airflow-steward` itself
+2. **Confirm we are in the main checkout, not a git worktree.**
+   Compare `git rev-parse --git-dir` against
+   `git rev-parse --git-common-dir` — they are equal in the
+   main checkout and different in a worktree. If different,
+   stop with:
+
+   > *"`adopt` runs in the main checkout, not a worktree. From
+   > the main: `cd <main-path> && /setup-steward`. To wire this
+   > worktree up after adoption lands in the main, use
+   > `/setup-steward worktree-init`."*
+
+   The main's path is
+   `$(dirname "$(cd "$(git rev-parse --git-common-dir)" && pwd)")` —
+   surface it explicitly in the error message so the operator
+   can `cd` there without guessing.
+3. Confirm we are **not** in `apache/airflow-steward` itself
    (read `git remote get-url origin` and refuse if it
    resolves to the framework).
-3. Detect the adopter's existing skills-dir convention by
+4. Detect the adopter's existing skills-dir convention by
    following [`conventions.md`](conventions.md). Pin the
    result as `<adopter-skills-dir>` for the rest of this
    flow.

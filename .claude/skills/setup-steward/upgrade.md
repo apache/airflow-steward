@@ -36,9 +36,23 @@ Both paths run the same flow.
 
 ## Step 0 — Pre-flight
 
-1. Read `<committed-lock>`. If missing, the repo isn't
+1. **Confirm we are in the main checkout, not a git worktree.**
+   Compare `git rev-parse --git-dir` against
+   `git rev-parse --git-common-dir`. If different, stop with:
+
+   > *"`upgrade` runs in the main checkout, not a worktree.
+   > From the main: `cd <main-path> && /setup-steward upgrade`.
+   > Every worktree automatically picks up the refreshed
+   > snapshot once the main upgrade lands, because each
+   > worktree's `<snapshot-dir>` is a symlink to the main's
+   > (per [`worktree-init.md`](worktree-init.md))."*
+
+   `<main-path>` resolves to
+   `$(dirname "$(cd "$(git rev-parse --git-common-dir)" && pwd)")` —
+   surface it explicitly so the operator can `cd` there.
+2. Read `<committed-lock>`. If missing, the repo isn't
    adopted — suggest `/setup-steward adopt` and stop.
-2. Read `<local-lock>`. If missing (gitignored, fresh
+3. Read `<local-lock>`. If missing (gitignored, fresh
    clone), the local install hasn't been initialised yet —
    route as a recover-snapshot install per the committed
    lock, not as an upgrade. Continue at Step 3.

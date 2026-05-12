@@ -36,15 +36,32 @@ directory or doc updates — surface every check).
 
 ### 1. Snapshot present + intact
 
-`<snapshot-dir>/` exists, is a directory, and contains the
-expected top-level files (`README.md`, `AGENTS.md`,
-`.claude/skills/`, `tools/`).
+`<snapshot-dir>/` exists (as a directory or a symlink that
+resolves to one) and contains the expected top-level files
+(`README.md`, `AGENTS.md`, `.claude/skills/`, `tools/`).
 
-- ✗ if missing → run `/setup-steward upgrade` (it
-  gracefully handles the recover-snapshot case when the
-  committed lock exists but the snapshot does not).
+- ✗ if missing **and we are in the main checkout** (`git
+  rev-parse --git-dir` equals `git rev-parse --git-common-dir`)
+  → run `/setup-steward upgrade` (it gracefully handles the
+  recover-snapshot case when the committed lock exists but
+  the snapshot does not).
+- ✗ if missing **and we are in a worktree** (the two dirs
+  differ) → run `/setup-steward worktree-init` to symlink
+  `<snapshot-dir>` to the main checkout's. Do **not**
+  propose `upgrade` — that creates a per-worktree snapshot,
+  which is the bug `worktree-init` is designed to prevent.
+- ⚠ if present as a regular directory **in a worktree** →
+  legacy per-worktree snapshot. Suggest
+  `/setup-steward worktree-init` (with the move-aside flow)
+  to convert into a symlink to the main's snapshot. Verify
+  continues — the per-worktree snapshot is still functional,
+  just wasteful.
 - ✗ if missing top-level files → snapshot is corrupted;
-  same remediation.
+  same remediation as the missing-snapshot case above.
+- ⚠ if `<snapshot-dir>` is a symlink that resolves outside
+  the same repo's main checkout — the operator pointed it
+  at a different framework checkout deliberately. Surface
+  the resolved target and continue; do not auto-remediate.
 
 ### 2. Both lock files exist + parse
 

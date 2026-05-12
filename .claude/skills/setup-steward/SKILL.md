@@ -6,9 +6,14 @@ description: |
   framework skill committed in an adopter's repo — every other
   skill is a symlink the adopt sub-action wires up.
   Sub-actions:
-    `/setup-steward`         — first-time adoption (default)
+    `/setup-steward`         — first-time adoption (default;
+                                main-checkout only)
     `/setup-steward upgrade` — refresh the gitignored snapshot
                                 per the committed lock
+                                (main-checkout only)
+    `/setup-steward worktree-init` — symlink a worktree's
+                                snapshot to the main's so it
+                                shares one framework state
     `/setup-steward verify`  — health check + drift detection
     `/setup-steward override <skill>` — open or scaffold an
                                 agentic override in
@@ -18,6 +23,7 @@ description: |
                                sections, this skill itself);
                                preserves `.apache-steward-
                                overrides/` by default
+                               (main-checkout only)
 when_to_use: |
   Invoke when the user says "adopt apache-steward", "adopt
   apache/airflow-steward", "set up steward in this repo",
@@ -25,7 +31,7 @@ when_to_use: |
   framework's README adoption instructions. Also for periodic
   maintenance: "upgrade steward", "verify steward setup",
   "check steward drift", "the snapshot is stale".
-argument-hint: "[adopt|upgrade|verify|override skill-name|unadopt]"
+argument-hint: "[adopt|upgrade|worktree-init|verify|override skill-name|unadopt]"
 license: Apache-2.0
 ---
 
@@ -238,12 +244,22 @@ The skill dispatches by the first positional argument:
 
 | Invocation | Loads | Purpose |
 |---|---|---|
-| `/setup-steward` (no args) | [`adopt.md`](adopt.md) | First-time adoption (default). Idempotent — re-running on an already-adopted repo behaves like `verify`. |
-| `/setup-steward adopt` | [`adopt.md`](adopt.md) | Same as no-arg — explicit form. |
-| `/setup-steward upgrade` | [`upgrade.md`](upgrade.md) | Refresh snapshot per `<committed-lock>` + reconcile overrides + refresh symlinks. |
-| `/setup-steward verify` | [`verify.md`](verify.md) | Read-only health check + drift status report. |
+| `/setup-steward` (no args) | [`adopt.md`](adopt.md) | First-time adoption (default; **main-checkout only**). Idempotent — re-running on an already-adopted repo behaves like `verify`. |
+| `/setup-steward adopt` | [`adopt.md`](adopt.md) | Same as no-arg — explicit form. Main-checkout only. |
+| `/setup-steward upgrade` | [`upgrade.md`](upgrade.md) | Refresh snapshot per `<committed-lock>` + reconcile overrides + refresh symlinks. **Main-checkout only** — worktrees pick up upgrades automatically via the symlink installed by `worktree-init`. |
+| `/setup-steward worktree-init` | [`worktree-init.md`](worktree-init.md) | **Worktree-only.** Symlink the worktree's `<snapshot-dir>` to the main checkout's so this worktree shares one framework state. No fetch, no lock files written; idempotent. |
+| `/setup-steward verify` | [`verify.md`](verify.md) | Read-only health check + drift status report. Works in both main and worktrees. |
 | `/setup-steward override <skill>` | [`overrides.md`](overrides.md) | Open / scaffold an override file. |
-| `/setup-steward unadopt` | [`unadopt.md`](unadopt.md) | Reverse the adoption. Removes snapshot, locks, symlinks, hook, doc sections, and this skill itself. Preserves `.apache-steward-overrides/` unless `--purge-overrides` is passed. |
+| `/setup-steward unadopt` | [`unadopt.md`](unadopt.md) | Reverse the adoption. Removes snapshot, locks, symlinks, hook, doc sections, and this skill itself. Preserves `.apache-steward-overrides/` unless `--purge-overrides` is passed. **Main-checkout only.** |
+
+**Main-checkout-only sub-actions** (`adopt`, `upgrade`, `unadopt`)
+detect their context via `git rev-parse --git-dir` ≠
+`git rev-parse --git-common-dir` and refuse to run in a worktree
+with a pointer back to the main checkout. The worktree counterpart
+of `adopt` is `worktree-init`; for `upgrade`, every worktree
+automatically sees the refreshed snapshot once the main runs
+upgrade, because each worktree's `<snapshot-dir>` is a symlink to
+the main's.
 
 If the snapshot is missing (no `<snapshot-dir>/`) and
 `<committed-lock>` exists, the skill treats any sub-action as
