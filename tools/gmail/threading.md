@@ -122,7 +122,7 @@ mentioned) is **primary**.
 
 Worked example. The body field on a real tracker reads:
 
-```
+```text
 No public archive URL — tracked privately on Gmail thread `19dc8d4675dfc1f1`.
 Aymane Maguiti (huntr.com bounty `abdbcf11-…`-class duplicate, ASF-relayed by @apache/security on 2026-05-04T09:22:25Z): Gmail thread `19def0954b27ac31`.
 ```
