@@ -17,7 +17,7 @@
 
 """Validate framework skill definitions.
 
-This module validates three aspects of every skill under
+This module validates five aspects of every skill under
 .claude/skills/:
 
 1. YAML frontmatter — every SKILL.md must have a valid frontmatter
@@ -26,6 +26,16 @@ This module validates three aspects of every skill under
    files and docs must point to existing files and anchors.
 3. Placeholder convention — skill docs must use <PROJECT>,
    <upstream>, and <tracker> instead of hardcoded project names.
+4. Principle compliance (SOFT) — frontmatter should not carry
+   rationale parens, sub-step inventories, distinct-from clauses,
+   chain-handoff narratives, or criteria-source paths that the LLM
+   router does not need.
+5. Trigger-phrase preservation (SOFT) — quoted phrases inside
+   when_to_use must not be dropped vs the base ref (default
+   origin/main), preventing routing-recall regressions.
+
+SOFT categories surface as advisory warnings (stderr) without
+failing the run unless ``--strict`` is passed.
 
 Run from repo root:
     uv run --project tools/skill-validator --group dev pytest
@@ -114,6 +124,33 @@ YAML_BLOCK_SCALAR_HEADERS = {"|", ">", "|-", "|+", ">-", ">+"}
 # https://code.claude.com/docs/en/skills#frontmatter-reference
 MAX_METADATA_CHARS = 1536
 
+PRINCIPLE_CATEGORY = "principle_compliance"
+TRIGGER_PRESERVATION_CATEGORY = "trigger_preservation"
+SOFT_CATEGORIES: frozenset[str] = frozenset(
+    {PRINCIPLE_CATEGORY, TRIGGER_PRESERVATION_CATEGORY},
+)
+
+ACTION_INVENTORY_COMMA_THRESHOLD = 5
+
+DISTINCT_FROM_RE = re.compile(
+    r"\b(?:Unlike|Distinct from|Counterpart to|rather than)\b",
+    re.IGNORECASE,
+)
+CHAIN_HANDOFF_RE = re.compile(
+    r"(?:Finishes? by handing off|Hands? off to|ready for [`\w-]+ to take over)",
+    re.IGNORECASE,
+)
+PARENTHETICAL_RATIONALE_RE = re.compile(
+    r"\([^)]*?(?:typically|implies|because|since|is required first|needs to|requires)[^)]*\)",
+    re.IGNORECASE,
+)
+CRITERIA_SOURCE_RE = re.compile(
+    r"(?:process step \d+|\bStep \d+[a-z]?\b|`docs/[^`]+\.md`|documented in `[^`]+`)",
+    re.IGNORECASE,
+)
+
+QUOTED_PHRASE_RE = re.compile(r'"([^"]+)"')
+
 # Markdown link pattern: [text](url)
 LINK_PATTERN = re.compile(r"\[([^\]]+)\]\(([^)]+)\)")
 
@@ -134,10 +171,17 @@ ELLIPSIS_URLS = {"...", "…"}
 class Violation:
     """A single validation violation."""
 
-    def __init__(self, path: Path, line: int | None, message: str) -> None:
+    def __init__(
+        self,
+        path: Path,
+        line: int | None,
+        message: str,
+        category: str = "general",
+    ) -> None:
         self.path = path
         self.line = line
         self.message = message
+        self.category = category
 
     def __str__(self) -> str:
         if self.line is not None:
@@ -430,6 +474,169 @@ def validate_placeholders(path: Path, text: str) -> Iterable[Violation]:
 
 
 # ---------------------------------------------------------------------------
+# Principle-compliance SOFT warnings
+# ---------------------------------------------------------------------------
+
+
+def _collapse_ws(text: str) -> str:
+    """Collapse all internal whitespace runs (incl. newlines) to single spaces."""
+    return " ".join(text.split())
+
+
+def _split_sentences(text: str) -> list[str]:
+    """Split text into sentences on period + whitespace boundaries."""
+    return [s.strip() for s in re.split(r"\.\s+|\.\n+|\.$", text) if s.strip()]
+
+
+def _check_action_inventory(text: str) -> str | None:
+    """Return the first sentence in *text* with >= threshold commas, else None."""
+    for sentence in _split_sentences(text):
+        if sentence.count(",") >= ACTION_INVENTORY_COMMA_THRESHOLD:
+            return sentence
+    return None
+
+
+def validate_principle_compliance(path: Path, text: str) -> Iterable[Violation]:
+    """Surface advisory warnings for content that does not aid LLM-router
+    selection — rationale, sub-step enumerations, distinct-from clauses,
+    chain-handoff narratives, or criteria-source paths.
+
+    SOFT — informative, not blocking. Borderline cases are expected; the
+    reviewer has the final say.
+    """
+    fm = parse_frontmatter(text) or {}
+    description = fm.get("description", "")
+    when_to_use = fm.get("when_to_use", "")
+    combined = f"{description}\n{when_to_use}"
+
+    sentence = _check_action_inventory(description)
+    if sentence:
+        preview = _collapse_ws(sentence)
+        if len(preview) > 80:
+            preview = preview[:80] + "…"
+        yield Violation(
+            path,
+            1,
+            f"action-inventory in description ({sentence.count(',')} commas) — "
+            f"consider moving the enum to body: '{preview}'",
+            category=PRINCIPLE_CATEGORY,
+        )
+
+    for match in DISTINCT_FROM_RE.finditer(combined):
+        yield Violation(
+            path,
+            1,
+            f"distinct-from clause — router needs skip-when redirects, not comparisons: '{_collapse_ws(match.group())}'",
+            category=PRINCIPLE_CATEGORY,
+        )
+
+    for match in CHAIN_HANDOFF_RE.finditer(combined):
+        yield Violation(
+            path,
+            1,
+            f"chain-handoff narrative — belongs in body: '{_collapse_ws(match.group())}'",
+            category=PRINCIPLE_CATEGORY,
+        )
+
+    for match in PARENTHETICAL_RATIONALE_RE.finditer(combined):
+        snippet = _collapse_ws(match.group())
+        if len(snippet) > 60:
+            snippet = snippet[:60] + "…)"
+        yield Violation(
+            path,
+            1,
+            f"parenthetical rationale — router needs *whether*, not *why*: '{snippet}'",
+            category=PRINCIPLE_CATEGORY,
+        )
+
+    for match in CRITERIA_SOURCE_RE.finditer(combined):
+        yield Violation(
+            path,
+            1,
+            f"criteria-source path — router doesn't open docs: '{_collapse_ws(match.group())}'",
+            category=PRINCIPLE_CATEGORY,
+        )
+
+
+# ---------------------------------------------------------------------------
+# Trigger-phrase non-regression
+# ---------------------------------------------------------------------------
+
+
+def _extract_when_to_use(text: str) -> str:
+    """Return the raw when_to_use scalar (or empty string)."""
+    fm = parse_frontmatter(text) or {}
+    return fm.get("when_to_use", "")
+
+
+def _extract_quoted_phrases(text: str) -> set[str]:
+    """Return every quoted phrase in *text* (trimmed, non-empty)."""
+    return {m.group(1).strip() for m in QUOTED_PHRASE_RE.finditer(text) if m.group(1).strip()}
+
+
+def _git_show(base_ref: str, rel_path: str, repo_root: Path) -> str | None:
+    """Return the contents of *rel_path* at *base_ref*, or None if unavailable.
+
+    Silent fail-open on any git error — the trigger-preservation check
+    is advisory and must not block local development on fresh clones,
+    detached HEAD, or shallow checkouts.
+    """
+    import subprocess
+
+    try:
+        result = subprocess.run(
+            ["git", "show", f"{base_ref}:{rel_path}"],
+            cwd=str(repo_root),
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        return result.stdout
+    except (subprocess.CalledProcessError, FileNotFoundError, OSError):
+        return None
+
+
+def validate_trigger_preservation(
+    path: Path,
+    text: str,
+    base_ref: str | None = None,
+    repo_root: Path | None = None,
+) -> Iterable[Violation]:
+    """Diff quoted when_to_use phrases against a base ref.
+
+    Reports any phrase present in the base version but missing from the
+    current text as a SOFT routing-recall warning. Base ref defaults to
+    ``$SKILL_VALIDATOR_BASE_REF`` (then ``origin/main``). Silently
+    skipped when the base ref or the file at that ref isn't available.
+    """
+    import os
+
+    if base_ref is None:
+        base_ref = os.environ.get("SKILL_VALIDATOR_BASE_REF", "origin/main")
+
+    root = repo_root or find_repo_root()
+    try:
+        rel_path = str(path.resolve().relative_to(root))
+    except ValueError:
+        return
+
+    base_text = _git_show(base_ref, rel_path, root)
+    if base_text is None:
+        return
+
+    base_triggers = _extract_quoted_phrases(_extract_when_to_use(base_text))
+    new_triggers = _extract_quoted_phrases(_extract_when_to_use(text))
+    missing = base_triggers - new_triggers
+    for trigger in sorted(missing):
+        yield Violation(
+            path,
+            1,
+            f"trigger phrase dropped from when_to_use vs {base_ref}: {trigger!r}",
+            category=TRIGGER_PRESERVATION_CATEGORY,
+        )
+
+
+# ---------------------------------------------------------------------------
 # Orchestrator
 # ---------------------------------------------------------------------------
 
@@ -490,9 +697,11 @@ def run_validation(root: Path | None = None) -> list[Violation]:
             violations.append(Violation(path, None, f"cannot read file: {exc}"))
             continue
 
-        # Only SKILL.md files get frontmatter validation
+        # Only SKILL.md files get frontmatter + SOFT principle checks
         if path.name == "SKILL.md":
             violations.extend(validate_frontmatter(path, text))
+            violations.extend(validate_principle_compliance(path, text))
+            violations.extend(validate_trigger_preservation(path, text, repo_root=repo_root))
 
         # All skill files get link + placeholder validation
         violations.extend(validate_links(path, text, skill_dirs, doc_files))
@@ -506,18 +715,98 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Validate framework skill definitions.",
     )
-    parser.parse_args(argv)
+    parser.add_argument(
+        "--skip-categories",
+        default="",
+        help="Comma-separated list of violation categories to skip entirely.",
+    )
+    parser.add_argument(
+        "--strict",
+        action="store_true",
+        help="Promote SOFT categories (advisory) to hard failures.",
+    )
+    args = parser.parse_args(argv)
 
+    skip = {c.strip() for c in args.skip_categories.split(",") if c.strip()}
     violations = run_validation()
+    filtered = [v for v in violations if v.category not in skip]
 
-    if not violations:
+    if args.strict:
+        hard = filtered
+        soft: list[Violation] = []
+    else:
+        hard = [v for v in filtered if v.category not in SOFT_CATEGORIES]
+        soft = [v for v in filtered if v.category in SOFT_CATEGORIES]
+
+    if not filtered:
         print("skill-validator: OK (no violations)")
         return 0
 
-    print(f"skill-validator: {len(violations)} violation(s) found\n")
-    for v in violations:
-        print(v)
-    return 1
+    if soft:
+        _print_soft_warnings(soft)
+
+    if hard:
+        print(f"skill-validator: {len(hard)} violation(s) found\n")
+        for v in hard:
+            print(v)
+        return 1
+
+    return 0
+
+
+# ---------------------------------------------------------------------------
+# SOFT warning formatter
+# ---------------------------------------------------------------------------
+
+
+_SOFT_RULE_PREFIXES: tuple[str, ...] = (
+    "action-inventory",
+    "distinct-from",
+    "chain-handoff",
+    "parenthetical rationale",
+    "criteria-source",
+    "trigger phrase",
+)
+
+
+def _rule_name(message: str) -> str:
+    for prefix in _SOFT_RULE_PREFIXES:
+        if message.startswith(prefix):
+            return prefix
+    return "other"
+
+
+def _print_soft_warnings(soft: list[Violation]) -> None:
+    from collections import Counter, defaultdict
+
+    repo_root = find_repo_root()
+    by_file: dict[Path, list[Violation]] = defaultdict(list)
+    for v in soft:
+        by_file[v.path].append(v)
+
+    print(
+        f"skill-validator: {len(soft)} SOFT warning(s) across "
+        f"{len(by_file)} skill(s) — advisory, not blocking\n",
+        file=sys.stderr,
+    )
+
+    for path in sorted(by_file, key=str):
+        try:
+            rel = path.relative_to(repo_root)
+        except ValueError:
+            rel = path
+        warnings = by_file[path]
+        plural = "s" if len(warnings) > 1 else ""
+        print(f"  {rel}  ({len(warnings)} warning{plural})", file=sys.stderr)
+        for v in warnings:
+            print(f"    [{_rule_name(v.message)}] {v.message}", file=sys.stderr)
+        print(file=sys.stderr)
+
+    counter = Counter(_rule_name(v.message) for v in soft)
+    print("  summary by rule:", file=sys.stderr)
+    for rule, count in sorted(counter.items(), key=lambda x: (-x[1], x[0])):
+        print(f"    {rule:24s} {count}", file=sys.stderr)
+    print(file=sys.stderr)
 
 
 if __name__ == "__main__":

@@ -4,6 +4,8 @@
 
 - [skill-validator](#skill-validator)
   - [What it checks](#what-it-checks)
+    - [Hard rules (failure)](#hard-rules-failure)
+    - [SOFT advisories (warning, do not fail)](#soft-advisories-warning-do-not-fail)
   - [Run](#run)
   - [Design notes](#design-notes)
 
@@ -19,6 +21,8 @@ link integrity, and placeholder conventions.
 
 ## What it checks
 
+### Hard rules (failure)
+
 1. **YAML frontmatter** — Every `SKILL.md` must have a valid
    frontmatter block with required keys (`name`, `description`,
    `license`).
@@ -26,6 +30,24 @@ link integrity, and placeholder conventions.
    skill files and docs must point to existing files and anchors.
 3. **Placeholder convention** — Skill docs must use `<PROJECT>`,
    `<upstream>`, and `<tracker>` instead of hardcoded project names.
+
+### SOFT advisories (warning, do not fail)
+
+4. **Principle compliance** — Heuristic warnings when frontmatter
+   carries content the LLM router doesn't need:
+   - **Action-inventory** in `description` (≥ 5 commas in one sentence)
+   - **Distinct-from-sibling-skill** clauses (`Unlike`, `Distinct from`, `Counterpart to`, `rather than`)
+   - **Chain-handoff** narrative (`Hands off to`, `ready for X to take over`)
+   - **Parenthetical rationale** (parens containing `typically`, `implies`, `because`, `since`, `is required first`, `needs to`, `requires`)
+   - **Criteria-source path** (`process step N`, `Step Na`, ``docs/X.md``, `documented in …`)
+5. **Trigger-phrase preservation** — Compares quoted phrases in
+   `when_to_use` against a base ref (default `origin/main`) and
+   warns when any phrase has been dropped. Silently skipped when
+   git or the base ref is unavailable. Override via
+   `SKILL_VALIDATOR_BASE_REF`.
+
+SOFT advisories are surfaced as warnings on stderr without failing
+the run. The reviewer has the final say on borderline cases.
 
 ## Run
 
@@ -40,6 +62,12 @@ Or install and run as CLI:
 ```bash
 uv run --project tools/skill-validator --group dev skill-validate
 ```
+
+CLI flags:
+
+- `--strict` — promote SOFT categories to hard failures.
+- `--skip-categories principle_compliance,trigger_preservation` —
+  skip given violation categories entirely (silent).
 
 ## Design notes
 

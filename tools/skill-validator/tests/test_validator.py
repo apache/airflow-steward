@@ -26,6 +26,9 @@ import pytest
 from skill_validator import (
     FORBIDDEN_PATTERNS,
     MAX_METADATA_CHARS,
+    PRINCIPLE_CATEGORY,
+    SOFT_CATEGORIES,
+    TRIGGER_PRESERVATION_CATEGORY,
     extract_headings,
     find_repo_root,
     parse_frontmatter,
@@ -35,6 +38,8 @@ from skill_validator import (
     validate_frontmatter,
     validate_links,
     validate_placeholders,
+    validate_principle_compliance,
+    validate_trigger_preservation,
 )
 
 # ---------------------------------------------------------------------------
@@ -418,9 +423,201 @@ class TestRunValidation:
 
         This is the primary integration test: it exercises every
         SKILL.md, every supporting file, and every internal link.
+
+        SOFT categories (principle_compliance, trigger_preservation)
+        are excluded — they are advisory and surface as warnings, not
+        failures. The main runtime gate is `--strict`.
         """
-        violations = run_validation()
+        from skill_validator import SOFT_CATEGORIES
+
+        violations = [v for v in run_validation() if v.category not in SOFT_CATEGORIES]
         if violations:
             # Pretty-print the first few failures so pytest output is useful
             lines = [str(v) for v in violations[:10]]
             pytest.fail(f"{len(violations)} validation violation(s) found:\n" + "\n".join(lines))
+
+
+# ---------------------------------------------------------------------------
+# Principle-compliance SOFT warnings
+# ---------------------------------------------------------------------------
+
+
+def _fm(description: str = "", when_to_use: str = "") -> str:
+    parts = ["---", "name: test-skill", "license: Apache-2.0"]
+    if description:
+        parts.append(f"description: |\n  {description}")
+    if when_to_use:
+        parts.append(f"when_to_use: |\n  {when_to_use}")
+    parts.append("---")
+    parts.append("# body")
+    return "\n".join(parts) + "\n"
+
+
+class TestPrincipleCompliance:
+    def test_action_inventory_in_description_warned(self) -> None:
+        text = _fm(description="Does a, b, c, d, e, f, and finally g.")
+        violations = list(validate_principle_compliance(Path("skill.md"), text))
+        msgs = [v.message for v in violations]
+        assert any("action-inventory" in m for m in msgs)
+        assert all(v.category == PRINCIPLE_CATEGORY for v in violations)
+
+    def test_action_inventory_below_threshold_silent(self) -> None:
+        text = _fm(description="Does a, b, and c.")  # 2 commas
+        violations = list(validate_principle_compliance(Path("skill.md"), text))
+        assert not any("action-inventory" in v.message for v in violations)
+
+    def test_distinct_from_clause_warned(self) -> None:
+        text = _fm(description="Walks a maintainer through review. Distinct from triage skill.")
+        violations = list(validate_principle_compliance(Path("skill.md"), text))
+        assert any("distinct-from" in v.message for v in violations)
+
+    def test_unlike_clause_warned(self) -> None:
+        text = _fm(description="Unlike security-issue-import, no Gmail involved.")
+        violations = list(validate_principle_compliance(Path("skill.md"), text))
+        assert any("distinct-from" in v.message for v in violations)
+
+    def test_chain_handoff_warned(self) -> None:
+        text = _fm(description="Does the thing. Hands off to security-issue-sync after.")
+        violations = list(validate_principle_compliance(Path("skill.md"), text))
+        assert any("chain-handoff" in v.message for v in violations)
+
+    def test_ready_for_x_to_take_over_warned(self) -> None:
+        text = _fm(description="Lands the tracker, ready for security-cve-allocate to take over.")
+        violations = list(validate_principle_compliance(Path("skill.md"), text))
+        assert any("chain-handoff" in v.message for v in violations)
+
+    def test_parenthetical_rationale_warned(self) -> None:
+        text = _fm(description="Closes the tracker (a separate REJECT flow is required first).")
+        violations = list(validate_principle_compliance(Path("skill.md"), text))
+        assert any("parenthetical rationale" in v.message for v in violations)
+
+    def test_parenthetical_typically_warned(self) -> None:
+        text = _fm(description="Merges two trackers (typically discovered independently).")
+        violations = list(validate_principle_compliance(Path("skill.md"), text))
+        assert any("parenthetical rationale" in v.message for v in violations)
+
+    def test_neutral_parenthetical_not_warned(self) -> None:
+        """A spec-style paren like (`<tracker>`, `<upstream>`) should not trip the rule."""
+        text = _fm(description="Use placeholders (`<tracker>`, `<upstream>`, `<security-list>`).")
+        violations = list(validate_principle_compliance(Path("skill.md"), text))
+        assert not any("parenthetical rationale" in v.message for v in violations)
+
+    def test_criteria_source_doc_path_warned(self) -> None:
+        text = _fm(description="Walks the checklist documented in `docs/setup/agents.md`.")
+        violations = list(validate_principle_compliance(Path("skill.md"), text))
+        assert any("criteria-source" in v.message for v in violations)
+
+    def test_criteria_source_process_step_warned(self) -> None:
+        text = _fm(when_to_use='Invoke after "consensus reached" — typically after process step 6.')
+        violations = list(validate_principle_compliance(Path("skill.md"), text))
+        assert any("criteria-source" in v.message for v in violations)
+
+    def test_criteria_source_step_with_letter_warned(self) -> None:
+        text = _fm(when_to_use='Invoke when "duplicate" surfaces at Step 2a.')
+        violations = list(validate_principle_compliance(Path("skill.md"), text))
+        assert any("criteria-source" in v.message for v in violations)
+
+    def test_clean_frontmatter_silent(self) -> None:
+        text = _fm(
+            description="Triage open PRs and propose a disposition.",
+            when_to_use='Invoke when a maintainer says "triage the PR queue".',
+        )
+        violations = list(validate_principle_compliance(Path("skill.md"), text))
+        assert violations == []
+
+
+# ---------------------------------------------------------------------------
+# Trigger-phrase non-regression
+# ---------------------------------------------------------------------------
+
+
+class TestTriggerPreservation:
+    def test_unavailable_base_ref_no_op(self, tmp_path: Path) -> None:
+        """When git or the base ref isn't reachable, the check returns no violations."""
+        skill = tmp_path / "SKILL.md"
+        skill.write_text(_fm(when_to_use='Invoke when "trim me" is said.'), encoding="utf-8")
+        violations = list(
+            validate_trigger_preservation(
+                skill,
+                skill.read_text(encoding="utf-8"),
+                base_ref="nonexistent/ref/__nope__",
+                repo_root=tmp_path,
+            )
+        )
+        # No git history at *all* for tmp_path — silently no-op.
+        assert violations == []
+
+    def test_quoted_phrase_diff_reports_missing(self, tmp_path: Path) -> None:
+        """Initialise a tiny git repo and detect a dropped trigger."""
+        import subprocess
+
+        # Skip cleanly if git isn't available in the test environment.
+        try:
+            subprocess.run(
+                ["git", "init", "-q"],
+                cwd=str(tmp_path),
+                check=True,
+                capture_output=True,
+            )
+            subprocess.run(
+                ["git", "-c", "user.email=t@t", "-c", "user.name=t", "config", "commit.gpgsign", "false"],
+                cwd=str(tmp_path),
+                check=True,
+                capture_output=True,
+            )
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            pytest.skip("git not available")
+
+        skills_dir = tmp_path / ".claude" / "skills"
+        skills_dir.mkdir(parents=True)
+        skill = skills_dir / "demo" / "SKILL.md"
+        skill.parent.mkdir()
+
+        # Base version has both triggers
+        skill.write_text(
+            _fm(when_to_use='Invoke when "alpha" or "beta" is said.'),
+            encoding="utf-8",
+        )
+        subprocess.run(["git", "add", "-A"], cwd=str(tmp_path), check=True, capture_output=True)
+        subprocess.run(
+            [
+                "git",
+                "-c",
+                "user.email=t@t",
+                "-c",
+                "user.name=t",
+                "commit",
+                "-q",
+                "-m",
+                "init",
+            ],
+            cwd=str(tmp_path),
+            check=True,
+            capture_output=True,
+        )
+
+        # Current version drops "beta"
+        skill.write_text(_fm(when_to_use='Invoke when "alpha" is said.'), encoding="utf-8")
+
+        violations = list(
+            validate_trigger_preservation(
+                skill,
+                skill.read_text(encoding="utf-8"),
+                base_ref="HEAD",
+                repo_root=tmp_path,
+            )
+        )
+        assert len(violations) == 1
+        assert violations[0].category == TRIGGER_PRESERVATION_CATEGORY
+        assert "'beta'" in violations[0].message
+
+
+# ---------------------------------------------------------------------------
+# SOFT category exposure
+# ---------------------------------------------------------------------------
+
+
+class TestSoftCategories:
+    def test_soft_categories_set(self) -> None:
+        assert PRINCIPLE_CATEGORY in SOFT_CATEGORIES
+        assert TRIGGER_PRESERVATION_CATEGORY in SOFT_CATEGORIES
