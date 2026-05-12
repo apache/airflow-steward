@@ -246,14 +246,30 @@ Framework changes go via PR to `apache/airflow-steward`.
 This directory is **committed** (overrides ship with the
 adopter repo).
 
-## Step 9b — Scaffold `.apache-steward-overrides/user.md` (FRESH only)
+## Step 9b — Scaffold `user.md` (FRESH only)
 
-Create `<repo-root>/.apache-steward-overrides/user.md` with a
-project-agnostic template. The security skills read this file at
-run-time to resolve per-user preferences (PMC status, local clone
-paths, optional tool backends). If the file is missing, the skills
-fall back to interactive prompting and offer to save the answer
-back into this file.
+Create the operator's per-user configuration file. The security
+skills read it at run-time to resolve per-user preferences (PMC
+status, local clone paths, optional tool backends). If the file
+is missing, the skills fall back to interactive prompting and
+offer to save the answer back into this file.
+
+**Recommended location: `~/.config/apache-steward/user.md`** — the
+OS-conventional per-user config dir. One file, shared across every
+worktree of every adopter project on the operator's machine, so
+identity-and-tool-picks stay coherent without symlinks or
+per-worktree bootstrap.
+
+**Fallback location: `<repo-root>/.apache-steward-overrides/user.md`** —
+the legacy per-project location. Adopters with an existing
+project-local `user.md` keep working without action; new adopters
+should prefer the per-user location above.
+
+The full resolution order (env override → per-user → per-project)
+is documented in [`AGENTS.md` → *Per-project and per-user
+configuration* → *`user.md` resolution order*](../../../AGENTS.md#usermd-resolution-order).
+
+Use this project-agnostic template:
 
 ```markdown
 # Per-user configuration for apache-steward
@@ -297,6 +313,21 @@ setup; the skills skip any block that is missing or marked `TODO`.
   PonyMail should query (e.g. `["security@<project>.apache.org"]`).
   Only used when `enabled: true`.
 ```
+
+**Where to write the file.** Default to
+`~/.config/apache-steward/user.md` for new adopters (the per-user
+canonical location — shared across every worktree and every
+adopter project on the operator's machine). If the operator
+already has `<repo-root>/.apache-steward-overrides/user.md` from a
+previous setup, leave it alone — skills resolve the per-project
+file as a fallback, no migration needed. If both exist, the
+per-user file wins; surface the conflict to the operator so they
+can pick one and delete the other.
+
+Create the parent directory with `mkdir -p ~/.config/apache-steward/`
+before writing, then write the file at mode `0600` (the directory at
+`0700`) since it holds personal preferences and — eventually —
+identity that the operator may not want world-readable.
 
 Show the file to the user and offer to fill in the `TODO` fields.
 Do **not** ask one blind question per field — auto-detect what you
