@@ -49,16 +49,28 @@ relevant override file rather than unadopting.
 
 1. Confirm we are in a git repo
    (`git rev-parse --show-toplevel`).
-2. Confirm we are **not** in `apache/airflow-steward` itself
+2. **Confirm we are in the main checkout, not a git worktree.**
+   Compare `git rev-parse --git-dir` against
+   `git rev-parse --git-common-dir`. If different, stop with:
+
+   > *"`unadopt` runs in the main checkout, not a worktree.
+   > Unadoption removes the shared snapshot every worktree
+   > points at; running from a worktree would leave the main
+   > and other worktrees in a half-removed state. From the
+   > main: `cd <main-path> && /setup-steward unadopt`. To
+   > undo just this worktree's symlink without touching the
+   > main, `rm <worktree>/.apache-steward` manually."*
+
+3. Confirm we are **not** in `apache/airflow-steward` itself
    (`git remote get-url origin`); refuse if it resolves to the
    framework — the framework is not "adopted into" itself.
-3. Confirm `<committed-lock>` (`.apache-steward.lock`) is
+4. Confirm `<committed-lock>` (`.apache-steward.lock`) is
    present. If missing, the repo is not adopted — surface and
    stop. (If only the snapshot is present without a committed
    lock, the adopter ran the install recipe but never
    completed `/setup-steward adopt`; treat that as not-yet-
    adopted and stop with the same message.)
-4. Detect the adopter's skills-dir convention per
+5. Detect the adopter's skills-dir convention per
    [`conventions.md`](conventions.md). Pin the result as
    `<adopter-skills-dir>` for the rest of this flow.
 
