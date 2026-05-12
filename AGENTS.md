@@ -275,7 +275,7 @@ corresponding prompts when a field is set. Fields that are unset
 fall back to runtime prompts — nothing is broken if `user.md` is
 missing; it is an opt-in convenience.
 
-#### `user.md` resolution order
+### `user.md` resolution order
 
 The file can live in **one of three locations**. Skills resolve in
 this order, **first match wins**:
