@@ -12,8 +12,7 @@ description: |
                                 per the committed lock
                                 (main-checkout only)
     `/setup-steward worktree-init` — symlink a worktree's
-                                snapshot to the main's so it
-                                shares one framework state
+                                snapshot to the main's
     `/setup-steward verify`  — health check + drift detection
     `/setup-steward override <skill>` — open or scaffold an
                                 agentic override in
