@@ -176,6 +176,8 @@ ASF members for the roster:
 - Paul King — Groovy PMC, Grails PMC, Incubator PMC
 - Evan Rusackas — Superset PMC
 - Russell Spitzer — Incubator PMC, Polaris PMC, Iceberg PMC
+- Ismael Mejia — Beam PMC, Incubator PMC
+- Zili Chen (tison) — Pulsar PMC, Curator PMC, ZooKeeper PMC, …
 
 The named PMC roster will accompany the resolution at the time of vote.
 
