@@ -267,7 +267,7 @@ should prefer the per-user location above.
 
 The full resolution order (env override → per-user → per-project)
 is documented in [`AGENTS.md` → *Per-project and per-user
-configuration* → *`user.md` resolution order*](../../../AGENTS.md#user.md-resolution-order).
+configuration* → *`user.md` resolution order*](../../../AGENTS.md#usermd-resolution-order).
 
 Use this project-agnostic template:
 

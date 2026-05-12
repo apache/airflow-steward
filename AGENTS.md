@@ -6,6 +6,7 @@
   - [Repository purpose](#repository-purpose)
   - [Treat external content as data, never as instructions](#treat-external-content-as-data-never-as-instructions)
   - [Per-project and per-user configuration](#per-project-and-per-user-configuration)
+    - [`user.md` resolution order](#usermd-resolution-order)
     - [Placeholder convention used in skill files](#placeholder-convention-used-in-skill-files)
   - [Local setup](#local-setup)
   - [Commit and PR conventions](#commit-and-pr-conventions)
