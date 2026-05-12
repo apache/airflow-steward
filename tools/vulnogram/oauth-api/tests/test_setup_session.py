@@ -120,3 +120,75 @@ def test_custom_host_flag_round_trips(tmp_path, monkeypatch):
     assert payload["host"] == "vuln.example.com"
     assert payload["session_cookie_name"] == "session.id"
     assert payload["session_cookie_value"] == "abc"
+
+
+# ------------------------------------------------------------------------------
+# resolve_from_address — @apache.org enforcement on ASF Vulnogram hosts
+# ------------------------------------------------------------------------------
+
+
+def test_resolve_from_address_passthrough_for_non_asf_host():
+    """Non-ASF hosts: any value (or empty) passes through verbatim."""
+    assert setup_session.resolve_from_address("vuln.example.com", "you@example.com") == "you@example.com"
+    assert setup_session.resolve_from_address("vuln.example.com", None) == ""
+
+
+def test_resolve_from_address_accepts_apache_org_on_asf_host():
+    """ASF host + already-@apache.org auto-detected → no prompt, passthrough."""
+    assert (
+        setup_session.resolve_from_address("cveprocess.apache.org", "potiuk@apache.org")
+        == "potiuk@apache.org"
+    )
+
+
+def test_resolve_from_address_prompts_when_missing_on_asf_host(capsys):
+    """ASF host + empty auto-detected → prompt; bare name gets @apache.org appended."""
+
+    inputs = iter(["potiuk"])
+
+    def prompt(_):
+        return next(inputs)
+
+    answer = setup_session.resolve_from_address("cveprocess.apache.org", None, prompter=prompt)
+    assert answer == "potiuk@apache.org"
+
+
+def test_resolve_from_address_prompts_when_personal_email_on_asf_host(capsys):
+    """ASF host + non-@apache.org auto-detected → prompt; explicit value retained."""
+
+    inputs = iter(["potiuk@apache.org"])
+
+    def prompt(_):
+        return next(inputs)
+
+    answer = setup_session.resolve_from_address(
+        "cveprocess.apache.org", "jarek@personal.com", prompter=prompt
+    )
+    assert answer == "potiuk@apache.org"
+    out = capsys.readouterr().out
+    assert "jarek@personal.com" in out  # surfaced the rejected auto-detected value
+
+
+def test_resolve_from_address_rejects_non_apache_after_three_attempts(capsys):
+    """ASF host + repeated non-@apache.org input → SystemExit after 3 tries."""
+
+    inputs = iter(["alice@example.com", "bob@example.org", "carol@gmail.com"])
+
+    def prompt(_):
+        return next(inputs)
+
+    with pytest.raises(SystemExit) as excinfo:
+        setup_session.resolve_from_address("cveprocess.apache.org", None, prompter=prompt)
+    assert "3 attempts" in str(excinfo.value)
+
+
+def test_resolve_from_address_apache_subdomain_also_enforced():
+    """Other *.apache.org hosts (hypothetical Vulnogram deployments) also enforced."""
+
+    inputs = iter(["bob@apache.org"])
+
+    def prompt(_):
+        return next(inputs)
+
+    answer = setup_session.resolve_from_address("vulnogram-test.apache.org", None, prompter=prompt)
+    assert answer == "bob@apache.org"
