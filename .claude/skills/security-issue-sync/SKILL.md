@@ -1620,7 +1620,7 @@ will change and *why*. Group them by category:
   `gh api -X PATCH` on the existing comment's REST id (variant
   flip). Neither path PATCHes the rollup.
 
-  **Recap.** Surface the comment URL (new or PATCHed) in the recap
+  **Recap.** Surface the comment URL (new or PATCH-edited) in the recap
   (Step 6) so the user can click through and verify the result.
   When the path was a PATCH, the recap notes which variant the
   body now carries (*"flipped to OAuth-pushed variant after this
