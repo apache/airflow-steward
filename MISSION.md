@@ -162,21 +162,22 @@ PMC composition matters more than most because the project's social stakes are h
 
 ASF members for the roster:
 
-- Jarek Potiuk — Airflow PMC
-- Piotr Karwasz — Log4J PMC
-- Elad Kalif — Airflow PMC
-- Matthew Topol — Arrow PMC, Iceberg PMC
-- Pavan Kumar — Airflow PMC
-- Amogh Desai — Airflow PMC
-- Andrew Musselman — Mahout PMC
-- Justin Mclean — Incubator PMC, Training PMC
-- Jean-Baptiste Onofré — Incubator PMC, Polaris PMC, …
-- Paul King — Groovy PMC, Grails PMC, Incubator PMC
-- Evan Rusackas — Superset PMC
-- Russell Spitzer — Incubator PMC, Polaris PMC, Iceberg PMC
-- Ismael Mejia — Beam PMC, Incubator PMC
-- Zili Chen (tison) — Pulsar PMC, Curator PMC, ZooKeeper PMC, …
-- James Fredley — Grails PMC
+- Jarek Potiuk (potiuk) — Airflow PMC
+- Piotr Karwasz (pkarwasz) — Log4J PMC
+- Elad Kalif (eladkal) — Airflow PMC
+- Matthew Topol (zeroshade) — Arrow PMC, Iceberg PMC
+- Pavan Kumar Gopidesu (gopidesu) — Airflow PMC
+- Amogh Desai (amoghdesai) — Airflow PMC
+- Andrew Musselman (akm) — Mahout PMC
+- Justin Mclean (jmclean) — Incubator PMC, Training PMC
+- Jean-Baptiste Onofré (jbonofre) — Incubator PMC, Polaris PMC, …
+- Paul King (paulk) — Groovy PMC, Grails PMC, Incubator PMC
+- Evan Rusackas (rusackas) — Superset PMC
+- Russell Spitzer (russellspitzer) — Incubator PMC, Polaris PMC, Iceberg PMC
+- Ismael Mejia (iemejia) — Beam PMC, Incubator PMC
+- Zili Chen / tison (tison) — Pulsar PMC, Curator PMC, ZooKeeper PMC, …
+- James Fredley (jamesfredley) — Grails PMC
+- Calvin Kirs (kirs) — Doris PMC, Geode PMC
 
 The named PMC roster will accompany the resolution at the time of vote.
 
