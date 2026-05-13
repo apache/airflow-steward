@@ -46,16 +46,14 @@ The Apache Software Foundation establishes the Apache `<PROJECT_NAME>` Project a
 
 ## Proposed Names
 
-The initial committee will discuss and vote on the final name. Starting candidates (the list isn't closed — anyone on the initial committee can pitch a different name):
+The founding-PMC bikeshed ran 8–12 May 2026; convergence is on **four names in priority order**, ratified by a [LAZY CONSENSUS] call closing **Friday 15 May 2026, 12:00 UTC** and a parallel `trademarks@apache.org` review. The first of these to clear `trademarks@`'s formal review becomes the final name:
 
-- Apache Mentor
-- Apache Guild
-- Apache Minerva
-- Apache Magpie
-- Apache Beacon
-- Apache Compass
-- Apache Lexicon
-- Apache Polyglot
+1. **Apache Magpie** — primary
+2. **Apache Beacon** — backup 1
+3. **Apache Guild** — backup 2
+4. **Apache Lichen** — backup 3
+
+The Board resolution will carry whichever name clears `trademarks@` before **Friday 15 May evening**.
 
 ## Rationale
 
