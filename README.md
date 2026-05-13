@@ -20,29 +20,30 @@
 
 # Apache Steward (to be renamed)
 
-> **Heads-up — rename in flight, name not yet chosen.** This
-> repository is currently served from `apache/airflow-steward`
-> and is going to be renamed to a **different** name — *not*
-> `apache/steward`. The current name carries `airflow` for
-> legacy reasons, but the framework is project-agnostic (it
-> stewards multiple ASF project workflows, not just Airflow's),
-> so the working group steering it will pick a new name that
-> reflects that. The final name will be chosen by **discussion
-> followed by a poll** among the working-group members.
+> **Heads-up — rename in flight, [LAZY CONSENSUS] in progress.**
+> This repository is currently served from
+> `apache/airflow-steward` and is going to be renamed to a
+> **different** name — *not* `apache/steward`. The current name
+> carries `airflow` for legacy reasons, but the framework is
+> project-agnostic (it stewards multiple ASF project workflows,
+> not just Airflow's), so the working group steering it picked
+> a new name that reflects that.
 >
-> **Current candidate names** (the list is open for additions
-> during the **week of 4–9 May 2026**, after which the poll
-> opens):
+> The founding-PMC bikeshed ran **8–12 May 2026**; convergence
+> is on four names in priority order, with a [LAZY CONSENSUS]
+> call closing **Friday 15 May 2026, 12:00 UTC** and a parallel
+> `trademarks@apache.org` review in flight. The first of these
+> to clear `trademarks@`'s formal review becomes the final name:
 >
-> - Apache Mentor
-> - Apache Reeve
-> - Apache Guild
-> - Apache Minerva
-> - Apache Magpie
-> - Apache Beacon
-> - Apache Compass
-> - Apache Lexicon
-> - Apache Polyglot
+> 1. **Apache Magpie**  — primary
+> 2. **Apache Beacon**  — backup 1
+> 3. **Apache Guild**   — backup 2
+> 4. **Apache Lichen**  — backup 3
+>
+> The Board resolution establishing the project as an ASF
+> Top-Level Project is scheduled for **Wed 20 May 2026** and
+> will carry whichever name clears `trademarks@` before
+> Friday 15 May evening.
 >
 > Until the rename lands on the GitHub side, every clone URL and
 > CI integration still uses the legacy `apache/airflow-steward`
