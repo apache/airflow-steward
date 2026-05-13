@@ -5,13 +5,13 @@ description: |
   Walk a maintainer through deep, sequential code review of open pull requests on the configured `<upstream>` repo.
   Defaults to the **"my reviews"** queue (the union of five maintainer signals — see the Inputs table); selectors can
   narrow to a single PR, an area label, or a collaborator subset. Drafts an `approve` / `request-changes` / `comment`
-  review per PR and posts on the maintainer's confirmation. Deep-review counterpart to the triage skill.
+  review per PR and posts on the maintainer's confirmation.
 when_to_use: |
   Invoke when a maintainer says "review my PRs", "go through my review queue", "review PR NNN", "review the
   area:scheduler PRs", "do my review pass", or any variation on "look over PRs I'm responsible for, one at a time."
   Also fires on "review my CODEOWNER PRs", "pair this PR with Codex / adversarial review", and "review the
-  ready-for-maintainer-review queue". Distinct from `pr-management-triage` (which decides *whether* to engage);
-  this skill runs **after** triage has produced reviewable PRs.
+  ready-for-maintainer-review queue". Use after `pr-management-triage` has produced reviewable PRs; skip when triage
+  has not yet engaged the PR.
 argument-hint: "[pr:N] [area:LBL] [collab:true|false] [team:NAME] [ready] [dry-run]"
 license: Apache-2.0
 ---

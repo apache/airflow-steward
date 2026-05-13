@@ -5,12 +5,11 @@ description: |
   Open a tracking issue in <tracker> for a security-relevant fix that
   has already been opened (or merged) as a public PR in <upstream>,
   in the case where there is no inbound `<security-list>`
-  report. The tracker lands in the `Assessed` board column (the
-  team-deliberate import implies the security assessment has already
-  happened) with the scope label applied, `pr created` / `pr merged`
-  reflecting the PR's state, and `Remediation developer` / `PR with
-  the fix` body fields populated from the PR — ready for
-  `security-cve-allocate` to take over.
+  report. The tracker lands in the `Assessed` board column with
+  the scope label applied, `pr created` / `pr merged` reflecting
+  the PR's state, and `Remediation developer` / `PR with the
+  fix` body fields populated from the PR. Pairs with
+  `security-cve-allocate` afterwards.
 when_to_use: |
   Invoke when a security team member says "import a tracker from
   PR <N>", "open a tracker for <upstream>#NNN", "we need a CVE

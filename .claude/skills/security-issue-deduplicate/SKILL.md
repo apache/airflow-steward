@@ -3,18 +3,16 @@ name: security-issue-deduplicate
 mode: Triage
 description: |
   Merge two <tracker> tracking issues that describe the same
-  root-cause vulnerability (typically discovered independently by two
-  reporters, arriving via different channels), preserving every
-  reporter's credit, every mailing-list thread reference, and every
-  independent attack-vector description. Updates the kept issue's body
-  in place, closes the duplicate with the `duplicate` label, and
-  regenerates the CVE JSON attachment so both finders land in
-  `credits[]`.
+  root-cause vulnerability, preserving every reporter's credit,
+  every mailing-list thread reference, and every independent
+  attack-vector description. Updates the kept issue's body in place,
+  closes the duplicate with the `duplicate` label, and regenerates
+  the CVE JSON attachment so both finders land in `credits[]`.
 when_to_use: |
   Invoke when a security team member says "dedupe #NNN and #MMM",
   "merge #MMM into #NNN", "#MMM is a duplicate of #NNN", or when the
-  security-issue-import skill's Step 2a surfaces a STRONG match (GHSA
-  ID collision) between a new report and an existing tracker. Also
+  security-issue-import skill surfaces a STRONG match (GHSA ID
+  collision) between a new report and an existing tracker. Also
   appropriate as a periodic cleanup action when a triager spots two
   open trackers describing the same bug from different angles.
 argument-hint: "[kept-issue] [duplicate-issue]"

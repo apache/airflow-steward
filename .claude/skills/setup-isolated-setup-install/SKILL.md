@@ -2,12 +2,10 @@
 name: setup-isolated-setup-install
 description: |
   Guide an adopter through the first-time install of the
-  framework's secure agent setup — pinned system tools
-  (`bubblewrap`, `socat`, `claude-code`), project + user-scope
-  `.claude/settings.json` wiring, the `claude-iso` clean-env
-  wrapper, and the user-scope `sandbox-bypass-warn` /
-  `sandbox-status-line` hooks. Walks every step interactively;
-  never auto-runs sudo, shell-rc edits, or settings overwrites.
+  framework's secure agent setup (bubblewrap + socat +
+  claude-code, sandbox/permissions/clean-env layers). Walks
+  every step interactively; never auto-runs sudo, shell-rc
+  edits, or settings overwrites.
 when_to_use: |
   Invoke when the user says "set up the secure agent setup",
   "first-time install of the secure config", "install the

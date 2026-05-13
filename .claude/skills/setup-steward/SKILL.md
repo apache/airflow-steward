@@ -19,10 +19,9 @@ description: |
                                 `.apache-steward-overrides/`
     `/setup-steward unadopt` — reverse the adoption (snapshot,
                                locks, symlinks, hook, doc
-                               sections, this skill itself);
-                               preserves `.apache-steward-
-                               overrides/` by default
-                               (main-checkout only)
+                               sections); preserves
+                               `.apache-steward-overrides/` by
+                               default (main-checkout only)
 when_to_use: |
   Invoke when the user says "adopt apache-steward", "adopt
   apache/airflow-steward", "set up steward in this repo",

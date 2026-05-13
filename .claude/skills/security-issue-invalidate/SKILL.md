@@ -14,13 +14,12 @@ description: |
 when_to_use: |
   Invoke when a security team member says "close NN as invalid",
   "invalidate NN", "mark NN invalid", "NN is not a security
-  issue" — typically after a Step 5 consensus-invalid decision
-  in the issue's discussion. Not appropriate when the team has
-  not yet reached consensus, when a CVE has already been allocated
-  (a separate Vulnogram REJECT flow is required first), or when
-  the advisory has already shipped (closing as invalid then is a
-  retraction with public consequences and needs explicit team
-  escalation).
+  issue" — typically after a consensus-invalid decision in the
+  issue's discussion. Skip when the team has not yet reached
+  consensus, when a CVE has already been allocated (a separate
+  Vulnogram REJECT flow runs first), or when the advisory has
+  already shipped — closing as invalid then is a retraction with
+  public consequences and warrants explicit team escalation.
 argument-hint: "[issue-number]"
 license: Apache-2.0
 ---

@@ -18,7 +18,7 @@ when_to_use: |
   the team has a rough consensus on what the fix should look
   like. Skip for issues still being assessed, reports not yet
   classified as valid vulnerabilities, or changes that require
-  the private-PR fallback in process step 9 of README.md.
+  the private-PR fallback path.
 argument-hint: "[issue-number]"
 license: Apache-2.0
 ---

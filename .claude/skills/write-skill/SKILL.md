@@ -1,18 +1,13 @@
 ---
 name: write-skill
 description: |
-  Author a new skill for the Apache Steward framework, or update an
-  existing one. Walks the user through the framework-specific skill
-  shape — YAML frontmatter (with `license: Apache-2.0`), bundled
-  resources (scripts / references / assets), placeholder convention
-  (`<tracker>`, `<upstream>`, `<security-list>`), the
-  Adopter-overrides + Snapshot-drift preamble every framework skill
-  carries, the prompt-injection-defence patterns required of every
-  skill that ingests external content (per the 2026-05 audit
-  recorded at the gist link in the skill body), and the Privacy-LLM
-  gate-check boilerplate. Scaffolds the skill via `init_skill.py`
-  and validates via the framework's existing
+  Author a new skill for the Apache Steward framework, or update
+  an existing one. Walks the user through the framework's skill
+  shape (frontmatter, resources, placeholder convention,
+  prompt-injection defences, Privacy-LLM gate-check) and
+  validates via the framework's existing
   [`tools/skill-validator`](../../../tools/skill-validator/).
+  Scaffolds new skills via `init_skill.py`.
 when_to_use: |
   Invoke when the user says "write a skill", "create a new skill",
   "add a skill for X", "I want to make a skill that does Y", or

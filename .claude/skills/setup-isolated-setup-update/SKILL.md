@@ -1,16 +1,11 @@
 ---
 name: setup-isolated-setup-update
 description: |
-  Surface drift between the user's installed secure agent setup and
-  the framework's latest. Reports framework-checkout updates
-  (`git pull` on `airflow-steward`), pinned-tool upgrade candidates
-  (`bubblewrap`, `socat`, `claude-code` newer than the manifest's
-  7-day-cooldown floor), drift between the user-scope script
-  copies (`~/.claude/scripts/`, `~/.claude/agent-isolation/`) and
-  the framework's source-of-truth, and any newly-allowed denial
-  command that should still be denied. Read-only — surfaces
-  candidates and diffs, never auto-applies. The user decides what
-  to update.
+  Surface drift between the user's installed secure agent setup
+  and the framework's latest (framework checkout, pinned tools,
+  user-scope script copies, denial commands). Read-only —
+  surfaces candidates and diffs, never auto-applies. The user
+  decides what to update.
 when_to_use: |
   Invoke when the user says "update secure setup", "check for
   secure-config drift", "is my setup at the framework's latest?",
