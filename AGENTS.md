@@ -328,6 +328,10 @@ the active configuration before executing any command:
 | `<tracker>` | The GitHub slug of the tracker repo (example: `airflow-s/airflow-s` for the Apache Airflow security team). | `<project-config>/project.md` → `tracker_repo` |
 | `<upstream>` | The GitHub slug of the upstream codebase the fixes land in (example: `apache/airflow`). | `<project-config>/project.md` → `upstream_repo` |
 | `<security-list>` | The project's security mailing list (example: `security@airflow.apache.org`). | `<project-config>/project.md` → `mailing_lists.security` |
+| `<issue-tracker>` | URL of the project's general-issue tracker, distinct from the security tracker (example: `https://issues.apache.org/jira` for JIRA-based projects). | `<project-config>/issue-tracker-config.md` → `url` |
+| `<issue-tracker-project>` | Project key within the issue tracker (example: `FOO` for a JIRA project, or `owner/repo` for GitHub Issues). | `<project-config>/issue-tracker-config.md` → `project_key` |
+| `<runtime>` | Recipe for invoking the project's runtime on a single source file. | `<project-config>/runtime-invocation.md` |
+| `<default-branch>` | The upstream repo's default branch (example: `master` for projects still using the older default, `main` for newer projects). | `<project-config>/project.md` → `upstream_default_branch` |
 | `<N>` | An issue or PR number. | The user's input to the skill |
 | `<CVE-ID>` | A CVE identifier of the form `CVE-YYYY-NNNNN`. | Per-tracker |
 

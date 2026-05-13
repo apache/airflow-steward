@@ -1,0 +1,51 @@
+// SPDX-License-Identifier: Apache-2.0
+// https://www.apache.org/licenses/LICENSE-2.0
+
+/**
+ * Cross-type probe template — exercise the same expression across
+ * a family of backing types.
+ *
+ * Family: List | Object[] | int[] | String
+ * Issue:  <ISSUE-KEY>
+ *
+ * USAGE:
+ *   1. Replace <EXPRESSION> with the expression under test in each probe.
+ *   2. Run: groovy cross-type-probe.groovy
+ *   3. The output table shows per-type behaviour; record in verdict.json
+ *      under cross_type_probe.
+ *
+ * The probe is read-only; it produces a comparison table only.
+ */
+
+def probes = [
+    'List'           : { ->
+        def x = [1, 2, 3, 4, 5] as List
+        return <EXPRESSION>
+    },
+    'Object[]'       : { ->
+        def x = [1, 2, 3, 4, 5] as Object[]
+        return <EXPRESSION>
+    },
+    'int[]'          : { ->
+        def x = [1, 2, 3, 4, 5] as int[]
+        return <EXPRESSION>
+    },
+    'String'         : { ->
+        def x = '12345'
+        return <EXPRESSION>
+    },
+]
+
+println String.format('%-12s | %s', 'TYPE', 'OUTCOME')
+println String.format('%-12s | %s', '-' * 12, '-' * 60)
+
+probes.each { name, body ->
+    def outcome
+    try {
+        def result = body()
+        outcome = "${result.getClass().simpleName}: ${result}"
+    } catch (Throwable t) {
+        outcome = "THREW: ${t.class.simpleName}: ${t.message}"
+    }
+    println String.format('%-12s | %s', name, outcome)
+}

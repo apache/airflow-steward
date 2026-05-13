@@ -114,6 +114,10 @@ FRAMEWORK_PLACEHOLDERS: tuple[str, ...] = (
     "<viewer>",
     "<base>",
     "<repo>",
+    "<issue-tracker>",
+    "<issue-tracker-project>",
+    "<runtime>",
+    "<default-branch>",
 )
 
 # YAML block-scalar headers — must not be stored as scalar content,
