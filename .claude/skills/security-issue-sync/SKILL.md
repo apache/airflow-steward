@@ -4,11 +4,11 @@ mode: Triage
 description: |
   Synchronize a security issue in <tracker> with the state of its
   GitHub discussion, the <security-list> mailing thread, and any
-  <upstream> PRs that fix it. The skill gathers all relevant signals,
-  proposes label, milestone, assignee, field and draft-email updates, and
-  only applies changes the user has explicitly confirmed. Suggests the next
-  step in the handling process and prints the CVE allocation link when a CVE
-  is needed.
+  <upstream> PRs that fix it. The skill gathers all relevant signals
+  and proposes label / milestone / assignee / field / draft-email
+  updates — applying only what the user has explicitly confirmed.
+  Suggests the next step in the handling process and prints the CVE
+  allocation link when a CVE is needed.
 when_to_use: |
   Invoke when a security team member says "sync issue NNN", "refresh the
   state of issue NNN", "update issue NNN from the thread", or "walk me

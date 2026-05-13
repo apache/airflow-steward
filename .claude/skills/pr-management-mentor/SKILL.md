@@ -9,7 +9,7 @@ description: |
   decides whether a mentoring intervention is warranted,
   drafts one comment per the project's tone guide and
   convention pointers, and waits for explicit maintainer
-  confirmation before posting via `gh`. Hands off to the
+  confirmation before posting via `gh`. Escalates to the
   configured maintainer team on the four hand-off triggers.
 when_to_use: |
   Invoke when a maintainer says "mentor PR NNN", "help the

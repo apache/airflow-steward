@@ -4,8 +4,8 @@ mode: Triage
 description: |
   For each open `<tracker>` issue carrying the `needs triage`
   label, read body + comments and classify the candidate
-  disposition into one of five classes: VALID, DEFENSE-IN-DEPTH,
-  INFO-ONLY, NOT-CVE-WORTHY, PROBABLE-DUP. On user confirmation,
+  disposition into one of five classes: VALID / DEFENSE-IN-DEPTH
+  / INFO-ONLY / NOT-CVE-WORTHY / PROBABLE-DUP. On user confirmation,
   posts a triage-proposal comment that invites the security team
   to react. Read-only on tracker state — no label flips, closes,
   or CVE allocations. Supports `--retriage` for re-litigating

@@ -5,13 +5,11 @@ description: |
   Sweep open pull requests on the configured `<upstream>` repo,
   classify each one against the project's quality criteria,
   propose a disposition, and — on the maintainer's
-  confirmation — carry out the action via `gh`. Decides
-  whether each PR should be converted to draft, commented on,
-  closed, rebased, have CI reruns triggered, have a
-  first-time-contributor workflow approved, be pinged to a
-  stale reviewer, or marked `ready for maintainer review`.
-  Does **not** perform code review — that lives in
-  `pr-management-code-review`.
+  confirmation — carry out the action via `gh`. Disposition
+  options per PR: draft / comment / close / rebase / CI-rerun
+  / workflow-approve / ping-stale-reviewer / mark `ready for
+  maintainer review`. Does **not** perform code review — that
+  lives in `pr-management-code-review`.
 when_to_use: |
   Invoke when a maintainer says "triage the PR queue", "go
   through new contributor PRs", "run the morning triage",

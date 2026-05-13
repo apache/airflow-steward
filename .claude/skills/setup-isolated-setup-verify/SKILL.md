@@ -1,14 +1,12 @@
 ---
 name: setup-isolated-setup-verify
 description: |
-  Walk the verification checklist documented in
-  `docs/setup/secure-agent-setup.md` and report ✓ done / ✗ missing / ⚠ partial
-  for each piece of the secure agent setup — project + user-scope
-  `settings.json` wiring, hook scripts present + executable,
-  `claude-iso` sourced, pinned tool versions installed at the
-  pinned versions, status-line state in this session, and the three
-  denial commands that prove the sandbox + permissions + clean-env
-  layers are actually firing. Read-only — never modifies anything.
+  Walk the verification checklist for the framework's secure
+  agent setup and report ✓ done / ✗ missing / ⚠ partial for
+  each check, with concrete evidence (file paths, command
+  output, version strings). Coverage: settings.json wiring,
+  claude-iso sourced, pinned tool versions, denial commands.
+  Read-only — never modifies anything.
 when_to_use: |
   Invoke when the user says "verify my secure setup", "is my
   secure config done?", "check that the secure agent setup is
