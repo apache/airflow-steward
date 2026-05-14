@@ -39,6 +39,18 @@
 # To inject a single credential explicitly for one session:
 #   GH_TOKEN="$(gh auth token)" claude-iso
 #   AWS_PROFILE=read-only claude-iso
+#
+# Worktree mode (`claude-iso -w` / `claude-iso --worktree`):
+#   When `-w` / `--worktree` is present in the args AND the wrapper
+#   is invoked from inside a git repo, claude-iso automatically
+#   grants the new worktree session's sandbox read access to the
+#   *main* repo (resolved via `git rev-parse --git-common-dir`, so
+#   it works whether you launch from the main checkout or from a
+#   nested worktree). The wrapper prepends a one-shot
+#   `--settings '{"sandbox":{"filesystem":{"allowRead":["<main-repo>"]}}}'`
+#   to the `claude` argv — Claude merges this into the loaded
+#   settings stack at startup, before the sandbox is initialised.
+#   A stderr banner reports what was added. Nothing on disk changes.
 
 claude_iso_main() {
   # Resolve the claude binary on PATH before clobbering the env so
@@ -129,6 +141,45 @@ claude_iso_main() {
   # shell didn't have it — well, actually we can't reliably tell
   # without a shadow. The conservative read: include these only when
   # the user named them in CLAUDE_ISO_ALLOW.)
+
+  # `-w` / `--worktree`: auto-add the main repo to the new worktree
+  # session's sandbox allowRead. See the "Worktree mode" section in
+  # the file header for the full rationale. The injection uses
+  # `claude --settings <json>`, which merges with the loaded settings
+  # stack at startup (i.e. before sandbox init), so the added path is
+  # in scope for the worktree session immediately — no on-disk
+  # settings.json edit is performed.
+  local has_worktree=0
+  local arg
+  for arg in "$@"; do
+    case "$arg" in
+      -w|--worktree|-w=*|--worktree=*) has_worktree=1; break ;;
+    esac
+  done
+
+  if [[ "$has_worktree" -eq 1 ]]; then
+    local common_dir main_repo
+    common_dir="$(git -C "$PWD" rev-parse --git-common-dir 2>/dev/null || true)"
+    if [[ -n "$common_dir" ]]; then
+      case "$common_dir" in
+        /*) ;;
+        *) common_dir="$PWD/$common_dir" ;;
+      esac
+      main_repo="$(cd "$(dirname "$common_dir")" 2>/dev/null && pwd)"
+      if [[ -n "$main_repo" ]]; then
+        # Escape backslashes and double quotes so a pathological
+        # repo path can't break out of the JSON string literal.
+        local escaped="${main_repo//\\/\\\\}"
+        escaped="${escaped//\"/\\\"}"
+        set -- --settings "{\"sandbox\":{\"filesystem\":{\"allowRead\":[\"${escaped}\"]}}}" "$@"
+        if [[ -t 2 ]]; then
+          printf '\033[2m[claude-iso] -w detected; added main repo "%s" to worktree sandbox allowRead\033[0m\n' "$main_repo" >&2
+        else
+          printf '[claude-iso] -w detected; added main repo "%s" to worktree sandbox allowRead\n' "$main_repo" >&2
+        fi
+      fi
+    fi
+  fi
 
   # When the user has aliased `claude=claude-iso`, an interactive
   # session looks indistinguishable from a normal `claude` launch.
