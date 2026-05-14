@@ -54,8 +54,8 @@ Placeholder convention:
 
 The project's tracker repo mirrors GitHub issue activity onto its
 security list, producing a large volume of bot messages that match
-most content searches. Every skill that searches beyond a pure list
-scan excludes the mirror senders up front:
+most content searches. Skills that do **content searches** (not the
+import candidate-listing query) exclude the mirror senders up front:
 
 ```text
 -from:notifications@github.com
@@ -63,6 +63,13 @@ scan excludes the mirror senders up front:
 -from:<tracker-noreply>
 -from:security-noreply@github.com
 ```
+
+**Exception — `security-issue-import` candidate listing.** That
+specific query removes `-from:notifications@github.com` from the
+exclusion list so GHSA-relayed inbound reports (sent from
+`notifications@github.com` with `[<upstream>] ... (GHSA-...)`
+subject form) are not dropped along with the tracker-mirror
+chatter. See the `security-issue-import` query template below.
 
 For projects that host their tracker elsewhere (or do not mirror to
 the list), trim or replace these as needed.
@@ -72,16 +79,26 @@ the list), trim or replace these as needed.
 ### `security-issue-import` — candidate-listing query
 
 Inbound threads that might be new reports, minus GitHub-notification
-bots, within a time window:
+mirror-bots, within a time window:
 
 ```text
 list:<security-list-domain>
-  -from:notifications@github.com
-  -from:noreply@github.com
   -from:<tracker-noreply>
+  -from:noreply@github.com
   -from:security-noreply@github.com
   newer_than:30d
 ```
+
+**Do not exclude `-from:notifications@github.com` in the
+candidate-listing query.** GitHub uses that address for two
+categories: tracker-mirror chatter (subject form `[<tracker-repo>]
+...`) which is what we want to filter, **and** GHSA-relayed inbound
+reports (subject form `[<upstream>] ... (GHSA-...)`) which are
+import candidates. The mirror chatter is caught by Step 2 threadId
+dedup; the GHSA relays are valid candidates and must reach Step 3
+classification. The `<tracker-noreply>` exclusion (e.g.
+`<tracker-repo>@noreply.github.com`) handles the dedicated mirror-
+noreply sender, which is what we actually want to drop.
 
 **Do not exclude `-from:security@apache.org`.** That address is used
 for CVE-tool bookkeeping *and* for ASF-security-team forwarding of

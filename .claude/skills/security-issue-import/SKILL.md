@@ -325,6 +325,34 @@ bookkeeping emails are filtered out at Step 3 by subject pattern
 instead — see the `cve-tool-bookkeeping` row of the classification
 table.
 
+**Do not exclude `-from:notifications@github.com` wholesale.** GitHub
+uses this address for **two distinct categories** of messages:
+
+1. **Tracker-mirror notifications** — when an action lands on a
+   tracker issue (comment, label, close), GitHub emails every
+   subscriber. These arrive with subject `[<tracker-repo>] ...`
+   and are *not* import candidates — they describe an existing
+   tracker.
+2. **GHSA-relayed reports** — when a reporter files a GitHub
+   Security Advisory against `<upstream>`, GitHub emails
+   `notifications@github.com → security@<project>.apache.org`
+   with subject `[<upstream>] ... (GHSA-...)`. **These are**
+   import candidates.
+
+Filter the mirror notifications at Step 1 only by the project's
+declared dedicated `noreply` mirror addresses (e.g.
+`<tracker-repo>@noreply.github.com`, declared in
+[`<project-config>/project.md`](../../../<project-config>/project.md#gmail-and-ponymail)).
+**Do not blanket-exclude `notifications@github.com`** — the
+remaining tracker-mirror chatter on `notifications@github.com` is
+caught at Step 2 (threadId dedup against existing tracker bodies)
+and Step 2-bis (already-answered detection).
+
+The canonical query template in
+[`tools/gmail/search-queries.md`](../../../tools/gmail/search-queries.md#security-issue-import--candidate-listing-query)
+omits the blanket exclusion; project-specific `<project-config>/project.md`
+declarations enumerate dedicated mirror noreply senders only.
+
 Adjust the time window per the user's selector (`since:` → `newer_than:`
 or `after:`; `import all` → `newer_than:90d`).
 
