@@ -374,6 +374,27 @@ No label is added — the conversion itself is the signal.
 
 ---
 
+## Stale ready-label close
+
+*(`stale-ready-label-close` — close a label-flagged PR after author silence + bitrot)*
+
+Used by [Sweep 4b](stale-sweeps.md#4b--branch-rotted--propose-close).
+
+```markdown
+@<author> This PR has had no author response for <days_since_maintainer> days since the last maintainer comment, and the branch now has <bitrot_signal>. Closing to keep the queue clean.
+
+When you're ready to resume, please rebase onto the current `<base>` branch, address any failing checks, and either reopen this PR or open a fresh one. There is no rush.
+
+<ai_attribution_footer>
+```
+
+`<bitrot_signal>` ∈ {`failing CI`,
+`merge conflicts with <base>`, `failing CI and merge conflicts with <base>`},
+keyed off `statusCheckRollup.state == FAILURE` and
+`mergeable == CONFLICTING`.
+
+---
+
 ## Stale workflow approval
 
 *(`stale-workflow-approval` — convert stale WF-approval to draft)*

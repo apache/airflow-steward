@@ -534,6 +534,57 @@ decision.
 
 ---
 
+## `strip-ready-label` — remove the ready-for-review label, no comment
+
+Used by [Sweep 4a — branch healthy → strip label](stale-sweeps.md#4a--branch-healthy--strip-label).
+One mutation, no comment. (The rotted-branch sibling
+[Sweep 4b](stale-sweeps.md#4b--branch-rotted--propose-close)
+uses `close` instead, not this action.)
+
+```bash
+# Remove the now-stale ready-for-review label (idempotent —
+# a 422 "Label does not exist on this issue" is benign; log
+# and continue).
+gh pr edit <N> --repo <repo> --remove-label "ready for maintainer review"
+```
+
+The label string is read from
+[`<project-config>/pr-management-config.md → ready_for_maintainer_review_label`](../../../projects/_template/pr-management-config.md);
+do not hard-code it. The same `gh` recipe is used by the
+"strip-on-downgrade" hook inside `draft` and `comment`
+(`actions.md` §[draft](#draft--convert-to-draft-and-post-violations-comment) /
+§[comment](#comment--post-violations--stale-review--ping-comment)),
+but those flows additionally convert to draft / post a
+comment. The `strip-ready-label` action is **only** the
+label-removal step — no other mutation, no comment.
+
+### Why no comment
+
+The PR already carries an unanswered maintainer comment (that
+is the trigger condition; see Sweep 4a). Posting a second
+contributor-facing comment would either duplicate the
+maintainer's existing ask or race the normal-queue re-triage
+that may run on the next sweep. Removing the label silently
+is the most conservative move; the maintainer can re-add the
+label in one click if the strip was unwarranted.
+
+### Failure handling
+
+- 422 "Label does not exist on this issue" — benign, log and
+  treat the action as successful (the desired end state is
+  already in place).
+- 404 / network error — surface to the maintainer with the PR
+  number, do not retry silently. The next sweep run will
+  re-evaluate.
+- Anything else — surface and stop the batch (consistent with
+  the `gh pr edit --remove-label` failure handling in `draft`).
+
+### Order-of-operations
+
+One step. No comment to sequence against.
+
+---
+
 ## Order-of-operations recap for destructive actions
 
 For every action that includes a comment, post the comment
@@ -547,6 +598,7 @@ For every action that includes a comment, post the comment
 | `flag-suspicious` | post comment → close → label *(per PR in the batch)* |
 | `mark-ready` | label only |
 | `mark-ready-with-ping` | post comment → label |
+| `strip-ready-label` | remove-label only (no comment) |
 | `rerun` | rerun (no comment) |
 | `rebase` | update-branch (no comment) |
 | `ping` | post comment |

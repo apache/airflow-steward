@@ -29,19 +29,39 @@ entirely). Both paths go through the same rules below.
 
 ## Inputs
 
-Each stale sweep needs two timestamps per PR:
+Each stale sweep needs these timestamps per PR:
 
 - `updated_at` — the PR's `updatedAt` field (already in the
   batch query)
 - `last_triage_comment_at` — the `createdAt` of the most
   recent comment by the viewer containing the
   `Pull Request quality criteria` marker, if any
+- `last_author_activity_at` — the max of three timestamps,
+  all already in the batch query:
+  1. the head commit's `committedDate` from `commits(last: 1)`
+     (catches pushes, including force-pushes — `committedDate`
+     advances on rebase even when no new code is added),
+  2. the `createdAt` of the most recent **issue-level** comment
+     by the PR author in `comments(last: 10)`,
+  3. the `createdAt` of the most recent **review-thread** reply
+     by the PR author across
+     `reviewThreads.nodes.comments(first: 5)` (filter
+     `author.login == pullRequest.author.login`).
+  Item 3 matters because line-level discussion is the most
+  common form of author response on substantive PRs; omitting
+  it would surface PRs as stale even while an active inline
+  conversation is in progress.
+- `last_maintainer_comment_at` — the `createdAt` of the most
+  recent comment in `comments(last: 10)` whose
+  `authorAssociation` is one of `COLLABORATOR`/`MEMBER`/`OWNER`,
+  excluding the viewer's own triage comments (the
+  `Pull Request quality criteria` marker disqualifies).
 
-Both come from the same aliased query that drives
+All inputs come from the same aliased query that drives
 classification — no extra fetches. If a PR hasn't been triaged
 in the current session and also wasn't triaged in a prior one,
-`last_triage_comment_at` is null and the sweep uses `updated_at`
-alone.
+`last_triage_comment_at` is null and Sweeps 1a/1b fall back to
+`updated_at` alone.
 
 `<now>` is the session start time (captured in UTC on entry).
 Use a single reference moment for the whole sweep so edge
@@ -152,17 +172,97 @@ Same as Sweep 2 — simple `[A]ll`.
 
 ---
 
+## Sweep 4 — Stale ready-for-review label
+
+When a PR carries `ready for maintainer review` and the author
+has been silent for ≥ 7 days after a maintainer comment, branch
+health splits the disposition: 4a strips the label; 4b proposes
+`close`.
+
+### Why a separate sub-query
+
+The default fetch search (see
+[`fetch-and-batch.md#search-query-construction`](fetch-and-batch.md#search-query-construction))
+excludes `ready for maintainer review`, so candidates here are
+never in the default page. Sweep 4 issues its own paged search
+on the same enrichment schema — no new GraphQL surface:
+
+```text
+is:pr is:open repo:<upstream>
+label:"ready for maintainer review"
+sort:updated-asc
+```
+
+The label name comes from
+[`<project-config>/pr-management-config.md → ready_for_maintainer_review_label`](../../../projects/_template/pr-management-config.md)
+— do not hard-code the string.
+
+### Common trigger (4a and 4b)
+
+- The PR carries the `ready for maintainer review` label.
+- `last_maintainer_comment_at` is not null and
+  `<now> - last_maintainer_comment_at >= 7 days`.
+- `last_author_activity_at` is null **or**
+  `last_author_activity_at <= last_maintainer_comment_at`.
+
+The last condition makes this sweep about *author silence*,
+not label age — a "still working on it" reply resets the clock.
+
+### 4a — Branch healthy → strip label
+
+**Extra trigger.** `mergeable != CONFLICTING` and
+`statusCheckRollup.state != FAILURE`.
+
+**Action.** `strip-ready-label`. See
+[`actions.md#strip-ready-label`](actions.md#strip-ready-label--remove-the-ready-for-review-label-no-comment).
+
+**Reason string.** *"Ready-for-review label stale — N days
+since maintainer comment, no author reply, branch healthy —
+strip label only"*.
+
+**Group behaviour.** Simple `[A]ll` — non-destructive, no
+per-PR confirm.
+
+### 4b — Branch rotted → propose close
+
+**Extra trigger.** `mergeable == CONFLICTING` **or**
+`statusCheckRollup.state == FAILURE`.
+
+**Action.** `close` with the
+[`stale-ready-label-close`](comment-templates.md#stale-ready-label-close)
+comment template; **skip the quality-violations label step**
+(close reason is bitrot, not policy violation). Otherwise
+[`actions.md#close`](actions.md#close--close-with-comment-and-quality-violations-label)
+unchanged.
+
+**Reason string.** *"Ready-for-review label stale — N days
+since maintainer comment, no author reply, branch has
+<bitrot_signal> — close"*. `<bitrot_signal>` ∈ {`failing CI`,
+`merge conflicts`, `failing CI + conflicts`}.
+
+**Group behaviour.** Per-PR confirm inside the batch
+(inherited from the `close`-group rule, SKILL.md Step 3).
+
+---
+
 ## Order of sweeps
 
 1. Sweep 1a (triaged drafts, 7d)
 2. Sweep 1b (untriaged drafts, 2w)
 3. Sweep 2 (inactive open, 4w)
 4. Sweep 3 (stale WF approval, 4w)
+5. Sweep 4a (stale ready-label, healthy, 7d) → strip
+6. Sweep 4b (stale ready-label, rotted, 7d) → close
 
 Run 1a before 1b so a draft that's both "triaged 7d ago" and
 "never-triaged 2w ago" (the triage comment is recent but the
 overall PR is old) is categorised by the more precise trigger.
 In practice that overlap is rare, but the order is defined.
+
+Sweep 4 operates on a disjoint candidate set (the labeled PRs
+the default search excluded), so there is no overlap with the
+earlier sweeps. 4a runs before 4b so the cheap label-tidying
+batch lands before the per-PR-confirm `close` group.
 
 ---
 
