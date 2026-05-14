@@ -734,6 +734,7 @@ Decide the candidate's class from the root message:
 |---|---|---|
 | **Report**: a reporter describes a vulnerability | The body has a description, a PoC / reproduction steps, an impact claim. Sender is an external address (not `@apache.org`, not on the security-team roster in [`AGENTS.md`](../../../AGENTS.md)). | Proceed to Step 4. |
 | **ASF-security relay**: `security@apache.org` forwarded a report from a reporter via the Foundation channel | Sender is `security@apache.org`. The body almost always starts with the ASF forwarding preamble — *"Dear PMC, The security vulnerability report has been received by the Apache Security Team and is being passed to you for action …"* — and contains the original report underneath (often after a `====GHSA-…` separator when the report came in via GitHub Security Advisory). The preamble is the load-bearing signal: if you see it, treat as a report regardless of what follows. | Proceed to Step 4. **Credit extraction**: the forwarded body usually ends with a `Credit` line naming the discoverer (e.g. *"This vulnerability was discovered and reported by bugbunny.ai"*) — use that verbatim for the Reporter-credited-as placeholder, not the `From:` header (which is always `security@apache.org`). If the report has no credit line, fall back to the GHSA number or to the phrase *"ASF-relayed"* so the credit-preference question can be routed through `@raboof` / Arnout. |
+| **Report (disposition converged)**: a `Report` where the inbound thread has a team-member substantive technical disposition AND the reporter has acknowledged it | Same body shape as `Report`, but the thread has a team-member reply with one of: option-1/option-2 framing, *"we agree, opening fix PR"* disposition, a docs-clarification acknowledgement; AND the reporter has replied confirming the disposition; AND no further reporter follow-up is needed. Detected at Step 3 by reading the thread (FULL_CONTENT, last 5 messages) and scanning for a team-roster sender's reply followed by an external-sender acknowledgement | Proceed to Step 4 (extract template fields and create the tracker for audit trail); in Step 7, **skip the canned receipt-of-confirmation reply** (the reporter has already seen our substantive response and a canned receipt would be tone-deaf). Note in the rollup entry that the disposition is converged on the inbound thread. |
 | **CVE-tool bookkeeping**: an automated or human status-change notification on the ASF CVE tool | Sender is `security@apache.org` (or one of the security-team members acting on behalf of the CVE tool). Subject matches one of: `"CVE-YYYY-NNNNN reserved for airflow"`, `"Comment added on CVE-YYYY-NNNNN"`, `"CVE-YYYY-NNNNN is now READY"`, `"CVE-YYYY-NNNNN is now PUBLIC"`, `"CVE-YYYY-NNNNN is now PUBLISHED"`, `"CVE-YYYY-NNNNN REJECTED"`, or a verbatim `"<state-change>"` line in the body pointing at `cveprocess.apache.org/cve5/CVE-YYYY-NNNNN`. | Do **not** import and do **not** draft a reply — the CVE-tool notifications are consumed by the `security-issue-sync` skill's Step 1e review-comment check. Classify as `cve-tool-bookkeeping` and drop. |
 | **Automated scanner dump**: SAST/DAST tool output, CodeQL/Dependabot alert paste, a string of "issues" with no human PoC | Body is machine-generated, contains multiple unrelated findings, no explanation of Security Model violation | Surface as a candidate with class `automated-scanner` and **do not** propose auto-import. In Step 5 the skill proposes a Gmail draft from the *"Automated scanning results"* canned response in [`canned-responses.md`](../../../<project-config>/canned-responses.md) instead. |
 | **Consolidated multi-issue report**: one email bundles ≥3 unrelated vulnerabilities | The root message has headings like *"Issue 1"*, *"Issue 2"*, each of which would be its own tracker | Surface class `consolidated-multi-issue`; do not auto-import. Propose the "Sending multiple issues in consolidated report" canned reply. |
@@ -844,6 +845,47 @@ Present all candidates as a single numbered proposal grouped by class:
   count in the recap (*"N CVE-tool-bookkeeping emails dropped"*) so
   the user knows the filter is working but is not forced to scroll
   past them.
+
+### Consolidated receipts for multi-tracker imports
+
+When the resolved selector imports **N > 1 trackers from the same
+reporter or same source thread within one skill run**, propose a
+**single consolidated receipt-of-confirmation reply** that lists
+all N tracker URLs, instead of N separate receipts.
+
+**Detection conditions** (any one is sufficient):
+
+1. All N trackers reference the same Gmail `threadId` in their
+   "Split from" / "Imported from" provenance (e.g. one reporter
+   split a consolidated report into N separate GHSAs).
+2. All N trackers' inbound `From:` addresses are identical
+   (same reporter sent N independent reports in the same run).
+3. All N trackers were imported from N distinct threads that
+   *share an outer thread* (one reporter, one root, N
+   sub-threads).
+
+**Consolidated receipt shape**:
+
+- Reply on the **earliest** thread in the set (where the team
+  has an established channel with the reporter — typically the
+  consolidated-pre-split thread).
+- List each tracker URL + GHSA ID / equivalent identifier on
+  its own line, one per tracker.
+- Ask the credit-preference question **once**, applying to all
+  trackers in the set.
+- Use the *"Confirmation of receiving the report"* canned body
+  with a leading paragraph that lists the trackers.
+
+**Skip the per-tracker receipt drafts** when the consolidated
+one is created. Surface the consolidated draft in the proposal
+with explicit *"this reply covers trackers #N1, #N2, …"*
+framing so the user knows what's bundled.
+
+**Coherence check**: the consolidated reply must accurately
+characterise *each* tracker (not just the largest one). If the
+reports differ in subject material to the point where one
+consolidated reply would be confusing, fall back to the
+per-tracker receipt pattern; do not force the bundle.
 
 ### Canned-response discipline for negative-response drafts
 
@@ -1118,7 +1160,22 @@ For each confirmed `Report` / `ASF-security relay`:
    workflow being correctly configured. The mutation is a no-op when
    the item is already on the board with the same Status.
 
-4. Draft the receipt-of-confirmation reply. **Apply the
+4. Draft the receipt-of-confirmation reply **unless one of**:
+
+   - The candidate class is `Report (disposition converged)` —
+     skip the draft entirely; note the converged disposition in
+     the rollup entry (step 5 below) with the exact prior thread
+     URL / message-id where the disposition was reached. Do not
+     create a Gmail draft for this tracker.
+   - The candidate is part of a **consolidated-receipt bundle**
+     (see Step 5's *"Consolidated receipts for multi-tracker
+     imports"* subsection) — the consolidated draft has already
+     been proposed and confirmed at Step 5; this per-tracker
+     draft is skipped because the bundle covers it. Cross-link
+     the consolidated draft's `<draftId>` in this tracker's
+     rollup entry.
+
+   When a draft is created (the default path), **apply the
    reveal-before-send protocol if (and only if) the rendered
    draft body carries any third-party identifiers** (per the
    Step 4 redact-after-fetch above; the receipt template
