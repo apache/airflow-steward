@@ -178,6 +178,8 @@ ASF members for the roster:
 - Zili Chen / tison (tison) — Pulsar PMC, Curator PMC, ZooKeeper PMC, …
 - James Fredley (jamesfredley) — Grails PMC
 - Calvin Kirs (kirs) — Doris PMC, Geode PMC
+- Rich Bowen (rbowen) — Incubator PMC, ComDev PMC, …
+- Mike Drob (mdrob) — Accumulo PMC, Curator PMC, HBase PMC, Lucene PMC, Solr PMC
 
 The named PMC roster will accompany the resolution at the time of vote.
 

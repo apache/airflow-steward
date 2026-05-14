@@ -48,6 +48,10 @@ lose = "lose"
 # in `.asf.yaml` collaborators). typos flags it as a typo of
 # `assert`.
 asert = "asert"
+# `Drob` is a surname — Mike Drob (Accumulo / Curator / HBase /
+# Lucene / Solr PMC member, listed in the MISSION.md roster).
+# typos flags it as a typo of `Drop`.
+Drob = "Drob"
 
 [default.extend-identifiers]
 # Identifiers that look like typos but are real symbol names.
