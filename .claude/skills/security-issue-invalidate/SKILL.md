@@ -206,6 +206,58 @@ privacy-llm pre-flight failure is also a hard stop.
 
 ---
 
+## Inputs
+
+| Selector | Resolves to |
+|---|---|
+| `invalidate <N>` / `invalidate #N` | single tracker; the existing single-issue flow |
+| `invalidate #N1, #N2, …` / `invalidate #N1-#N5` | explicit list; bulk-mode flow |
+| `invalidate proposed` | every open tracker that satisfies **both**: (a) has a triage proposal posted by [`security-issue-triage`](../security-issue-triage/SKILL.md) carrying **Proposed disposition: NOT-CVE-WORTHY**, and (b) has a team-consensus marker — a thumbs-up reaction on the triage proposal from a roster member who is **not** the proposal author, OR a follow-up comment from a roster member containing a positive-acknowledgement keyword (`agree`, `concur`, `+1`, `confirmed`, `LGTM`) |
+
+Bulk-mode aggregates the per-tracker close-comment, reporter-
+draft, label / close-issue / board-archive actions into one
+combined proposal. The user confirms once with `all`; the apply
+phase runs sequentially per the existing Step 6 rule (one tracker
+fully applied — labels + comment + close + board archive + draft
+— before the next starts).
+
+`invalidate proposed` is a convenience for the
+"please proceed the agreed NOT-CVE-WORTHY ones in bulk"
+pattern. The team-consensus detection is *necessary but not
+sufficient* — the user is still presented with the full list
+in the proposal and can override per-item before confirming.
+A NOT-CVE-WORTHY triage proposal that hasn't yet received a
+second-roster-member ack is **excluded** from the resolved set
+with an explicit *"awaiting consensus on #NNN — skipped"* note
+in the recap.
+
+**Bulk-mode `all` confirmation does not pre-authorise reporter
+drafts.** Each draft body is still surfaced in the combined
+proposal and gated by the `all` confirmation, per the existing
+"draft before send" rule in
+[`AGENTS.md`](../../../AGENTS.md). The draft creation runs
+during the apply phase; sending stays with the human triager
+in Gmail.
+
+**Resolution recipe for `invalidate proposed`:**
+
+```bash
+# Find open trackers with a NOT-CVE-WORTHY triage proposal
+gh issue list --repo <tracker> --state open --label "needs triage" \
+  --json number,title,comments \
+  --jq '.[] | select(.comments | map(.body) | any(
+    startswith("**Triage proposal**") and contains("NOT-CVE-WORTHY")
+  )) | .number'
+```
+
+Then, per resolved tracker, check the triage-proposal comment's
+reactions and follow-up comments for the team-consensus marker
+via `gh api repos/<tracker>/issues/comments/<id>/reactions`.
+Drop trackers that fail the consensus check; surface them in
+the recap as awaiting-consensus.
+
+---
+
 ## Step 1 — Fetch tracker state
 
 Pull everything the rest of the skill needs in one `gh issue view`:
@@ -543,6 +595,24 @@ the right trade.
 ## Step 6 — Apply
 
 Sequenced. Each substep depends on the previous one.
+
+**In bulk mode**, apply sub-steps 6a-6g **fully on tracker N
+before starting tracker N+1**. Do not interleave (don't post all
+rollups first, then all closing comments, etc.) — a partial
+failure mid-tracker is much easier to recover from than a
+partial failure spread across N trackers. The single-tracker
+apply contract is unchanged; bulk mode is one outer loop over
+the confirmed-tracker list.
+
+If any sub-step fails on tracker N, **stop**. Surface:
+
+- The trackers fully applied so far (all sub-steps succeeded).
+- Tracker N's partially-applied state (which sub-step failed,
+  what's left undone).
+- Remaining trackers in the bulk that have not started.
+
+The user retries the remaining trackers with an explicit
+selector; do not silently retry the failed tracker.
 
 ### 6a — Post the rollup entry first
 
