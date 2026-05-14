@@ -125,6 +125,13 @@ is:pr is:open repo:<upstream>
 sort:updated-asc
 ```
 
+The [stale-ready-label sweep](stale-sweeps.md#sweep-4--stale-ready-for-review-label)
+is the one exception that *includes* the label, using the same
+batch schema with `label:"ready for maintainer review"`
+(positive match) instead of the negative match above. All
+other selectors flow through the construction table in
+[`#search-query-construction`](#search-query-construction).
+
 ### Why this shape
 
 Every field above is consumed by Step 2 (filter, classify, and

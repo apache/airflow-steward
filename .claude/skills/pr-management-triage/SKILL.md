@@ -384,7 +384,9 @@ the order:
    maintainer reviews all label-add proposals back-to-back)
 6. `passing` → `mark-ready`
 7. Stale sweeps (`stale_draft` → `close`, `inactive_open` →
-   `draft`, `stale_workflow_approval` → `draft`)
+   `draft`, `stale_workflow_approval` → `draft`,
+   `stale_ready_label` → `strip-ready-label`,
+   `stale_ready_label_unhealthy` → `close`)
 
 For each group, present one screen worth of headline info
 (PR number, title, author, 1-line reason, label chips) and
@@ -440,9 +442,17 @@ When the maintainer has worked through every interactive group
 - convert non-draft PRs with >4 weeks of no activity to draft
 - convert workflow-approval PRs with >4 weeks of no activity
   to draft
+- on PRs labeled `ready for maintainer review` whose author
+  has been silent ≥ 7 days after a maintainer comment,
+  strip the label (4a — branch healthy) or propose `close`
+  (4b — red CI or merge conflicts). See
+  [`stale-sweeps.md#sweep-4--stale-ready-for-review-label`](stale-sweeps.md#sweep-4--stale-ready-for-review-label).
 
 Each sweep emits its own group in the interaction loop (Step 3),
 so the maintainer still confirms before any PR is touched.
+Sweep 4 issues its own paged search (the default search
+excludes labeled PRs) — see
+[`fetch-and-batch.md#search-query-construction`](fetch-and-batch.md#search-query-construction).
 
 ---
 
