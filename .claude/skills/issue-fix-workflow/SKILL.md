@@ -327,9 +327,11 @@ shapes:
 - **Body** — a short paragraph explaining the cause (not just
   the symptom) and the chosen fix shape. One paragraph; not a
   novel.
-- **Trailers** — if the project uses `Assisted-by:`-style
-  trailers for AI-assisted work, follow the project's policy.
-  See `<project-config>/fix-workflow.md`. The trailer is the
+- **Trailers** — AI-assisted commits use a `Generated-by:`
+  trailer (never `Co-Authored-By:` with an agent as co-author),
+  per [`AGENTS.md` → *Commit and PR conventions*](../../../AGENTS.md#commit-and-pr-conventions).
+  The exact wording may carry a project-specific form — see
+  `<project-config>/fix-workflow.md`. The trailer is the
   *contributor's* call on their own commit; the skill does not
   add it to anyone else's commit.
 
