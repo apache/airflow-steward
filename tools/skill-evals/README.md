@@ -21,7 +21,7 @@ uv run --project tools/skill-evals skill-eval \
 
 ## Structure
 
-```
+```text
 evals/
   <skill-name>/
     <step-name>/
