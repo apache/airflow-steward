@@ -158,17 +158,41 @@ pattern-matching.
 
 ## Step 6 — Refresh framework-skill symlinks
 
-Walk `<adopter-skills-dir>` looking for stale symlinks that
-point at framework skills no longer in the new snapshot
-(rename, removal). For each:
+Read the chosen skill families from `<committed-lock>`
+(falling back to `<local-lock>` if the committed lock is
+silent on families). The post-upgrade state must be:
+*every framework skill in the new snapshot that belongs to
+a chosen family has a valid symlink in
+`<adopter-skills-dir>`*, and *no symlink points at a
+framework skill that no longer exists in the snapshot*.
 
-- If renamed (the framework documented a rename in its
-  release notes), offer to re-symlink to the new name.
-- If removed, offer to remove the stale symlink.
+Run two passes:
 
-Then walk the new snapshot for any new framework skills in
-the families the adopter previously picked, and offer to
-symlink them in.
+1. **Ensure every family-member skill is linked.** For each
+   framework skill in the new snapshot that belongs to a
+   chosen family, check `<adopter-skills-dir>/<skill>`:
+   - If the symlink exists and points at the matching
+     snapshot path, leave it alone.
+   - If it's missing, create it.
+   - If it exists but is broken (target gone, points at the
+     wrong path), repair it.
+
+   Do this unconditionally — do not skip skills whose
+   symlinks "should" already be there. A contributor who
+   ran `git clean -fdx`, blew away `<adopter-skills-dir>` by
+   accident, or merged a branch that removed the symlinks
+   gets the full set restored without per-symlink re-
+   prompting. The aggregated list of created / repaired
+   links is reported in the upgrade summary (Step 8 output
+   block, under the `+` and `↻` rows).
+
+2. **Reconcile stale symlinks.** Walk
+   `<adopter-skills-dir>` looking for symlinks that point
+   at framework skills no longer in the new snapshot
+   (rename, removal). For each:
+   - If renamed (the framework documented a rename in its
+     release notes), offer to re-symlink to the new name.
+   - If removed, offer to remove the stale symlink.
 
 For the double-symlinked convention, refresh both layers.
 
@@ -258,7 +282,10 @@ Drift remediated:
 
 Symlinks:
   ✓ <list of unchanged symlinks>
-  + <list of newly-symlinked framework skills>
+  + <list of newly-created symlinks (skill present in a chosen
+     family but missing from <adopter-skills-dir>)>
+  ↻ <list of repaired symlinks (existed but broken / pointing
+     at the wrong path)>
   - <list of removed stale symlinks>
 
 Overrides:
