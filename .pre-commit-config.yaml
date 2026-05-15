@@ -41,8 +41,9 @@ repos:
         files: ^.+\.(md|rst)$
         # Skip agent-facing skill definitions: their YAML frontmatter must be
         # the first thing in the file, which is incompatible with doctoc
-        # inserting a TOC block at the top.
-        exclude: ^(\.claude/skills/.*|tools/vulnogram/generate-cve-json/SKILL\.md)$
+        # inserting a TOC block at the top. Also skip skill-evals fixture and
+        # README files — short, single-purpose docs that don't warrant a TOC.
+        exclude: ^(\.claude/skills/.*|tools/vulnogram/generate-cve-json/SKILL\.md|tools/skill-evals/.*)$
         args:
           - "--maxlevel"
           - "3"
