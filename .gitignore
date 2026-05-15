@@ -19,3 +19,15 @@ __pycache__/
 # Adopting projects keep their per-user files (e.g. user.md) in their
 # own tracker repository under `<project-config>/` and ensure those
 # files stay gitignored at the adopter's level.
+
+# Reproducer/reassessment campaign evidence packages contain verbatim
+# reporter content (issue bodies + comments). They are local-only and
+# must never be committed — even when a contributor runs a pilot
+# adjacent to this repo. Mirrors projects/_template/.gitignore. See
+# .claude/skills/issue-reproducer/verdict-composition.md
+# → "Evidence packages are local-only — never committed".
+*-reassess/
+campaign/
+campaigns/
+pilot-*/
+reassess-*/

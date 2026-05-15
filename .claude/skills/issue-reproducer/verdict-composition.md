@@ -228,6 +228,34 @@ feeds into its campaign report and what
 [`issue-reassess-stats`](../issue-reassess-stats/SKILL.md) reads
 for the dashboard.
 
+### Evidence packages are local-only — never committed
+
+`description.md` and `issue.json` are **verbatim, frozen copies of
+the reporter's words** — issue body and every comment, attributed,
+unredacted. The evidence package is working material for a human
+reviewer, **not** data to publish. Committing a campaign directory
+to a public repository puts every reporter's comment text on the
+public record verbatim, re-hosted outside the tracker, with no
+notice to the people who wrote it — a privacy regression the
+framework must not ship as a default.
+
+Rules:
+
+- The campaign root lives **outside any git repository** by
+  default — per
+  [`<project-config>/reproducer-conventions.md`](../../../projects/_template/reproducer-conventions.md)
+  the convention is `~/work/<project>-reassess/<campaign-id>/<ISSUE-KEY>/`,
+  deliberately under `$HOME`, not in the source tree.
+- If an operator relocates the scratch dir inside a repo (including
+  the adopter's `<project-config>` tree), the campaign directory
+  **MUST be gitignored**. The shipped
+  [`projects/_template/.gitignore`](../../../projects/_template/.gitignore)
+  carries the default patterns so a fresh adopter is safe without
+  having to think about it.
+- Never add a campaign/evidence path to a commit to "share results"
+  — share the *report* (`issue-reassess` produces an aggregated,
+  reviewed write-up); the raw evidence package stays local.
+
 ## Cross-references
 
 - [`SKILL.md`](SKILL.md) — orchestration; this file expands Step 10.

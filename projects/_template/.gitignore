@@ -1,0 +1,18 @@
+# Reassessment / reproducer campaign evidence packages are
+# local-only working material: description.md and issue.json are
+# verbatim, unredacted copies of the reporter's issue body and every
+# comment. They must never be committed — doing so re-hosts every
+# reporter's words on the public record with no notice to them.
+#
+# The default campaign root is OUTSIDE any repo
+# (~/work/<project>-reassess/<campaign-id>/<ISSUE-KEY>/, see
+# reproducer-conventions.md). These patterns are the safety net for
+# when an operator relocates the scratch dir into a repo. See
+# .claude/skills/issue-reproducer/verdict-composition.md
+# → "Evidence packages are local-only — never committed".
+*-reassess/
+campaign/
+campaigns/
+pilot-*/
+reassess-*/
+verdict.json
