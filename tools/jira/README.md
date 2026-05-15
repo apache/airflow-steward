@@ -83,15 +83,18 @@ groovy tools/jira/bridge.groovy projects
 
 ## Configuration
 
-The bridge resolves `<issue-tracker>` URL from environment first,
-falling back to the adopter's
-[`<project-config>/issue-tracker-config.md`](../../projects/_template/issue-tracker-config.md):
+The bridge reads its configuration from the environment:
 
-| Source | Variable | Notes |
-|---|---|---|
-| Environment | `ISSUE_TRACKER_URL` | overrides everything; useful in CI |
-| Environment | `ISSUE_TRACKER_PROJECT` | project key |
-| Fallback | `<project-config>/issue-tracker-config.md` → `url`, `project_key` | the per-adopter file |
+| Variable | Notes |
+|---|---|
+| `ISSUE_TRACKER_URL` | required; e.g. `https://issues.apache.org/jira` |
+| `ISSUE_TRACKER_PROJECT` | project key (e.g. `FOO`) |
+
+The caller is responsible for exporting these (a skill resolves them
+from [`<project-config>/issue-tracker-config.md`](../../projects/_template/issue-tracker-config.md)
+and passes them in the environment). Direct file-fallback inside the
+bridge is a possible future enhancement — it is **not** implemented
+today; the bridge exits if `ISSUE_TRACKER_URL` is unset.
 
 For anonymous-read trackers, no auth is required. For
 authenticated reads, set `JIRA_API_TOKEN` (basic auth, base64-

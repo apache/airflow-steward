@@ -13,7 +13,9 @@ import groovy.json.JsonSlurper
  *   issue <KEY>           fetch a single issue's full state as JSON
  *   projects              list the JIRA projects at the configured tracker URL
  *
- * Configuration (env first, then <project-config>/issue-tracker-config.md):
+ * Configuration (environment only; the caller — typically a skill —
+ * resolves these from <project-config>/issue-tracker-config.md and
+ * exports them. The bridge does NOT read that file itself):
  *   ISSUE_TRACKER_URL       e.g. https://issues.apache.org/jira
  *   ISSUE_TRACKER_PROJECT   the project key (e.g. FOO)
  *   JIRA_API_TOKEN          optional; base64-encoded "email:token" for authenticated reads
@@ -30,7 +32,7 @@ def PROJECT_KEY = ENV['ISSUE_TRACKER_PROJECT'] ?: ''
 def API_TOKEN   = ENV['JIRA_API_TOKEN'] ?: ''
 
 if (!TRACKER_URL) {
-    System.err.println('error: ISSUE_TRACKER_URL not set (env or <project-config>/issue-tracker-config.md)')
+    System.err.println('error: ISSUE_TRACKER_URL not set in the environment (the calling skill resolves it from <project-config>/issue-tracker-config.md and exports it)')
     System.exit(2)
 }
 
