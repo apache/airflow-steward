@@ -155,9 +155,9 @@ The ASF mission line — *"to provide software for the public good"* — has alw
 
 PMC composition matters more than most because the project's social stakes are higher than its technical stakes. The PMC will be filled from existing ASF members, and potentially Apache Airflow PMC members where implementation of Triage, Mentoring, and Drafting is already live and used — coordinated with Membership before the resolution is adopted.
 
-- **Size:** 7–9 members.
+- **Size:** 7 or more members.
 - **Diversity:** at least three distinct organisational affiliations; no single employer holding a majority.
-- **Coverage:** at least two committers from each friendly-pilot PMC (Airflow, Arrow, ATR, or similar) for the user-side reality check; at least one committer with explicit responsibility for contributor experience, mentoring, and onboarding rather than just engineering; ASF Privacy and ASF Legal engaged from project start, given the contributor-data surface.
+- **Coverage:** PMC members drawn from a diverse set of ASF projects rather than concentrated in one or two, with preference for PMCs whose own work centres on developer experience (build tools, language ecosystems, community development, contributor-facing workflows); a majority of members are actively working on developer experience in their home project; ASF Privacy and ASF Legal engaged from project start, given the contributor-data surface.
 - **Chair:** Jarek Potiuk, subject to PMC vote per Bylaws.
 
 ASF members for the roster:
@@ -205,7 +205,7 @@ on the project from day one:
 
 ## Source and IP
 
-Green-field project. Existing project-agnostic code in the Apache Airflow PMC — already designed to be reusable in and outside the ASF — could be donated to speed implementation; some related ideas are implemented in Gofannon.
+Green-field project, with substantial project-agnostic code being moved over from existing ASF projects — Apache Airflow (where the security-issue handling, PR triage, mentoring, and drafting framework that became `<PROJECT_NAME>` was first developed and proven; already structured under Apache-2.0 for reuse inside and outside the ASF), Apache Groovy, and other ASF projects whose maintainers have been early adopters. All transferred code clears the standard ASF software-grant process; some related ideas are also implemented in Gofannon.
 
 ## External dependencies
 
