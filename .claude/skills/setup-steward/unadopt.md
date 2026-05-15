@@ -130,7 +130,18 @@ The following will be REMOVED:
 The following will be PRESERVED:
 
     .apache-steward-overrides/           (M file(s); pass `--purge-overrides` to remove)
+    ~/.config/apache-steward/user.md     (per-user; shared with other adopters on this machine — remove manually if this was your last adoption)
 ```
+
+Surface the `~/.config/apache-steward/user.md` line only if that
+file is actually present on disk. If it is absent (or the
+operator drove `user.md` resolution via
+`$APACHE_STEWARD_USER_CONFIG` / the legacy per-project location),
+omit the line. The framework never touches the per-user file
+regardless of `--purge-overrides` — it is shared across every
+adopter project on the operator's machine and unadopting from
+*this* project does not imply they have stopped using
+apache-steward elsewhere.
 
 If `--purge-overrides` was passed, move
 `.apache-steward-overrides/` into the *removed* section and
@@ -252,6 +263,7 @@ A summary of what was removed + what remains:
 
 Preserved:
   .apache-steward-overrides/   (M files; pass `--purge-overrides` to remove)
+  ~/.config/apache-steward/user.md   (per-user; shared with other adopters on this machine — remove manually if this was your last adoption)
   <list of any non-steward-owned content the plan flagged>
 
 Staged for commit (you'll see in `git status`):
