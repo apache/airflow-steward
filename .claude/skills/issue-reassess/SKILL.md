@@ -192,6 +192,14 @@ where `<default>` is the project's first-pool from
    campaign root convention.
 5. **Drift check** — see *Snapshot drift* above.
 6. **Override consultation** — see *Adopter overrides* above.
+7. **Credential-isolation setup verified** — the per-issue loop
+   executes attacker-controlled reproducer code via
+   [`issue-reproducer`](../issue-reproducer/SKILL.md) (its Golden
+   rule 8). Confirm the framework's secure agent setup is active by
+   running
+   [`setup-isolated-setup-verify`](../setup-isolated-setup-verify/SKILL.md);
+   on any ✗ / ⚠, **stop** — a campaign must not bulk-run
+   reproducers outside isolation.
 
 If any check fails, stop and surface what is missing.
 
@@ -216,6 +224,16 @@ Proceed? [y / cap-to-<N>:5 / cap-to-<N>:10 / cancel]
 This catches a fuzzy filter that included issues the user didn't
 mean to sweep, and gives them a chance to reduce the scope before
 the loop starts.
+
+This explicit `Proceed?` approval over the **named candidate set**
+is also the campaign's standing execution consent: it is what
+satisfies the bulk-mode gate in
+[`issue-reproducer` → Step 5.5](../issue-reproducer/SKILL.md). Record
+the approved set with the campaign id. If the loop later reaches an
+issue **not** in the approved set (e.g. a resumed campaign whose
+pool changed), the reproducer's Step 5.5 stops it until the operator
+re-approves the new set — the campaign does **not** auto-confirm on
+the operator's behalf.
 
 ---
 
