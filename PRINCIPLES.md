@@ -98,7 +98,7 @@ Adopters consume the framework as a gitignored snapshot at `.apache-steward/`, p
 
 ## 14. Skills are the unit of authorship
 
-A skill is a single markdown file (`SKILL.md`): English, agentic, language-independent, runnable by any compliant CLI, encapsulating one agent-executable workflow. Skills are code in every meaningful sense: reviewed in PRs, versioned, signed by the same release process as the rest of the framework. Refactor at the skill boundary, never below it.
+A skill is a single markdown file (`SKILL.md`): English, agentic, programming-language independent, runnable by any compliant CLI, encapsulating one agent-executable workflow. Skills are code in every meaningful sense: reviewed in PRs, versioned, signed by the same release process as the rest of the framework. Refactor at the skill boundary, never below it.
 
 ## 15. Tracker identifiers are public-safe; tracker contents are not
 
