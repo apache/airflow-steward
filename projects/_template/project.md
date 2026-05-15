@@ -55,6 +55,7 @@ produces.
 | `tracker_project_board_url` | TODO: URL of the GitHub Project V2 board, if any | Security board |
 | `upstream_repo` | TODO: e.g. `apache/foo` | Public codebase where fixes land |
 | `upstream_repo_url` | TODO | |
+| `upstream_default_branch` | TODO: e.g. `master` (older default) or `main` | Upstream's default branch — what `<default-branch>` resolves to. Distinct from `tracker_default_branch` (the security tracker repo's PR target) |
 | `upstream_agents_md_url` | TODO: `https://github.com/<upstream>/blob/main/AGENTS.md` | Conventions this repo mirrors |
 | `upstream_contributing_docs_url` | TODO | |
 | `upstream_genai_disclosure_anchor` | TODO: URL + anchor for the project's Gen-AI disclosure guideline | |

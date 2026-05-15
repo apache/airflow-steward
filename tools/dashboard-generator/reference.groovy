@@ -71,7 +71,9 @@ def classifyBuckets = [
 def bucketOf = { String c -> classifyBuckets.find { k, vs -> c in vs }?.key ?: 'unknown' }
 
 def total = verdicts.size()
-def buckets = classifyBuckets.keySet().collectEntries { [(it): 0] }
+// 'unknown' is included so a verdict whose classification isn't in
+// any bucket increments a real 0 rather than null++ (which throws).
+def buckets = (classifyBuckets.keySet() + 'unknown').collectEntries { [(it): 0] }
 verdicts.each { v -> buckets[bucketOf(v.classification)]++ }
 
 def partialFix = verdicts.findAll { v ->
@@ -154,12 +156,13 @@ mb.html {
         h1("Reassessment dashboard — ${campaignDir.name}")
 
         div(class: 'hero') {
-            ['Candidates': [total, 'neutral'],
-             'Still failing': [stillFailing, heroColor('still-failing')],
-             'Fixed on master': [buckets['fixed'], heroColor('fixed')],
-             'Partial fix': [partialFix.size(), heroColor('partial-fix')],
-             'Unrun': [unrun, heroColor('unrun')],
-            ].each { label, (val, color) ->
+            [
+                ['Candidates',         total,             'neutral'],
+                ['Still failing',      stillFailing,      heroColor('still-failing')],
+                ['Fixed on master',    buckets['fixed'],  heroColor('fixed')],
+                ['Partial fix',        partialFix.size(), heroColor('partial-fix')],
+                ['Unrun',              unrun,             heroColor('unrun')],
+            ].each { label, val, color ->
                 div(class: "card ${color}") {
                     div(class: 'label', label)
                     div(class: 'value', String.valueOf(val))

@@ -79,7 +79,7 @@ def shape_issue(Map raw) {
 }
 
 def cmd_search(List args) {
-    def jql = args[0]
+    def jql = args ? args[0] : null
     def limit = 50
     def i = 1
     while (i < args.size()) {
@@ -105,7 +105,7 @@ def cmd_search(List args) {
 }
 
 def cmd_issue(List args) {
-    def key = args[0]
+    def key = args ? args[0] : null
     if (!key) {
         System.err.println('error: issue requires a tracker key (e.g. FOO-9999)')
         System.exit(2)
