@@ -1280,7 +1280,7 @@ Currently available:
   a standalone top-level **triage-proposal comment** that classifies
   the candidate disposition into one of five classes (`VALID` →
   `security-cve-allocate`, `DEFENSE-IN-DEPTH` → public PR for
-  hardening, `INFO-ONLY` / `NOT-CVE-WORTHY` → `security-issue-invalidate`,
+  hardening, `INFO-ONLY` / `INVALID` → `security-issue-invalidate`,
   `PROBABLE-DUP` → `security-issue-deduplicate`) and `@`-mentions 2-3
   security-team members per scope for input. **Read-only on tracker
   state** — never flips `needs triage` to a scope label, never closes,
