@@ -102,12 +102,18 @@ Compute `age_days` per verdict from the issue's creation date
 (extracted from `description.md` when present) and the campaign
 run date (`fetched_at` or filesystem mtime as fallback). Buckets:
 
-| Age | Label |
-|---|---|
-| < 1 year | `recent` |
-| 1–3 years | `mid` |
-| 3–10 years | `old` |
-| ≥ 10 years | `ancient` |
+| Age | `age_days` | Label |
+|---|---|---|
+| < 90 days | `< 90` | `recent` |
+| 90 days – 1 year | `90 – 365` | `mid` |
+| 1 – 5 years | `365 – 1825` | `old` |
+| ≥ 5 years | `≥ 1825` | `ancient` |
+
+Bands are contiguous (no gaps) and evaluated low-to-high. The
+narrower `recent` band keeps genuinely fresh issues distinguishable
+from ones already unresolved for many months — issues under a year
+old are where most reassess decisions actually land, so collapsing
+them into one bucket hid the signal.
 
 The age axis informs the dashboard's *"oldest unresolved"* panel.
 

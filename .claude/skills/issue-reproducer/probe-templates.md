@@ -49,7 +49,7 @@ Skip when:
 A probe is a single script that exercises the same expression
 across every family member and emits a comparison table:
 
-```text
+```groovy
 def probes = [
     'Member A' : { -> /* construct backend A, exercise the expression */ },
     'Member B' : { -> /* same expression on backend B */ },
