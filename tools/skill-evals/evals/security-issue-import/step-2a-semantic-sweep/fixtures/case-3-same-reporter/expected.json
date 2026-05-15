@@ -1,0 +1,9 @@
+{
+  "verdict": "STRONG",
+  "match_tracker": 102,
+  "action": "deduplicate",
+  "axes_matched": ["component", "bug_class", "attack_path", "fix_shape"],
+  "reporter_identity_hit": true,
+  "reporter_identity_note": "local-part 'b.researcher' matches reporter of #102",
+  "rationale": "Four-axis overlap with #102 (SFTPHook/Providers, path traversal, operator DAG supplying malicious path, sanitise path input). Reporter identity hit is a supporting signal but axis overlap alone is sufficient for STRONG."
+}

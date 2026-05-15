@@ -1,0 +1,8 @@
+{
+  "verdict": "STRONG",
+  "match_tracker": 101,
+  "action": "deduplicate",
+  "axes_matched": ["component", "bug_class", "attack_path", "fix_shape"],
+  "reporter_identity_hit": false,
+  "rationale": "Same component (REST API/Webserver), same bug class (missing auth check), same attack path (unauthenticated GET on /api/v1/dags/.../dagRuns), same fix shape (add auth enforcement on endpoint). Three or four axis overlap = STRONG."
+}
