@@ -270,7 +270,7 @@ first, then continue.
 |---|---|
 | `from:<git-ref>` / `from:<version>` | Adopt or upgrade from a specific framework ref or version. Used during `adopt` (overrides the user prompt) and `upgrade` (overrides the committed lock for *this run only* — does NOT update the committed lock). |
 | `method:<git-branch\|git-tag\|svn-zip>` | Pick the install method explicitly. Default during `adopt`: prompt the user. |
-| `skill-families:<list>` | Comma-separated families to symlink (`security`, `pr-management`). Default on `adopt`: prompt. Default on `upgrade`: re-symlink the families currently linked. |
+| `skill-families:<list>` | Comma-separated families to symlink (`security`, `pr-management`). Default on `adopt`: prompt. Default on `upgrade`: read the families list from `<committed-lock>` / `<local-lock>` and **ensure every framework skill in those families has a valid symlink** — create or repair missing / broken symlinks, not just add new ones. |
 | `--purge-overrides` | *(unadopt only)* Also `git rm -r` `.apache-steward-overrides/`. Default: preserve. |
 | `dry-run` | Show what the skill would do without writing anything. |
 
