@@ -180,6 +180,7 @@ ASF members for the roster:
 - Calvin Kirs (kirs) — Doris PMC, Geode PMC
 - Rich Bowen (rbowen) — Incubator PMC, ComDev PMC, …
 - Mike Drob (mdrob) — Accumulo PMC, Curator PMC, HBase PMC, Lucene PMC, Solr PMC
+- Craig L Russell (clr) — Security Team, Incubator PMC, ComDev PMC, …
 
 The named PMC roster will accompany the resolution at the time of vote.
 
