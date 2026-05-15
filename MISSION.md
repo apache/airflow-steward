@@ -205,7 +205,7 @@ on the project from day one:
 
 ## Source and IP
 
-Green-field project, with substantial project-agnostic code being moved over from existing ASF projects — Apache Airflow (where the security-issue handling, PR triage, mentoring, and drafting framework that became `<PROJECT_NAME>` was first developed and proven; already structured under Apache-2.0 for reuse inside and outside the ASF), Apache Groovy, and other ASF projects whose maintainers have been early adopters. All transferred code clears the standard ASF software-grant process; some related ideas are also implemented in Gofannon.
+Green-field project, with substantial project-agnostic code being moved over from existing ASF projects — Apache Airflow (where the security-issue handling, PR triage, mentoring, and drafting framework that became `<PROJECT_NAME>` was first developed and proven; already structured under Apache-2.0 for reuse inside and outside the ASF), Apache Groovy, and other ASF projects whose maintainers have been early adopters. All transferred code is already Apache-2.0 licensed and ASF-owned; the moves go through the standard ASF IP Clearance process, with no Software Grant Agreements needed (those apply only to code originating outside the ASF).
 
 ## External dependencies
 
