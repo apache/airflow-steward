@@ -35,7 +35,7 @@ and reuse the skills verbatim.
 | [`security-issue-import`](../../.claude/skills/security-issue-import/SKILL.md) | Import new reports from `<security-list>` into `<tracker>`. |
 | [`security-issue-import-from-pr`](../../.claude/skills/security-issue-import-from-pr/SKILL.md) | Open a tracker for a security-relevant fix opened as a public PR. |
 | [`security-issue-import-from-md`](../../.claude/skills/security-issue-import-from-md/SKILL.md) | Bulk-import findings from a markdown report. |
-| [`security-issue-triage`](../../.claude/skills/security-issue-triage/SKILL.md) | Propose an initial-triage disposition (VALID / DEFENSE-IN-DEPTH / INFO-ONLY / NOT-CVE-WORTHY / PROBABLE-DUP) for each tracker still in `Needs triage`; opens a discussion comment, never flips the label. |
+| [`security-issue-triage`](../../.claude/skills/security-issue-triage/SKILL.md) | Propose an initial-triage disposition (VALID / DEFENSE-IN-DEPTH / INFO-ONLY / INVALID / PROBABLE-DUP) for each tracker still in `Needs triage`; opens a discussion comment, never flips the label. |
 | [`security-issue-sync`](../../.claude/skills/security-issue-sync/SKILL.md) | Reconcile a tracker against its mail thread, fix PR, release train, and archives. |
 | [`security-cve-allocate`](../../.claude/skills/security-cve-allocate/SKILL.md) | Allocate a CVE for a tracker (Vulnogram URL + paste-ready JSON). |
 | [`security-issue-fix`](../../.claude/skills/security-issue-fix/SKILL.md) | Implement the fix as a public PR in `<upstream>`. |

@@ -5,7 +5,7 @@ description: |
   For each open `<tracker>` issue carrying the `needs triage`
   label, read body + comments and classify the candidate
   disposition into one of five classes: VALID / DEFENSE-IN-DEPTH
-  / INFO-ONLY / NOT-CVE-WORTHY / PROBABLE-DUP. On user confirmation,
+  / INFO-ONLY / INVALID / PROBABLE-DUP. On user confirmation,
   posts a triage-proposal comment that invites the security team
   to react. Read-only on tracker state — no label flips, closes,
   or CVE allocations. Supports `--retriage` for re-litigating
@@ -20,7 +20,7 @@ when_to_use: |
   needs re-litigating after new comment activity. Skip when
   team consensus on validity has already landed — invoke
   `/security-cve-allocate` (VALID),
-  `/security-issue-invalidate` (INFO-ONLY / NOT-CVE-WORTHY), or
+  `/security-issue-invalidate` (INFO-ONLY / INVALID), or
   `/security-issue-deduplicate` (PROBABLE-DUP) directly.
 license: Apache-2.0
 ---
@@ -58,7 +58,7 @@ It composes with:
 - [`security-cve-allocate`](../security-cve-allocate/SKILL.md) —
   invoked by hand after the team agrees a tracker is **VALID**.
 - [`security-issue-invalidate`](../security-issue-invalidate/SKILL.md) —
-  invoked by hand after the team agrees a tracker is **NOT-CVE-WORTHY**
+  invoked by hand after the team agrees a tracker is **INVALID**
   or **INFO-ONLY**.
 - [`security-issue-deduplicate`](../security-issue-deduplicate/SKILL.md) —
   invoked by hand after the team agrees a tracker is a **PROBABLE-DUP**.
@@ -101,7 +101,7 @@ as a normal entry.
 **Golden rule 4 — five disposition classes, no more.** The
 classification is a proposal, not a verdict; the team's reply may
 escalate (`INFO-ONLY` → `VALID` after a clarifying technical
-question lands) or de-escalate (`VALID` → `NOT-CVE-WORTHY` if a
+question lands) or de-escalate (`VALID` → `INVALID` if a
 security-team member spots a previously-missed Security Model
 carve-out). The skill always proposes exactly one class per
 tracker — never two — because a two-class proposal stalls the
@@ -112,7 +112,7 @@ discussion rather than starting it.
 | `VALID` | Clear Security Model violation; in-scope attack vector | [`/security-cve-allocate`](../security-cve-allocate/SKILL.md) |
 | `DEFENSE-IN-DEPTH` | Real issue, but outside the Security Model boundary (e.g. local-user attacks on a worker the model treats as operator-trusted; old-browser-only XSS that current browsers block) | close as wontfix + file a public PR for the hardening |
 | `INFO-ONLY` | Report is fact-correct but doesn't violate anything; matches a known canned-response shape (educational reply, no tracker action needed) | close + reporter-reply via the matching canned response |
-| `NOT-CVE-WORTHY` | Misframed, circular, by-design, or out-of-scope per the canned-responses precedents | [`/security-issue-invalidate`](../security-issue-invalidate/SKILL.md) |
+| `INVALID` | Misframed, circular, by-design, or out-of-scope per the canned-responses precedents | [`/security-issue-invalidate`](../security-issue-invalidate/SKILL.md) |
 | `PROBABLE-DUP` | Substantive overlap with an existing tracker or closed advisory (same root cause; sibling attack vector with the same fix shape) | [`/security-issue-deduplicate`](../security-issue-deduplicate/SKILL.md) |
 
 **Golden rule 5 — every `<tracker>` reference is a clickable
@@ -213,7 +213,7 @@ in `docs/prerequisites.md` for the overall setup.
 | `triage #NNN`, `triage 212`, `triage #NNN, #MMM`, `triage #NNN-#MMM` | specific issues by number (verbatim — no resolution) |
 | `triage scope:<label>` (e.g. `triage scope:airflow`) | subset by scope label, when set; useful when scoped-batch triage is split across triagers |
 | `triage CVE-YYYY-NNNNN` | the tracker for that allocated CVE — used together with `--retriage` (below) when a passed-triage decision needs re-litigating |
-| `--retriage` (flag) | force-include trackers that already had `needs triage` removed but where new comment activity warrants a fresh proposal (e.g. a reporter follow-up landed a substantive update; a sibling-vector report changed the team's read on a prior `NOT-CVE-WORTHY` close). Combine with one of the selectors above; bare `--retriage` without a selector is a hard error — the skill refuses to re-triage everything ever. |
+| `--retriage` (flag) | force-include trackers that already had `needs triage` removed but where new comment activity warrants a fresh proposal (e.g. a reporter follow-up landed a substantive update; a sibling-vector report changed the team's read on a prior `INVALID` close). Combine with one of the selectors above; bare `--retriage` without a selector is a hard error — the skill refuses to re-triage everything ever. |
 
 If the user supplies no selector at all, default to `triage`
 (every open `needs triage`). If `--retriage` is passed without
@@ -335,9 +335,9 @@ the inputs the classifier needs. Each tracker gets:
    for headings whose name matches the tracker's report shape.
    A hit on *"When someone claims Dag author-provided 'user
    input' is dangerous"* (or analogous) is a strong signal for
-   `NOT-CVE-WORTHY`; a hit on *"Image scan results"* / *"DoS/RCE
+   `INVALID`; a hit on *"Image scan results"* / *"DoS/RCE
    via Connection configuration"* signals `INFO-ONLY` or
-   `NOT-CVE-WORTHY`. Surface the matching canned-response name
+   `INVALID`. Surface the matching canned-response name
    in the proposal so the team can confirm-with-template.
 
 6. **Cross-reference search** — for `PROBABLE-DUP` detection,
@@ -380,19 +380,19 @@ explain how this tracker maps to (or escapes) that wording.
 ### Trust-boundary cheat-sheet
 
 Apply mechanically before VALID / DEFENSE-IN-DEPTH /
-NOT-CVE-WORTHY:
+INVALID:
 
 | If the attacker is… | …and the target / effect is… | Default class |
 |---|---|---|
-| DAG author | code execution in worker / DAG processor / Triggerer | NOT-CVE-WORTHY (cite §"DAG Authors executing arbitrary code") |
-| DAG author | cross-DAG effect within shared parser / triggerer / worker pool | NOT-CVE-WORTHY (cite §"Limiting DAG Author access to subset of Dags") |
-| Worker holding Execution JWT | read or write of another task's data via Execution API | NOT-CVE-WORTHY (cite the *"Cross-DAG access via the Task Execution API or Task SDK"* canned: `ti:self` is mutation-only, not per-DAG access control) |
+| DAG author | code execution in worker / DAG processor / Triggerer | INVALID (cite §"DAG Authors executing arbitrary code") |
+| DAG author | cross-DAG effect within shared parser / triggerer / worker pool | INVALID (cite §"Limiting DAG Author access to subset of Dags") |
+| Worker holding Execution JWT | read or write of another task's data via Execution API | INVALID (cite the *"Cross-DAG access via the Task Execution API or Task SDK"* canned: `ti:self` is mutation-only, not per-DAG access control) |
 | Authenticated UI / REST user with restricted DAG-scoped perms | reads other DAGs' data via UI / REST | **VALID** (precedent: prior CVEs on this shape — search closed `cve allocated` trackers in Step 2.6) |
-| Operator / Deployment Manager | misconfigures something with side-effects | NOT-CVE-WORTHY (cite §"Connection configuration users" / operator-trust framing) |
-| Authenticated user | DoS or self-XSS | NOT-CVE-WORTHY (cite §"DoS by authenticated users" / §"Self-XSS by authenticated users") |
+| Operator / Deployment Manager | misconfigures something with side-effects | INVALID (cite §"Connection configuration users" / operator-trust framing) |
+| Authenticated user | DoS or self-XSS | INVALID (cite §"DoS by authenticated users" / §"Self-XSS by authenticated users") |
 | External actor (email sender, request poster) | exploit via parser on attacker-controlled input that reaches a supported platform | **VALID** |
-| External actor | exploit only manifests on a non-supported platform | NOT-CVE-WORTHY (cite the project's supported-platforms section of the Security Model) |
-| DAG author who deliberately routes user input | injection in operator / hook / SQL / shell | NOT-CVE-WORTHY (cite §"DAG Author code passing unsanitized input") |
+| External actor | exploit only manifests on a non-supported platform | INVALID (cite the project's supported-platforms section of the Security Model) |
+| DAG author who deliberately routes user input | injection in operator / hook / SQL / shell | INVALID (cite §"DAG Author code passing unsanitized input") |
 
 **If the answer is not in the cheat-sheet, stop and ask the
 user** rather than guessing. The classifier flags `UNCERTAIN`
@@ -437,10 +437,10 @@ proposal body with a one-line shape summary so the team sees the
 prior call without scrolling the closed list. A STRONG
 precedent (same code surface + same vulnerability class) lowers
 the proposal's confidence and may swing the disposition from
-VALID → NOT-CVE-WORTHY. Include the citation in the proposal:
+VALID → INVALID. Include the citation in the proposal:
 
 > Direct precedent: [`<tracker>#NNN`](https://github.com/<tracker>/issues/NNN)
-> (closed YYYY-MM-DD as NOT-CVE-WORTHY, same shape: <one-line>).
+> (closed YYYY-MM-DD as INVALID, same shape: <one-line>).
 
 Also search for **positive precedents** — CVE-allocated trackers
 with similar shape — via:
@@ -466,7 +466,7 @@ supersedes; the proposal routes to
 instead).
 
 **Hard rule**: a rejection precedent in Step 2.6 does **not**
-auto-classify NOT-CVE-WORTHY — the human team reads the precedent
+auto-classify INVALID — the human team reads the precedent
 and the new report side-by-side. The skill's job is to surface
 the precedent, not to vote for it.
 
@@ -539,7 +539,7 @@ Propose when **all** of:
   results"*, *"When someone claims Dag author-provided 'user
   input' is dangerous"*).
 
-`INFO-ONLY` is distinct from `NOT-CVE-WORTHY`: the latter is
+`INFO-ONLY` is distinct from `INVALID`: the latter is
 typically a *misframing* the team has to explain (and may
 warrant an inline-augmented canned response); the former is a
 clean *educational* reply where the canned template alone fully
@@ -548,7 +548,7 @@ answers the report.
 The proposal names the matching canned-response template
 explicitly (exact section heading from `canned-responses.md`).
 
-#### `NOT-CVE-WORTHY`
+#### `INVALID`
 
 Propose when **any** of:
 
@@ -622,7 +622,7 @@ Severity: <guess>. Final scoring per the team after assessing
 <which load-bearing open question, if any>.
 
 <Fix-shape sentence — what would the fix look like, in one or
-two sentences. For NOT-CVE-WORTHY / INFO-ONLY, this is the
+two sentences. For INVALID / INFO-ONLY, this is the
 "why not" framing instead.>
 
 <Optional Action items: numbered list when there's more than
@@ -806,11 +806,11 @@ rate-limit; the user retries the remaining items with the
 After the post loop, print a recap with:
 
 - Disposition distribution (e.g. *"3 VALID, 1 DEFENSE-IN-DEPTH,
-  2 NOT-CVE-WORTHY, 1 INFO-ONLY, 0 PROBABLE-DUP"*).
+  2 INVALID, 1 INFO-ONLY, 0 PROBABLE-DUP"*).
 - Per-tracker line: clickable issue link, class, comment URL.
 - The set of sibling-skill next-step recommendations, grouped:
   - `/security-cve-allocate NNN` for each VALID
-  - `/security-issue-invalidate NNN` for each NOT-CVE-WORTHY and
+  - `/security-issue-invalidate NNN` for each INVALID and
     INFO-ONLY (the invalidate skill handles both with the right
     canned response)
   - `/security-issue-deduplicate NNN MMM` for each PROBABLE-DUP
@@ -883,7 +883,7 @@ itself before presenting it.
 - [`security-cve-allocate`](../security-cve-allocate/SKILL.md) —
   invoked after a `VALID` disposition is confirmed.
 - [`security-issue-invalidate`](../security-issue-invalidate/SKILL.md) —
-  invoked after a `NOT-CVE-WORTHY` or `INFO-ONLY` disposition is
+  invoked after a `INVALID` or `INFO-ONLY` disposition is
   confirmed.
 - [`security-issue-deduplicate`](../security-issue-deduplicate/SKILL.md) —
   invoked after a `PROBABLE-DUP` disposition is confirmed.

@@ -170,7 +170,7 @@ team consensus lands:
 | `VALID` | [`security-cve-allocate`](../../.claude/skills/security-cve-allocate/SKILL.md) → Step 6 |
 | `DEFENSE-IN-DEPTH` | Close as wontfix + open a public PR for the hardening |
 | `INFO-ONLY` | [`security-issue-invalidate`](../../.claude/skills/security-issue-invalidate/SKILL.md) with the matching canned-response template |
-| `NOT-CVE-WORTHY` | [`security-issue-invalidate`](../../.claude/skills/security-issue-invalidate/SKILL.md) |
+| `INVALID` | [`security-issue-invalidate`](../../.claude/skills/security-issue-invalidate/SKILL.md) |
 | `PROBABLE-DUP` | [`security-issue-deduplicate`](../../.claude/skills/security-issue-deduplicate/SKILL.md) |
 
 The triage skill is **read-only** on tracker state — it never

@@ -212,7 +212,7 @@ privacy-llm pre-flight failure is also a hard stop.
 |---|---|
 | `invalidate <N>` / `invalidate #N` | single tracker; the existing single-issue flow |
 | `invalidate #N1, #N2, …` / `invalidate #N1-#N5` | explicit list; bulk-mode flow |
-| `invalidate proposed` | every open tracker that satisfies **both**: (a) has a triage proposal posted by [`security-issue-triage`](../security-issue-triage/SKILL.md) carrying **Proposed disposition: NOT-CVE-WORTHY**, and (b) has a team-consensus marker — a thumbs-up reaction on the triage proposal from a roster member who is **not** the proposal author, OR a follow-up comment from a roster member containing a positive-acknowledgement keyword (`agree`, `concur`, `+1`, `confirmed`, `LGTM`) |
+| `invalidate proposed` | every open tracker that satisfies **both**: (a) has a triage proposal posted by [`security-issue-triage`](../security-issue-triage/SKILL.md) carrying **Proposed disposition: INVALID**, and (b) has a team-consensus marker — a thumbs-up reaction on the triage proposal from a roster member who is **not** the proposal author, OR a follow-up comment from a roster member containing a positive-acknowledgement keyword (`agree`, `concur`, `+1`, `confirmed`, `LGTM`) |
 
 Bulk-mode aggregates the per-tracker close-comment, reporter-
 draft, label / close-issue / board-archive actions into one
@@ -222,11 +222,11 @@ fully applied — labels + comment + close + board archive + draft
 — before the next starts).
 
 `invalidate proposed` is a convenience for the
-"please proceed the agreed NOT-CVE-WORTHY ones in bulk"
+"please proceed the agreed INVALID ones in bulk"
 pattern. The team-consensus detection is *necessary but not
 sufficient* — the user is still presented with the full list
 in the proposal and can override per-item before confirming.
-A NOT-CVE-WORTHY triage proposal that hasn't yet received a
+A INVALID triage proposal that hasn't yet received a
 second-roster-member ack is **excluded** from the resolved set
 with an explicit *"awaiting consensus on #NNN — skipped"* note
 in the recap.
@@ -242,11 +242,11 @@ in Gmail.
 **Resolution recipe for `invalidate proposed`:**
 
 ```bash
-# Find open trackers with a NOT-CVE-WORTHY triage proposal
+# Find open trackers with a INVALID triage proposal
 gh issue list --repo <tracker> --state open --label "needs triage" \
   --json number,title,comments \
   --jq '.[] | select(.comments | map(.body) | any(
-    startswith("**Triage proposal**") and contains("NOT-CVE-WORTHY")
+    startswith("**Triage proposal**") and contains("INVALID")
   )) | .number'
 ```
 
