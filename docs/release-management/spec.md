@@ -253,8 +253,11 @@ The skill never operates on the private key half.
 **Mode:** Drafting. **Steps owned:** 4, 5.
 
 **Scope.** Emit the paste-ready command sequence to tag the RC,
-build artefacts, sign each artefact, generate checksums, and `svn
-import` to `dist/dev/<project>/<version>-rcN/`.
+build artefacts, sign each artefact, generate checksums, and stage
+to the adopter's distribution backend (default `svn import` to
+`dist/dev/<project>/<version>-rcN/`; alternatives resolved from
+`release_dist_backend` per
+[`process.md` § Adopter backends](process.md#adopter-backends)).
 
 **Triggers.**
 
@@ -273,9 +276,15 @@ import` to `dist/dev/<project>/<version>-rcN/`.
 - A four-section markdown block: (1) `git tag -s` command,
   (2) build command, (3) `gpg --detach-sign` for each expected
   artefact, (4) `sha512sum > artefact.sha512` for each artefact.
-- A second markdown block with the `svn` command sequence to
-  import the resulting artefacts + signatures + checksums into
-  `dist/dev/<project>/<version>-rcN/`.
+- A second markdown block with the backend-shaped staging command
+  sequence. For `svnpubsub` (ASF default): `svn import` into
+  `dist/dev/<project>/<version>-rcN/`. For `github-releases`:
+  `gh release create <version>-rcN --draft` plus
+  `gh release upload <version>-rcN <artefact>` per artefact. For
+  `s3`: `aws s3 cp --recursive <local> s3://<bucket>/<version>-rcN/`.
+  For `self-hosted`: the command template at
+  `release_publish_command_template` rendered with `<version>` and
+  `<rcN>` substituted.
 
 **State-change boundary.** The skill writes nothing to disk and
 runs nothing locally. The RM runs every command on their own
@@ -397,26 +406,37 @@ explicit RM confirmation.
 
 **Mode:** Triage. **Steps owned:** 9.
 
-**Scope.** After the vote window closes, parse the thread,
-classify each reply as +1 / 0 / -1, classify each voter as
-binding (PMC member) or non-binding, propose the `[RESULT] [VOTE]`
-body.
+**Scope.** After the approval window closes, fetch the approval
+signal from the adopter's `release_approval_mechanism` backend,
+classify each reply / approval as `+1` / `0` / `-1`, classify each
+approver as binding or non-binding against the configured
+roster, propose the result body (mailing-list `[RESULT] [VOTE]`
+or backend-equivalent).
 
 **Triggers.**
 
 - RM runs `/release-vote-tally <version>-rcN` after the configured
-  `vote_window_hours` has elapsed.
+  approval window (`vote_window_hours` for `dev-list-vote`,
+  `approval_window_hours` for non-list mechanisms) has elapsed.
 
 **Inputs.**
 
-- Vote thread fetched from the project's mail archive (PonyMail
-  by default; configurable per adopter).
-- `<project-config>/pmc-roster.md`, PMC member roster.
+- Approval signal: mail thread (`dev-list-vote`), Discussion
+  thread + reactions (`github-discussion`), PR review approvals
+  (`pr-approval`), or signed off-band roster file
+  (`maintainer-roster`). Backend resolved from
+  `release_approval_mechanism`.
+- Approver roster: `<project-config>/pmc-roster.md` for ASF (the
+  `release_approver_roster_path` default), or
+  `<project-config>/release-approvers.md` (or adopter-named path)
+  for non-ASF. Both files share the same schema.
 - `<project-config>/release-management-config.md`, vote-pass rule
-  (baseline:
+  (baseline for `dev-list-vote`:
   [`release-policy.html § release approval`](https://www.apache.org/legal/release-policy.html#release-approval)
   three binding `+1` minimum, more binding `+1` than `-1`; project
-  override permitted only to *strengthen*, never to weaken).
+  override permitted only to *strengthen*, never to weaken; for
+  non-list mechanisms, the backend-specific rule keys
+  (`approval_pr_min_approvals` etc.) play the same role).
 
 **Outputs.**
 
@@ -454,8 +474,12 @@ classification is the agent's; the decision is the RM's.
 
 **Mode:** Drafting. **Steps owned:** 10.
 
-**Scope.** Emit the `svn mv dist/dev → dist/release` command set
-plus commit message after a passing vote.
+**Scope.** Emit the backend-shaped promotion command set after a
+passing vote. For `svnpubsub` (ASF): `svn mv dist/dev → dist/release`
+plus commit message. For `github-releases`:
+`gh release edit <version> --draft=false`. For `s3`:
+`aws s3 mv --recursive s3://<bucket>/<version>-rcN/ s3://<bucket>/<version>/`.
+For `self-hosted`: the promote half of `release_publish_command_template`.
 
 **Triggers.**
 
@@ -495,9 +519,13 @@ hard skill-side denylist; removing it requires a skill PR.
 
 **Mode:** Drafting. **Steps owned:** 11.
 
-**Scope.** Draft the `[ANNOUNCE]` email body for
-`announce@apache.org` and the site-bump PR on the configured site
-repo.
+**Scope.** Draft the announcement artefact and the site-bump PR
+on the configured site repo. The announcement artefact shape
+depends on `release_announce_backend`: `[ANNOUNCE]` email body for
+`announce-list` (ASF default), GitHub Release page body for
+`github-release-notes`, blog-post markdown for `site-post`,
+webhook message body for `discord-channel`. The site-bump PR is
+emitted only when `site_repo` is configured.
 
 **Triggers.**
 
@@ -652,12 +680,15 @@ Required keys (cross-skill):
 
 | Key | Purpose | Used by |
 |---|---|---|
-| `release_dist_url_template` | `https://dist.apache.org/repos/dist/<bucket>/<project>/<version>/` template; `<bucket>` resolves to `dev` or `release` per step. | `release-rc-cut`, `release-promote`, `release-archive-sweep` |
-| `keys_file_url` | `https://dist.apache.org/repos/dist/release/<project>/KEYS`. | `release-keys-sync`, `release-verify-rc` |
-| `mail_archive` + `mail_archive_url_template` | PonyMail (or equivalent) backend used to read vote and announce threads. | `release-vote-tally`, `release-announce-draft` |
-| `vote_dev_list`, `announce_list` | `dev@<project>.apache.org`, `announce@apache.org`. | `release-vote-draft`, `release-announce-draft` |
-| `vote_window_hours` | Vote window length; floor per ASF policy. | `release-vote-draft`, `release-vote-tally` |
-| `vote_pass_rule_overrides` | Optional stricter rule. | `release-vote-tally` |
+| `release_dist_backend` | One of `svnpubsub` / `github-releases` / `s3` / `self-hosted`. Selects the staging-and-promote command set. | `release-rc-cut`, `release-promote`, `release-archive-sweep` |
+| `release_approval_mechanism` | One of `dev-list-vote` / `github-discussion` / `pr-approval` / `maintainer-roster`. Selects how `release-vote-draft` opens the approval and how `release-vote-tally` reads it. | `release-vote-draft`, `release-vote-tally` |
+| `release_announce_backend` | One of `announce-list` / `github-release-notes` / `site-post` / `discord-channel`. Selects the announcement artefact shape. | `release-announce-draft` |
+| `release_dist_url_template` | `https://dist.apache.org/repos/dist/<bucket>/<project>/<version>/` for `svnpubsub`; backend-shaped URL template for non-ASF backends. | `release-rc-cut`, `release-promote`, `release-archive-sweep` |
+| `release_publish_command_template` | Backend-specific command template (required when `release_dist_backend = self-hosted`; defaulted from the backend for the other values). | `release-rc-cut`, `release-promote` |
+| `keys_file_url` | URL of the project's signing-key trust anchor (`KEYS` on ASF; equivalent file on non-ASF). | `release-keys-sync`, `release-verify-rc` |
+| `release_approver_roster_path` | Roster the `release-vote-tally` skill consults to classify binding vs non-binding. ASF default: `<project-config>/pmc-roster.md`. | `release-vote-tally` |
+| `vote_window_hours` / `approval_window_hours` | Approval window length. ASF floor per policy. | `release-vote-draft`, `release-vote-tally` |
+| `vote_pass_rule_overrides` | Optional stricter rule (ASF baseline cannot be weakened; non-ASF backends define their own rule keys). | `release-vote-tally` |
 | `archive_retention_rule` | Retention rule for the archive sweep. | `release-archive-sweep` |
 | `audit_log_path` | Path under the adopter repo for audit records. | `release-audit-report` |
 | `rm_key_fingerprint` | RM's key fingerprint (often per-user, in `.apache-steward-overrides/user.md`). | `release-keys-sync` |
@@ -666,7 +697,19 @@ Required keys (cross-skill):
 The contract is the single per-adopter knob set. Skills consult
 the file, fall back to documented defaults if a key is missing,
 and refuse to proceed if a *required* key is missing (refusal
-text names the key).
+text names the key). Backend-specific required keys (per the
+backend table in
+[`projects/_template/release-management-config.md`](../../projects/_template/release-management-config.md))
+are required only when the corresponding backend is selected.
+
+ASF TLP releases are pinned to `release_approval_mechanism =
+dev-list-vote` (mandatory per
+[`release-policy.html § release approval`](https://www.apache.org/legal/release-policy.html#release-approval))
+and `release_announce_backend = announce-list` (mandatory per
+[`release-policy.html § announcements`](https://www.apache.org/legal/release-policy.html#release-announcements)).
+`release-vote-tally` and `release-announce-draft` refuse to run an
+ASF TLP release against any other value; non-ASF adopters set the
+keys their workflow uses.
 
 ## Eval
 

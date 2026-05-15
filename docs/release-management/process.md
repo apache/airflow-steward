@@ -3,6 +3,7 @@
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
 - [Release-management workflow: process and label lifecycle](#release-management-workflow-process-and-label-lifecycle)
+  - [Adopter backends](#adopter-backends)
   - [Process reference: the 14 steps](#process-reference-the-14-steps)
     - [Step 1: Release planning + version bump](#step-1-release-planning--version-bump)
     - [Step 2: Changelog, NOTICE, LICENSE](#step-2-changelog-notice-license)
@@ -30,12 +31,50 @@
 
 # Release-management workflow: process and label lifecycle
 
-The authoritative reference for the 14-step ASF release lifecycle
-and the label-lifecycle state diagram the [release-management
+The authoritative reference for the 14-step release lifecycle and
+the label-lifecycle state diagram the [release-management
 skills](../../.claude/skills/) execute against. The
 [family README](README.md) lists the skills; this document is the
 process they share. The [spec](spec.md) defines per-skill scope,
 state-change boundary, and adopter knobs.
+
+The lifecycle is described in **ASF terminology by default**
+(svnpubsub on `dist.apache.org`, `[VOTE]` on `dev@`, `[ANNOUNCE]`
+on `announce@apache.org`), because the framework's first pilots
+include an ASF PMC release. Every step that touches an ASF-specific
+surface is implemented as a *backend call* the adopter selects in
+[`release-management-config.md`](../../projects/_template/release-management-config.md),
+not a hard-coded operation. Non-ASF adopters resolve the same
+abstract step to their own backend; see the
+[Adopter backends](#adopter-backends) section for the dimensions
+and the per-step backend mapping.
+
+## Adopter backends
+
+Three dimensions parametrise the lifecycle. Each adopter picks one
+value per dimension in `release-management-config.md`. The 14
+steps stay identical; only the backend the agent emits commands
+against changes.
+
+| Dimension | Config key | ASF default | Non-ASF examples |
+|---|---|---|---|
+| Distribution backend | `release_dist_backend` | `svnpubsub` (`svn import` to `dist/dev/`, `svn mv` to `dist/release/`) | `github-releases` (`gh release upload` / `gh release edit --draft=false`), `s3` (`aws s3 cp` / `aws s3 mv`), `self-hosted` (project-supplied command template) |
+| Approval mechanism | `release_approval_mechanism` | `dev-list-vote` (`[VOTE]` thread on `dev@<project>.apache.org`, 72h window, 3 binding +1, more +1 than -1) | `github-discussion` (named Discussion thread on `<upstream>` repo), `pr-approval` (a "release-NN" PR with approvals from the configured roster), `maintainer-roster` (signed approvals from a named roster file) |
+| Announcement backend | `release_announce_backend` | `announce-list` (mail to `announce@apache.org`, cc `dev@`, `users@`) | `github-release-notes` (the release-page body is the announcement), `site-post` (a blog post in `site_repo`), `discord-channel` (a webhook into a named channel) |
+
+Each `release-*` skill consults the relevant key and emits
+backend-shaped paste-ready commands. The state-change boundaries
+([spec § Cross-cutting commitments](spec.md#cross-cutting-commitments))
+do not change: the agent still emits a recipe; the human still
+runs it. Swapping `svn` for `gh release upload` swaps the
+backend, not the boundary.
+
+The vote-tally roster (`release-vote-tally`) reads from the
+adopter's `pmc-roster.md` for ASF projects, or
+`<release_approver_roster_path>` (typically
+`<project-config>/release-approvers.md`) for non-ASF adopters; both
+files share the same schema (handle, binding-flag, optional GPG
+fingerprint).
 
 > [!IMPORTANT]
 > Release Management is **proposed** in the framework today. No

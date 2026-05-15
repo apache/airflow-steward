@@ -39,13 +39,30 @@ path, vote-window length, retention rule, audit-log location)
 plugs in through [`<project-config>/`](../../projects/_template/)
 just like the security family.
 
-Non-ASF adopters reuse the lifecycle by replacing the ASF-specific
-hooks: a GitHub Releases page instead of `dist.apache.org`, a
-project-internal mailing list or PR-based approval instead of
-`dev@`, a static-site deploy instead of `announce@apache.org`.
-The skills detect the adopter contract values and adapt; the
-mode boundaries (Drafting vs Triage, never publishing) stay
-identical.
+Non-ASF adopters are first-class adopters of this family, not a
+follow-up case. The 14-step lifecycle is described in ASF
+terminology because the framework's first pilot is an ASF PMC,
+but every step that touches an ASF-specific surface is implemented
+as a backend call the adopter selects in
+[`release-management-config.md`](../../projects/_template/release-management-config.md).
+Three dimensions parametrise the lifecycle, with no ASF assumption
+baked into the install path:
+
+- **Distribution backend** (`release_dist_backend`): `svnpubsub`
+  (ASF), `github-releases`, `s3`, `self-hosted`.
+- **Approval mechanism** (`release_approval_mechanism`):
+  `dev-list-vote` (ASF), `github-discussion`, `pr-approval`,
+  `maintainer-roster`.
+- **Announcement backend** (`release_announce_backend`):
+  `announce-list` (ASF), `github-release-notes`, `site-post`,
+  `discord-channel`.
+
+The 14 steps stay identical across backends; only the command set
+the agent emits changes. The state-change boundaries (Drafting vs
+Triage; agent never holds the signing key; agent never publishes)
+stay identical too. See
+[`process.md` § Adopter backends](process.md#adopter-backends)
+for the full backend table and per-step mapping.
 
 ## Status
 

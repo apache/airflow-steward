@@ -4,10 +4,13 @@
 
 - [Apache Airflow: release-management configuration](#apache-airflow-release-management-configuration)
   - [Identifiers](#identifiers)
+  - [Backends](#backends)
   - [Distribution URLs](#distribution-urls)
   - [Signing](#signing)
   - [Vote](#vote)
+    - [Approval, non-list variants](#approval-non-list-variants)
   - [Announce](#announce)
+    - [Announce, non-list variants](#announce-non-list-variants)
   - [Archive](#archive)
   - [Audit log](#audit-log)
   - [Category-X dependency denylist](#category-x-dependency-denylist)
@@ -52,15 +55,45 @@ ship in the same adopter directory and are referenced from here:
 | `release_branch_base` | `main` |
 | `version_manifest_files` | `setup.cfg`, `airflow/__init__.py` |
 
+## Backends
+
+Three switches select the backend each skill in the family emits
+commands against. See
+[`process.md` § Adopter backends](../../docs/release-management/process.md#adopter-backends)
+for the dimensions.
+
+| Key | Value | Allowed values |
+|---|---|---|
+| `release_dist_backend` | `svnpubsub` | `svnpubsub`, `github-releases`, `s3`, `self-hosted` |
+| `release_approval_mechanism` | `dev-list-vote` | `dev-list-vote`, `github-discussion`, `pr-approval`, `maintainer-roster` |
+| `release_announce_backend` | `announce-list` | `announce-list`, `github-release-notes`, `site-post`, `discord-channel` |
+
+ASF TLPs are pinned to `dev-list-vote` (mandatory per
+[`release-policy.html § release approval`](https://www.apache.org/legal/release-policy.html#release-approval))
+and `announce-list` (mandatory per
+[`release-policy.html § announcements`](https://www.apache.org/legal/release-policy.html#release-announcements));
+`release-vote-tally` and `release-announce-draft` refuse to run an
+ASF TLP release against any other value.
+
+Non-ASF adopters set the values their workflow uses; the skills
+emit backend-shaped paste-ready commands per
+[spec § Per-skill specifications](../../docs/release-management/spec.md#per-skill-specifications).
+The state-change boundaries are backend-independent.
+
 ## Distribution URLs
 
 | Key | Value |
 |---|---|
 | `release_dist_url_template` | `https://dist.apache.org/repos/dist/<bucket>/airflow/<version>/` |
 | `archive_url_template` | `https://archive.apache.org/dist/airflow/` |
+| `release_publish_command_template` | *(`svnpubsub` default; non-ASF adopters override with backend-specific command, e.g. `gh release upload <version> <artefacts>` for `github-releases`, `aws s3 cp --recursive <local> s3://<bucket>/<version>/` for `s3`)* |
 
 `<bucket>` resolves to `dev` (staging) or `release` (promoted)
-depending on the lifecycle step the skill is executing.
+depending on the lifecycle step the skill is executing. The
+`<bucket>` semantics are `svnpubsub`-shaped; backends that have no
+staging area (`github-releases` draft, `s3` versioned prefix) use
+the analogous draft/promote convention and document it in
+`release_publish_command_template`.
 
 ## Signing
 
@@ -81,6 +114,10 @@ See
 
 ## Vote
 
+Applies when `release_approval_mechanism = dev-list-vote`. Other
+mechanisms read their own key set (see *Approval, non-list
+variants* below).
+
 | Key | Value |
 |---|---|
 | `vote_dev_list` | `dev@airflow.apache.org` |
@@ -90,6 +127,7 @@ See
 | `vote_pass_rule_overrides` | *(none, uses ASF baseline: 3 binding +1 minimum, more binding +1 than -1)* |
 | `vote_subject_template` | `[VOTE] Release Apache Airflow <version> from <version>-rcN` |
 | `result_subject_template` | `[RESULT] [VOTE] Release Apache Airflow <version> from <version>-rcN` |
+| `release_approver_roster_path` | `<project-config>/pmc-roster.md` *(ASF default); non-ASF: e.g. `<project-config>/release-approvers.md`)* |
 
 The configured `vote_window_hours` is a floor per
 [`release-policy.html § release approval`](https://www.apache.org/legal/release-policy.html#release-approval).
@@ -100,7 +138,19 @@ shorten.
 (e.g. require 5 binding +1 instead of 3). Attempts to weaken the
 baseline are refused by `release-vote-tally`.
 
+### Approval, non-list variants
+
+| Mechanism | Required keys | Notes |
+|---|---|---|
+| `github-discussion` | `approval_discussion_repo`, `approval_discussion_category`, `approval_window_hours`, `release_approver_roster_path` | `release-vote-draft` opens the discussion; `release-vote-tally` reads reactions/replies and classifies binding-vs-non-binding against the roster. |
+| `pr-approval` | `approval_pr_branch_pattern` (e.g. `release/<version>`), `approval_pr_min_approvals`, `release_approver_roster_path` | `release-vote-draft` opens a `release-<version>` PR; `release-vote-tally` reads GitHub PR approvals from roster members. |
+| `maintainer-roster` | `release_approver_roster_path`, `approval_window_hours` | Off-band approval signal; the RM records signed approvals manually, the skill verifies count + roster membership. |
+
 ## Announce
+
+Applies when `release_announce_backend = announce-list`. Other
+backends read their own key set (see *Announce, non-list
+variants* below).
 
 | Key | Value |
 |---|---|
@@ -112,9 +162,14 @@ baseline are refused by `release-vote-tally`.
 
 `announce@apache.org` is mandatory for ASF TLP releases per
 [`release-policy.html § announcements`](https://www.apache.org/legal/release-policy.html#release-announcements).
-Non-ASF adopters replace `announce_list` with their project's
-equivalent (a public-announce mailing list, a Discord channel,
-a static-site post, etc.) and drop ASF-only fields.
+
+### Announce, non-list variants
+
+| Backend | Required keys | Notes |
+|---|---|---|
+| `github-release-notes` | `release_repo` (target repo for `gh release create --notes-file`) | `release-announce-draft` writes the body to the GitHub Release page; no separate site bump unless `site_repo` is also set. |
+| `site-post` | `site_repo`, `site_pr_files`, `site_post_template` | Static-site post is the announcement; no mailing list send. |
+| `discord-channel` | `discord_webhook_url_key` (name of secret holding the webhook URL), `discord_message_template` | The webhook URL itself never lives in this file; the skill reads it from the per-user secrets store named here. |
 
 ## Archive
 
