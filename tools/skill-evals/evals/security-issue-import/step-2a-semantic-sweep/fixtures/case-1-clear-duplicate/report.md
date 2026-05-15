@@ -1,5 +1,5 @@
 From: alice@example.com
-Subject: Apache Airflow REST API exposes DAG execution data without login
+Subject: <PROJECT> REST API exposes DAG execution data without login
 
 I discovered that the Airflow REST API does not enforce authentication on the
 DAG runs endpoint. By sending a GET request to /api/v1/dags/my_dag/dagRuns
