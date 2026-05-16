@@ -240,6 +240,7 @@ recommends.
 | `verdict.json` parse error on N files | Schema drift, manual edits, or interrupted campaign run | Surface the failing paths; do not aggregate partial data |
 | All verdicts classified `cannot-run-*` | Pool was shape-D / shape-H heavy, or runtime is broken | Surface in the dashboard's *"limitations"* section |
 | Health rating threshold seems wrong for this project | Project's defaults don't match its scale | Override via `.apache-steward-overrides/issue-reassess-stats.md` |
+| Age bands don't match the project's pace | "Recent" is project-relative; defaults assume a moderately active project | Override the band edges via `.apache-steward-overrides/issue-reassess-stats.md` |
 
 ---
 

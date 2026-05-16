@@ -115,6 +115,13 @@ from ones already unresolved for many months — issues under a year
 old are where most reassess decisions actually land, so collapsing
 them into one bucket hid the signal.
 
+These bands are reasonable defaults, not a contract. "Recent" is
+project-relative — a month-old issue is fresh for a fast-moving
+project but stale for a long-stable one. An adopter retunes the
+band edges via `.apache-steward-overrides/issue-reassess-stats.md`
+(see [`SKILL.md`](SKILL.md) failure modes); absent an override,
+the defaults above apply.
+
 The age axis informs the dashboard's *"oldest unresolved"* panel.
 
 ## Output
