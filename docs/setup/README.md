@@ -51,6 +51,12 @@ framework safe to use.
 - [**`secure-agent-internals.md`**](secure-agent-internals.md) —
   how the layered defence works (sandbox + permission rules +
   clean-env wrapper) and why each layer exists.
+- [**`install-recipes.md`**](install-recipes.md) — copy-pasteable
+  shell recipes (svn-zip / git-tag / git-branch) for bootstrapping
+  `setup-steward` into a new adopter repo.
+- [**`unadopt.md`**](unadopt.md) — counterpart to `install-recipes.md`:
+  remove the framework artefacts the adopt flow installed. One
+  path, full plan surfaced before any write.
 
 ## Typical lifecycle
 
