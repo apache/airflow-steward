@@ -20,7 +20,7 @@ must be scrubbed for two classes of problem:
 
 - Only replace names that appear in the supplied name→handle map.
   Do not invent handle mappings.
-- A bare name inside a markdown link text (e.g. [Alice Smith](…)) is
+- A bare name inside a markdown link text (e.g. [Alice Smith](...)) is
   still a bare name — replace it with the @-handle.
 - A name that already appears as @alice in the body does not need
   replacement; do not double-replace.

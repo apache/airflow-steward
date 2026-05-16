@@ -16,7 +16,7 @@ Scope label: providers
 ### Security Model verbatim quote
 
 Section: "Airflow Security Model — Authenticated users"
-URL: https://airflow.apache.org/docs/apache-airflow/stable/security/security_model.html#authenticated-users
+URL: https://airflow.apache.org/docs/apache-airflow/stable/security/security_model.html#authenticated-ui-users
 
 Quote to include verbatim (2-3 sentences):
 "Authenticated users can see the logs of all task instances they have

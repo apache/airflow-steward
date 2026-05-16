@@ -89,6 +89,15 @@ exclude_path = [
   "uv.lock",
   "tools/*/uv.lock",
   ".git",
+
+  # Placeholder GitHub org used in all eval fixture files — not a real repo.
+  '^https://github\.com/example-s/.*',
+
+  # Private / RFC-1918 IP addresses used as mock URLs in eval fixtures.
+  '^http://10\.',
+  '^http://172\.(1[6-9]|2[0-9]|3[01])\.',
+  '^http://192\.168\.',
+
 ]
 
 # Treat unresolvable hostnames the same as failures, no silent passes.
