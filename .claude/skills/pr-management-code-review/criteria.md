@@ -61,6 +61,7 @@ The canonical category list:
 - Database / query correctness
 - Code quality
 - Third-party license compliance
+- License headers
 - Testing
 - API correctness
 - UI (React/TypeScript)

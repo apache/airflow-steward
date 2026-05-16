@@ -226,13 +226,17 @@ match against are:
 2. **Database / query correctness**
 3. **Code quality**
 4. **Third-party license compliance**
-5. **Testing**
-6. **API correctness**
-7. **UI (React/TypeScript)**
-8. **Generated files**
-9. **AI-generated code signals**
-10. **Per-area `AGENTS.md` rules** — anything specific to the
-   touched tree (the per-PR `AGENTS.md` discovery in Step 2).
+5. **License headers**
+6. **Testing**
+7. **API correctness**
+8. **UI (React/TypeScript)**
+9. **Generated files**
+10. **AI-generated code signals**
+11. **Quality signals to check**
+12. **Commits and PRs** (newsfragments, commit messages, tracking issues)
+13. **Security model**
+14. **Per-area `AGENTS.md` rules** — anything specific to the
+    touched tree (the per-PR `AGENTS.md` discovery in Step 2).
 
 For each finding, record:
 

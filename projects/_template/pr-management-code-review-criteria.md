@@ -89,6 +89,7 @@ These are used when the skill links out per-finding.
 | Architecture boundaries | `https://github.com/apache/airflow/blob/main/.github/instructions/code-review.instructions.md#architecture-boundaries` |
 | Database / query correctness | `https://github.com/apache/airflow/blob/main/.github/instructions/code-review.instructions.md#database-and-query-correctness` |
 | Code quality | `https://github.com/apache/airflow/blob/main/.github/instructions/code-review.instructions.md#code-quality-rules` |
+| License headers | `https://www.apache.org/legal/src-headers.html` |
 | Testing | `https://github.com/apache/airflow/blob/main/.github/instructions/code-review.instructions.md#testing-requirements` |
 | API correctness | `https://github.com/apache/airflow/blob/main/.github/instructions/code-review.instructions.md#api-correctness` |
 | UI (React/TypeScript) | `https://github.com/apache/airflow/blob/main/.github/instructions/code-review.instructions.md#ui-code-reacttypescript` |
