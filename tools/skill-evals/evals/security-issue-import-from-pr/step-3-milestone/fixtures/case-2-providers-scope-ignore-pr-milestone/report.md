@@ -16,7 +16,7 @@ Next providers wave: Providers 2025-06-15
 
 ## Mock: gh api repos/airflow-s/airflow-s/milestones --jq '.[].title'
 
-```
+```text
 Airflow 3.2.1
 Airflow 3.2.2
 Airflow 3.3.0

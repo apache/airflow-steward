@@ -6,7 +6,7 @@ Improve XCom value type handling in the extra links API by replacing the `pickle
 - [ ] `uv run --project airflow-core pytest tests/models/test_xcom.py -xvs`
 - [ ] `prek run --from-ref main --stage pre-commit`
 
-##### Was generative AI tooling used to co-author this PR?
+### Was generative AI tooling used to co-author this PR?
 
 - [X] Yes — Claude Opus 4.6 (1M context)
 

@@ -5,7 +5,7 @@ Fix security vulnerability in XCom deserialization. CVE-2025-44812 is addressed 
 **Test plan:**
 - [ ] `uv run --project airflow-core pytest tests/models/test_xcom.py -xvs`
 
-##### Was generative AI tooling used to co-author this PR?
+### Was generative AI tooling used to co-author this PR?
 
 - [X] Yes — Claude Opus 4.6 (1M context)
 
