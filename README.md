@@ -186,9 +186,12 @@ for the full flow.
 
 ## Skill families
 
-Three skill families ship in the framework. Pick whichever the
-adopter wants to use; symlinks for the picked families land in
-the adopter's skill directory.
+Three skill families ship in the framework today; a fourth
+([**release-management**](docs/release-management/README.md))
+lands as docs-first (spec, lifecycle, adopter contract) with skill
+code following in subsequent PRs. Pick whichever the adopter
+wants to use; symlinks for the picked families land in the
+adopter's skill directory.
 
 The **Modes** column maps each family to the MISSION agent-assistance
 taxonomy — see [`docs/modes.md`](docs/modes.md) for what each mode
@@ -199,6 +202,7 @@ means and which modes are still proposed vs. shipping today.
 | [**setup**](docs/setup/README.md) | (infra) | Isolated agent setup, framework adoption + maintenance, shared-config sync. The prerequisite — at minimum the `setup-steward` skill itself runs out of this family. | 6 skills, [`docs/setup/`](docs/setup/) |
 | [**security**](docs/security/README.md) | A, C | 16-step security-issue handling lifecycle — from `security@` import through CVE publication. Maintainer-only. | 8 skills, [`docs/security/`](docs/security/) |
 | [**pr-management**](docs/pr-management/README.md) | A | Maintainer-facing PR-queue management — triage, stats, deep code review. | 3 skills, [`docs/pr-management/`](docs/pr-management/) |
+| [**release-management**](docs/release-management/README.md) | A, C | 14-step ASF release lifecycle, planning issue, RC cut + sign, `[VOTE]` thread, tally, promote, `[ANNOUNCE]`, archive, audit log. Agent never holds the RM's signing key and never publishes the release. **Proposed**, spec-first, like Mentoring; skill code lands in follow-up PRs. | 10 skills proposed, [`docs/release-management/`](docs/release-management/) |
 
 ## Maintenance
 
