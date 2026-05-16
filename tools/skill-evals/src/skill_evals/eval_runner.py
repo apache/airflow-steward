@@ -27,6 +27,7 @@ Options:
     --model MODEL   Model to use (default: claude-haiku-4-5-20251001)
     --filter GLOB   Only run cases whose path matches GLOB
     --fail-fast     Stop on first failure
+    --strict        Fail if the model returns keys not present in expected.json
 """
 
 from __future__ import annotations
@@ -48,9 +49,12 @@ from skill_evals.runner import find_cases, load_case, load_step_config, build_co
 
 def extract_json(text: str) -> dict:
     """Extract the first JSON object from a model response."""
-    # Strip markdown code fences
-    text = re.sub(r"^```(?:json)?\s*", "", text.strip(), flags=re.MULTILINE)
-    text = re.sub(r"```\s*$", "", text.strip(), flags=re.MULTILINE)
+    # Strip a single outermost markdown code fence if present.
+    # Use re.DOTALL but NOT re.MULTILINE so ^ and $ match only the very
+    # start/end of the string — internal fences inside JSON string values
+    # are left intact.
+    text = text.strip()
+    text = re.sub(r"^```(?:json)?\s*\n?(.*?)\n?```\s*$", r"\1", text, flags=re.DOTALL)
     text = text.strip()
 
     # Try parsing the whole thing first
@@ -78,13 +82,14 @@ def extract_json(text: str) -> dict:
 # Comparison
 # ---------------------------------------------------------------------------
 
-def compare(expected: dict, actual: dict) -> tuple[bool, list[str]]:
+def compare(expected: dict, actual: dict, strict: bool = False) -> tuple[bool, list[str]]:
     """
     Compare expected vs actual JSON.
 
     For boolean fields: assert equal.
     For integer/string fields: assert equal.
     For list fields: assert equal (exact match).
+    With strict=True, any key in actual that is not in expected is also a failure.
     Returns (passed, list_of_failure_messages).
     """
     failures = []
@@ -95,7 +100,10 @@ def compare(expected: dict, actual: dict) -> tuple[bool, list[str]]:
         act_val = actual[key]
         if exp_val != act_val:
             failures.append(f"  '{key}': expected {exp_val!r}, got {act_val!r}")
-    # Flag unexpected keys that are booleans and wrong (lenient on extras)
+    if strict:
+        for key in actual:
+            if key not in expected:
+                failures.append(f"  unexpected key '{key}' in response (strict mode)")
     return len(failures) == 0, failures
 
 
@@ -113,6 +121,8 @@ def main() -> None:
         help="Model to call (default: claude-haiku-4-5-20251001)"
     )
     parser.add_argument("--fail-fast", action="store_true", help="Stop on first failure.")
+    parser.add_argument("--strict", action="store_true",
+                        help="Fail if the model returns keys not present in expected.json.")
     parser.add_argument("--filter", default=None, metavar="SUBSTR",
                         help="Only run cases whose path contains SUBSTR.")
     args = parser.parse_args()
@@ -140,11 +150,18 @@ def main() -> None:
         system_prompt, user_prompt_template = _step_config_cache[fixtures_dir]
 
         corpus, roster, report, expected = load_case(case_dir)
-        user_prompt = user_prompt_template.format(
-            corpus=build_corpus_text(corpus),
-            roster=build_roster_text(roster),
-            report=report,
-        )
+        try:
+            user_prompt = user_prompt_template.format(
+                corpus=build_corpus_text(corpus),
+                roster=build_roster_text(roster),
+                report=report,
+            )
+        except (KeyError, ValueError) as exc:
+            raise type(exc)(
+                f"user-prompt-template.md in {fixtures_dir} has a format error: {exc}. "
+                "Available slots: {{corpus}}, {{roster}}, {{report}}. "
+                "Literal braces that are not slots must be doubled ({{ and }})."
+            ) from exc
 
         step_label = fixtures_dir.parent.name
         label = f"{step_label}/{case_dir.name}"
@@ -159,7 +176,7 @@ def main() -> None:
             )
             raw = response.content[0].text
             actual = extract_json(raw)
-            ok, diffs = compare(expected, actual)
+            ok, diffs = compare(expected, actual, strict=args.strict)
             if ok:
                 print("PASS")
                 passed += 1
@@ -179,6 +196,7 @@ def main() -> None:
 
         # Tiny sleep to avoid rate-limit bursts
         time.sleep(0.3)
+
 
     total = passed + failed + errors
     print()

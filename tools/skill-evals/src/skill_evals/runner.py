@@ -36,6 +36,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -44,6 +45,9 @@ from pathlib import Path
 # Prompt construction
 # ---------------------------------------------------------------------------
 
+# Available slots: {corpus}, {roster}, {report}.
+# Literal braces in a custom user-prompt-template.md that are NOT slots
+# must be doubled ({{ and }}) so Python's str.format() leaves them intact.
 USER_PROMPT_TEMPLATE = """\
 ## Existing open trackers (corpus)
 
@@ -95,7 +99,10 @@ def extract_skill_section(skill_md_path: Path, heading: str) -> str:
     text = skill_md_path.read_text()
     lines = text.split("\n")
     heading_stripped = heading.rstrip()
-    heading_level = len(heading) - len(heading.lstrip("#"))
+    m = re.match(r"^(#{1,6}) ", heading_stripped)
+    if not m:
+        raise ValueError(f"Heading {heading!r} does not look like a Markdown heading")
+    heading_level = len(m.group(1))
 
     start = next(
         (i for i, line in enumerate(lines) if line.rstrip() == heading_stripped),
@@ -105,9 +112,15 @@ def extract_skill_section(skill_md_path: Path, heading: str) -> str:
         raise ValueError(f"Heading {heading!r} not found in {skill_md_path}")
 
     end = len(lines)
+    in_fence = False
     for i in range(start + 1, len(lines)):
-        depth = len(lines[i]) - len(lines[i].lstrip("#"))
-        if depth > 0 and depth <= heading_level and lines[i].lstrip("#").startswith(" "):
+        stripped = lines[i].lstrip()
+        if stripped.startswith("```") or stripped.startswith("~~~"):
+            in_fence = not in_fence
+        if in_fence:
+            continue
+        hm = re.match(r"^(#{1,6}) ", lines[i])
+        if hm and len(hm.group(1)) <= heading_level:
             end = i
             break
 
@@ -193,10 +206,17 @@ def find_cases(path: Path) -> list[tuple[Path, Path]]:
     if direct:
         return [(p, path) for p in direct]
     # Recursive search — e.g. skill dir spanning multiple steps.
+    # De-duplicate: skip any fixtures/ that is itself nested under another
+    # fixtures/ already in the set (guards against accidental double-counting
+    # if someone copies a case sub-tree that contains its own fixtures/).
     results = []
+    seen_fixtures: set[Path] = set()
     for fixtures_dir in sorted(path.rglob("fixtures")):
         if not fixtures_dir.is_dir():
             continue
+        if any(fixtures_dir.is_relative_to(f) for f in seen_fixtures):
+            continue
+        seen_fixtures.add(fixtures_dir)
         for case_dir in sorted(fixtures_dir.iterdir()):
             if case_dir.is_dir() and (case_dir / "report.md").exists():
                 results.append((case_dir, fixtures_dir))
@@ -211,6 +231,11 @@ def main() -> None:
         "path",
         type=Path,
         help="Path to a single case directory or a fixtures directory containing multiple cases.",
+    )
+    parser.add_argument(
+        "--quiet",
+        action="store_true",
+        help="Suppress prompt content; print only case names and expected JSON.",
     )
     args = parser.parse_args()
 
@@ -229,19 +254,27 @@ def main() -> None:
         system_prompt, user_prompt_template = _step_config_cache[fixtures_dir]
 
         corpus, roster, report, expected = load_case(case_dir)
-        user_prompt = user_prompt_template.format(
-            corpus=build_corpus_text(corpus),
-            roster=build_roster_text(roster),
-            report=report,
-        )
+        try:
+            user_prompt = user_prompt_template.format(
+                corpus=build_corpus_text(corpus),
+                roster=build_roster_text(roster),
+                report=report,
+            )
+        except (KeyError, ValueError) as exc:
+            raise type(exc)(
+                f"user-prompt-template.md in {fixtures_dir} has a format error: {exc}. "
+                "Available slots: {{corpus}}, {{roster}}, {{report}}. "
+                "Literal braces that are not slots must be doubled ({{ and }})."
+            ) from exc
         step_label = fixtures_dir.parent.name
         print(f"{'=' * 60}")
         print(f"CASE: {step_label}/{case_dir.name}")
         print(f"{'=' * 60}")
-        print("--- SYSTEM PROMPT ---")
-        print(system_prompt)
-        print("--- USER PROMPT ---")
-        print(user_prompt)
+        if not args.quiet:
+            print("--- SYSTEM PROMPT ---")
+            print(system_prompt)
+            print("--- USER PROMPT ---")
+            print(user_prompt)
         print("--- EXPECTED ---")
         print(json.dumps(expected, indent=2))
         print()
