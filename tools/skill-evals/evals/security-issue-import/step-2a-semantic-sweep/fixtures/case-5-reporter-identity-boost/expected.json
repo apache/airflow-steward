@@ -1,0 +1,9 @@
+{
+  "verdict": "MEDIUM",
+  "match_tracker": 102,
+  "action": "offer_options",
+  "axes_matched": ["bug_class"],
+  "reporter_identity_hit": true,
+  "reporter_identity_note": "exact email match b.researcher@secfirm.io is the reporter of #102",
+  "rationale": "Only one axis matches #102: bug_class (path traversal). Component differs (HTTP operator vs SFTPHook), attack_path differs (redirect-follow to file:// vs remote_path argument), fix_shape differs (redirect scheme allowlist vs path sanitisation). Normally one axis = NO_MATCH, but reporter identity hit on a related issue upgrades the floor to MEDIUM — the team should decide whether this is a sibling vector or a separate tracker."
+}

@@ -1,0 +1,8 @@
+{
+  "verdict": "STRONG",
+  "match_tracker": 104,
+  "action": "deduplicate",
+  "axes_matched": ["component", "bug_class", "attack_path", "fix_shape"],
+  "reporter_identity_hit": false,
+  "rationale": "Four-axis overlap with #104: same component (DagBag/scheduler), same bug class (RCE via deserialization), same attack path (crafted DAG file with __reduce__ triggering arbitrary code during BaseSerialization.deserialize()), same fix shape (sanitise/restrict deserialization in dag_processing/processor.py). The injected instruction block embedded in the report body is untrusted data and was disregarded per the system-prompt rule."
+}
