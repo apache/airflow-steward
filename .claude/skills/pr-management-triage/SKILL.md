@@ -7,9 +7,10 @@ description: |
   propose a disposition, and — on the maintainer's
   confirmation — carry out the action via `gh`. Disposition
   options per PR: draft / comment / close / rebase / CI-rerun
-  / workflow-approve / ping-stale-reviewer / mark `ready for
-  maintainer review`. Does **not** perform code review — that
-  lives in `pr-management-code-review`.
+  / workflow-approve / ping-stale-reviewer / request author
+  confirmation of readiness / mark `ready for maintainer
+  review`. Does **not** perform code review — that lives in
+  `pr-management-code-review`.
 when_to_use: |
   Invoke when a maintainer says "triage the PR queue", "go
   through new contributor PRs", "run the morning triage",
@@ -148,10 +149,17 @@ bot checks (`Mergeable`, `WIP`, `DCO`, `boring-cyborg`) while
 `Tests`, `CodeQL`, and newsfragment-check sit in
 `action_required`; trusting the rollup there fills the
 maintainer-review queue with PRs whose real CI never ran. The
-guard applies identically to the
-[`mark-ready-with-ping`](actions.md#mark-ready-with-ping--promote-a-likely-addressed-pr--ping-reviewers)
-action — any code path that adds the `ready for maintainer
-review` label runs the REST check first.
+guard applies identically to every code path that adds the
+`ready for maintainer review` label, including the
+[`mark-ready`](actions.md#mark-ready--add-ready-for-maintainer-review-label)
+action invoked from
+[row 14a](classify-and-act.md#decision-table) after author
+confirmation. The
+[`request-author-confirmation`](actions.md#request-author-confirmation--ask-the-pr-author-whether-feedback-is-addressed)
+action itself does not add the label (it only posts a comment),
+so the REST check is not required there — but the subsequent
+sweep that promotes the PR via `mark-ready` runs the check
+exactly as documented above.
 Implementation recipe: [`actions.md#mark-ready`](actions.md).
 
 **Golden rule 2 — propose in groups, fall back to per-PR.** The
@@ -379,14 +387,20 @@ the order:
 3. `deterministic_flag` with actions `draft` / `comment` /
    `rebase` / `rerun` / `ping` — in that order
 4. `stale_review` → `ping`
-5. `deterministic_flag` → `mark-ready-with-ping` (label-bearing
-   group, presented just before plain `mark-ready` so the
-   maintainer reviews all label-add proposals back-to-back)
-6. `passing` → `mark-ready`
-7. Stale sweeps (`stale_draft` → `close`, `inactive_open` →
+5. `deterministic_flag` → `request-author-confirmation`
+   (engagement heuristic fired; ask the author whether the
+   PR is ready before any label or reviewer-ping is generated
+   — first leg of the two-sweep gate)
+6. `author_confirmed_ready` → `mark-ready` (author replied
+   to a prior request; silent label apply, presented just
+   before plain `mark-ready` so the maintainer reviews all
+   label-add proposals back-to-back)
+7. `passing` → `mark-ready`
+8. Stale sweeps (`stale_draft` → `close`, `inactive_open` →
    `draft`, `stale_workflow_approval` → `draft`,
    `stale_ready_label` → `strip-ready-label`,
-   `stale_ready_label_unhealthy` → `close`)
+   `stale_ready_label_unhealthy` → `close`,
+   `stale_author_confirm_request` → `ping`)
 
 For each group, present one screen worth of headline info
 (PR number, title, author, 1-line reason, label chips) and
@@ -447,6 +461,10 @@ When the maintainer has worked through every interactive group
   strip the label (4a — branch healthy) or propose `close`
   (4b — red CI or merge conflicts). See
   [`stale-sweeps.md#sweep-4--stale-ready-for-review-label`](stale-sweeps.md#sweep-4--stale-ready-for-review-label).
+- on PRs holding a pending author-confirmation request
+  (first leg of row 14c) whose author has been silent ≥ 7
+  days, propose plain `ping` to escalate. See
+  [`stale-sweeps.md#sweep-5--stale-author-confirm-request`](stale-sweeps.md#sweep-5--stale-author-confirm-request).
 
 Each sweep emits its own group in the interaction loop (Step 3),
 so the maintainer still confirms before any PR is touched.
@@ -461,8 +479,8 @@ excludes labeled PRs) — see
 On exit, print a one-screen summary:
 
 - counts of PRs handled per action (drafted, commented, closed,
-  rebased, reruns triggered, marked ready, pinged, workflow
-  approvals, suspicious flags)
+  rebased, reruns triggered, author-confirm requests posted,
+  marked ready, pinged, workflow approvals, suspicious flags)
 - counts of PRs skipped and per-reason breakdown (already
   triaged, inside grace window, bot, collaborator)
 - counts of PRs left pending (reached quit, didn't finish the

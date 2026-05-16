@@ -220,78 +220,84 @@ error; this is the only action of the skill whose sole purpose
 
 ---
 
-## `mark-ready-with-ping` — promote a likely-addressed PR + ping reviewers
+## `request-author-confirmation` — ask the PR author whether feedback is addressed
 
-A composite of `mark-ready` plus a `ping` comment. Used when
-the only `deterministic_flag` signal is unresolved review
-threads **and** the
+Single mutation. Used when the only `deterministic_flag` signal
+is unresolved review threads **and** the
 [`unresolved_threads_only_likely_addressed`](classify-and-act.md#unresolved_threads_only_likely_addressed)
 sub-flag is true (the author has engaged with every unresolved
 thread via a post-comment commit or an in-thread reply).
 
-**Same mandatory pre-mutation guard as `mark-ready`.** Run
-the `action_required` REST check first and refuse — by
-reclassifying as `pending_workflow_approval` — if any workflow
-run is awaiting approval. The reasoning in the
-[`mark-ready`](#mark-ready--add-ready-for-maintainer-review-label)
-section above applies identically here.
-
-Order of operations: **post the comment first, then add the
-label.** The comment names the reviewers and asks them to
-re-look at the threads; the label then routes the PR into the
-review queue. If the label is added first, the reviewers see a
-"ready for maintainer review" notification before the comment
-that explains *why* it was promoted, which reads as the bot
-mark-ready'ing without context.
+The action does **not** add the `ready for maintainer review`
+label and does **not** `@`-mention the original reviewers.
+Those steps belong to the second leg of this two-sweep flow,
+gated on an explicit author confirmation
+([row 14a](classify-and-act.md#decision-table) →
+[`mark-ready`](#mark-ready--add-ready-for-maintainer-review-label)).
 
 ```bash
-# 1. Pre-check: refuse if any workflow run is awaiting approval (same as mark-ready).
-#    Runs awaiting approval surface as `status: "completed"` +
-#    `conclusion: "action_required"` — `?status=action_required` matches
-#    none of them, so post-filter on `conclusion`.
-head_sha=$(gh api "repos/<owner>/<repo>/pulls/<N>" --jq '.head.sha')
-pending=$(gh api "repos/<owner>/<repo>/actions/runs?head_sha=${head_sha}&per_page=20" \
-  --jq '[.workflow_runs[] | select(.conclusion == "action_required")] | length')
-if [ "$pending" -gt 0 ]; then
-  echo "refuse mark-ready-with-ping: <N> has ${pending} workflow run(s) awaiting approval at ${head_sha}" >&2
-  # Reclassify: this PR is really pending_workflow_approval.
-  exit 2
-fi
-
-# 2. Post the ping comment (mark-ready-with-ping template).
-gh pr comment <N> --repo <repo> --body-file /tmp/pr-<N>-mark-ready-with-ping.md
-
-# 3. Apply the label.
-gh pr edit <N> --repo <repo> --add-label "ready for maintainer review"
+gh pr comment <N> --repo <repo> --body-file /tmp/pr-<N>-request-author-confirmation.md
 ```
 
 Body template:
-[`comment-templates.md#mark-ready-with-ping`](comment-templates.md).
+[`comment-templates.md#request-author-confirmation`](comment-templates.md).
 
-The body must `@`-mention every reviewer whose unresolved
-thread we believe was addressed (so they get the notification)
-and `@`-mention the PR author once at the top (so the
-contributor sees the rationale). The list of reviewers comes
-from the unresolved-thread reviewers captured during
-classification.
+The body `@`-mentions the PR author only, and **must** include
+the canonical marker string `ready for maintainer review
+confirmation` verbatim — that string is what
+[`viewer_confirmation_request_present`](classify-and-act.md#viewer_confirmation_request_present)
+searches for on subsequent sweeps to detect that a confirmation
+request is in flight. Do not paraphrase the marker.
 
-If the label step fails after the comment is already posted,
-**do not retry the comment** — surface the label-add error
-to the maintainer and let them apply the label manually. A
-duplicate ping comment is the worse of the two failure modes.
+### Why no label, no reviewer mention
 
-If the comment step fails (network blip, rate-limit), do not
-proceed to the label — the maintainer would then see a PR
-labelled `ready for maintainer review` with no explanation of
-how it got there.
+The classifier's signal that fired this action is *engagement*
+(post-review commits, in-thread author replies), not
+*resolution*. A post-review commit does not guarantee the
+commit addresses the specific thread; an in-thread reply does
+not guarantee the reply resolves it. Adding the label and
+mentioning reviewers off the engagement signal alone pushes a
+notification framed as a stronger claim than the underlying
+evidence supports. The two-sweep gate — ask the author, wait
+for their reply, then promote — moves the resolution check to
+the only person who reliably knows: the author.
+
+The label is also intentionally absent at this stage so that
+the PR does not enter the maintainer review queue until after
+the author has confirmed. Reviewers are reached via the queue,
+not via direct `@`-mention from the bot — see
+[`rationale.md`](rationale.md) for the longer argument.
+
+### What happens next
+
+- Author replies → next sweep classifies the PR as
+  [`author_confirmation_received`](classify-and-act.md#author_confirmation_received)
+  and proposes [`mark-ready`](#mark-ready--add-ready-for-maintainer-review-label).
+  The triaging maintainer reads the author's reply alongside
+  the proposal and confirms (or overrides to `skip` / `ping`
+  if the reply is non-affirmative).
+- Author silent → on the cooldown sweep, the PR matches the
+  [stale author-confirm-request sweep](stale-sweeps.md#sweep-5--stale-author-confirm-request),
+  which proposes a plain `ping` (or `skip`).
+- Author pushes a new commit before replying → the
+  [`viewer_confirmation_request_present`](classify-and-act.md#viewer_confirmation_request_present)
+  precondition fails (the confirmation request now predates the
+  new head commit) and the PR drops back to row 14c / 15 for
+  re-classification against the new state.
+
+### Failure handling
+
+A failed `gh pr comment` (network blip, rate-limit) is non-
+destructive — surface the error and let the maintainer retry on
+the next sweep. No partial state to clean up.
 
 ### Falling back to plain `ping`
 
 If the post-confirmation drill-in (e.g. the maintainer pulled
-the PR out of the group with `[P]ick`) reveals that the
-threads are *not* actually addressed, the maintainer can
-override the action to `ping`. The override drops the label
-step entirely and posts the regular
+the PR out of the group with `[P]ick`) reveals that the threads
+are *not* actually addressed (the author's engagement was a
+clarifying question or a partial fix), the maintainer can
+override the action to `ping`. The override posts the regular
 [`reviewer-ping`](comment-templates.md#reviewer-ping) body
 instead. See
 [`interaction-loop.md#group-action-override`](interaction-loop.md).
@@ -597,7 +603,7 @@ For every action that includes a comment, post the comment
 | `close` | post comment → close → label |
 | `flag-suspicious` | post comment → close → label *(per PR in the batch)* |
 | `mark-ready` | label only |
-| `mark-ready-with-ping` | post comment → label |
+| `request-author-confirmation` | post comment only (no label) |
 | `strip-ready-label` | remove-label only (no comment) |
 | `rerun` | rerun (no comment) |
 | `rebase` | update-branch (no comment) |
