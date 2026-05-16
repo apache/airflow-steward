@@ -5,7 +5,7 @@
 
 The stale-sweep phase runs after the interactive triage is
 done (Step 5 in [`SKILL.md`](SKILL.md)). Its job is to clear
-three categories of PRs that have gone silent:
+four categories of PRs that have gone silent:
 
 1. **Stale drafts** — drafts that haven't moved in weeks; either
    triaged and ghosted, or never triaged and drifted.
@@ -14,6 +14,11 @@ three categories of PRs that have gone silent:
 3. **Stale workflow-approval PRs** — first-time-contributor
    PRs awaiting workflow approval that have sat for over 4
    weeks without the author pushing new commits.
+4. **Stale author-confirm-requests** — PRs where the bot asked
+   the author to confirm readiness for maintainer review (the
+   first leg of the [row 14c](classify-and-act.md#decision-table)
+   two-sweep flow) and the author has been silent past the
+   cooldown.
 
 Each category has deterministic trigger criteria, a fixed
 action, and a canned comment. They are surfaced through the
@@ -245,6 +250,80 @@ since maintainer comment, no author reply, branch has
 
 ---
 
+## Sweep 5 — Stale author-confirm-request
+
+When a PR has a pending author-confirmation request from a
+prior sweep (the first leg of the
+[row 14c](classify-and-act.md#decision-table) two-sweep flow)
+and the author has not replied within the cooldown, this sweep
+proposes a fallback action so the PR does not sit indefinitely
+in the "asked, awaiting reply" limbo state.
+
+### Trigger
+
+- [`viewer_confirmation_request_present`](classify-and-act.md#viewer_confirmation_request_present)
+  is true (we posted the request, the head SHA has not advanced
+  since).
+- [`pending_author_confirmation`](classify-and-act.md#pending_author_confirmation)
+  is true (no author reply after our request).
+- `<now> - confirmation_request_at >= 7 days`, where
+  `confirmation_request_at` is the `createdAt` of the viewer's
+  most recent comment carrying the
+  `ready for maintainer review confirmation` marker.
+
+The same 7-day window used by
+[Sweep 4](#sweep-4--stale-ready-for-review-label) applies here
+— the symmetry is intentional: in both cases the author has
+gone silent after we asked them for input on a PR they own.
+
+### Action
+
+`ping` with the
+[`reviewer-ping` author-primary body](comment-templates.md#reviewer-ping)
+(unresolved threads from collaborators). The new ping makes
+the unresolved-thread state itself the topic again — the
+confirmation request was a softer ask that did not work, so
+the next sweep escalates to the normal unresolved-thread nudge.
+
+Do **not** strip the prior confirmation-request comment — it
+remains as part of the PR history, and a contributor returning
+later can see both pings in order.
+
+**Reason string.** *"Author confirmation requested N days ago,
+no reply — escalating to plain reviewer ping"*.
+
+### Group behaviour
+
+Batchable with simple `[A]ll` — the action is a single
+non-destructive comment, recoverable by the maintainer if it
+fires on the wrong PR.
+
+### Why not `close` or `draft`?
+
+`close` would punish a contributor whose only "fault" is
+missing a confirmation question; `draft` would lose the PR's
+review-ready posture even though every other signal
+(CI green, no conflicts) is healthy. Plain `ping` is the
+minimum escalation that re-surfaces the PR to the original
+reviewer pool without prejudging where the responsibility
+lies.
+
+### Override
+
+If the maintainer reading the proposal sees the unresolved
+threads are obviously addressed (e.g. the author engaged
+substantively in-thread but never replied to our
+confirmation), they can `[O]`-override the group to
+`mark-ready` — that path skips the ping entirely and just
+applies the label, treating the author's earlier in-thread
+engagement as the implicit confirmation. The override is
+deliberately not the default because a programmatic test for
+"engagement was substantive" would re-introduce exactly the
+false-positive risk the two-sweep gate was designed to
+eliminate.
+
+---
+
 ## Order of sweeps
 
 1. Sweep 1a (triaged drafts, 7d)
@@ -253,6 +332,7 @@ since maintainer comment, no author reply, branch has
 4. Sweep 3 (stale WF approval, 4w)
 5. Sweep 4a (stale ready-label, healthy, 7d) → strip
 6. Sweep 4b (stale ready-label, rotted, 7d) → close
+7. Sweep 5 (stale author-confirm-request, 7d) → ping
 
 Run 1a before 1b so a draft that's both "triaged 7d ago" and
 "never-triaged 2w ago" (the triage comment is recent but the
@@ -263,6 +343,13 @@ Sweep 4 operates on a disjoint candidate set (the labeled PRs
 the default search excluded), so there is no overlap with the
 earlier sweeps. 4a runs before 4b so the cheap label-tidying
 batch lands before the per-PR-confirm `close` group.
+
+Sweep 5 runs last because its candidate set is also disjoint
+from the earlier sweeps — PRs holding a confirmation-request
+comment do not carry the `ready for maintainer review` label
+yet (the label is the second-leg outcome), and their author
+silence is more recent than the 4-week thresholds in Sweeps 2
+and 3.
 
 ---
 

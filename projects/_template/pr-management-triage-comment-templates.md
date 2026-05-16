@@ -14,7 +14,7 @@
     - [`review-nudge` (reviewer-re-review)](#review-nudge-reviewer-re-review)
     - [`reviewer-ping` (author-primary)](#reviewer-ping-author-primary)
     - [`reviewer-ping` (reviewer-re-review)](#reviewer-ping-reviewer-re-review)
-    - [`mark-ready-with-ping`](#mark-ready-with-ping)
+    - [`request-author-confirmation`](#request-author-confirmation)
     - [`stale-draft-close` (triaged)](#stale-draft-close-triaged)
     - [`stale-draft-close` (untriaged)](#stale-draft-close-untriaged)
     - [`inactive-to-draft`](#inactive-to-draft)
@@ -160,12 +160,21 @@ This is **not** a rejection — you're welcome to open a new PR addressing the i
 <ai_attribution_footer>
 ```
 
-### `mark-ready-with-ping`
+### `request-author-confirmation`
+
+The body **must** include the literal marker string
+`ready for maintainer review confirmation` verbatim — the
+framework's
+[`viewer_confirmation_request_present`](../../.claude/skills/pr-management-triage/classify-and-act.md#viewer_confirmation_request_present)
+precondition searches for that exact text. Do not paraphrase
+that string when adapting the rest of the body.
 
 ```markdown
-@<author> — Your unresolved review thread(s) from <reviewers> appear to have been addressed (post-review commits and/or in-thread replies on every thread, with the latest commit pushed after the most recent thread). I've added the `ready for maintainer review` label so the PR re-enters the maintainer review queue.
+@<author> — There are <N> unresolved review thread(s) on this PR, and you have engaged with each one (post-review commits and/or in-thread replies). Could you confirm whether you believe the feedback is fully addressed and the PR is ready for maintainer review confirmation?
 
-<reviewers> — could you take another look when you have a chance? If you agree the feedback was addressed, please mark the threads as resolved so the queue signal stays accurate. If a thread still needs work, please reply in-line — @<author> will follow up.
+If yes, reply here (a short "yes / ready" is fine) and an Apache Airflow maintainer will pick the PR up from the review queue on the next sweep.
+
+If you are still working on a thread, please reply with what is outstanding so the threads stay unresolved on purpose.
 
 <ai_attribution_footer>
 ```

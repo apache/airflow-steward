@@ -63,7 +63,7 @@ Rules for the footer:
 
 - **Always include it** on every contributor-facing comment the
   skill posts — `draft`, `comment-only`, `close`,
-  `review-nudge`, `reviewer-ping`, `mark-ready-with-ping`,
+  `review-nudge`, `reviewer-ping`, `request-author-confirmation`,
   `stale-draft-close`, `inactive-to-draft`,
   `stale-workflow-approval`. The only exception is the
   `suspicious-changes` template, which is short, operationally
@@ -277,50 +277,67 @@ in-thread reply.
 
 ---
 
-## Mark ready with ping
+## Request author confirmation
 
-*(`mark-ready-with-ping` — promote-and-invite-reviewers comment)*
+*(`request-author-confirmation` — ask-author-if-ready comment)*
 
-Used when the action is `mark-ready-with-ping` (see
-[`actions.md#mark-ready-with-ping`](actions.md)). The PR's
-only outstanding signal is unresolved review threads, the
+Used when the action is `request-author-confirmation` (see
+[`actions.md#request-author-confirmation`](actions.md)). The
+PR's only outstanding signal is unresolved review threads, the
 [`unresolved_threads_only_likely_addressed`](classify-and-act.md#unresolved_threads_only_likely_addressed)
-heuristic fired, and we are promoting the PR to
-`ready for maintainer review` while inviting the original
-reviewer(s) to confirm the resolution.
+heuristic fired (engagement signal — not resolution signal),
+and we are asking the author to confirm before the PR is
+promoted into the maintainer review queue.
+
+The body **must** include the literal marker string
+`ready for maintainer review confirmation` verbatim. The
+[`viewer_confirmation_request_present`](classify-and-act.md#viewer_confirmation_request_present)
+precondition searches for that exact text on subsequent sweeps;
+paraphrasing it breaks the gated flow.
 
 ```markdown
-@<author> — Your unresolved review thread(s) from <reviewers> appear to have been addressed (post-review commits and/or in-thread replies on every thread, with the latest commit pushed after the most recent thread). I've added the `ready for maintainer review` label so the PR re-enters the maintainer review queue.
+@<author> — There are <N> unresolved review thread(s) on this PR from <reviewers>, and you have engaged with each one (post-review commits and/or in-thread replies). Could you confirm whether you believe the feedback is fully addressed and the PR is ready for maintainer review confirmation?
 
-<reviewers> — could you take another look when you have a chance? If you agree the feedback was addressed, please mark the threads as resolved so the queue signal stays accurate. If a thread still needs work, please reply in-line — @<author> will follow up.
+If yes, reply here (a short "yes / ready" is fine) and an <PROJECT> maintainer will pick the PR up from the review queue on the next sweep.
+
+If you are still working on a thread, please reply with what is outstanding so the threads stay unresolved on purpose.
 
 <ai_attribution_footer>
 ```
 
 Notes on the body:
 
-- **`@<author>` is mentioned once at the top.** They get one
-  notification with the rationale (so they understand why the
-  label appeared) and a clear ask if a thread comes back open.
-- **Every reviewer with an unresolved thread is `@`-mentioned
-  once** in the second paragraph. They get the prompt that
-  matters for them — "please re-look and resolve the threads if
-  you agree".
-- **No "no rush" line.** Unlike the `draft` / `comment-only`
-  templates, this one is announcing forward motion (PR
-  promoted), not asking the author to fix something — the
-  decompression line would read as out of place.
-- **No "thanks!"** — per the global tone rules, sign-offs are
-  noise.
-- **The `<ai_attribution_footer>` still applies** so the
-  reviewer knows the promotion is AI-drafted; if the
-  heuristic was wrong they have a clear cue to push back
-  rather than assuming a maintainer made the call.
+- **`@<author>` is mentioned once at the top.** They are the
+  only person whose input we need in this step.
+- **No `<reviewers>` `@`-mention.** Reviewers are reached
+  through the `ready for maintainer review` queue once the
+  author confirms — pinging them here would push a notification
+  built on the engagement signal alone, which is the failure
+  mode this two-sweep flow exists to avoid.
+- **The marker string `ready for maintainer review
+  confirmation`** appears verbatim in the first paragraph.
+  Do not edit the wording around it in a way that breaks the
+  substring match (case-sensitive).
+- **No "no rush" line.** The author is the only one who can
+  move the PR forward at this step; framing the ask softly
+  matters more than a decompression line.
+- **The `<ai_attribution_footer>` applies** — this is a
+  contributor-facing comment drafted by the bot, and the
+  author should know that.
 
-If the heuristic was wrong (the reviewer disagrees that the
-threads are addressed), the reviewer can re-open a thread,
-remove the label, or comment back — the PR re-enters the
-unresolved-threads triage path on the next sweep.
+If the author replies affirmatively, the next sweep classifies
+the PR as
+[`author_confirmation_received`](classify-and-act.md#author_confirmation_received)
+and the triaging maintainer is offered the
+[`mark-ready`](actions.md#mark-ready--add-ready-for-maintainer-review-label)
+action with the author's reply visible alongside the proposal.
+If the author replies with "still working on X" or a clarifying
+question, the maintainer overrides the proposal to `skip` or
+`[O]ping` from the group menu.
+
+If the author is silent past the cooldown, the
+[stale author-confirm-request sweep](stale-sweeps.md#sweep-5--stale-author-confirm-request)
+takes over.
 
 ---
 

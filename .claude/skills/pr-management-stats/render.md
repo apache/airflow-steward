@@ -188,7 +188,7 @@ The "What needs attention" panel is built from this fixed rule set, evaluated in
 | 3 | `len(stale_triaged_drafts) > 0` (drafts triaged ≥ 7d ago, no reply) | medium | 🗑️ | `Close <N> stale-triaged drafts (≥7d, no response)` | Closure path lives under the `stale` flow (sweep step 1a). | `/pr-management-triage stale` |
 | 4 | `len(ready_open) >= 50` | high | 📥 | `<N> PRs labeled "ready for maintainer review"` | The `ready for maintainer review` queue is past the triage stage; it needs maintainer review attention, not triage. | `/pr-management-code-review ready` |
 | 5 | `20 <= len(ready_open) < 50` | medium | 📥 | `<N> PRs in "ready for maintainer review" queue` | Same trigger family as rule 4 — banded by queue size so the priority drops once the queue is comfortable. | `/pr-management-code-review ready` |
-| 6 | `len(responded_no_ready) > 0` (triaged + responded but not ready-for-review) | medium | 🔄 | `<N> triaged PRs have author responses awaiting re-triage` | These will surface as mark-ready-with-ping inside the regular triage sweep. | `/pr-management-triage all PR issues` |
+| 6 | `len(responded_no_ready) > 0` (triaged + responded but not ready-for-review) | medium | 🔄 | `<N> triaged PRs have author responses awaiting re-triage` | These will surface as request-author-confirmation (first leg of the two-sweep mark-ready gate) inside the regular triage sweep. | `/pr-management-triage all PR issues` |
 | 7 | top area's `untriaged_4w + untriaged_1_4w >= 5` | medium | 📍 | `Area "<area>" has <total> contributor PRs (<X> untriaged >4w)` | One area is dominating the untriaged queue; scoping a triage pass to it clears the bulk of the load. | `/pr-management-triage label:area:<area>` |
 | 8 | `velocity_drop > 30` (last_wk total - this_wk total) | low | 📉 | `PR closure velocity dropped <N> this week` | No immediate action — re-check next week to see if the drop persists or was a one-off. | — |
 | 9 | top ready-trend area's growth in last 7d ≥ 10 PRs | low | 📈 | `Ready-for-review queue in "<area>" grew by <N> this week` | Growth concentrated in one area suggests it'd benefit from a focused review pass. | `/pr-management-code-review label:area:<area>` |
@@ -248,7 +248,7 @@ Distinct from the colour scheme: these are the four conceptual *states* a contri
 | Marker | Definition | Colour | Maintainer action |
 |---|---|---|---|
 | `Ready for review` | `ready for maintainer review` label is present | green | run `/maintainer-review` to actually code-review the PR |
-| `Responded` | PR is triaged AND author has commented or pushed after the triage comment, AND not yet `Ready` | bright cyan | re-triage; may now qualify for `mark-ready-with-ping` |
+| `Responded` | PR is triaged AND author has commented or pushed after the triage comment, AND not yet `Ready` | bright cyan | re-triage; may now qualify for `request-author-confirmation` (first leg of the two-sweep mark-ready gate) |
 | `Waiting for Author` | PR is triaged, no author response — OR — PR is a draft (whether triaged or not) | amber | nothing; author owns the next move (may become a sweep candidate after 7d) |
 | `Not yet triaged` | None of the above. Non-draft PR that has never received a quality-criteria comment | blue (or grey) | run `/pr-management-triage` to give it a first look |
 

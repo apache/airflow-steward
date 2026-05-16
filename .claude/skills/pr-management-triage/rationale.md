@@ -324,29 +324,151 @@ The shape of the failures determines the action:
 - Otherwise (≤ 2 failures, no conflict, branch up-to-date) →
   `rerun`. Most "two-failure" cases on a clean PR are flakes.
 
-### Rows 14, 15 — `mark-ready-with-ping` vs `ping`
+### Rows 14a, 14b, 14c, 15 — the two-sweep author-confirmation gate
 
-Both fire when the only signal is unresolved review threads.
-Difference is what we believe about the threads:
+All four rows handle PRs whose only outstanding signal is
+unresolved review threads. The split is about *what stage of
+the gate* the PR is in:
 
-- `ping` is the safe default — threads are unresolved, may not
-  yet be addressed, nudge the author to fix or explain.
-- `mark-ready-with-ping` is the optimistic path — threads are
-  unresolved but the author has already engaged (post-review
-  commit, or in-thread reply, *and* the latest commit post-dates
-  the most recent unresolved thread). The PR is plausibly ready
-  for the maintainer to take another look; we promote it with
-  the `ready for maintainer review` label *and* ping the
-  reviewer to confirm and resolve their threads.
+- **Row 14a — `author_confirmed_ready` → `mark-ready`.** We
+  asked the author on a prior sweep; the author replied.
+  Silently apply the `ready for maintainer review` label. No
+  comment, no reviewer `@`-mention; the label is the queue
+  signal. Reviewers reach the PR through the queue, not via
+  the bot.
+- **Row 14b — `awaiting_author_confirmation` → `skip`.** We
+  asked the author on a prior sweep; the author has not
+  replied yet and the cooldown has not elapsed. Do nothing
+  this sweep. The same row stays matched on subsequent sweeps
+  until either the author replies (row 14a takes over) or
+  Sweep 5 in [`stale-sweeps.md`](stale-sweeps.md) reroutes
+  the PR to plain `ping`.
+- **Row 14c — engagement signal present, no prior request →
+  `request-author-confirmation`.** The engagement heuristic
+  (`unresolved_threads_only_likely_addressed`) fires and we
+  have not asked the author yet. Post an author-only comment
+  asking whether the PR is ready. No label, no reviewer
+  mention.
+- **Row 15 — engagement signal absent → `ping`.** The threads
+  are unresolved and the author has not engaged with them in
+  a way the heuristic recognises. The safe default — nudge
+  the author (or, in the inspection-confirmed variant, the
+  reviewer) without making any claim about resolution.
 
-The `unresolved_threads_only_likely_addressed` heuristic is conservative on
-purpose. False-negative degrades to plain `ping` (cheap). False-
-positive would advance a PR that isn't actually ready, which is
-the worse failure mode. The maintainer still confirms; the
-posted comment explicitly invites the reviewer to push back if a
-thread is not actually addressed, so a heuristic false-positive
-self-corrects on the next round-trip rather than silently landing
-the PR.
+#### Why a two-sweep gate at all
+
+The earlier single-sweep `mark-ready-with-ping` action
+collapsed the entire flow into one step: heuristic match →
+maintainer confirm → label added + reviewer `@`-mentioned.
+The structural problem was that the engagement heuristic is
+an *engagement* signal, not a *resolution* signal:
+
+- A post-review commit does not guarantee the commit
+  addresses the specific thread (it can touch unrelated
+  files, fix only one of several open threads, or be a
+  follow-up to a different review).
+- An in-thread author reply does not guarantee the reply
+  resolves the thread (it can be a clarifying question, a
+  partial fix, or pushback on the reviewer's framing).
+
+The triaging maintainer's confirmation on the single-sweep
+action was an endorsement of "the heuristic looks plausible",
+not "the threads are definitively resolved". But the outgoing
+comment named the original reviewer(s) and asserted the
+threads "appear to have been addressed" — a stronger claim
+than the underlying evidence supported. False positives
+landed on the original reviewers as push notifications and
+asked them to do the verification work the heuristic could
+not.
+
+The two-sweep gate moves the verification step to the only
+party who reliably knows whether the feedback is addressed:
+the author. Trade-off is one sweep of latency in exchange for
+removing the reviewer-mention path entirely and shifting
+false-positive cost from "another maintainer's notification
+queue" to "one extra round-trip in the author/bot
+conversation".
+
+#### Why the label is silent on row 14a
+
+When row 14a fires, the label is applied with no comment.
+This is the same recipe as plain `mark-ready` (row 20). The
+reasoning:
+
+- The author already knows they have been promoted — they
+  just replied affirmatively to the bot's question on the
+  previous sweep, and the label appearing is the visible
+  confirmation that the answer was accepted.
+- Reviewers reach the PR through the `ready for maintainer
+  review` queue, which is a pull signal rather than a push
+  notification. Adding a `@`-mention here would be the
+  exact noise pattern row 14c was designed to remove,
+  just one sweep later.
+
+If reviewer attention is genuinely needed beyond the queue
+signal (e.g. a thread that the maintainer reading the
+proposal believes the author still needs to address), the
+maintainer reads the author's reply and either `[P]`-picks
+the PR out for an override to plain `ping`, or skips. The
+in-the-loop maintainer is more informed than the bot's
+heuristic and can call it correctly.
+
+#### Why row 14c posts a comment but no label
+
+The asymmetry with row 14a is deliberate. At row 14c we have
+*engagement* but not *resolution* — promoting the PR to the
+maintainer queue at this stage would re-introduce the
+single-sweep failure mode (label on a PR that may not
+actually be ready, surfaced to other maintainers who then
+discover the gap). Posting the question without the label
+keeps the PR in the author's lane until the author signals
+otherwise.
+
+The cost is one sweep of latency in the happy path. The
+benefit is that the label, when it is eventually added, is
+gated on the author's own statement that the PR is ready —
+which is the strongest cheap signal available without
+forcing the bot to read the diff or parse the reviewer's
+comments.
+
+#### Why row 14b is `skip`, not a fresh comment
+
+Once we have asked the author and we are still inside the
+cooldown, posting a second comment would be the bot
+nagging. The author has the question; they know what is
+expected; the silence is informative. Sweep 5 in
+[`stale-sweeps.md`](stale-sweeps.md) handles the escalation
+deterministically once 7 days have elapsed, so there is no
+need for the active-triage path to act in the interim.
+
+#### What happens to the `<author-reply>` body
+
+Row 14a's precondition is *any* author comment after our
+request, not "an affirmative author comment". The bot does
+not parse the reply text — natural-language affirmation
+detection is brittle and would re-introduce a heuristic
+failure mode in the second leg of the flow. Instead, the
+triaging maintainer reads the author's reply alongside the
+proposal in the
+[group screen](interaction-loop.md#group-ordering). If the
+reply is affirmative the maintainer accepts the proposal in
+one keystroke. If the reply is "actually I'm still working
+on X" the maintainer overrides to `skip` (or `[O]`-overrides
+to plain `ping` to re-surface the unresolved-thread
+conversation). The bot's job is to put the PR and the reply
+in front of a person who can read.
+
+#### `unresolved_threads_only_likely_addressed` stays conservative
+
+The heuristic still fires only when the latest commit
+post-dates the most recent unresolved thread AND every
+unresolved thread has either an in-thread author reply or a
+post-thread commit. The change is in what we *do* on
+matches, not in the matching condition. Tightening the
+heuristic further (e.g. requiring per-thread commit
+attribution) would gain little once the author-confirmation
+gate is in place: the gate already filters the
+false-positives that would otherwise reach the reviewer.
 
 ### Row 16 — no real CI ran, mergeable
 

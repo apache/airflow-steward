@@ -45,7 +45,7 @@ filter is skipped silently from the main triage flow.
 | F2 | Author is a known bot | login is `dependabot`, `dependabot[bot]`, `renovate[bot]`, `github-actions`, `github-actions[bot]`, or matches `*[bot]` |
 | F3 | Draft and not stale | `isDraft == true` and any activity within the last 14 days. Stale-sweep classifications in [`stale-sweeps.md`](stale-sweeps.md) may still pull the PR back in. |
 | F4 | Already marked ready, no regression | `labels` contains `ready for maintainer review` AND CI green AND `mergeable != CONFLICTING` AND no unresolved threads. **Regression bypasses this filter** — any of: CI red, new conflict, or new unresolved thread whose triggering event (failing check `startedAt`, conflict detection, thread `createdAt`) is *after* the label-add timestamp. The typical case is a contributor pushing a rebase or fixup commit to a ready-for-review PR that re-introduces deterministic failures. PRs bypassing F4 fall through to the decision table normally; the cross-cutting [`strip-ready-on-downgrade` hard rule](#hard-rules-cross-cutting-the-table) ensures the label comes off if a `deterministic_flag` row fires. |
-| F5a | Recent collaborator comment (author cooldown) | Most recent comment from the **union of** general-issue comments (`comments(last:10)`) and **review-thread comments** (`reviewThreads.nodes.comments`) is by a `COLLABORATOR`/`MEMBER`/`OWNER`, `createdAt < 72h` ago, AND posted after `commits(last:1).committedDate`. The review-thread leg is essential — a maintainer asking a clarifying question in-thread is just as much an active conversation as a top-level comment, and treating only the latter routes the PR to `ping` / `mark-ready-with-ping` while the maintainer is still mid-sentence. |
+| F5a | Recent collaborator comment (author cooldown) | Most recent comment from the **union of** general-issue comments (`comments(last:10)`) and **review-thread comments** (`reviewThreads.nodes.comments`) is by a `COLLABORATOR`/`MEMBER`/`OWNER`, `createdAt < 72h` ago, AND posted after `commits(last:1).committedDate`. The review-thread leg is essential — a maintainer asking a clarifying question in-thread is just as much an active conversation as a top-level comment, and treating only the latter routes the PR to `ping` / `request-author-confirmation` while the maintainer is still mid-sentence. |
 | F5b | Maintainer-to-maintainer ping unanswered | Most recent collaborator comment from the **union** described in F5a above `@`-mentions one or more logins other than the PR author AND none of those mentioned logins have posted on the PR (general comments **or** review threads) or in `latestReviews` after that comment. Team mentions (e.g. `@<upstream>-committers`) are conservatively treated as F5b matches. |
 | F6 | Maintainer co-drafted | `isDraft == true` AND any of: (a) `latestReviews` has a node with `authorAssociation ∈ {OWNER, MEMBER, COLLABORATOR}` AND `author.login ≠ <viewer>` AND `state ∈ {COMMENTED, CHANGES_REQUESTED, APPROVED}` AND `submittedAt > commits(last:1).committedDate` AND review body is non-empty (avoids the "review with only inline thread comments and an empty top-level body" false positive — those are already counted by row 14/15 unresolved-thread logic); (b) `comments(last:10)` has a node with `authorAssociation ∈ {OWNER, MEMBER, COLLABORATOR}` AND `author.login ≠ <viewer>` AND `length(bodyText) ≥ 80` AND `createdAt > commits(last:1).committedDate`. Trivial signals (emoji-only, `+1`, `lgtm`, pure `@team` pings without prose) do not count — those are already covered by F5a/F5b or are below the substantive-engagement threshold. **Stale-sweep classifications in [`stale-sweeps.md`](stale-sweeps.md) may still pull the PR back in** — F6 only suppresses duplicate-proposal rows from the decision table, not eventual-resurfacing on a different action. |
 
@@ -85,7 +85,9 @@ Action verbs are defined in [`actions.md`](actions.md).
 | 11 | [`ci_failures_only`](#ci_failures_only) AND any failure ∈ `recent_main_failures`               | `deterministic_flag`       | `rerun`                | K/N CI failures match recent main-branch PRs — likely systemic |
 | 12 | [`ci_failures_only`](#ci_failures_only) AND every failed check is a [static check](#static_check) | `deterministic_flag`     | `comment`              | Only static-check failures — needs a code fix, not a rerun |
 | 13 | [`ci_failures_only`](#ci_failures_only) AND `failed_count <= 2` AND `commits_behind <= 50`     | `deterministic_flag`       | `rerun`                | N CI failure(s) on otherwise clean PR — likely flaky, suggest rerun |
-| 14 | [`unresolved_threads_only`](#unresolved_threads_only) AND [`unresolved_threads_only_likely_addressed`](#unresolved_threads_only_likely_addressed) | `deterministic_flag` | `mark-ready-with-ping` | K unresolved thread(s) from <reviewers> appear addressed (post-review commits / in-thread author replies) — promote to ready and ping reviewers to confirm |
+| 14a | [`author_confirmation_received`](#author_confirmation_received)                                | `author_confirmed_ready`   | `mark-ready`           | Author confirmed PR is ready for maintainer review — apply label |
+| 14b | [`pending_author_confirmation`](#pending_author_confirmation)                                  | `awaiting_author_confirmation` | `skip`             | Awaiting author confirmation requested M days ago |
+| 14c | [`unresolved_threads_only`](#unresolved_threads_only) AND [`unresolved_threads_only_likely_addressed`](#unresolved_threads_only_likely_addressed) | `deterministic_flag` | `request-author-confirmation` | K unresolved thread(s) from <reviewers> show author engagement — ask author to confirm readiness for maintainer review |
 | 15 | [`unresolved_threads_only`](#unresolved_threads_only)                                          | `deterministic_flag`       | `ping`                 | K unresolved review thread(s) from <reviewers> — ping author + reviewers |
 | 16 | No real CI ran (see [Real-CI guard](#real-ci-guard)) AND `mergeable != CONFLICTING` AND author NOT first-time | `deterministic_flag` | `rebase`            | No real CI checks triggered, branch mergeable — rebase to re-trigger |
 | 17 | [`has_deterministic_signal`](#has_deterministic_signal) (fallback)                             | `deterministic_flag`       | `draft`                | Has quality issues — convert to draft with violations comment |
@@ -225,6 +227,61 @@ All of:
 
 Heuristic, conservative on purpose. Rationale:
 [`rationale.md#unresolved_threads_only_likely_addressed-heuristic-detail`](rationale.md#unresolved_threads_only_likely_addressed-heuristic-detail).
+
+### `viewer_confirmation_request_present`
+
+True when the viewer (the authenticated maintainer running the
+skill) has posted a comment on the PR whose body contains the
+literal marker string
+
+> `ready for maintainer review confirmation`
+
+(the canonical marker baked into the `request-author-confirmation`
+template — see
+[`comment-templates.md#request-author-confirmation`](comment-templates.md))
+AND that comment's `createdAt` is **after** the PR's head
+`committedDate`. The post-last-commit check means a fresh
+contributor push invalidates the prior confirmation request
+(new code = new threads possibly opened, our previous question
+no longer applies).
+
+Marker matching is a case-sensitive substring search on the
+comment body. The marker text is fixed in the framework template
+to make this glossary entry deterministic; adopters customising
+the wording of the rest of the body must keep this exact string
+verbatim — the same contract as the
+[`Pull Request quality criteria`](#decision-table) link text
+for `already_triaged` (rows 3–4).
+
+### `pending_author_confirmation`
+
+[`viewer_confirmation_request_present`](#viewer_confirmation_request_present)
+is true AND there is **no** comment by the PR author (issue-level
+in `comments(last:10)` **or** review-thread reply in
+`reviewThreads.nodes.comments`) with `createdAt` greater than
+the confirmation-request comment's `createdAt`.
+
+The PR is mid-cycle: we have asked, the author has not yet
+answered.
+
+### `author_confirmation_received`
+
+[`viewer_confirmation_request_present`](#viewer_confirmation_request_present)
+is true AND there **is** a comment by the PR author (issue-level
+or review-thread reply, as in
+[`pending_author_confirmation`](#pending_author_confirmation))
+with `createdAt` greater than the confirmation-request comment's
+`createdAt`.
+
+The author has responded. The reply text is **not** parsed by
+the bot — the triaging maintainer reads the reply alongside the
+proposal in
+[`interaction-loop.md`](interaction-loop.md) and decides
+whether the response is affirmative. If the maintainer reads
+the reply as a non-affirmative response ("still working on X",
+a follow-up question, etc.) they override the proposal to
+`skip` or `[O]ping`. The bot's only job is to surface the PR
+with the reply visible.
 
 ### `copilot_review_stale`
 

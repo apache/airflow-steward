@@ -47,17 +47,33 @@ the groups in this fixed order:
 8. `(deterministic_flag, ping)` — batchable (unresolved threads
    from collaborators).
 9. `(stale_review, ping)` — batchable.
-10. `(deterministic_flag, mark-ready-with-ping)` — batchable
-    (unresolved threads that the heuristic believes are
-    addressed; presented just before the plain mark-ready group
-    because both end with the `ready for maintainer review`
-    label going on).
-11. `(passing, mark-ready)` — batchable.
-12. `(stale_draft, close)` — batchable but with extra per-PR
+10. `(deterministic_flag, request-author-confirmation)` —
+    batchable (unresolved threads where the engagement
+    heuristic fired; we ask the author whether the PR is
+    ready for maintainer review before any label or reviewer
+    ping is generated — the first leg of the two-sweep gate).
+11. `(author_confirmed_ready, mark-ready)` — batchable
+    (presented just before the plain mark-ready group because
+    both end with the `ready for maintainer review` label
+    going on). The author's reply is shown in the per-PR row
+    so the maintainer can read it before confirming `[A]ll` —
+    a non-affirmative reply is the maintainer's cue to
+    `[P]ick` the PR out and override to `skip` or `ping`.
+12. `(passing, mark-ready)` — batchable.
+13. `(stale_draft, close)` — batchable but with extra per-PR
     confirm inside the batch (these are rarely wrong but when
     wrong they're very wrong).
-13. `(inactive_open, draft)` — batchable.
-14. `(stale_workflow_approval, draft)` — batchable.
+14. `(inactive_open, draft)` — batchable.
+15. `(stale_workflow_approval, draft)` — batchable.
+
+Skipped (filtered before group presentation) but worth noting
+for completeness: `awaiting_author_confirmation` PRs (we asked
+the author, they have not yet replied, and we are still inside
+the cooldown) classify as `skip` in
+[row 14b](classify-and-act.md#decision-table) and never form
+a group. They reappear once the author replies (→ group 11) or
+when the cooldown lapses (→ Sweep 5 in
+[`stale-sweeps.md`](stale-sweeps.md)).
 
 The ordering is chosen so the maintainer always faces the
 riskiest decisions first, while their attention is fresh. The
@@ -211,7 +227,7 @@ safe alternatives:
 | `rebase` | `comment`, `skip` |
 | `rerun` | `comment`, `skip` |
 | `mark-ready` | `skip` |
-| `mark-ready-with-ping` | `ping` (fall back to plain reviewer ping if the maintainer thinks the heuristic over-reached), `skip` |
+| `request-author-confirmation` | `ping` (skip the author-confirmation step and post the plain reviewer-ping body directly if the maintainer thinks the engagement heuristic over-reached), `skip` |
 | `ping` | `comment`, `skip` |
 | `close` (deterministic_flag) | — (no overrides — use `[E]` to downgrade individually) |
 | `close` (stale_draft) | `draft`, `skip` |
@@ -341,7 +357,7 @@ PRs acted on:    22
   - rebased:           4
   - reruns triggered:  3
   - marked ready:      3
-  - marked ready w/ ping:  1
+  - author-confirm requests:  1
   - pings posted:      2
 PRs skipped:     15   (12 already triaged / inside grace, 2 bot, 1 collaborator)
 PRs left pending: 10   (reached [Q] before classifying)
