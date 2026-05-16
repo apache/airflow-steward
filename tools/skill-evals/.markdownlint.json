@@ -1,0 +1,8 @@
+{
+  "extends": "../../.markdownlint.json",
+
+  "$comment": "Eval fixtures simulate `gh issue view` output, which renders GitHub issue bodies as YAML literal blocks (`body: |`). The body content is indented 2 spaces, so `### Section` headings inside the body violate MD023 (heading-start-left). Headings in GitHub issue templates also use trailing `:` in some section names, violating MD026. Both rules are disabled here because the indentation is structurally correct for the fixture format, not a real markdown authoring error.",
+
+  "MD023": false,
+  "MD026": false
+}
