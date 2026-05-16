@@ -11,7 +11,7 @@ Return a JSON object with exactly these fields:
   "selected_canned_section": "<section name string>",
   "confidence": "exact" | "best_fit" | "default",
   "rationale": "<one sentence explaining why this section fits>",
-  "other_applicable": ["<section name>"] 
+  "other_applicable": ["<section name>"]
 }
 ```
 
