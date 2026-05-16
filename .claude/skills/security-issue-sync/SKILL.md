@@ -982,7 +982,7 @@ are in scope, run the checks in parallel via the subagent fanout
 
 **When the tracker has no CVE ID.** Closed trackers without a
 `CVE-YYYY-NNNNN` in the *CVE tool link* body field are closing
-dispositions (`invalid` / `not CVE worthy` / `duplicate` /
+dispositions (`invalid` / `duplicate` /
 `wontfix`) — skip the cve.org check entirely and drop the tracker
 from the closed-bucket sweep.
 
@@ -1201,7 +1201,7 @@ will change and *why*. Group them by category:
      When it has, propose closing the issue (do not update labels).
      This is the only place sync proposes closing an advisory-flow
      issue; all earlier closes are only for closing dispositions
-     (`invalid` / `not CVE worthy` / `duplicate` / `wontfix`) at
+     (`invalid` / `duplicate` / `wontfix`) at
      Steps 5–6.
 
   See the "CVE references must never point at non-public mailing-list
@@ -1936,7 +1936,7 @@ before moving on to the next item. Use:
   field still points at, and historical board sweeps still see the
   item. Apply the archive for every close, regardless of the close
   reason (terminal-Step-15 or non-terminal disposition like
-  `invalid` / `duplicate` / `not CVE worthy` / `wontfix`); the
+  `invalid` / `duplicate` / `wontfix`); the
   mutation is idempotent and a no-op on already-archived items.
 - **Project-board column:** apply via the `updateProjectV2ItemFieldValue`
   GraphQL recipe in
@@ -2039,7 +2039,7 @@ it out explicitly in the Step 6 recap:
   Remind the user to allocate a CVE via
   <https://cveprocess.apache.org/allocatecve> and mention that the next
   sync run will embed the JSON automatically once a CVE is set.
-- **The tracking issue was closed as `invalid` / `not CVE worthy` /
+- **The tracking issue was closed as `invalid` /
   `duplicate`** and there is nothing to attach.
 
 In every other case — including already-published CVEs — regenerate.

@@ -330,7 +330,7 @@ is not a security issue. Strong signals:
   (full URL, anchor links, paraphrases).
 - Phrases like *"this is by design"*, *"out of scope"*,
   *"documented behavior"*, *"requires X privileges already"*,
-  *"not a CVE"*, *"not CVE worthy"*, *"won't fix"*, *"working as
+  *"not a CVE"*, *"won't fix"*, *"working as
   intended"*.
 - Pointers to existing CVEs that already addressed the broader
   class (e.g. *"already covered by CVE-2023-37379"*).
