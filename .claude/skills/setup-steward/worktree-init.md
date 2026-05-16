@@ -57,7 +57,7 @@ has the right symlink is a no-op.
    | Symlink to **something else** | Step 1 with a move-aside warning. The skill backs the existing link up, names what it pointed at, and asks the user to confirm before replacing. |
    | Regular directory (per-worktree snapshot from before this convention) | Step 1 with a move-aside warning. Back up the directory to `.apache-steward.bak.<timestamp>` and create the symlink. **Do not** `rm -rf` without confirmation — the directory may hold uncommitted local edits the operator wants to preserve before the framework standardised on snapshot-from-main. |
 
-## Step 1 — Create the symlink
+## Step 1 — Create the snapshot symlink
 
 ```bash
 ln -s <main>/.apache-steward <worktree>/.apache-steward
@@ -69,19 +69,61 @@ Then verify the chain end-to-end:
   at `<main>/.apache-steward`.
 - `ls <worktree>/.apache-steward/.claude/skills/` lists the
   same skills as `ls <main>/.apache-steward/.claude/skills/`.
-- Pick any committed skill symlink (e.g.
-  `<worktree>/.claude/skills/security-issue-sync/SKILL.md`) and
-  confirm `readlink -f` resolves it into
-  `<main>/.apache-steward/...` rather than dangling.
+
+## Step 1b — Wire up the worktree's `<adopter-skills-dir>` symlinks
+
+The snapshot symlink in Step 1 only makes the framework's
+*source* available to this worktree. The `<adopter-skills-dir>`
+symlinks (the gitignored per-skill entries the agent harness
+actually resolves) are **per-worktree** — each working copy
+needs its own. A worktree branched from before adoption
+landed, or branched from a state where the symlinks were
+cleaned, has none on disk.
+
+Compose the **effective family set** for this worktree:
+
+- **Opt-in families** the project recorded — read from
+  `<main>/.apache-steward.lock` (the committed lock; the
+  worktree shares it via git).
+- **Always-on families** — every `setup-*` skill in the
+  snapshot *except* `setup-steward` itself, and every
+  `list-steward-*` skill, per
+  [`SKILL.md` Golden rule 8](SKILL.md#golden-rules). These
+  are added unconditionally, never read from the lock.
+
+For each framework skill in the effective family set:
+
+- If `<worktree>/<adopter-skills-dir>/<skill>` is missing —
+  create it (gitignored).
+- If it exists and points at the correct snapshot path —
+  leave it alone.
+- If it exists but is broken or points at the wrong path —
+  repair it.
+
+Reuse the convention detection from
+[`conventions.md`](conventions.md): flat vs double-symlinked
+layout drives where the inner / outer links land. Both
+layers gitignored.
+
+Pick any framework skill symlink that should now exist (e.g.
+`<worktree>/.claude/skills/security-issue-sync/SKILL.md`) and
+confirm `readlink -f` resolves it into
+`<main>/.apache-steward/...` rather than dangling — same
+sanity check as Step 1's bottom bullet, just now end-to-end
+from agent-harness path through the worktree's symlink
+through the snapshot symlink to the framework source.
 
 ## Step 2 — Recap
 
 Print a short summary:
 
-- The symlink that was just created.
+- The snapshot symlink that was just created or confirmed.
 - The main checkout's resolved path.
 - The framework version the main is pinned at (read from
   `<main>/.apache-steward.lock`).
+- The effective family set wired in Step 1b, split into
+  *opt-in* and *always-on*, with per-skill ✓ / + / ↻
+  counts.
 - A reminder: `upgrade` from the main, not from the worktree.
 
 ## Inputs

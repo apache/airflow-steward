@@ -129,9 +129,28 @@ into `.apache-steward/.claude/skills/<name>/`:
   or this same skill with `--auto-fix-symlinks`.
 
 For each framework skill in the snapshot **not** symlinked
-in the adopter — surface as ⚠ with the family
-classification. The user may have intentionally not picked
-that family; the warning prompts a decision.
+in the adopter, classify it:
+
+- **Always-on family** (every `setup-*` *except*
+  `setup-steward` itself, and every `list-steward-*` — per
+  [`SKILL.md` Golden rule 8](SKILL.md#golden-rules)) →
+  surface as ✗. These families are not opt-in; missing
+  symlinks here indicate a broken install or a skipped
+  upgrade pass. Remediation:
+  `/setup-steward verify --auto-fix-symlinks` (cheap), or
+  `/setup-steward upgrade` (covers the family-wide pass).
+- **Opt-in family the project picked** (per
+  `<committed-lock>` / `<local-lock>`) → surface as ✗. The
+  project declared the family but the install is missing a
+  skill from it. Remediation as above.
+- **Opt-in family the project did NOT pick** → surface as
+  ⚠. The user may have intentionally not picked that
+  family; the warning prompts a decision.
+
+The `--auto-fix-symlinks` path repairs the first two
+classes in place without prompting; the ⚠ class needs an
+explicit `/setup-steward adopt` re-run with the family
+added to the pick.
 
 ### 6. `.apache-steward-overrides/` exists + has the README
 
@@ -160,11 +179,14 @@ snapshot's `.apache-steward/.claude/skills/setup-steward/`.
     case after a framework upgrade where the adopter has
     not yet rerun `/setup-steward upgrade`). Run
     `/setup-steward upgrade` — its
-    [Step 6b](upgrade.md#step-6b--overwrite-the-committed-setup-steward-skill-from-the-new-snapshot)
+    [Step 4b](upgrade.md#step-4b--overwrite-the-committed-setup-steward-from-the-new-snapshot--reload-in-flight)
     auto-overwrites the committed copy with the snapshot's
-    version, surfaces local modifications first if any
-    exist, and lands the change in `git status` for the
-    user to commit.
+    version, **reloads the skill in-flight** so the rest of
+    the upgrade run executes against the new bootstrap
+    content (per
+    [`SKILL.md` Golden rule 9](SKILL.md#golden-rules)),
+    surfaces local modifications first if any exist, and
+    lands the change in `git status` for the user to commit.
   - **Committed copy is newer than the snapshot** (the
     adopter modified the bootstrap skill directly; an
     anti-pattern per the framework's hard rule). The
@@ -173,16 +195,34 @@ snapshot's `.apache-steward/.claude/skills/setup-steward/`.
     is to revert the modifications and use
     `.apache-steward-overrides/` instead.
 
-### 8. Post-checkout hook installed
+### 8. Post-checkout hook installed *and content matches the framework's expected*
 
-`<repo-root>/.git/hooks/post-checkout` exists, is
-executable, and contains the
-`/setup-steward verify --auto-fix-symlinks` recipe.
+Two sub-checks on `<repo-root>/.git/hooks/post-checkout`:
 
-- ⚠ if missing — strictly optional, but worktrees off this
-  repo will need a manual
-  `/setup-steward verify --auto-fix-symlinks` after
-  checkout. Print the install recipe.
+1. **Presence + executable.** File exists, is executable,
+   and contains the
+   `/setup-steward verify --auto-fix-symlinks` recipe.
+   - ⚠ if missing — strictly optional, but worktrees off
+     this repo will need a manual
+     `/setup-steward verify --auto-fix-symlinks` after
+     checkout. Print the install recipe.
+
+2. **Content drift vs the framework's expected.** Diff the
+   installed hook against the framework's expected hook
+   content (the canonical source is shipped under the
+   snapshot — locate it during the check). Same logic
+   applies for any other adopter-installed local hook or
+   config file the framework grows in future.
+   - ✓ if content matches.
+   - ⚠ if drifted and the diff looks like operator
+     hand-edits — surface the diff; remediation is to run
+     `/setup-steward` (adopt or upgrade), whose
+     hook+config-sync pass re-installs from the snapshot
+     after asking about hand-edits.
+   - ✗ if drifted and the installed content is clearly
+     stale (older framework version's recipe) — same
+     remediation, no operator prompt needed; the sync
+     pass overwrites silently.
 
 ### 9. Project documentation mentions the framework
 
