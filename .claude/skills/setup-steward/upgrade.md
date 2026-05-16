@@ -91,9 +91,11 @@ For each kind of drift, present:
 - **`setup-steward` skill changed in the framework** —
   surface as a separate note. The adopter's *committed*
   copy of `setup-steward` will be auto-overwritten from the
-  new snapshot in [Step 6b](#step-6b--overwrite-the-committed-setup-steward-skill-from-the-new-snapshot)
-  so the bootstrap stays in sync with the framework version
-  the project just pinned.
+  new snapshot in [Step 4b](#step-4b--overwrite-the-committed-setup-steward-from-the-new-snapshot--reload-in-flight)
+  and then the skill **reloads in-flight** before the rest
+  of the upgrade runs, so the bootstrap stays in sync with
+  the framework version the project just pinned and the
+  remaining steps execute against the new content.
 
 Ask for explicit confirmation before deleting and re-
 installing.
@@ -134,6 +136,66 @@ new `<local-lock>`:
   HEAD` for git methods; the version for svn-zip.
 - `fetched_at` — current ISO-8601 timestamp.
 
+## Step 4b — Overwrite the committed `setup-steward` from the new snapshot + reload in-flight
+
+This step **must run before Steps 5+** so the remainder of
+this upgrade executes against the framework version the
+project just pinned to, not against the pre-upgrade
+bootstrap logic. It implements
+[`SKILL.md` Golden rule 9](SKILL.md#golden-rules).
+
+1. Compute the diff between the adopter-side
+   `<adopter-skills-dir>/setup-steward/` (committed copy)
+   and the snapshot's
+   `.apache-steward/.claude/skills/setup-steward/`.
+2. **If the adopter has local modifications** to their
+   committed copy beyond what the snapshot ships — surface
+   the diff and stop. Do **not** silently overwrite local
+   work. The user either (a) confirms the modifications can
+   be discarded, (b) decides to upstream them as a PR
+   against `apache/airflow-steward` first, or (c) defers
+   the bootstrap-skill update to a later upgrade run.
+3. **If there are no local modifications** (or the user
+   confirmed in 2), copy the snapshot's `setup-steward`
+   over the committed copy:
+
+   ```bash
+   # For the flat layout:
+   rm -rf .claude/skills/setup-steward
+   cp -r .apache-steward/.claude/skills/setup-steward \
+         .claude/skills/setup-steward
+
+   # For the double-symlinked layout (e.g. apache/airflow):
+   rm -rf .github/skills/setup-steward
+   cp -r .apache-steward/.claude/skills/setup-steward \
+         .github/skills/setup-steward
+   # The .claude/skills/setup-steward symlink does not need
+   # touching — it points at .github/skills/setup-steward
+   # which is now the new content.
+   ```
+
+4. **Reload in-flight.** Immediately after the copy lands —
+   before doing anything else in this run — re-read the
+   updated `<adopter-skills-dir>/setup-steward/SKILL.md`,
+   the just-overwritten `upgrade.md` (this file), and any
+   helper file you have already opened in this run
+   (`conventions.md`, `overrides.md`, `verify.md`). Resume
+   the upgrade from the step *after* this one, executing
+   the reloaded content — not the version of this file
+   that was in memory when the upgrade started.
+
+5. The new bootstrap-skill content lands as **modified files
+   in `git status`** at the adopter's committed-skill path.
+   The user reviews the diff and commits it as part of the
+   upgrade PR; on merge, every other contributor's next
+   `/setup-steward` run loads the matching version.
+
+The adopter shouldn't modify the bootstrap copy locally —
+the framework's hard rule is *"local mods go in
+`.apache-steward-overrides/`, framework changes go via PR
+to `apache/airflow-steward`"*. But if they did, step (2)
+catches it before the overwrite would erase their work.
+
 ## Step 5 — Reconcile overrides
 
 For each file in `<repo-root>/.apache-steward-overrides/`:
@@ -158,19 +220,37 @@ pattern-matching.
 
 ## Step 6 — Refresh framework-skill symlinks
 
-Read the chosen skill families from `<committed-lock>`
+Read the opt-in skill families from `<committed-lock>`
 (falling back to `<local-lock>` if the committed lock is
-silent on families). The post-upgrade state must be:
-*every framework skill in the new snapshot that belongs to
-a chosen family has a valid symlink in
-`<adopter-skills-dir>`*, and *no symlink points at a
-framework skill that no longer exists in the snapshot*.
+silent on families). Compose the **effective family set**
+for this upgrade as:
+
+- **Opt-in families** the project recorded (`security`,
+  `pr-management`, or both).
+- **Always-on families** (always added — never read from
+  the lock, never user-configurable, per
+  [`SKILL.md` Golden rule 8](SKILL.md#golden-rules)):
+  - every `setup-*` skill in the new snapshot *except*
+    `setup-steward` itself, and
+  - every `list-steward-*` skill in the new snapshot.
+
+Compute the always-on set fresh from the snapshot contents
+on disk — it expands automatically when the framework adds
+a new `setup-*` or `list-steward-*` skill in a release, and
+contracts on a rename / removal without code changes here.
+
+The post-upgrade state must be: *every framework skill in
+the new snapshot that belongs to the effective family set
+has a valid symlink in `<adopter-skills-dir>`*, and *no
+symlink points at a framework skill that no longer exists
+in the snapshot*.
 
 Run two passes:
 
 1. **Ensure every family-member skill is linked.** For each
-   framework skill in the new snapshot that belongs to a
-   chosen family, check `<adopter-skills-dir>/<skill>`:
+   framework skill in the new snapshot that belongs to the
+   effective family set, check
+   `<adopter-skills-dir>/<skill>`:
    - If the symlink exists and points at the matching
      snapshot path, leave it alone.
    - If it's missing, create it.
@@ -196,61 +276,103 @@ Run two passes:
 
 For the double-symlinked convention, refresh both layers.
 
-## Step 6b — Overwrite the committed `setup-steward` skill from the new snapshot
+## Step 6b — Sync locally-installed hooks and configuration
 
-The adopter-side committed `setup-steward` skill is the
-**only** framework skill that lives as a committed copy
-rather than a gitignored symlink (per
-[`SKILL.md` Golden rule 6](SKILL.md#golden-rules)). When the
-framework's `setup-steward` evolves — new sub-action, lock-
-format change, drift-detection refinement — the adopter's
-copy must follow, or the bootstrap on a fresh clone will run
-old logic against a new snapshot.
+The framework ships hooks and config files an adopter
+*carries locally* (in the working tree or under `.git/`)
+rather than pulls in via symlink. Examples:
 
-This step keeps the two in sync **automatically on every
-upgrade**:
+- `<repo-root>/.git/hooks/post-checkout` (the worktree-aware
+  hook installed during adoption).
+- Any future hook or local config the framework adds.
 
-1. Compute the diff between the adopter-side
-   `<adopter-skills-dir>/setup-steward/` (committed copy)
-   and the snapshot's
-   `.apache-steward/.claude/skills/setup-steward/`.
-2. **If the adopter has local modifications** to their
-   committed copy beyond what's in the snapshot — surface
-   the diff and stop. Do **not** silently overwrite local
-   work. The user either (a) confirms the modifications can
-   be discarded, (b) decides to upstream them as a PR
-   against `apache/airflow-steward` first, or (c) defers the
-   bootstrap-skill update to a later upgrade run.
-3. **If there are no local modifications** (or the user
-   confirmed in 2), copy the snapshot's `setup-steward`
-   over the committed copy:
+These can drift independently of the snapshot — an
+adopter who never re-runs `/setup-steward` after a
+framework upgrade keeps the old hook content even after the
+snapshot updates. This step closes that gap.
 
-   ```bash
-   # For the flat layout:
-   rm -rf .claude/skills/setup-steward
-   cp -r .apache-steward/.claude/skills/setup-steward \
-         .claude/skills/setup-steward
+For each hook / local config file the framework declares as
+"adopter-installed":
 
-   # For the double-symlinked layout (e.g. apache/airflow):
-   rm -rf .github/skills/setup-steward
-   cp -r .apache-steward/.claude/skills/setup-steward \
-         .github/skills/setup-steward
-   # The .claude/skills/setup-steward symlink does not need
-   # touching — it points at .github/skills/setup-steward
-   # which is now the new content.
-   ```
+1. Compute the snapshot's *expected* content for that file
+   (the framework ships the expected content under
+   `.apache-steward/.claude/skills/setup-steward/` or a
+   sibling location — locate the canonical source for each
+   file).
+2. Compare against the local copy.
+3. If unchanged — ✓, move on.
+4. If drifted and the diff is consistent with a stock
+   framework refresh (no operator hand-edits) — overwrite
+   silently.
+5. If the local copy looks hand-edited — surface the diff,
+   ask the user whether to overwrite, keep, or move-aside.
 
-4. The new bootstrap-skill content lands as **modified files
-   in `git status`** at the adopter's committed-skill path.
-   The user reviews the diff and commits it as part of the
-   upgrade PR; on merge, every other contributor's next
-   `/setup-steward` run loads the matching version.
+Run this sync unconditionally on every upgrade and every
+adopt run, regardless of whether the snapshot changed. It
+catches the "local config drifted while the snapshot didn't"
+case (e.g. a contributor accidentally edited
+`.git/hooks/post-checkout`).
 
-The adopter shouldn't modify the bootstrap copy locally —
-the framework's hard rule is *"local mods go in
-`.apache-steward-overrides/`, framework changes go via PR
-to `apache/airflow-steward`"*. But if they did, this step
-catches it before the overwrite would erase their work.
+## Step 6c — Propagate to every worktree (run `worktree-init` unconditionally)
+
+The main checkout drives the upgrade, but each worktree
+carries its own gitignored `<adopter-skills-dir>` symlinks.
+Those symlinks need refreshing too — otherwise a developer
+sitting in a worktree sees the new snapshot via the shared
+`<snapshot-dir>` symlink (per
+[`worktree-init.md`](worktree-init.md)) but their
+`<adopter-skills-dir>` may still point at *missing* skills
+(a family the upgrade added) or *renamed* ones (a framework
+rename).
+
+`worktree-init` is **always run on every worktree** at the
+end of an upgrade, even when the user did not ask for it,
+even when the worktree looks "already wired", because
+`worktree-init` is idempotent (a no-op when state is
+correct) and the cost of running it unnecessarily is
+trivially small. Conversely, *not* running it leaves worktree
+state inconsistent with the new framework version. The
+post-checkout hook covers the "next checkout" case, but
+upgrade re-aligns the existing worktrees **now**.
+
+Procedure:
+
+1. Enumerate worktrees with `git worktree list --porcelain`.
+   Filter to the linked worktrees only — skip the main
+   checkout (already handled above) and any bare worktrees.
+2. For each linked worktree, invoke
+   `/setup-steward worktree-init` with that worktree's
+   working directory as the `cwd`. The sub-action picks up
+   the family set from `<main>/.apache-steward.lock` (the
+   committed lock the worktree shares via git) plus the
+   always-on families per
+   [`SKILL.md` Golden rule 8](SKILL.md#golden-rules), and
+   reconciles both the snapshot symlink and the
+   `<adopter-skills-dir>` symlinks (see
+   [`worktree-init.md` Step 1 + Step 1b](worktree-init.md)).
+3. Collect each invocation's recap into a per-worktree row
+   for the upgrade summary's `Worktrees:` section
+   (Step 8 output block).
+
+**Failure handling per worktree:**
+
+- If a worktree is on a branch that does not carry the
+  adopter's committed `setup-steward` skill (e.g. a feature
+  branch from before adoption landed), the worktree-init
+  invocation refuses with "main checkout not adopted from
+  this branch's perspective". Surface as a ⚠ row in the
+  summary and continue with the next worktree — the user
+  resolves it later by merging the adoption commit forward.
+- If a worktree has a hand-maintained `<snapshot-dir>` that
+  is **not** a symlink to the main's, the move-aside flow
+  in [`worktree-init.md` Step 0 row 4](worktree-init.md)
+  asks for confirmation. Surface to the user; either
+  confirm and continue, or defer that worktree and move on.
+
+Do **not** abort the whole upgrade because one worktree
+failed — the main is already upgraded and the other
+worktrees still benefit from the propagation. The summary
+makes the skipped worktrees easy to come back to.
 
 ## Step 7 — Update `<local-lock>`
 
@@ -280,13 +402,29 @@ Drift remediated:
   Local:     <local.fetched-commit-or-version>  → <new>
   Snapshot:  refreshed at .apache-steward/
 
-Symlinks:
+setup-steward (bootstrap):
+  ✓ in sync   OR   ↻ overwritten from snapshot (reloaded in-flight)
+
+Symlinks (main checkout):
+  Opt-in families:     <security>, <pr-management>   (from lock)
+  Always-on families:  setup-*, list-steward-*       (per Golden rule 8)
   ✓ <list of unchanged symlinks>
-  + <list of newly-created symlinks (skill present in a chosen
-     family but missing from <adopter-skills-dir>)>
+  + <list of newly-created symlinks (skill present in the
+     effective family set but missing from <adopter-skills-dir>)>
   ↻ <list of repaired symlinks (existed but broken / pointing
      at the wrong path)>
   - <list of removed stale symlinks>
+
+Hooks + local config:
+  ✓ <list of files in sync>
+  ↻ <list of files re-synced from the snapshot>
+  ⚠ <list of files with hand-edits that need operator review>
+
+Worktrees (worktree-init was run on each, idempotently):
+  ✓ <worktree-path>   (snapshot symlink + family symlinks aligned)
+  ↻ <worktree-path>   (refreshed by worktree-init)
+  ⚠ <worktree-path>   (skipped — branch missing adopter's setup-steward)
+  - <none>            (when this repo has no linked worktrees)
 
 Overrides:
   ✓ <list of overrides whose target is unchanged>

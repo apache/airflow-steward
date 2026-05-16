@@ -236,6 +236,52 @@ patch tool. See
 [`docs/setup/agentic-overrides.md`](../../../docs/setup/agentic-overrides.md)
 for the contract.
 
+**Golden rule 8 — two families are *always* installed; the
+rest are opt-in.** Two skill families are wired up
+unconditionally on every adopt / upgrade / worktree-init run
+and the user is **never asked** about them:
+
+- **`setup-*`** — every framework skill whose name starts
+  with `setup-` *except* `setup-steward` itself (which is
+  copied per Rule 6, not symlinked). Concretely:
+  `setup-isolated-setup-install`,
+  `setup-isolated-setup-update`,
+  `setup-isolated-setup-verify`, `setup-override-upstream`,
+  `setup-shared-config-sync`, plus any new `setup-*` skill
+  the framework grows in the future.
+- **`list-steward-*`** — every framework skill whose name
+  starts with `list-steward-`. Today this is
+  `list-steward-skills` only; the prefix lets the framework
+  grow a discovery family without re-prompting every
+  adopter.
+
+These two families are not exposed in the `skill-families:`
+prompt and not stored as user-selectable in the lock files;
+every sub-action that wires symlinks always covers them in
+addition to the user's opt-in family picks (`security`,
+`pr-management`). Dropping them is *not* a supported
+configuration — the secure-setup and discovery flows the
+framework ships depend on those skills being callable.
+
+**Golden rule 9 — reload `setup-steward` in-flight after a
+self-update.** When a sub-action changes or creates the
+content of the committed `setup-steward` skill (in practice:
+`adopt` recovering an out-of-date bootstrap, or `upgrade`'s
+overwrite-from-snapshot step), the agent **re-reads the
+modified files of this skill before continuing** the rest of
+the current run. Concretely: after the copy lands on disk,
+re-load `SKILL.md` and the sub-action file you are
+currently executing (and any helper file you have already
+opened, such as `conventions.md` or `overrides.md`), then
+resume from the step after the overwrite. The reload runs as
+the **first thing** that happens after the overwrite, before
+any further reconciliation, symlink work, or doc updates.
+The reason: the snapshot's skill version may have renamed
+steps, added new sub-actions, or changed the symlink
+contract; finishing the run against the *old* in-memory
+copy of the skill would silently mis-apply the new
+framework version the project just pinned to.
+
 ## Sub-actions
 
 The skill dispatches by the first positional argument:
@@ -259,6 +305,19 @@ automatically sees the refreshed snapshot once the main runs
 upgrade, because each worktree's `<snapshot-dir>` is a symlink to
 the main's.
 
+**`adopt` and `upgrade` always chain into `worktree-init` on every
+linked worktree as their final pass.** The chain is unconditional
+— even on a fresh adoption with no linked worktrees yet (the pass
+becomes a no-op), even on an upgrade where every worktree already
+looks wired (`worktree-init` is idempotent, repairs broken
+symlinks, and adds new always-on-family entries the upgrade
+introduced). The user does not need to remember to `cd` into each
+worktree and re-run anything; the main-checkout sub-action
+propagates state outward to the worktrees by itself. See
+[`adopt.md` Step 12.2](adopt.md#step-12--post-install-sync--worktree-propagation--sanity-check)
+and
+[`upgrade.md` Step 6c](upgrade.md#step-6c--propagate-to-every-worktree-run-worktree-init-unconditionally).
+
 If the snapshot is missing (no `<snapshot-dir>/`) and
 `<committed-lock>` exists, the skill treats any sub-action as
 the recover-snapshot path: re-install per the committed lock
@@ -270,7 +329,7 @@ first, then continue.
 |---|---|
 | `from:<git-ref>` / `from:<version>` | Adopt or upgrade from a specific framework ref or version. Used during `adopt` (overrides the user prompt) and `upgrade` (overrides the committed lock for *this run only* — does NOT update the committed lock). |
 | `method:<git-branch\|git-tag\|svn-zip>` | Pick the install method explicitly. Default during `adopt`: prompt the user. |
-| `skill-families:<list>` | Comma-separated families to symlink (`security`, `pr-management`). Default on `adopt`: prompt. Default on `upgrade`: read the families list from `<committed-lock>` / `<local-lock>` and **ensure every framework skill in those families has a valid symlink** — create or repair missing / broken symlinks, not just add new ones. |
+| `skill-families:<list>` | Comma-separated **opt-in** families to symlink (`security`, `pr-management`). Default on `adopt`: prompt. Default on `upgrade`: read the families list from `<committed-lock>` / `<local-lock>` and **ensure every framework skill in those families has a valid symlink** — create or repair missing / broken symlinks, not just add new ones. The flag never accepts the always-on families (`setup-*` minus `setup-steward` itself, and `list-steward-*`); per [Golden rule 8](#golden-rules) those are wired up unconditionally on every run and there is no way to ask for them or opt out. |
 | `--purge-overrides` | *(unadopt only)* Also `git rm -r` `.apache-steward-overrides/`. Default: preserve. |
 | `dry-run` | Show what the skill would do without writing anything. |
 
