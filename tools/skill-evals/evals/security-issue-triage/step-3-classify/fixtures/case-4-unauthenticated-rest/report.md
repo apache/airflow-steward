@@ -8,7 +8,7 @@ parameters logged to the run record — without supplying any credentials.
 
 Proof of concept:
 
-```
+```bash
 curl -s http://<airflow-host>/api/v1/dags/production_etl/dagRuns
 ```
 

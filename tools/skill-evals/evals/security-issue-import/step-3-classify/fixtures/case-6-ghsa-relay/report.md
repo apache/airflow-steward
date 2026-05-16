@@ -20,7 +20,7 @@ Apache Airflow >= 2.8.0, tested on 2.9.4.
 
 **Proof of concept**
 
-```
+```bash
 curl -s http://<airflow-host>/api/v1/dags/my_dag/dagRuns/manual_2024-01-01/\
 taskInstances/my_task/logs/1
 ```
