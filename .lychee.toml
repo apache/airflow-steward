@@ -79,6 +79,7 @@ exclude = [
   '/[A-Z][A-Z0-9_]+_URL(?:#|$)',
   '/[A-Z][A-Z0-9_]+_URL/',
   '/[A-Z][A-Z0-9_]+_URL$',
+
 ]
 
 # File patterns to skip entirely — the agent-isolation pinned-versions
@@ -90,14 +91,10 @@ exclude_path = [
   "tools/*/uv.lock",
   ".git",
 
-  # Placeholder GitHub org used in all eval fixture files — not a real repo.
-  '^https://github\.com/example-s/.*',
-
-  # Private / RFC-1918 IP addresses used as mock URLs in eval fixtures.
-  '^http://10\.',
-  '^http://172\.(1[6-9]|2[0-9]|3[01])\.',
-  '^http://192\.168\.',
-
+  # Eval fixture files contain intentionally fake URLs (placeholder GitHub
+  # repos, private IPs, synthetic issue numbers) and are not documentation.
+  # Link-checking them produces noise with no signal.
+  "tools/skill-evals/evals",
 ]
 
 # Treat unresolvable hostnames the same as failures, no silent passes.
