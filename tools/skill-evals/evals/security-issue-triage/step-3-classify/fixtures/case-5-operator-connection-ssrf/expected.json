@@ -1,0 +1,4 @@
+{
+  "disposition": "NOT-CVE-WORTHY",
+  "rationale": "The attack requires a deployment manager to configure an HTTP connection whose URL is sourced from an untrusted third party. The trust-boundary cheat-sheet maps 'Operator / Deployment Manager → misconfigures something with side-effects' to NOT-CVE-WORTHY, citing the Security Model's connection-configuration and operator-trust framing. An operator who configures a connection pointing at an external-party-controlled URL has already granted that party influence over the worker's outbound requests; the redirect behaviour is a consequence of that configuration choice, not a vulnerability in the framework. The appropriate response is the 'DoS/RCE via Connection configuration' canned reply."
+}

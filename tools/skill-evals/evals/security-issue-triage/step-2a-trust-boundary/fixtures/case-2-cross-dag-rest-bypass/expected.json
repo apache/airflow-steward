@@ -1,0 +1,8 @@
+{
+  "matched_row": true,
+  "attacker": "Authenticated UI / REST user with restricted DAG-scoped perms",
+  "effect": "reads other DAGs' data via UI / REST",
+  "default_class": "VALID",
+  "security_model_section": "(cite prior CVEs on this shape from closed cve-allocated trackers)",
+  "uncertain": false
+}

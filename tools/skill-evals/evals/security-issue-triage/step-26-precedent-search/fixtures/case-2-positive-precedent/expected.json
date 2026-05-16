@@ -1,0 +1,12 @@
+{
+  "rejection_precedents": [],
+  "positive_precedents": [
+    {
+      "number": 201,
+      "match_strength": "STRONG",
+      "one_line_shape": "airflow/api_fastapi/core_api/routes/public/ — cross-DAG data read by DAG-scoped authenticated user"
+    }
+  ],
+  "disposition_signal": "raises_to_valid",
+  "budget_exhausted": true
+}

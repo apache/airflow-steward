@@ -1,0 +1,12 @@
+{
+  "number": 225,
+  "title": "Unauthenticated access to /health endpoint exposes DAG count",
+  "scope_label": "airflow",
+  "has_linked_pr": false,
+  "pr_merged": null,
+  "reporter_thread_activity": "pushback",
+  "canned_response_match": null,
+  "canned_response_name": null,
+  "dup_match_strength": "STRONG",
+  "dup_candidate_number": 198
+}
