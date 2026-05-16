@@ -1,0 +1,6 @@
+{
+  "action": "cancel",
+  "findings_to_import": [],
+  "findings_skipped": [],
+  "rationale": "User replied 'hold off', which maps to cancel — no trackers are created and the markdown file is the only audit trail."
+}

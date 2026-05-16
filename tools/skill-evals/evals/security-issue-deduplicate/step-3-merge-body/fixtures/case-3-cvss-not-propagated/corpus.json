@@ -1,0 +1,7 @@
+[
+  {
+    "number": 42,
+    "title": "Webserver: SSRF via connection test endpoint",
+    "body": "kept_number: 42\n\nThe issue description: SSRF via connection test API.\n\nAffected versions: >= 2.9.0, < 2.10.3\n\nSecurity mailing list thread: Alice Example: https://lists.apache.org/thread/abc123\n\nReporter credited as: Alice Example\n\nCWE: CWE-918\n\nSeverity: Unknown\n\nCVE tool link: https://cveprocess.apache.org/cve5/CVE-2024-12345"
+  }
+]

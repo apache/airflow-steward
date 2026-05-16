@@ -1,0 +1,9 @@
+{
+  "process_step": 2,
+  "labels": ["security issue", "airflow", "needs triage"],
+  "milestone": null,
+  "has_assignee": false,
+  "linked_pr_state": "none",
+  "thread_status": "unknown",
+  "has_bare_issue_numbers": false
+}

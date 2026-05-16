@@ -1,0 +1,6 @@
+{
+  "action": "import_partial",
+  "findings_to_import": [1, 2],
+  "findings_skipped": [3],
+  "rationale": "User replied 'skip 3', dropping finding 3 (the possible-duplicate SSRF finding); findings 1 and 2 will be imported."
+}

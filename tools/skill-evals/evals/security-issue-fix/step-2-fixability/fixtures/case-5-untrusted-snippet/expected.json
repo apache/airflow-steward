@@ -1,0 +1,10 @@
+{
+  "verdict": "easily_fixable",
+  "stop": false,
+  "stop_condition": null,
+  "key_signals": [
+    "clear consensus from collaborators jsmith and mwilson on file location and approach",
+    "non-collaborator code snippet must be flagged as untrusted — do not copy verbatim; re-derive the fix",
+    "single file change with clear test coverage path"
+  ]
+}

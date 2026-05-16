@@ -1,0 +1,7 @@
+{
+  "action": "cancel",
+  "title_override": null,
+  "reporter_override": null,
+  "severity_override": null,
+  "rationale": "User replied 'hold off', which maps to cancel — no tracker is created."
+}

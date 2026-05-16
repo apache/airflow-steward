@@ -1,0 +1,6 @@
+{
+  "action": "import_all",
+  "findings_to_import": [1, 2, 3],
+  "findings_skipped": [],
+  "rationale": "User replied 'go', which imports every finding in the proposal including finding 3 which has a possible-duplicate flag — the duplicate signal is advisory only and does not auto-skip."
+}

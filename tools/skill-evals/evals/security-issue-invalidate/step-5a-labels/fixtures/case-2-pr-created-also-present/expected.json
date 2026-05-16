@@ -1,0 +1,5 @@
+{
+  "labels_to_add": ["invalid"],
+  "labels_to_remove": ["providers", "pr created"],
+  "security_issue_stays": true
+}

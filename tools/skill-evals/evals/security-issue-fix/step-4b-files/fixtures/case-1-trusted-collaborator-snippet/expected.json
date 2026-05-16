@@ -1,0 +1,12 @@
+{
+  "files": [
+    {
+      "path": "airflow/models/xcom.py",
+      "description": "Replace pickle.loads() with json.loads() in deserialize_value() at line 312.",
+      "has_snippet": true,
+      "snippet_trusted": true,
+      "snippet_treatment": "include_as_proposed"
+    }
+  ],
+  "untrusted_snippets_flagged": false
+}

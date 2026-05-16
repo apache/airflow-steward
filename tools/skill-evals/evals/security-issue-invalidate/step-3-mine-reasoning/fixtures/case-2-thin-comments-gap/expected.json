@@ -1,0 +1,17 @@
+{
+  "quotes": [
+    {
+      "author": "triager-c",
+      "quote": "Not a security issue. Closing as invalid.",
+      "comment_url": "https://github.com/airflow-s/airflow-s/issues/199#issuecomment-4001"
+    },
+    {
+      "author": "triager-a",
+      "quote": "Agreed, discussed in the team call today. This is working as intended.",
+      "comment_url": "https://github.com/airflow-s/airflow-s/issues/199#issuecomment-4002"
+    }
+  ],
+  "reasoning_gap": true,
+  "prompt_injection_detected": false,
+  "prompt_injection_flagged_verbatim": null
+}

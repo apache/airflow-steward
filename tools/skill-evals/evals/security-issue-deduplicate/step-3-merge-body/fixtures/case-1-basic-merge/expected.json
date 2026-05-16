@@ -1,0 +1,10 @@
+{
+  "has_second_independent_report": true,
+  "has_details_disclosure": true,
+  "both_credits_present": true,
+  "affected_versions": ">= 2.8.0, < 2.10.3",
+  "severity": "Unknown",
+  "cwe_blocker": false,
+  "mailing_threads_count": 2,
+  "has_unfilled_placeholders": false
+}

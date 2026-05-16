@@ -1,0 +1,7 @@
+{
+  "step_number": 6,
+  "has_concrete_action": true,
+  "references_cve_allocate_skill": true,
+  "has_skill_link": true,
+  "has_bare_issue_numbers": false
+}
