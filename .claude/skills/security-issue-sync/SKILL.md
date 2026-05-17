@@ -706,7 +706,7 @@ update, label change, or next-step recommendation in Step 2:
 | The *"PR with the fix"* body field has at least one PR URL **and** the *"Remediation developer"* body field is missing the PR author's name (or is `_No response_`) | Propose appending the PR author's display name (`gh pr view <N> --repo <upstream> --json author --jq '.author.name // .author.login'`) to the *"Remediation developer"* body field. **Append, never overwrite** — manual edits (co-authors added by the triager, name spelling corrections, "Anonymous" overrides) must survive subsequent syncs. Run once per fresh PR URL added to the field; skip if the resolved name is already present (case-insensitive substring match). The CVE JSON generator reads the field on its next regeneration and emits one `type: "remediation developer"` credit per line, so this hand-off keeps the credit attached even if Vulnogram drops the CLI flag. See the *"Auto-resolve --remediation-developer"* note in Step 5 for the historical CLI-flag fallback. |
 | The *"Affected versions"* body field is missing, holds a pre-convention shape, or carries the project's pre-release sentinel, and the tracker is **not** at `fix released` yet | Propose populating / refining *"Affected versions"* per the project's convention. The per-scope shape, the pre-release sentinel (if any), and the lifecycle live in [`<project-config>/scope-labels.md` — *Affected versions convention by scope*](../../../<project-config>/scope-labels.md#affected-versions-convention-by-scope). After updating, regenerate the CVE JSON attachment so the parser picks up the new shape. |
 | A tracker is transitioning to `fix released` (per the row below) and *"Affected versions"* still carries the project's pre-release sentinel | Propose replacing the sentinel with the concrete released version per the project's convention; see [`<project-config>/scope-labels.md` — *Affected versions convention by scope*](../../../<project-config>/scope-labels.md#affected-versions-convention-by-scope) for the recipe. After the body update, regenerate the CVE JSON attachment so `versions[]` picks up the bounded `lessThan` shape and the record becomes review-ready. |
-| A release carrying the fix has shipped. Detection is **scope-dependent** — different scope labels on a project can ride different release trains, each with its own *"is it released?"* signal (which artifact registry to consult, what to query, how to map a tracker's milestone to that registry, partial-release edge cases). The per-scope detection recipe lives in [`<project-config>/scope-labels.md` — *Detecting that a fix release has shipped*](../../../<project-config>/scope-labels.md#detecting-that-a-fix-release-has-shipped). The "or an explicit *fix shipped in X.Y.Z* comment" fallback applies across all scopes regardless of the project-specific signal. | Propose swapping `pr merged` → `fix released` (Step 12). This is the release manager's cue to own Steps 13–15 (advisory send → URL capture → Vulnogram PUBLIC → close). **Also propose swapping the assignee from the remediation developer to the release manager** (looked up via the three-source cascade in Step 2c — [`<project-config>/release-trains.md`](../../../<project-config>/release-trains.md) "Release managers for releases currently relevant to the security tracker" → Release Plan wiki → `[RESULT][VOTE]` thread on `dev@`), so the issue list reflects ownership hand-off. See the *Assignee hand-off at the `fix released` transition* paragraph under **Assignees** in Step 2b for the full rule. |
+| A release carrying the fix has shipped. Detection is **scope-dependent** — different scope labels on a project can ride different release trains, each with its own *"is it released?"* signal (which artifact registry to consult, what to query, how to map a tracker's milestone to that registry, partial-release edge cases). The per-scope detection recipe lives in [`<project-config>/scope-labels.md` — *Detecting that a fix release has shipped*](../../../<project-config>/scope-labels.md#detecting-that-a-fix-release-has-shipped). The "or an explicit *fix shipped in X.Y.Z* comment" fallback applies across all scopes regardless of the project-specific signal. | **Gate: every mandatory CVE field must be populated before this hand-off.** Before proposing either the label swap or the assignee swap, check that all six of these body fields are populated (not empty, not `_No response_`): *CWE*, *Affected versions*, *Severity*, *Reporter credited as*, *Short public summary for publish*, *PR with the fix*. **If any is missing, do NOT propose the hand-off.** Instead, propose a comment on the tracker `@`-mentioning the *Remediation developer* (read from the body field) that lists exactly which fields are still missing and asks them to fill them in — the release manager needs every field populated to send the advisory at Step 13. A subsequent sync run will detect that the gate is now clear and proceed. **When every gate field is populated:** propose swapping `pr merged` → `fix released` (Step 12). This is the release manager's cue to own Steps 13–15 (advisory send → URL capture → Vulnogram PUBLIC → close). **Also propose swapping the assignee from the remediation developer to the release manager** (looked up via the three-source cascade in Step 2c — [`<project-config>/release-trains.md`](../../../<project-config>/release-trains.md) "Release managers for releases currently relevant to the security tracker" → Release Plan wiki → `[RESULT][VOTE]` thread on `dev@`), so the issue list reflects ownership hand-off. See the *Assignee hand-off at the `fix released` transition* paragraph under **Assignees** in Step 2b for the full rule. |
 | GHSA state transition (opened, accepted, published, rejected) in a GHSA-forwarded email | If the GHSA is closed as "not accepted" but the security team accepted the report on `security@`, flag the divergence in the status comment so it is not lost. |
 | Team member saying *"let's also backport to v3-2-test"* / *"please mark X for backport"* | Note the requested backport label on the public PR as an item for Step 9 of the `security-issue-fix` workflow. |
 | Reporter flagging a second distinct vulnerability on the same thread | Surface as an explicit question to the user — it may warrant a separate tracking issue. |
@@ -1127,7 +1127,45 @@ will change and *why*. Group them by category:
   as *"still `_No response_` — needs \<what\> before it can be filled"*.
   Do not silently leave fields empty across multiple sync runs — the
   release manager at Step 13 needs **every** field filled in to send the
-  advisory.
+  advisory, and the `pr merged → fix released` transition is gated on
+  the six mandatory fields per the table row in Step 2b above.
+
+  **Agent-derivable fields — propose high-confidence values proactively.**
+  Two of the mandatory fields can be derived by the agent itself with
+  high confidence from artefacts already in the sync's evidence pool,
+  rather than waiting for a human to fill them in. Treat the following
+  as the allow-listed set for active auto-proposal whenever the field
+  is empty or `_No response_`:
+
+  - **CWE** — map the patch to a CWE class (e.g., a missing-auth-check
+    fix → CWE-287, untrusted-input-into-SQL fix → CWE-89, path-traversal
+    guard fix → CWE-22). **Propose only when the patch is unambiguous**
+    — when multiple plausible CWE classes fit, flag the ambiguity
+    instead of guessing. Cite the file path(s) and line range(s) that
+    drove the mapping so the user can sanity-check before confirming.
+
+  - **Affected versions** — derive from the `<upstream>` PR's milestone
+    / fix-version metadata mapped to the project's per-scope convention
+    (see [`<project-config>/scope-labels.md` — *Affected versions
+    convention by scope*](../../../<project-config>/scope-labels.md#affected-versions-convention-by-scope)).
+    Propose only when the milestone uniquely determines the affected
+    range; flag ambiguity (e.g. multiple backport milestones with
+    partial coverage) rather than guessing.
+
+  All other mandatory fields stay on the *external-signal* path:
+  propose values only when the discussion, mail thread, PR, or GHSA
+  provides enough information — never guess them.
+
+  **"Short public summary for publish" must include user-facing
+  instructions.** This field powers the published CVE description that
+  end users read in the advisory. Beyond stating the vulnerability in
+  one or two sentences, the summary must tell users **what to do**:
+  the fixed version to upgrade to, the mitigations available for users
+  who cannot upgrade immediately, and the CWE class (allowed and
+  useful — CWE is not embargoed information once the advisory ships).
+  When the field is technically accurate but missing the action a user
+  should take, propose a rewrite — even when the rest of the gate at
+  the `pr merged → fix released` transition is otherwise clear.
 
   **Special case for the "Security mailing list thread" field — leave
   it alone.** This field holds the internal navigation reference to
