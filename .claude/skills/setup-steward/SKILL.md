@@ -314,7 +314,7 @@ symlinks, and adds new always-on-family entries the upgrade
 introduced). The user does not need to remember to `cd` into each
 worktree and re-run anything; the main-checkout sub-action
 propagates state outward to the worktrees by itself. See
-[`adopt.md` Step 12.2](adopt.md#step-12--post-install-sync--worktree-propagation--sanity-check)
+[`adopt.md` Step 12.2](adopt.md#step-12--post-install-sync--worktree-propagation--sandbox-allowlist--sanity-check)
 and
 [`upgrade.md` Step 6c](upgrade.md#step-6c--propagate-to-every-worktree-run-worktree-init-unconditionally).
 

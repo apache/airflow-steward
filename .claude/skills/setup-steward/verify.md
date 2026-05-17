@@ -96,7 +96,7 @@ Compare:
 | Ref differs (e.g. project bumped tag, or `git-branch` local is behind upstream) | ⚠ — sync needed; remediation: `/setup-steward upgrade` |
 | `svn-zip` SHA-512 differs from the verification anchor in `<committed-lock>` | ✗ — security-flagged; the released zip changed content; investigate before upgrading |
 
-### 4. `.gitignore` correctly excludes the snapshot + local lock + symlinks
+### 4. `.gitignore` correctly excludes the snapshot + local lock + symlinks + project-local settings
 
 Check that the entries from
 [`adopt.md` Step 7](adopt.md) are present in
@@ -104,6 +104,13 @@ Check that the entries from
 
 - `/.apache-steward/` (snapshot path)
 - `/.apache-steward.local.lock` (per-machine state)
+- `/.claude/settings.local.json` (per-machine project-scope
+  settings — written to by
+  [`sandbox-add-project-root.sh`](../../../tools/agent-isolation/sandbox-add-project-root.sh)
+  as the per-worktree sandbox-allowlist defense for
+  [issue #197](https://github.com/apache/airflow-steward/issues/197);
+  must never be committed since the content is machine-specific
+  absolute paths)
 
 Recommended:
 
@@ -116,6 +123,12 @@ Recommended:
   is at risk of being accidentally committed.
 - ✗ if `/.apache-steward.local.lock` is not gitignored —
   per-machine state would leak into the repo.
+- ✗ if `/.claude/settings.local.json` is not gitignored —
+  per-machine absolute paths would leak into the repo; the
+  sandbox-allowlist helper refuses to write to a non-ignored
+  target as defense in depth, but `verify` surfaces the
+  underlying `.gitignore` gap so the operator fixes the root
+  cause.
 - ⚠ if symlink patterns are not gitignored.
 
 ### 5. Symlinks point at live framework skills
@@ -223,6 +236,62 @@ Two sub-checks on `<repo-root>/.git/hooks/post-checkout`:
      stale (older framework version's recipe) — same
      remediation, no operator prompt needed; the sync
      pass overwrites silently.
+
+### 8b. Sandbox-allowlist coverage of the current worktree
+
+Defensive cross-check for
+[issue #197](https://github.com/apache/airflow-steward/issues/197):
+`sandbox.filesystem.allowRead: ["."]` does not in practice cover
+CWD under the harness, so `/setup-steward` (adopt, upgrade,
+worktree-init) chains into
+`~/.claude/scripts/sandbox-add-project-root.sh` to add explicit
+absolute paths to each worktree's own project-local settings.
+This check verifies that chain landed for the *current* worktree.
+
+For the current worktree (resolved via
+`git rev-parse --show-toplevel`):
+
+- ✓ if the absolute path appears in **both**
+  `<worktree>/.claude/settings.local.json`'s
+  `sandbox.filesystem.allowRead` and `sandbox.filesystem.allowWrite`.
+- ✗ if missing from either array, **and** the helper script
+  `~/.claude/scripts/sandbox-add-project-root.sh` is installed
+  — remediation:
+  `~/.claude/scripts/sandbox-add-project-root.sh`
+  (no `--all-worktrees` needed — just this worktree), or
+  re-run `/setup-steward` (adopt/upgrade) which chains into
+  the helper as part of its Step 12 / Step 6c sandbox-allowlist
+  pass.
+- ⚠ if missing from either array **and** the helper script is
+  absent — the operator has not run
+  `/setup-isolated-setup-install` yet. Suggest that skill.
+  Not ✗ because secure-agent isolation is independent of
+  framework adoption, and an adopter who runs without the
+  sandbox enabled has nothing to lose by the missing entry.
+- ⚠ if `<worktree>/.claude/settings.local.json` is absent
+  entirely — same remediation (re-run the helper or
+  `/setup-isolated-setup-install`). The file is auto-created
+  by the helper on first run.
+- ✗ if `<worktree>/.claude/settings.local.json` exists AND
+  is **not** gitignored (cross-check via `git check-ignore`).
+  Per the security rationale in
+  [`docs/setup/secure-agent-setup.md` → *Security rationale — why project-local is safe to write to*](../../../docs/setup/secure-agent-setup.md#security-rationale--why-project-local-is-safe-to-write-to),
+  the per-machine settings.local.json must never be committed.
+  Remediation: add `/.claude/settings.local.json` to the
+  adopter's `.gitignore` (also surfaced by check 4 above).
+
+The check scopes to the current worktree only, not the full
+`git worktree list`, because each worktree carries its own
+project-local settings file — `/setup-steward verify` running
+in worktree A has no business asserting on worktree B's file
+(which it cannot even reliably read without crossing into
+another working tree's path).
+
+This check is read-only on the framework state. The defence
+is layered: `/setup-steward` writes during adopt/upgrade,
+`setup-isolated-setup-verify` adds a live read+write probe
+(check 8 there), and this check is the cheap static cross-check
+to surface drift between the two skill families.
 
 ### 9. Project documentation mentions the framework
 

@@ -95,7 +95,7 @@ Drift severity:
   path, the version string, the command output, the
   `sandbox.enabled` value — never just "✓" or "✗" alone.
 
-## The 7 checks
+## The 8 checks
 
 The canonical list lives in
 [docs/setup/secure-agent-setup.md → Verification → Via a Claude Code prompt](../../../docs/setup/secure-agent-setup.md#via-a-claude-code-prompt-1).
@@ -144,6 +144,47 @@ Walk each in order:
      permission-prompt layer
      (`Permission to use Bash with command curl … has been denied`).
 
+8. **Project-root coverage in the sandbox allowlists** (defensive
+   against the harness behaviour in
+   [issue #197](https://github.com/apache/airflow-steward/issues/197):
+   `allowRead: ["."]` does not in practice cover CWD because the
+   read side pre-resolves `.` at session start and drops the
+   literal). Two sub-checks:
+
+   - **Static:** for the current working tree, confirm its
+     absolute path appears in both
+     `<worktree>/.claude/settings.local.json`'s
+     `sandbox.filesystem.allowRead` and
+     `sandbox.filesystem.allowWrite`. For every other linked
+     worktree in `git worktree list --porcelain`, run the same
+     check against *that* worktree's own
+     `.claude/settings.local.json` — each worktree carries its
+     own entry. Surface ✗ on any missing entry; remediation:
+     `~/.claude/scripts/sandbox-add-project-root.sh --all-worktrees`
+     (or re-run `/setup-isolated-setup-install` if the helper is
+     not installed).
+   - **Live probe:** attempt a sandboxed read of `.git/HEAD` and
+     a sandboxed write of a temp file inside the *current*
+     worktree's project root (e.g.
+     `<root>/.steward-verify-probe.tmp`, removed immediately
+     after the write). The write should succeed because
+     `allowWrite` keeps `.` literal at access-time; the read is
+     the one that actually exercises the harness bug this check
+     exists to defend against. ✗ on either failure; remediation
+     as above.
+
+   The check is cheap (read of a known file, write of a single
+   temp file) and the false-negative cost (a session that can't
+   read the project) is high, so it runs every time
+   `setup-isolated-setup-verify` is invoked — no flag needed to
+   opt in.
+
+   Note: this check looks at **project-local**
+   (`<worktree>/.claude/settings.local.json`), not user-scope.
+   The fix lives there deliberately — see
+   [`docs/setup/secure-agent-setup.md` → *Project-root coverage in the sandbox allowlists*](../../../docs/setup/secure-agent-setup.md#project-root-coverage-in-the-sandbox-allowlists)
+   for why.
+
 ## After the report
 
 If every check is ✓, say so explicitly and stop — no further
@@ -157,6 +198,12 @@ without invoking it:
 - ⚠ on check 5 (pinned-version drift) or any user-scope script
   copy that is older than the framework's source-of-truth →
   `setup-isolated-setup-update`.
+- ✗ on check 8 (project root missing from the current
+  worktree's `.claude/settings.local.json`, or the live probe
+  fails) → if `~/.claude/scripts/sandbox-add-project-root.sh`
+  is installed, re-run it with `--all-worktrees`; otherwise
+  re-run `setup-isolated-setup-install` to install the helper
+  and add the paths in one pass.
 - The user-scope script copies live under `~/.claude-config/`
   for users who maintain that sync repo; uncommitted local edits
   there → `setup-shared-config-sync`.

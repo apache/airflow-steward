@@ -141,6 +141,80 @@ For the verification step at the end, hand off to the
 `setup-isolated-setup-verify` skill rather than re-walking the checklist
 inline.
 
+### Step P — Project-root coverage in the sandbox allowlists
+
+Per
+[`docs/setup/secure-agent-setup.md` → *Project-root coverage in the sandbox allowlists*](../../../docs/setup/secure-agent-setup.md#project-root-coverage-in-the-sandbox-allowlists)
+and [issue #197](https://github.com/apache/airflow-steward/issues/197),
+the harness pre-resolves `sandbox.filesystem.allowRead: ["."]` at
+session start in a way that silently drops the literal `.` from the
+resolved set, so a session in a freshly-cloned adopter repo can
+write to CWD but cannot **read** from it under the sandbox.
+
+The defensive measure is to add the project root as an explicit
+**absolute path** to `sandbox.filesystem.allowRead` and `allowWrite`
+in the adopter's **project-local** settings file
+(`<repo>/.claude/settings.local.json`) — gitignored, per-machine,
+per-project, merged on top of the committed project-scope and
+user-scope by the harness. Worktrees handle themselves: each
+worktree has its own `<worktree>/.claude/settings.local.json`,
+and each gets its own root added.
+
+Two install sub-steps cover this:
+
+1. **Install the helper script.** Copy
+   `tools/agent-isolation/sandbox-add-project-root.sh` into
+   `~/.claude/scripts/sandbox-add-project-root.sh` (or symlink it
+   from `~/.claude-config/scripts/` if the operator uses the
+   private sync repo), mode `0755`. The script file lives
+   user-scope so a single install covers every adopter project on
+   the host; what it **writes** is project-local. The same install
+   mechanism the `sandbox-bypass-warn.sh` and `sandbox-status-line.sh`
+   helpers use (see the *Sandbox-bypass visibility hook* and
+   *Sandbox-state status line* sections of the doc).
+2. **Run the helper once with `--all-worktrees`** in the adopter
+   repo's main checkout. The helper enumerates
+   `git worktree list --porcelain` and, for each worktree, writes
+   that worktree's absolute path into that worktree's own
+   `<worktree>/.claude/settings.local.json` (creating the file if
+   it does not yet exist). Idempotent, atomic, tolerant of missing
+   prereqs (see the script's header comment for the full
+   failure-mode list). On success, surface the diff so the operator
+   sees which entries landed; on no-op (paths already present),
+   surface a one-line "already covered" confirmation.
+
+   **Sandbox-bypass requirement when invoked from inside an agent
+   session.** `.claude/settings.local.json` is in Claude Code's
+   built-in sandbox `denyWithinAllow` set (verified empirically —
+   see
+   [`docs/setup/secure-agent-setup.md` → *Security rationale*](../../../docs/setup/secure-agent-setup.md#security-rationale--why-project-local-is-safe-to-write-to)),
+   so the helper's Bash write is blocked when invoked through the
+   agent's `Bash` tool. If this skill is being walked from inside
+   a sandboxed session, invoke the helper with
+   `dangerouslyDisableSandbox: true` and the reason
+   *"writing project-local sandbox-allowlist entries (issue #197 fix)"*.
+   The bypass triggers `sandbox-bypass-warn.sh`'s loud-red banner
+   so the operator sees and approves the single write. When the
+   operator runs `setup-isolated-setup-install` directly from a
+   terminal (the typical first-time-install path), no bypass is
+   needed — the script runs outside the agent sandbox.
+
+The `.` entry stays in the committed project-scope `allowRead`
+regardless — the explicit absolute path in
+`settings.local.json` is belt-and-braces, not a replacement. If
+the harness ever stops resolving `.`, the explicit path still
+covers the project; if `.` works correctly, the explicit entry is
+redundant but harmless. The committed project-scope file is
+**never** modified by the helper (machine-specific absolute paths
+have no business in a file shared across contributors).
+
+The helper is also invoked by `/setup-steward adopt`,
+`/setup-steward upgrade`, and `/setup-steward worktree-init` for
+the same reason. The `post-checkout` git hook installed by
+`/setup-steward adopt` chains into the helper too, so new
+worktrees added via `git worktree add` after this install pass
+inherit access automatically — no operator action needed.
+
 ## After the install lands
 
 Suggest two follow-up routines the user can wire later:

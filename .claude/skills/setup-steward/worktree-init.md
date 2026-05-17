@@ -113,6 +113,50 @@ sanity check as Step 1's bottom bullet, just now end-to-end
 from agent-harness path through the worktree's symlink
 through the snapshot symlink to the framework source.
 
+## Step 1c — Add the worktree to its own project-local sandbox allowlists
+
+Defensive against
+[issue #197](https://github.com/apache/airflow-steward/issues/197) —
+`sandbox.filesystem.allowRead: ["."]` does not in practice cover
+the worktree's working dir, so reads under this worktree fail
+under the sandbox until an explicit absolute path is added. See
+[`setup-isolated-setup-install/SKILL.md` → Step P](../setup-isolated-setup-install/SKILL.md#step-p--project-root-coverage-in-the-sandbox-allowlists)
+for the underlying rationale.
+
+If `~/.claude/scripts/sandbox-add-project-root.sh` is installed,
+invoke it from the worktree's working directory (no
+`--all-worktrees` flag — only this one worktree needs adding;
+the helper picks up the current worktree's
+`git rev-parse --show-toplevel` and writes the abs path to
+`<this-worktree>/.claude/settings.local.json`):
+
+```bash
+"$HOME/.claude/scripts/sandbox-add-project-root.sh"
+```
+
+**Invoke with `dangerouslyDisableSandbox: true`** — the target
+`settings.local.json` is in Claude Code's built-in sandbox
+`denyWithinAllow` set, so a sandboxed Bash write fails with
+`operation not permitted`. Surface the bypass proposal to the
+operator *before* invoking; name the helper and the target file
+(`<worktree>/.claude/settings.local.json`); confirm. Reason:
+*"writing project-local sandbox-allowlist entry (issue #197
+fix)"*.
+
+The helper writes to **project-local** scope, not user-scope —
+each worktree carries its own `.claude/settings.local.json`
+entry, and the per-worktree file is gitignored. The helper is
+idempotent (no-op when already added) and exits 0 when
+prereqs are missing (no `jq`, not in a git repo). Surface a
+one-line recap row for the Step 2 summary:
+
+- ✓ already covered, OR
+- + added `<worktree-path>`, OR
+- ⚠ helper not installed — `/setup-isolated-setup-install` to wire it up.
+
+`worktree-init` does **not** fail when the helper is absent;
+secure-agent isolation is independent of framework adoption.
+
 ## Step 2 — Recap
 
 Print a short summary:
