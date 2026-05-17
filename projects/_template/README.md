@@ -11,6 +11,7 @@
     - [CVE-allocation mechanics](#cve-allocation-mechanics)
     - [Remediation workflow](#remediation-workflow)
     - [Editorial + reporter-facing](#editorial--reporter-facing)
+    - [Issue management](#issue-management)
     - [PR triage and review](#pr-triage-and-review)
   - [Checklist after copying](#checklist-after-copying)
   - [Cross-references](#cross-references)
@@ -87,6 +88,21 @@ the rest.
 |---|---|
 | [`naming-conventions.md`](naming-conventions.md) | Project-specific editorial rules. Keep only the ones that differ from the generic rules in `../../AGENTS.md`. |
 | [`canned-responses.md`](canned-responses.md) | Reusable reporter-facing reply templates. |
+
+### Issue management
+
+These files configure the [`issue-*`](../../.claude/skills/) skill
+family — per-issue triage, pool-level reassessment, reproducer
+extraction, fix drafting, and read-only stats. Adopters that do not
+use a general-issue tracker (or only run the security skills) can
+delete this group.
+
+| File | Purpose |
+|---|---|
+| [`issue-tracker-config.md`](issue-tracker-config.md) | Tracker URL, project key, auth model, default query templates. Used by every `issue-*` skill. |
+| [`runtime-invocation.md`](runtime-invocation.md) | Build prerequisite, run-a-single-file recipe, stream-capture conventions, network/dependency handling. Used by `issue-reproducer`. |
+| [`reassess-pool-defaults.md`](reassess-pool-defaults.md) | Named pools for reassessment sweeps (`open-eol`, `reopened`, `stale-unresolved`, project-specific). Used by `issue-reassess`. |
+| [`reproducer-conventions.md`](reproducer-conventions.md) | Evidence-package directory layout and frozen-copy discipline. Used by `issue-reproducer` and `issue-reassess-stats`. |
 
 ### PR triage and review
 

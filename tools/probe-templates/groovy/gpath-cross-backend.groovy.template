@@ -1,0 +1,56 @@
+// SPDX-License-Identifier: Apache-2.0
+// https://www.apache.org/licenses/LICENSE-2.0
+
+/**
+ * GPath cross-backend probe template — exercise the same GPath
+ * expression across XML, JSON, and POGO backings.
+ *
+ * Family: XmlParser | XmlSlurper | JsonSlurper-result | POGO
+ * Issue:  <ISSUE-KEY>
+ *
+ * USAGE:
+ *   1. Replace <XML_INPUT>, <JSON_INPUT>, <POGO_CONSTRUCT> with concrete
+ *      data shapes that all model the same structure.
+ *   2. Replace <GPATH_EXPRESSION> with the GPath expression under test
+ *      in each probe (the path will be the same across backings; only
+ *      the construction differs).
+ *   3. Run: groovy gpath-cross-backend-probe.groovy
+ *
+ * The probe surfaces asymmetries between XML-DOM, XML-streaming, JSON,
+ * and POGO backings of the same conceptual path.
+ */
+
+import groovy.json.JsonSlurper
+
+def probes = [
+    'XmlParser'    : { ->
+        def root = new XmlParser().parseText('<XML_INPUT>')
+        return <GPATH_EXPRESSION>
+    },
+    'XmlSlurper'   : { ->
+        def root = new XmlSlurper().parseText('<XML_INPUT>')
+        return <GPATH_EXPRESSION>
+    },
+    'JsonSlurper'  : { ->
+        def root = new JsonSlurper().parseText('<JSON_INPUT>')
+        return <GPATH_EXPRESSION>
+    },
+    'POGO'         : { ->
+        def root = <POGO_CONSTRUCT>
+        return <GPATH_EXPRESSION>
+    },
+]
+
+println String.format('%-14s | %s', 'BACKEND', 'OUTCOME')
+println String.format('%-14s | %s', '-' * 14, '-' * 60)
+
+probes.each { name, body ->
+    def outcome
+    try {
+        def result = body()
+        outcome = result == null ? 'null' : "${result.getClass().simpleName}: ${result}"
+    } catch (Throwable t) {
+        outcome = "THREW: ${t.class.simpleName}: ${t.message}"
+    }
+    println String.format('%-14s | %s', name, outcome)
+}

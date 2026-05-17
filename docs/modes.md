@@ -50,9 +50,9 @@ sequencing commitments behind them.
 
 | Mode | Purpose | Status | Skill count |
 |---|---|---|---|
-| **Triage** | Issues, security reports, PRs: spot, classify, route, surface duplicates. Every output is a suggestion the human signs off on. | stable (security) / experimental (pr-management) | 10 |
+| **Triage** | Issues, security reports, PRs: spot, classify, route, surface duplicates. Every output is a suggestion the human signs off on. | stable (security) / experimental (pr-management, issue-management) | 12 |
 | **Mentoring** | Joins issue and PR threads in a teaching register: clarifying questions, pointers to project conventions, paired examples from prior PRs, hand-off to a human when scope exceeds the agent. | proposed | 0 |
-| **Drafting** | Agent drafts a fix for a well-scoped problem and opens a PR; every PR is reviewed and merged by a human committer. | stable (security-only); generic case proposed | 1 |
+| **Drafting** | Agent drafts a fix for a well-scoped problem and opens a PR; every PR is reviewed and merged by a human committer. | stable (security-only); experimental (issue-management) | 2 |
 | **Pairing** | Developer-side dev-cycle skills with mentorship intrinsic — multi-agent review pipelines, self-review and pre-flight patterns, scoped fix drafting under the developer's driver's seat. | proposed | 0 |
 | **Auto-merge** | Auto-merge restricted to objectively boring change classes (lint, dependency bumps inside an allow-list, license-header insertion, formatting, broken-link repair). | off | 0 |
 
@@ -72,6 +72,8 @@ do not act without human review.
 | [`pr-management-triage`](../.claude/skills/pr-management-triage/SKILL.md) | Generic PR queue triage. | experimental |
 | [`pr-management-stats`](../.claude/skills/pr-management-stats/SKILL.md) | PR-queue reporting (supports triage decisions). | experimental |
 | [`pr-management-code-review`](../.claude/skills/pr-management-code-review/SKILL.md) | Maintainer-facing deep code review. | experimental |
+| [`issue-triage`](../.claude/skills/issue-triage/SKILL.md) | General-issue-tracker triage (per-issue classification + disposition proposal). | experimental |
+| [`issue-reassess`](../.claude/skills/issue-reassess/SKILL.md) | Pool-level sweep of resolved / EOL issues for re-assessment. | experimental |
 | [`security-issue-import`](../.claude/skills/security-issue-import/SKILL.md) | Inbound security-report classification + initial routing. | stable |
 | [`security-issue-import-from-pr`](../.claude/skills/security-issue-import-from-pr/SKILL.md) | Open a tracker from a security-relevant public PR. | stable |
 | [`security-issue-import-from-md`](../.claude/skills/security-issue-import-from-md/SKILL.md) | Bulk-import findings from a markdown report. | stable |
@@ -128,6 +130,7 @@ the agent never merges its own work.
 | Skill | Domain | Status |
 |---|---|---|
 | [`security-issue-fix`](../.claude/skills/security-issue-fix/SKILL.md) | Draft a fix PR in `<upstream>` from a triaged, CVE-allocated tracker. | stable (security-only) |
+| [`issue-fix-workflow`](../.claude/skills/issue-fix-workflow/SKILL.md) | Draft a fix for a triaged general-issue-tracker issue (BUG or FEATURE-REQUEST). | experimental |
 
 **Generic Drafting is proposed.** [`MISSION.md`](../MISSION.md)
 names lint fixes, audit-tool findings (Apache Verum, Apache Caer,
@@ -205,6 +208,8 @@ threads on their own.
 | Skill | Purpose |
 |---|---|
 | [`setup-steward`](../.claude/skills/setup-steward/SKILL.md) | Adopt the framework into an adopter repo; manage the snapshot, symlinks, and overrides. |
+| [`issue-reproducer`](../.claude/skills/issue-reproducer/SKILL.md) | Per-issue code extraction + execution; produces structured evidence. Read-only on the tracker. |
+| [`issue-reassess-stats`](../.claude/skills/issue-reassess-stats/SKILL.md) | Read-only dashboard over reassessment-campaign verdict.json files. |
 | [`setup-isolated-setup-install`](../.claude/skills/setup-isolated-setup-install/SKILL.md) | Install the credential-isolation sandbox harness. |
 | [`setup-isolated-setup-update`](../.claude/skills/setup-isolated-setup-update/SKILL.md) | Update pinned system tools (`bubblewrap`, `socat`, agent CLI) past the cooldown window. |
 | [`setup-isolated-setup-verify`](../.claude/skills/setup-isolated-setup-verify/SKILL.md) | Read-only health check of the sandbox harness. |

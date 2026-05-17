@@ -1,0 +1,54 @@
+// SPDX-License-Identifier: Apache-2.0
+// https://www.apache.org/licenses/LICENSE-2.0
+
+/**
+ * Operator-variants probe template — exercise the same access pattern
+ * across the safe-navigation operator family.
+ *
+ * Family: ?. (safe call) | ?[..] (safe subscript) | ?: (Elvis, where applicable)
+ * Issue:  <ISSUE-KEY>
+ *
+ * USAGE:
+ *   1. Replace <SUBJECT_CONSTRUCT> with the value the expression operates on.
+ *      The subject is reused across variants; only the operator changes.
+ *   2. Each variant exercises the same conceptual access via a different
+ *      syntactic shape — the probe shows whether the project's operator
+ *      family is consistent across shapes.
+ *   3. Run: groovy operator-variants-safe-nav-probe.groovy
+ *
+ * The probe surfaces asymmetries within the safe-navigation operator
+ * family — particularly relevant when one variant throws and another
+ * returns null on the same input.
+ */
+
+def subject = <SUBJECT_CONSTRUCT>
+
+def probes = [
+    'Direct (.)'              : { ->
+        // baseline: should match the project's documented behaviour
+        return subject.<ACCESS>
+    },
+    'Safe-call (?.)'          : { ->
+        return subject?.<ACCESS>
+    },
+    'Safe-subscript (?[..])'  : { ->
+        // adapt the access expression to the subscript form
+        return subject?[<SUBSCRIPT_KEY>]
+    },
+    // Add other variants as the language defines them:
+    // 'Null-safe spread (?*.)' : { -> ... },
+]
+
+println String.format('%-22s | %s', 'OPERATOR', 'OUTCOME')
+println String.format('%-22s | %s', '-' * 22, '-' * 60)
+
+probes.each { name, body ->
+    def outcome
+    try {
+        def result = body()
+        outcome = result == null ? 'null' : "${result.getClass().simpleName}: ${result}"
+    } catch (Throwable t) {
+        outcome = "THREW: ${t.class.simpleName}: ${t.message}"
+    }
+    println String.format('%-22s | %s', name, outcome)
+}
