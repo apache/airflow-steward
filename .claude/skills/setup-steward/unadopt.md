@@ -89,7 +89,7 @@ every artefact).
 | Committed lock | `<committed-lock>` | exists |
 | `.gitignore` entries | `<repo-root>/.gitignore` | which of the entries from [`adopt.md` Step 7](adopt.md) are present |
 | Framework-skill symlinks | `<adopter-skills-dir>/` (and `.github/skills/` if double-symlinked) | each symlink whose target resolves into `<snapshot-dir>/.claude/skills/` |
-| Post-checkout hook | `<repo-root>/.git/hooks/post-checkout` | exists + contains `/setup-steward verify --auto-fix-symlinks` |
+| Post-checkout hook | `<repo-root>/.git/hooks/post-checkout` | exists + invokes `~/.claude/scripts/sandbox-add-project-root.sh` |
 | Doc section: `README.md` | `<repo-root>/README.md` | contains the `## Agent-assisted contribution (apache-steward)` heading |
 | Doc section: `AGENTS.md` | `<repo-root>/AGENTS.md` | contains the `## apache-steward framework` heading |
 | Doc section: `CONTRIBUTING.md` | `<repo-root>/CONTRIBUTING.md` | contains the adoption section (fallback layout) |
@@ -193,10 +193,17 @@ pointing at a deleted snapshot.
    touch a non-symlink at the same path.
 2. **Post-checkout hook.** Remove only if its content matches
    the steward recipe verbatim (i.e. the hook the adopt flow
-   wrote — a single `/setup-steward verify --auto-fix-symlinks`
-   invocation). If the hook contains additional adopter logic,
-   surface that, leave the hook in place, and tell the user
-   which line to delete by hand.
+   wrote — a single
+   `~/.claude/scripts/sandbox-add-project-root.sh` invocation
+   guarded by the `-x` test; see
+   [`adopt.md` Step 10](adopt.md#step-10--worktree-aware-post-checkout-hook-fresh-only)
+   for the exact text). If the hook contains additional adopter
+   logic, surface that, leave the hook in place, and tell the
+   user which line to delete by hand. Hooks that still contain
+   the obsolete `/setup-steward verify --auto-fix-symlinks` line
+   (a Claude Code slash command that does not work from a shell
+   hook — removed in a later framework release) should be
+   replaced with the current Step 10 template.
 3. **Snapshot directory.** `rm -rf <snapshot-dir>/`.
 4. **Local lock.** `rm <local-lock>`.
 5. **`.gitignore` entries.** Read `<repo-root>/.gitignore`,
