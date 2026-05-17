@@ -192,7 +192,7 @@ the GraphQL response (up to the last 250 commits).
 When building the comment, record every match with its location
 (title / body / commit SHA + first 72 chars of message) so the
 `<security_matches>` placeholder in
-[`comment-templates.md#security-language`](comment-templates.md#security-language)
+[`comment-templates.md#security-language-comment`](comment-templates.md#security-language-comment)
 can be populated verbatim.
 
 ---
