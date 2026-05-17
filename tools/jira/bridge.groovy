@@ -22,7 +22,7 @@ import groovy.json.JsonSlurper
  *
  * Output: JSON to stdout. Errors: non-zero exit + message to stderr.
  *
- * Read-only by design: never POSTs, PATCHes, or DELETEs. Mutations
+ * Read-only by design: never performs POST, PATCH, or DELETE requests. Mutations
  * belong to the skill apply phases with explicit user confirmation.
  */
 
