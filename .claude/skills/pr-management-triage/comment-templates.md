@@ -85,6 +85,42 @@ Rules for the footer:
 
 ---
 
+## Security-language comment
+
+*(`security_language_signal` — security-disclosure warning)*
+
+Used when the action is `comment` for a
+`security_language_signal` classification (see
+[`classify-and-act.md` row 7a](classify-and-act.md#decision-table)).
+
+`<security_matches>` is a bullet list, one item per match, in the
+form: `- [location]: "[matched text]"` where location is one of
+`PR title`, `PR body`, or `commit <SHA7>`.
+
+```markdown
+@<author> This PR's title, body, or commit messages contain language that may indicate a security fix. Under the [ASF vulnerability-handling process for committers](https://www.apache.org/security/committers.html), references to the security nature of a fix must not appear in public-facing content until the CVE is formally announced:
+
+> _"Messages associated with any commits should not make any reference to the security nature of the commit."_
+
+**Matched text:**
+
+<security_matches>
+
+**To move forward, please do one of the following:**
+
+**(a) Neutralise the language** — edit the PR title and body to remove security references, and amend your commit messages so they describe the change without mentioning vulnerabilities. Then reply here to let us know it's done.
+
+**(b) Confirm disclosure is complete** — if the CVE for this fix is already publicly announced, reply with a link to the announcement. A maintainer will then proceed with normal review.
+
+If you haven't already followed the [ASF security reporting process](https://www.apache.org/security/committers.html), please report the vulnerability privately to `security@apache.org` (or the project's security list) before continuing.
+
+[Pull Request quality criteria](<quality_criteria_url>)
+
+<ai_attribution_footer>
+```
+
+---
+
 ## Draft comment
 
 *(`draft` — convert-to-draft comment)*

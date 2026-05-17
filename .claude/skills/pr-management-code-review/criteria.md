@@ -126,8 +126,13 @@ adopter table, only the repo-wide rules apply.
 
 ## Security model — calibration
 
-Before flagging anything that looks security-flavoured, read
-the documented security model at the path declared in
+> This category also includes a **public-disclosure signal scan**
+> that runs in Step 3 (PR title, body, and commit messages),
+> before the diff is examined. See
+> [`review-flow.md` § Security-disclosure signal scan](review-flow.md#security-disclosure-signal-scan).
+
+Before flagging anything that looks security-flavoured in the
+diff, read the documented security model at the path declared in
 `<project-config>/pr-management-code-review-criteria.md` →
 `security_model_calibration.file`. The framework's reference
 threat model lives at

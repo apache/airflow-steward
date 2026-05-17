@@ -151,6 +151,64 @@ If the body is empty or just template boilerplate, that's an
 [`criteria.md#ai-generated-code-signals`](criteria.md). Note it
 as a finding (don't fail the review on it alone).
 
+### Security-disclosure signal scan
+
+Before leaving Step 3, scan the PR **title**, **body**, and all
+**commit messages** for patterns that may indicate a security fix
+being made public before the CVE disclosure process is complete.
+ASF policy (`https://www.apache.org/security/committers.html`)
+requires that no reference to the security nature of a commit
+appear in public-facing content until the vulnerability is
+formally announced:
+
+> *"Messages associated with any commits should not make any
+> reference to the security nature of the commit."*
+
+Patterns to check (case-insensitive, across title + body +
+all commit messages):
+
+- **CVE IDs**: `CVE-\d{4}-\d+`
+- **Security-nature phrases**: "security vulnerability",
+  "security issue", "security fix", "security bug",
+  "security flaw", "security patch", "arbitrary code execution",
+  "remote code execution", `RCE`, "SQL injection", `XSS`,
+  `CSRF`, `SSRF`, "path traversal", "directory traversal",
+  "privilege escalation", "auth bypass", "authentication bypass",
+  "authorization bypass", "insecure deserialization",
+  "heap overflow", "buffer overflow", "use-after-free",
+  "exploit", "exploitable"
+
+If **any** pattern matches, surface a **pre-review warning** to
+the maintainer before continuing to Step 4:
+
+> ⚠ **Possible undisclosed security fix detected**
+>
+> The PR title / body / commit messages contain language that may
+> indicate a security vulnerability fix:
+>
+> - [quoted matched text and its location — e.g. *PR body:
+>   "This fixes a SQL injection vulnerability in…"*]
+>
+> ASF policy requires that no reference to the security nature of
+> a commit appear in public-facing content until the CVE is
+> formally announced. See
+> `https://www.apache.org/security/committers.html`.
+>
+> **Before merging:** verify that the CVE disclosure process for
+> this fix is complete (CVE status `READY`, public announcement
+> sent to the standard destinations). If disclosure is not yet
+> complete, this PR should be closed and the fix applied through
+> the private security channel instead.
+>
+> *Acknowledge and continue review? `[Y]es` / `[Q]uit`.*
+
+Wait for explicit acknowledgment before proceeding to Step 4.
+Include the warning as a leading note in the final review body
+regardless of disposition — it is information the contributor
+needs to see even on `APPROVE`.
+
+If no patterns match, proceed to Step 4 without pause.
+
 ---
 
 ## Step 4 — Examine the diff

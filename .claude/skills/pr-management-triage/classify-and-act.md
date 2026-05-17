@@ -78,7 +78,8 @@ Action verbs are defined in [`actions.md`](actions.md).
 | 4  | Same as #3 but sub-state `responded`                                                           | `already_triaged`          | `skip`                 | Already triaged M days ago — author responded, maintainer to re-engage |
 | 5  | Viewer triage marker exists, posted after last commit, sub-state `waiting`, age ≥ 7 days, `isDraft == true` | `stale_draft`     | (defer to [`stale-sweeps.md`](stale-sweeps.md) Sweep 1a) | Draft triaged N days ago, no author reply |
 | 6  | `viewer == pr.author.login`                                                                   | n/a                        | `skip`                 | You are the PR author — triage skipped |
-| 7  | `now - createdAt < 30min`                                                                      | n/a                        | `skip`                 | Too fresh — CI still warming up |
+| 7a | `now - createdAt < 30min`                                                                      | n/a                        | `skip`                 | Too fresh — CI still warming up |
+| 7b | [`security_language_signal`](#security_language_signal)                                        | `security_language_signal` | `comment`              | Security-language in title / body / commits — ask contributor to neutralise or confirm CVE disclosure complete |
 | 8  | `flagged_prs_by_author > 3` AND [`has_deterministic_signal`](#has_deterministic_signal)        | `deterministic_flag`       | `close`                | Author has N flagged PRs — suggest closing to reduce queue pressure |
 | 9  | `mergeable == CONFLICTING`                                                                    | `deterministic_flag`       | `draft`                | Merge conflicts with `<base>` — author must rebase locally; convert to draft with merge-conflicts violation |
 | 10 | [`ci_failures_only`](#ci_failures_only) AND every failure ∈ `recent_main_failures`             | `deterministic_flag`       | `rerun`                | All N CI failures also appear in recent main-branch PRs — likely systemic, suggest rerun |
@@ -169,6 +170,32 @@ At least one of:
   row 17 draft fallback with an empty violation list.
 - `reviewThreads.totalCount` ≥ 1 with `isResolved == false` AND
   the thread's reviewer is `COLLABORATOR`/`MEMBER`/`OWNER`
+
+### `security_language_signal`
+
+The PR title, body, or any commit message matches at least one of
+the following patterns (case-insensitive). Evaluated against:
+`title`, `body`, and all items in `commits.nodes[].message` from
+the GraphQL response (up to the last 250 commits).
+
+- **CVE IDs**: `CVE-\d{4}-\d+`
+- **Phrases**: "security vulnerability", "security issue",
+  "security fix", "security bug", "security flaw",
+  "security patch", "arbitrary code execution",
+  "remote code execution", `RCE`, "SQL injection", `XSS`,
+  `CSRF`, `SSRF`, "path traversal", "directory traversal",
+  "privilege escalation", "auth bypass", "authentication bypass",
+  "authorization bypass", "insecure deserialization",
+  "heap overflow", "buffer overflow", "use-after-free",
+  "exploit", "exploitable"
+
+When building the comment, record every match with its location
+(title / body / commit SHA + first 72 chars of message) so the
+`<security_matches>` placeholder in
+[`comment-templates.md#security-language-comment`](comment-templates.md#security-language-comment)
+can be populated verbatim.
+
+---
 
 ### `ci_failures_only`
 
