@@ -280,6 +280,7 @@ idempotent — re-add them if they're missing.
 ```text
 /.apache-steward/
 /.apache-steward.local.lock
+/.claude/settings.local.json
 /.claude/skills/security-*
 /.claude/skills/pr-management-*
 /.claude/skills/setup-isolated-setup-*
@@ -301,6 +302,14 @@ the always-on families per
 gitignored on every adopter regardless of the opt-in
 family pick. `setup-steward` itself is **not** gitignored —
 it is the one committed framework skill.
+
+`.claude/settings.local.json` is the project-local
+per-machine settings file that
+[Step 12 pass 3](#step-12--post-install-sync--worktree-propagation--sandbox-allowlist--sanity-check)
+populates with the project-root sandbox-allowlist entry (and
+that each worktree carries independently). Most adopters
+already gitignore this file by Claude Code convention; the
+adopt flow checks for the line and adds it if missing.
 
 Mirror under `.github/skills/` only if the adopter uses the
 double-symlinked convention.
@@ -532,12 +541,46 @@ collected values substituted in (leaving any unanswered field as
 
 ## Step 10 — Worktree-aware post-checkout hook (FRESH only)
 
-Install
-`<repo-root>/.git/hooks/post-checkout` that re-creates the
-gitignored symlinks if a fresh worktree is checked out. The
-hook is a one-liner that re-invokes
-`/setup-steward verify --auto-fix-symlinks`. Surface the
-hook content to the user before writing.
+Install `<repo-root>/.git/hooks/post-checkout` that re-creates
+the gitignored symlinks if a fresh worktree is checked out
+**and** chains into the sandbox-allowlist helper installed by
+`setup-isolated-setup-install` so the new worktree's working
+directory is added to the worktree's own
+`.claude/settings.local.json`'s `sandbox.filesystem.allowRead` /
+`allowWrite` (defensive against
+[issue #197](https://github.com/apache/airflow-steward/issues/197)
+— see
+[`setup-isolated-setup-install/SKILL.md` → Step P](../setup-isolated-setup-install/SKILL.md#step-p--project-root-coverage-in-the-sandbox-allowlists)).
+
+The hook is a small shell script, not a one-liner. Surface the
+exact content to the user before writing:
+
+```bash
+#!/usr/bin/env bash
+# apache-steward post-checkout hook (installed by /setup-steward adopt).
+# Two responsibilities, each idempotent:
+#   1. Reconcile gitignored framework-skill symlinks for the
+#      current worktree.
+#   2. Add the current worktree's working dir to the worktree's
+#      own .claude/settings.local.json's sandbox allowlists
+#      (per issue #197) — chains into the helper if installed by
+#      /setup-isolated-setup-install, no-op when absent.
+set -u
+/setup-steward verify --auto-fix-symlinks || true
+if [ -x "$HOME/.claude/scripts/sandbox-add-project-root.sh" ]; then
+  "$HOME/.claude/scripts/sandbox-add-project-root.sh" || true
+fi
+exit 0
+```
+
+The `|| true` guards keep the hook from failing the surrounding
+git operation (`git checkout`, `git worktree add`) — the hook is
+best-effort reconciliation, not a gate.
+
+If the operator has not yet run `/setup-isolated-setup-install`,
+the helper-script line is a no-op (the `-x` test fails). When
+they later install the secure setup, no hook re-write is needed:
+the next `post-checkout` fires the helper automatically.
 
 ## Step 11 — Project doc updates (FRESH only)
 
@@ -657,9 +700,9 @@ Surface the rendered diff (`git diff README.md AGENTS.md`)
 to the user before writing. The user confirms once for the
 whole doc set; do not ask separately per file.
 
-## Step 12 — Post-install sync + worktree propagation + sanity check
+## Step 12 — Post-install sync + worktree propagation + sandbox-allowlist + sanity check
 
-Three passes, in this order:
+Four passes, in this order:
 
 1. **Sync hooks and config from the snapshot.** Walk every
    hook or config file the framework ships that an adopter
@@ -716,13 +759,72 @@ Three passes, in this order:
    worktree-init` after merging the adoption commit
    forward).
 
-3. **Run the verify checklist.** Invoke
+3. **Add the adopter's project root to each worktree's
+   project-local sandbox allowlists.** Defensive against
+   [issue #197](https://github.com/apache/airflow-steward/issues/197) —
+   `sandbox.filesystem.allowRead: ["."]` does not in practice
+   cover CWD, so reads under a freshly-cloned adopter repo
+   fail under the sandbox until an explicit absolute path is
+   added. Invoke the helper **with sandbox bypass** (the
+   target file is in Claude Code's built-in sandbox
+   `denyWithinAllow` set, so the Bash write is blocked without
+   it — see
+   [`docs/setup/secure-agent-setup.md` → *Security rationale*](../../../docs/setup/secure-agent-setup.md#security-rationale--why-project-local-is-safe-to-write-to)):
+
+   ```bash
+   ~/.claude/scripts/sandbox-add-project-root.sh --all-worktrees
+   ```
+
+   Set `dangerouslyDisableSandbox: true` on the Bash call with
+   the reason *"writing project-local sandbox-allowlist entries
+   (issue #197 fix)"*. Surface the bypass proposal to the
+   operator **before** invoking — name the helper, name the
+   target file (`.claude/settings.local.json` of each
+   worktree), and confirm. The bypass triggers
+   `sandbox-bypass-warn.sh`'s bold-red banner as a backstop, but
+   the agent must propose first; do not silently approve.
+
+   The helper enumerates `git worktree list --porcelain` and,
+   for each worktree, writes that worktree's own absolute path
+   into that worktree's own
+   `<worktree>/.claude/settings.local.json` (gitignored,
+   per-machine, per-worktree). It does **not** write to
+   user-scope or to the committed project-scope; see
+   [`setup-isolated-setup-install/SKILL.md` → Step P](../setup-isolated-setup-install/SKILL.md#step-p--project-root-coverage-in-the-sandbox-allowlists)
+   for the scope rationale. Idempotent — already-present paths
+   are skipped.
+
+   Failure modes:
+
+   - **Helper absent** (`~/.claude/scripts/sandbox-add-project-root.sh`
+     does not exist) → surface as ⚠ in the adopt summary with a
+     pointer at `/setup-isolated-setup-install`. Do not block
+     adopt — many adopters set up secure-agent isolation later,
+     and the framework-skill symlinks are usable without it (the
+     adopter just runs Bash outside the sandbox until they wire
+     in the secure setup).
+   - **Helper present, exits non-zero** → surface as ✗ with the
+     helper's stderr output, but continue with pass 4 and report
+     the gap in the summary.
+   - **Helper succeeds, no paths added** (everything already
+     covered) → surface as ✓ "sandbox allowlist already covers
+     this project + N worktrees".
+
+   This pass is the same as
+   [`upgrade.md` Step 6c](upgrade.md#step-6c--propagate-to-every-worktree-run-worktree-init-unconditionally)'s
+   trailing helper-invocation step — both rely on `worktree-init`
+   having run first (pass 2 above) so the worktree list is the
+   one to feed the helper.
+
+4. **Run the verify checklist.** Invoke
    [`verify.md`](verify.md)'s checks. Every check should be
    ✓ before the skill reports success. The hook-content
    drift check passes trivially because pass (1) just
    refreshed the hook from the snapshot; the worktree
    symlink checks pass trivially because pass (2) just
-   ran `worktree-init` everywhere.
+   ran `worktree-init` everywhere; the sandbox-allowlist
+   check passes trivially because pass (3) just ran the
+   helper.
 
 ## Output to the user
 

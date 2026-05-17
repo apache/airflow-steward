@@ -12,6 +12,11 @@
     - [Bumping a pinned version](#bumping-a-pinned-version)
     - [Wiring the check script into a weekly routine](#wiring-the-check-script-into-a-weekly-routine)
   - [The framework's own `.claude/settings.json`](#the-frameworks-own-claudesettingsjson)
+  - [Project-root coverage in the sandbox allowlists](#project-root-coverage-in-the-sandbox-allowlists)
+    - [Why project-local, not user-scope and not committed-project](#why-project-local-not-user-scope-and-not-committed-project)
+    - [Security rationale — why project-local is safe to write to](#security-rationale--why-project-local-is-safe-to-write-to)
+    - [`sandbox-add-project-root.sh`](#sandbox-add-project-rootsh)
+    - [When the helper runs](#when-the-helper-runs)
   - [The clean-env wrapper](#the-clean-env-wrapper)
   - [Sandbox-bypass visibility hook](#sandbox-bypass-visibility-hook)
     - [Why install it user-scope, not project-scope](#why-install-it-user-scope-not-project-scope)
@@ -394,6 +399,227 @@ CLI, `oauth-draft-create`) need to *use* the credential, but the
 agent should never *see* it. `sandbox.filesystem.allowRead` permits
 the bash subprocess to read the file; `permissions.deny[Read(...)]`
 blocks the agent's Read tool from reading the same path.
+
+## Project-root coverage in the sandbox allowlists
+
+The `.` entry in `sandbox.filesystem.allowRead` is **intended** to
+mean "the session's current working directory, resolved at
+access-time" — exactly the same semantics `allowWrite: ["."]` has.
+In practice the two sides diverge in the harness: `allowWrite`
+keeps `.` literal (resolved per access), while `allowRead`
+pre-resolves the path list at session start to absolute paths *and
+silently drops the literal `.`*. The consequence is that a session
+in a freshly-cloned adopter repo can **write** to CWD but cannot
+**read** from it under the sandbox — `git rev-parse --git-dir`
+fails with `Operation not permitted`, and `Read`-tool reads of
+files like `.apache-steward.lock` fail too. The full reproducer
+and harness-side analysis is in
+[issue #197](https://github.com/apache/airflow-steward/issues/197).
+
+The framework's defensive fix is to add the project root as an
+**explicit absolute path** to both `sandbox.filesystem.allowRead`
+and `sandbox.filesystem.allowWrite` in the adopter's **project-local**
+settings file — `<repo>/.claude/settings.local.json`. The `.`
+entry stays in the committed project-scope `settings.json` — the
+explicit absolute path in `settings.local.json` is belt-and-braces:
+
+- If the harness ever stops resolving `.` consistently, the
+  explicit absolute path still covers the project.
+- If `.` works correctly, the explicit entry is redundant but
+  harmless.
+
+### Why project-local, not user-scope and not committed-project
+
+Three scopes the harness merges, top to bottom:
+
+| Scope | File | Shared by | Suitable for the fix? |
+|---|---|---|---|
+| User | `~/.claude/settings.json` | every session on the host (every adopter project, every tool) | **No** — pollutes user-scope with every adopter project's abs path. |
+| Project (committed) | `<repo>/.claude/settings.json` | every contributor on the project | **No** — machine-specific abs paths would leak into the repo. |
+| Project (local, gitignored) | `<repo>/.claude/settings.local.json` | this machine, this checkout only | **Yes** — per-machine, per-project, never committed. |
+
+Worktrees handle themselves: each worktree has its own working
+tree (and so its own `.claude/` directory and its own
+`.claude/settings.local.json`). The helper writes each worktree's
+absolute path into **that worktree's own** settings.local.json,
+not into a shared file. When a session starts in worktree A, the
+harness reads worktree A's settings.local.json and sees the
+explicit allow for worktree A's root — nothing more.
+
+The committed project-scope `settings.json` is **never** modified
+by the helper; the user-scope `settings.json` and
+`settings.local.json` are likewise never touched.
+
+### Security rationale — why project-local is safe to write to
+
+A reasonable question: *"the helper writes a config file that
+governs the sandbox itself. If the sandbox grants write access to
+the project tree, can a compromised agent rewrite that file and
+broaden the sandbox for the next session?"* The answer is no, but
+only because the protection comes from **Claude Code's built-in
+sandbox denylist**, not from anything the framework can configure.
+Walking the threat model:
+
+**1. Bash writes from inside the sandbox: blocked by the harness.**
+Claude Code's sandbox resolves the user's
+`sandbox.filesystem.allowWrite` against a hardcoded
+`denyWithinAllow` set that always includes
+`<repo>/.claude/settings.json`,
+`<repo>/.claude/settings.local.json`,
+`<repo>/.claude/skills/`, and the user-scope settings files. This
+is enforced at the bubblewrap (Linux) / Seatbelt (macOS) syscall
+level — the write fails with `Operation not permitted` regardless
+of what `allowWrite` says. Verify empirically with a single line:
+
+```bash
+echo "test" >> .claude/settings.local.json
+# zsh: operation not permitted: .claude/settings.local.json
+```
+
+There is no settings.json field that overrides this protection
+(no `denyWrite` user-config exists at the time of writing); the
+harness owns it. So a sandboxed Bash invocation, even one running
+attacker-chosen code, cannot mutate `.claude/settings.local.json`
+to broaden the next session's sandbox.
+
+**2. Edit / Write / MultiEdit agent tools bypass the sandbox.**
+These tools call into the harness directly, not through a Bash
+subprocess, so the sandbox's `denyWithinAllow` does not apply. The
+framework closes the bypass by adding the per-tool denies in the
+committed `.claude/settings.json`:
+
+```jsonc
+"deny": [
+  "Edit(.claude/settings.json)",
+  "Edit(.claude/settings.local.json)",
+  "Write(.claude/settings.json)",
+  "Write(.claude/settings.local.json)",
+  "MultiEdit(.claude/settings.json)",
+  "MultiEdit(.claude/settings.local.json)"
+]
+```
+
+A compromised agent that tries `Edit('.claude/settings.local.json', ...)`
+hits the deny rule and the call fails. The denies are committed at
+project scope, so every contributor inherits them; an adopter who
+follows the framework's settings template gets them automatically.
+
+**3. The framework's own helper also gets blocked from inside the sandbox.**
+The same `denyWithinAllow` that defends against attack also blocks
+[`sandbox-add-project-root.sh`](../../tools/agent-isolation/sandbox-add-project-root.sh)
+when it is invoked through the agent's `Bash` tool from inside a
+sandboxed session. Three legitimate-write paths remain, all
+auditable:
+
+- **User-terminal post-checkout hook.** `git worktree add` /
+  `git checkout` fired from the operator's shell triggers
+  `post-checkout`, which runs the helper in the *shell's* context —
+  outside the agent sandbox. Writes succeed normally.
+- **First-time install.** `setup-isolated-setup-install` is
+  typically run with the operator's awareness; its Step P
+  invocation of the helper happens in a context where the operator
+  is already approving setup actions.
+- **`dangerouslyDisableSandbox: true` from agent sessions.**
+  `/setup-steward adopt`, `upgrade`, and `worktree-init` invoke the
+  helper with explicit sandbox bypass. Every bypass triggers
+  [`sandbox-bypass-warn.sh`](../../tools/agent-isolation/sandbox-bypass-warn.sh)'s
+  bold-red banner naming the command, the reason, and the file
+  being touched; the operator approves per call. No silent writes.
+
+**4. No vector via commits.**
+`<repo>/.claude/settings.local.json` is gitignored — the adopt
+flow adds the line to `.gitignore`, and
+[`/setup-steward verify`](../../.claude/skills/setup-steward/verify.md)
+Check 4 surfaces ✗ if it is missing. The helper itself runs
+`git check-ignore` against the target file before writing and
+*refuses* to write when the file is not ignored (defense in depth
+against a stale `.gitignore`). A malicious contributor cannot ship
+sandbox-allowlist content via a PR.
+
+**5. No vector via the helper's inputs.**
+The helper takes paths exclusively from
+`git rev-parse --show-toplevel` and
+`git worktree list --porcelain` — both walk the operator's own
+local git state. The only paths added are working directories the
+operator has already created themselves with `git clone` /
+`git worktree add`. No command-line path argument; no
+environment-variable injection.
+
+**6. Cross-project isolation, as a bonus.**
+A session in project A reads
+`<A>/.claude/settings.local.json` and gets read+write access only
+to A. A session that `cd`s into project B mid-session keeps A's
+settings (loaded at session start), so it sees A's grants — never
+B's. The same fix at user-scope (`~/.claude/settings.json`) would
+have given every Claude Code session on the host read+write access
+to every adopter project the operator has ever set up; project-local
+scope confines the grant.
+
+**Net:** every write path to the file is either physically blocked
+or requires explicit per-call user approval. The harness's built-in
+sandbox protection is what makes this true — the framework cannot
+configure it, but it can verify and document it.
+
+### `sandbox-add-project-root.sh`
+
+The framework ships
+[`tools/agent-isolation/sandbox-add-project-root.sh`](../../tools/agent-isolation/sandbox-add-project-root.sh)
+to perform this addition idempotently. Installed during
+[`setup-isolated-setup-install`](../../.claude/skills/setup-isolated-setup-install/SKILL.md)
+into `~/.claude/scripts/sandbox-add-project-root.sh` (the
+*script file* lives user-scope so a single install covers every
+adopter project on the host; what it *writes* is project-local).
+The helper:
+
+- Resolves `git rev-parse --show-toplevel` in the current working
+  directory.
+- With `--all-worktrees`, also enumerates
+  `git worktree list --porcelain` and writes a separate entry
+  into **each worktree's** own `.claude/settings.local.json`.
+- Without the flag, writes only the current worktree's path
+  into the current worktree's `.claude/settings.local.json`.
+- Creates `.claude/settings.local.json` from scratch if missing
+  (with only the `sandbox.filesystem` block — nothing else is
+  touched).
+- Updates the file in place, atomically (`jq` → tmp → `mv`).
+- Skips any path already present in either array (idempotent).
+- Tolerant of missing prerequisites (no `jq`, not in a git repo,
+  invalid existing JSON) — warns on stderr and exits 0 so the
+  calling hook is never derailed by a half-installed setup.
+
+### When the helper runs
+
+The helper is invoked from four points in the framework's lifecycle:
+
+1. **At install** — `setup-isolated-setup-install` runs the
+   helper with `--all-worktrees` against the adopter repo the
+   operator is sitting in.
+2. **During adoption** — `/setup-steward adopt` Step 12 runs the
+   helper with `--all-worktrees` so a fresh adopter repo with
+   pre-existing worktrees has every working-tree path covered
+   without an extra round-trip through
+   `setup-isolated-setup-install`.
+3. **During upgrade** — `/setup-steward upgrade` Step 6c, after
+   the per-worktree `worktree-init` chain, runs the helper with
+   `--all-worktrees` so any worktree added since adopt has its
+   path written into its own settings.local.json.
+4. **Per worktree, on creation** — the `post-checkout` git hook
+   installed by `/setup-steward adopt` runs the helper *without*
+   `--all-worktrees`, picking up only the new worktree's path.
+   `git worktree add` fires `post-checkout` in the new working
+   tree, so every worktree added after adoption inherits sandbox
+   access automatically — landing its abs path in its own
+   `.claude/settings.local.json`.
+
+The verification surface:
+
+- [`setup-isolated-setup-verify`](../../.claude/skills/setup-isolated-setup-verify/SKILL.md)
+  Check 8 — live sandboxed read+write probe of the project root,
+  plus the static cross-check that the abs path is in the current
+  worktree's `.claude/settings.local.json`.
+- [`/setup-steward verify`](../../.claude/skills/setup-steward/verify.md)
+  Check 8b — static cross-check that the current worktree's
+  abs path is in its own `.claude/settings.local.json`.
 
 ## The clean-env wrapper
 

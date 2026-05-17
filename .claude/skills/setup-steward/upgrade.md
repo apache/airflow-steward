@@ -374,6 +374,41 @@ failed — the main is already upgraded and the other
 worktrees still benefit from the propagation. The summary
 makes the skipped worktrees easy to come back to.
 
+**After the per-worktree loop**, run the
+sandbox-allowlist helper once with `--all-worktrees` to
+ensure each worktree's project root is in that worktree's
+own `.claude/settings.local.json` (defensive against
+[issue #197](https://github.com/apache/airflow-steward/issues/197);
+see
+[`setup-isolated-setup-install/SKILL.md` → Step P](../setup-isolated-setup-install/SKILL.md#step-p--project-root-coverage-in-the-sandbox-allowlists)):
+
+```bash
+~/.claude/scripts/sandbox-add-project-root.sh --all-worktrees
+```
+
+**Invoke with `dangerouslyDisableSandbox: true`** — the
+target settings files are in Claude Code's built-in sandbox
+`denyWithinAllow` set, so a sandboxed Bash write fails with
+`operation not permitted`. Surface the bypass proposal to
+the operator *before* invoking — name the helper, name the
+target files, and confirm. The reason for the bypass is
+*"writing project-local sandbox-allowlist entries (issue
+#197 fix)"*. The bypass fires `sandbox-bypass-warn.sh`'s
+bold-red banner as a backstop, but the agent must propose
+the bypass first; do not silently approve.
+
+The helper enumerates `git worktree list --porcelain` and
+writes each worktree's path into that worktree's own
+project-local `settings.local.json` (gitignored, never the
+committed project-scope file). Idempotent — already-present
+paths are skipped. If
+`~/.claude/scripts/sandbox-add-project-root.sh` is absent,
+surface as ⚠ in the upgrade summary with a pointer at
+`/setup-isolated-setup-install` and continue (do not block
+upgrade — secure-agent setup is independent of framework
+upgrade). The recap row in Step 8's output goes under a new
+`Sandbox allowlist:` section.
+
 ## Step 7 — Update `<local-lock>`
 
 Write the new local lock with the values captured in Step
@@ -425,6 +460,11 @@ Worktrees (worktree-init was run on each, idempotently):
   ↻ <worktree-path>   (refreshed by worktree-init)
   ⚠ <worktree-path>   (skipped — branch missing adopter's setup-steward)
   - <none>            (when this repo has no linked worktrees)
+
+Sandbox allowlist (sandbox-add-project-root.sh --all-worktrees):
+  ✓ already covers this project + N worktrees   OR
+  + <list of <worktree>/.claude/settings.local.json files updated>   OR
+  ⚠ helper not installed — run /setup-isolated-setup-install
 
 Overrides:
   ✓ <list of overrides whose target is unchanged>
