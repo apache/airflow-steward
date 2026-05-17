@@ -29,28 +29,28 @@
 # across the operator's host invokes this script — for any repo,
 # not just apache-steward adopters.
 #
-# Two responsibilities, both best-effort + idempotent + `|| true`
-# so the hook never breaks the surrounding git operation:
+# One responsibility, best-effort + idempotent + `|| true` so the
+# hook never breaks the surrounding git operation:
 #
-#   1. **apache-steward symlink reconciliation.** If the working
-#      tree carries `.apache-steward.lock`, this is a steward-
-#      adopted repo and its gitignored framework-skill symlinks
-#      may need re-creating after a checkout (the symlinks point
-#      into `.apache-steward/`, which is itself gitignored). The
-#      hook calls `/setup-steward verify --auto-fix-symlinks` if
-#      that command is on PATH; if not, it falls through silently
-#      (the operator may not be in a Claude Code session, or may
-#      not have the framework installed beyond this hook).
+#   **Sandbox-allowlist for the current worktree.** If the working
+#   tree has a `.claude/` directory (i.e. it is Claude-Code-aware)
+#   and the framework's `sandbox-add-project-root.sh` helper is
+#   installed at `~/.claude/scripts/`, the hook calls the helper
+#   to populate `<worktree>/.claude/settings.local.json` with the
+#   worktree's absolute path. Defensive against the harness
+#   behaviour documented at
+#   https://github.com/apache/airflow-steward/issues/197 .
 #
-#   2. **Sandbox-allowlist for the current worktree.** If the
-#      working tree has a `.claude/` directory (i.e. it is
-#      Claude-Code-aware) and the framework's
-#      `sandbox-add-project-root.sh` helper is installed at
-#      `~/.claude/scripts/`, the hook calls the helper to populate
-#      `<worktree>/.claude/settings.local.json` with the
-#      worktree's absolute path. Defensive against the harness
-#      behaviour documented at
-#      https://github.com/apache/airflow-steward/issues/197 .
+# **Not** in this hook: apache-steward symlink reconciliation.
+# `/setup-steward verify --auto-fix-symlinks` is a Claude Code
+# slash command, not a shell command, so it cannot be invoked from
+# a `git checkout` hook running in the operator's shell — the
+# previous template version of this hook spelled out the line
+# anyway and printed a spurious "No such file or directory" error
+# on every checkout. Symlink-drift in steward-adopted repos is now
+# reconciled **lazily** — the next time the operator opens Claude
+# Code in the worktree, `/setup-steward verify` detects any drift
+# and offers to fix it.
 #
 # IMPORTANT — `core.hooksPath` shadowing. When `core.hooksPath` is
 # set globally, git looks ONLY in that directory for hooks. Every
@@ -78,13 +78,7 @@ if [ -z "$worktree" ]; then
   exit 0
 fi
 
-# 1. apache-steward symlink reconciliation
-if [ -f "$worktree/.apache-steward.lock" ] \
-    && command -v /setup-steward >/dev/null 2>&1; then
-  /setup-steward verify --auto-fix-symlinks 2>/dev/null || true
-fi
-
-# 2. Sandbox-allowlist helper
+# Sandbox-allowlist helper
 if [ -x "$HOME/.claude/scripts/sandbox-add-project-root.sh" ] \
     && [ -d "$worktree/.claude" ]; then
   "$HOME/.claude/scripts/sandbox-add-project-root.sh" 2>/dev/null || true

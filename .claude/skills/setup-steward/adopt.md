@@ -541,10 +541,9 @@ collected values substituted in (leaving any unanswered field as
 
 ## Step 10 — Worktree-aware post-checkout hook (FRESH only)
 
-Install `<repo-root>/.git/hooks/post-checkout` that re-creates
-the gitignored symlinks if a fresh worktree is checked out
-**and** chains into the sandbox-allowlist helper installed by
-`setup-isolated-setup-install` so the new worktree's working
+Install `<repo-root>/.git/hooks/post-checkout` that chains into
+the sandbox-allowlist helper installed by
+`setup-isolated-setup-install`, so the new worktree's working
 directory is added to the worktree's own
 `.claude/settings.local.json`'s `sandbox.filesystem.allowRead` /
 `allowWrite` (defensive against
@@ -552,28 +551,24 @@ directory is added to the worktree's own
 — see
 [`setup-isolated-setup-install/SKILL.md` → Step P](../setup-isolated-setup-install/SKILL.md#step-p--project-root-coverage-in-the-sandbox-allowlists)).
 
-The hook is a small shell script, not a one-liner. Surface the
-exact content to the user before writing:
+The hook is a small shell script. Surface the exact content to
+the user before writing:
 
 ```bash
 #!/usr/bin/env bash
 # apache-steward post-checkout hook (installed by /setup-steward adopt).
-# Two responsibilities, each idempotent:
-#   1. Reconcile gitignored framework-skill symlinks for the
-#      current worktree.
-#   2. Add the current worktree's working dir to the worktree's
-#      own .claude/settings.local.json's sandbox allowlists
-#      (per issue #197) — chains into the helper if installed by
-#      /setup-isolated-setup-install, no-op when absent.
+# Add the current worktree's working dir to the worktree's own
+# .claude/settings.local.json sandbox allowlists (per issue #197).
+# Chains into the helper if installed by /setup-isolated-setup-install;
+# no-op when the helper is absent.
 set -u
-/setup-steward verify --auto-fix-symlinks || true
 if [ -x "$HOME/.claude/scripts/sandbox-add-project-root.sh" ]; then
   "$HOME/.claude/scripts/sandbox-add-project-root.sh" || true
 fi
 exit 0
 ```
 
-The `|| true` guards keep the hook from failing the surrounding
+The `|| true` guard keeps the hook from failing the surrounding
 git operation (`git checkout`, `git worktree add`) — the hook is
 best-effort reconciliation, not a gate.
 
@@ -581,6 +576,23 @@ If the operator has not yet run `/setup-isolated-setup-install`,
 the helper-script line is a no-op (the `-x` test fails). When
 they later install the secure setup, no hook re-write is needed:
 the next `post-checkout` fires the helper automatically.
+
+**Why no framework-skill symlink reconciliation here.** Earlier
+template versions of this hook also called
+`/setup-steward verify --auto-fix-symlinks` to recreate
+gitignored symlinks after a checkout. That line printed a spurious
+`No such file or directory` error on every `git checkout` because
+`/setup-steward` is a **Claude Code slash command**, not a shell
+command, and the hook fires in the operator's shell where there is
+no slash-command dispatcher. The line has been removed.
+Symlink-drift reconciliation now happens **lazily** — the next
+time the operator opens Claude Code in the worktree, the framework
+skills' pre-flight drift check surfaces any missing symlinks and
+`/setup-steward verify` (or any skill that needs the symlink)
+prompts for the fix. Adopters whose existing hooks still contain
+the broken line should remove it; the
+[`setup-isolated-setup-update`](../setup-isolated-setup-update/SKILL.md)
+drift check surfaces stale hook content on a routine sweep.
 
 ## Step 11 — Project doc updates (FRESH only)
 
