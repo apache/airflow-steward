@@ -60,6 +60,7 @@ The canonical category list:
 - Architecture boundaries
 - Database / query correctness
 - Code quality
+- Third-party license compliance
 - Testing
 - API correctness
 - UI (React/TypeScript)
@@ -72,6 +73,39 @@ The canonical category list:
 See
 [`projects/_template/pr-management-code-review-criteria.md` § Section anchors](../../../projects/_template/pr-management-code-review-criteria.md#section-anchors)
 for a worked example.
+
+---
+
+## Third-party license compliance
+
+When the diff adds or modifies a file that contains a non-Apache licence
+header (`SPDX-License-Identifier:` value other than `Apache-2.0`, or a
+recognised licence block — MIT, BSD, GPL, LGPL, CDDL, MPL, EPL, etc.) or a
+third-party copyright line (`Copyright (c) <non-ASF entity>`), classify the
+licence against the ASF `resolved_licenses` policy
+(`https://www.apache.org/legal/resolved.html`) and apply the following
+severity rules:
+
+| Category | Licences (examples) | Severity |
+|---|---|---|
+| X | GPL, AGPL, LGPL, CDDL, BUSL, SSPL | `blocking` — cannot be included in an ASF release in any form |
+| B | MPL, EPL | `blocking` — cannot be included in source form; binary-only inclusion requires explicit justification |
+| A | MIT, BSD-2, BSD-3, ISC, Apache 2.0 (other orgs) | `major` if `LICENSE` / `LICENSE.txt` / `licenses/` was **not** also updated in this PR — attribution is required before shipping |
+| A + LICENSE updated | any Category A | ✅ no finding |
+
+For Category A findings, check whether the same PR modifies `LICENSE`,
+`LICENSE.txt`, or any file under a `licenses/` directory. If it does, the
+inclusion is correctly attributed and no finding is raised.
+
+**Relationship to "License headers":** when a new file's header is non-Apache
+but not third-party (e.g. a contributor accidentally used the wrong SPDX
+identifier), the "License headers" finding applies. When the header is
+clearly from an upstream library or external author, route to this category
+instead — the fix is to preserve the original header and update `LICENSE`,
+not to replace it with an Apache header.
+
+Source: `https://www.apache.org/legal/resolved.html` and
+`https://www.apache.org/legal/apply-license.html`.
 
 ---
 
@@ -111,6 +145,48 @@ When the skill downgrades what looked like a finding because
 the documented model permits it, the review body **quotes the
 relevant model paragraph** so the contributor sees the
 calibration explicitly. Don't paraphrase.
+
+---
+
+## Quality signals to check — image IP
+
+The "Quality signals to check" category is primarily driven by the adopter's
+source files. The following is a **framework-level default** that applies
+regardless of adopter-specific rules.
+
+When the diff adds one or more binary image files (`.png`, `.jpg`, `.jpeg`,
+`.gif`, `.svg`, `.ico`, `.webp`), use judgment rather than raising an
+automatic finding:
+
+- **Contributor-created screenshots, diagrams, and documentation graphics**
+  are legitimate by default — no finding.
+- **Logos, brand assets, or illustrations** that look professionally produced
+  warrant a short comment asking the contributor to confirm the source and
+  licence: *"Could you confirm this image is original work or confirm its
+  licence? If it's from a third-party source, it may need a `LICENSE` entry
+  or a different approach."*
+
+Do not flag every image addition. The signal is the visual character of the
+asset — a hand-drawn architecture diagram is different from a polished brand
+logo. When in doubt, ask rather than block.
+
+## Quality signals to check — compiled artifacts
+
+ASF releases must be source-only. Compiled or binary build artifacts added to
+the repository risk ending up in a release, violating the ASF Release Policy
+(`https://www.apache.org/legal/release-policy.html`).
+
+When the diff adds any of the following file types, raise a `major` finding:
+
+- **JVM**: `.class`, `.jar` (non-empty), `.war`, `.ear`
+- **Python**: `.pyc`, `.pyo`, `.pyd`
+- **Native**: `.so`, `.dll`, `.dylib`, `.exe`, `.o`, `.a`
+- **Packages**: `.whl`, `.egg`
+
+The finding is `major` with the text: *"Compiled artifacts must not be
+committed to the source tree — ASF releases are source-only. Remove this
+file and ensure it is generated at build time."* If the file would be
+included in a release archive, escalate to `blocking`.
 
 ---
 
