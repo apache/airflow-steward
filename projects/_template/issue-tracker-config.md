@@ -1,3 +1,16 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [TODO: `<Project Name>` — issue-tracker configuration](#todo-project-name--issue-tracker-configuration)
+  - [URL and project key](#url-and-project-key)
+  - [Authentication](#authentication)
+  - [Default query templates](#default-query-templates)
+  - [Tracker-specific notes](#tracker-specific-notes)
+  - [Cross-references](#cross-references)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 <!-- SPDX-License-Identifier: Apache-2.0
      https://www.apache.org/licenses/LICENSE-2.0 -->
 

@@ -11,6 +11,7 @@
     - [CVE-allocation mechanics](#cve-allocation-mechanics)
     - [Remediation workflow](#remediation-workflow)
     - [Editorial + reporter-facing](#editorial--reporter-facing)
+    - [Issue management](#issue-management)
     - [PR triage and review](#pr-triage-and-review)
   - [Checklist after copying](#checklist-after-copying)
   - [Cross-references](#cross-references)
