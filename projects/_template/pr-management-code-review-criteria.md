@@ -97,3 +97,5 @@ These are used when the skill links out per-finding.
 | Quality signals to check | `https://github.com/apache/airflow/blob/main/.github/instructions/code-review.instructions.md#quality-signals-to-check` |
 | Commits and PRs (newsfragments, commit messages, tracking issues) | `https://github.com/apache/airflow/blob/main/AGENTS.md#commits-and-prs` |
 | Security model | `https://github.com/apache/airflow/blob/main/AGENTS.md#security-model` |
+| Third-party license compliance | `https://www.apache.org/legal/resolved.html` |
+| Applying the Apache licence | `https://www.apache.org/legal/apply-license.html` |

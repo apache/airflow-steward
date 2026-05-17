@@ -60,6 +60,7 @@ The canonical category list:
 - Architecture boundaries
 - Database / query correctness
 - Code quality
+- Third-party license compliance
 - Testing
 - API correctness
 - UI (React/TypeScript)
@@ -72,6 +73,39 @@ The canonical category list:
 See
 [`projects/_template/pr-management-code-review-criteria.md` § Section anchors](../../../projects/_template/pr-management-code-review-criteria.md#section-anchors)
 for a worked example.
+
+---
+
+## Third-party license compliance
+
+When the diff adds or modifies a file that contains a non-Apache licence
+header (`SPDX-License-Identifier:` value other than `Apache-2.0`, or a
+recognised licence block — MIT, BSD, GPL, LGPL, CDDL, MPL, EPL, etc.) or a
+third-party copyright line (`Copyright (c) <non-ASF entity>`), classify the
+licence against the ASF `resolved_licenses` policy
+(`https://www.apache.org/legal/resolved.html`) and apply the following
+severity rules:
+
+| Category | Licences (examples) | Severity |
+|---|---|---|
+| X | GPL, AGPL, LGPL, CDDL, BUSL, SSPL | `blocking` — cannot be included in an ASF release in any form |
+| B | MPL, EPL | `blocking` — cannot be included in source form; binary-only inclusion requires explicit justification |
+| A | MIT, BSD-2, BSD-3, ISC, Apache 2.0 (other orgs) | `major` if `LICENSE` / `LICENSE.txt` / `licenses/` was **not** also updated in this PR — attribution is required before shipping |
+| A + LICENSE updated | any Category A | ✅ no finding |
+
+For Category A findings, check whether the same PR modifies `LICENSE`,
+`LICENSE.txt`, or any file under a `licenses/` directory. If it does, the
+inclusion is correctly attributed and no finding is raised.
+
+**Relationship to "License headers":** when a new file's header is non-Apache
+but not third-party (e.g. a contributor accidentally used the wrong SPDX
+identifier), the "License headers" finding applies. When the header is
+clearly from an upstream library or external author, route to this category
+instead — the fix is to preserve the original header and update `LICENSE`,
+not to replace it with an Apache header.
+
+Source: `https://www.apache.org/legal/resolved.html` and
+`https://www.apache.org/legal/apply-license.html`.
 
 ---
 

@@ -167,12 +167,13 @@ match against are:
 1. **Architecture boundaries**
 2. **Database / query correctness**
 3. **Code quality**
-4. **Testing**
-5. **API correctness**
-6. **UI (React/TypeScript)**
-7. **Generated files**
-8. **AI-generated code signals**
-9. **Per-area `AGENTS.md` rules** — anything specific to the
+4. **Third-party license compliance**
+5. **Testing**
+6. **API correctness**
+7. **UI (React/TypeScript)**
+8. **Generated files**
+9. **AI-generated code signals**
+10. **Per-area `AGENTS.md` rules** — anything specific to the
    touched tree (the per-PR `AGENTS.md` discovery in Step 2).
 
 For each finding, record:
