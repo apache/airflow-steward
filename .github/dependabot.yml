@@ -15,6 +15,13 @@
 # specific language governing permissions and limitations
 # under the License.
 #
+# Every ecosystem update below uses a 7-day cooldown (all four
+# semver buckets set to 7) so a just-released version has a week to
+# settle (retags, withdrawals, upstream incident reports) before
+# Dependabot proposes bumping to it. This mirrors the same window
+# applied locally via `[tool.uv] exclude-newer = "7 days"` in the
+# root pyproject.toml and `exclude-newer-span = "P7D"` baked into
+# every tool's uv.lock.
 ---
 version: 2
 updates:
@@ -22,9 +29,6 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    # 7-day cooldown so a just-released action tag has a chance to
-    # settle (retags, withdrawal, CI incidents on the upstream) before
-    # Dependabot proposes bumping to it.
     cooldown:
       default-days: 7
       semver-major-days: 7
@@ -49,6 +53,107 @@ updates:
         patterns:
           - "*"
 
+  # Root framework project — currently just `prek` as a dev dep,
+  # tracked here so the version bound in pyproject.toml stays in
+  # step with upstream releases.
+  - package-ecosystem: "uv"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+      semver-major-days: 7
+      semver-minor-days: 7
+      semver-patch-days: 7
+    groups:
+      framework-deps:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "uv"
+    directory: "/tools/privacy-llm/checker"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+      semver-major-days: 7
+      semver-minor-days: 7
+      semver-patch-days: 7
+    groups:
+      privacy-llm-checker-deps:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "uv"
+    directory: "/tools/privacy-llm/redactor"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+      semver-major-days: 7
+      semver-minor-days: 7
+      semver-patch-days: 7
+    groups:
+      privacy-llm-redactor-deps:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "uv"
+    directory: "/tools/sandbox-lint"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+      semver-major-days: 7
+      semver-minor-days: 7
+      semver-patch-days: 7
+    groups:
+      sandbox-lint-deps:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "uv"
+    directory: "/tools/skill-evals"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+      semver-major-days: 7
+      semver-minor-days: 7
+      semver-patch-days: 7
+    groups:
+      skill-evals-deps:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "uv"
+    directory: "/tools/skill-validator"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+      semver-major-days: 7
+      semver-minor-days: 7
+      semver-patch-days: 7
+    groups:
+      skill-validator-deps:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "uv"
+    directory: "/tools/gmail/oauth-draft"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+      semver-major-days: 7
+      semver-minor-days: 7
+      semver-patch-days: 7
+    groups:
+      oauth-draft-deps:
+        patterns:
+          - "*"
+
   - package-ecosystem: "uv"
     directory: "/tools/vulnogram/generate-cve-json"
     schedule:
@@ -64,7 +169,7 @@ updates:
           - "*"
 
   - package-ecosystem: "uv"
-    directory: "/tools/gmail/oauth-draft"
+    directory: "/tools/vulnogram/oauth-api"
     schedule:
       interval: "weekly"
     cooldown:
@@ -73,6 +178,6 @@ updates:
       semver-minor-days: 7
       semver-patch-days: 7
     groups:
-      oauth-draft-deps:
+      vulnogram-oauth-api-deps:
         patterns:
           - "*"

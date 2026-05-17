@@ -32,7 +32,7 @@ permissions:
 
 jobs:
   analyze:
-    name: Analyze Python
+    name: "Analyze (${{ matrix.language }})"
     runs-on: ubuntu-24.04
     permissions:
       # Writing security-events is required for CodeQL to upload results to
@@ -40,6 +40,16 @@ jobs:
       actions: read
       contents: read
       security-events: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # `python` covers the hand-written tools under `tools/`. `actions`
+        # is CodeQL's GitHub-Actions analyser — it inspects the workflow
+        # YAML in `.github/workflows/` for taint flows, secret exposure,
+        # and other CI-side vulnerabilities. It complements `zizmor.yml`
+        # (lint-style ruleset) with the deeper data-flow analysis.
+        language: [python, actions]
 
     steps:
       - name: Checkout
@@ -50,16 +60,14 @@ jobs:
       - name: Initialize CodeQL
         uses: github/codeql-action/init@95e58e9a2cdfd71adc6e0353d5c52f41a045d225  # v4.35.2
         with:
-          languages: python
-          # The hand-written Python in this repo lives under
-          # `tools/{vulnogram/generate-cve-json,gmail/oauth-draft}/`. Both
-          # are stdlib-only / a single OAuth dep and do not process
-          # untrusted network input at runtime, so the default
-          # `security-and-quality` query suite is sufficient — no need
-          # for `security-extended`.
+          languages: ${{ matrix.language }}
+          # Neither the Python tools (stdlib-only / single OAuth dep, no
+          # untrusted network input at runtime) nor the workflow YAML
+          # warrants `security-extended`; the default
+          # `security-and-quality` suite is sufficient for both.
           queries: security-and-quality
 
       - name: Perform CodeQL analysis
         uses: github/codeql-action/analyze@95e58e9a2cdfd71adc6e0353d5c52f41a045d225  # v4.35.2
         with:
-          category: "/language:python"
+          category: "/language:${{ matrix.language }}"
