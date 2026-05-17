@@ -1,0 +1,9 @@
+{
+  "class": "automated-scanner",
+  "has_tracker_body": false,
+  "has_receipt_reply": false,
+  "consolidated_receipt": false,
+  "canned_response_name": "Image scan results",
+  "has_unfilled_placeholders": false,
+  "prior_precedent_surfaced": true
+}

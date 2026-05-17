@@ -1,0 +1,6 @@
+{
+  "proposed_milestone": "Providers 2025-06-15",
+  "source": "next_providers_wave",
+  "stop": false,
+  "rationale": "Scope is providers, so the PR's own milestone ('Airflow 3.2.2') is the wrong signal — use the next providers wave date 'Providers 2025-06-15' from release-trains.md instead."
+}

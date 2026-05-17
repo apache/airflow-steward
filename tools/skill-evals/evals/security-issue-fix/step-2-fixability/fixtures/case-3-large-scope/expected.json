@@ -1,0 +1,10 @@
+{
+  "verdict": "not_easily_fixable",
+  "stop": true,
+  "stop_condition": "Fix scope is large (15-20 files, API changes) and must use the private-PR fallback path to avoid drawing review attention to the security nature",
+  "key_signals": [
+    "estimated 15-20 file changes with public API schema modifications",
+    "must coordinate with in-flight core-api refactor (PR #46000)",
+    "team agrees the private-PR path is required"
+  ]
+}

@@ -1,0 +1,4 @@
+{
+  "class": "spam",
+  "rationale": "Classic advance-fee / bug-bounty extortion pattern: demands a payment (cryptocurrency wallet address provided) before disclosing any technical details. No Airflow-specific content whatsoever. Apache does not operate a paid bug bounty programme. Propose no action; user should delete in Gmail."
+}

@@ -1,0 +1,4 @@
+{
+  "class": "consolidated-multi-issue",
+  "rationale": "One email bundles three unrelated vulnerabilities under explicit '## Issue 1', '## Issue 2', '## Issue 3' headings — SSRF, stored XSS, and path traversal in completely different components. Should not be auto-imported as a single tracker. Propose the 'Sending multiple issues in consolidated report' canned reply asking the reporter to submit each finding separately so each can be tracked and fixed independently."
+}

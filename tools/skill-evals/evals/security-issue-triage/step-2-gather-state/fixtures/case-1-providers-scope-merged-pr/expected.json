@@ -1,0 +1,12 @@
+{
+  "number": 212,
+  "title": "HTTP provider leaks Basic-Auth credentials into task logs",
+  "scope_label": "providers",
+  "has_linked_pr": true,
+  "pr_merged": true,
+  "reporter_thread_activity": null,
+  "canned_response_match": null,
+  "canned_response_name": null,
+  "dup_match_strength": "NONE",
+  "dup_candidate_number": null
+}

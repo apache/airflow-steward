@@ -1,0 +1,12 @@
+{
+  "files": [
+    {
+      "path": "airflow/www/security.py",
+      "description": "Add host validation in the redirect check.",
+      "has_snippet": true,
+      "snippet_trusted": false,
+      "snippet_treatment": "quote_as_untrusted"
+    }
+  ],
+  "untrusted_snippets_flagged": true
+}

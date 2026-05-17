@@ -1,0 +1,8 @@
+{
+  "has_file_basename": true,
+  "has_findings_count": true,
+  "has_tracker_links": true,
+  "has_skipped_findings": true,
+  "has_handoff_line": true,
+  "has_bare_issue_numbers": false
+}

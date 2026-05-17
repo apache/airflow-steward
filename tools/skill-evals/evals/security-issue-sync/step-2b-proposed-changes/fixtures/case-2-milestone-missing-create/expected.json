@@ -1,0 +1,27 @@
+{
+  "items": [
+    {
+      "number": 1,
+      "category": "labels",
+      "action": "Remove `pr created`; add `pr merged`",
+      "reason": "apache/airflow#65703 has merged; the tracker label must reflect the current PR state."
+    },
+    {
+      "number": 2,
+      "category": "milestone",
+      "action": "Create milestone 'Providers 2025-06-15' on airflow-s/airflow-s, then assign to this tracker",
+      "reason": "The providers wave milestone Providers 2025-06-15 does not yet exist on the tracker repo; it must be created before assignment."
+    },
+    {
+      "number": 3,
+      "category": "assignee",
+      "action": "Set assignee to @justinpakzad",
+      "reason": "justinpakzad is the PR author and a collaborator on the tracker repo, making them the natural owner for driving the advisory to completion."
+    }
+  ],
+  "labels_to_add": ["pr merged"],
+  "labels_to_remove": ["pr created"],
+  "milestone_create_needed": true,
+  "assignee_proposed": "justinpakzad",
+  "has_bare_issue_numbers": false
+}

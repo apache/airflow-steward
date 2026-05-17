@@ -1,0 +1,7 @@
+[
+  {
+    "number": 42,
+    "title": "Webserver: SSRF via connection test endpoint",
+    "body": "kept_number: 42\n\nThe issue description: Authenticated user can send a crafted connection URL to /api/v1/connections/test, causing the Airflow API server to make outbound HTTP requests to internal network hosts.\n\nShort public summary for publish: SSRF via connection test API endpoint allows authenticated users to probe internal hosts.\n\nAffected versions: >= 2.9.0, < 2.10.3\n\nSecurity mailing list thread: Alice Example (initial report): https://lists.apache.org/thread/abc123\n\nPublic advisory URL: _No response_\n\nReporter credited as: Alice Example\n\nPR with the fix: _No response_\n\nCWE: CWE-918\n\nSeverity: Unknown\n\nCVE tool link: https://cveprocess.apache.org/cve5/CVE-2024-12345"
+  }
+]

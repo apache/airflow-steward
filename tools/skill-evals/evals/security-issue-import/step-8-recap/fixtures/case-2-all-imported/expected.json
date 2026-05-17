@@ -1,0 +1,14 @@
+{
+  "issues_created": [
+    {"number": 261, "url": "https://github.com/example-s/example-s/issues/261"},
+    {"number": 262, "url": "https://github.com/example-s/example-s/issues/262"},
+    {"number": 263, "url": "https://github.com/example-s/example-s/issues/263"}
+  ],
+  "drafts_waiting": [
+    {"draft_id": "r8271635490", "candidate": 1},
+    {"draft_id": "r8271635491", "candidate": 3}
+  ],
+  "skipped": [],
+  "cve_tool_bookkeeping_dropped": 0,
+  "next_step_reminder": true
+}

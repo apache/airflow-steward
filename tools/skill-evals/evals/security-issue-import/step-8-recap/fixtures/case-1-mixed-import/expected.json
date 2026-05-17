@@ -1,0 +1,17 @@
+{
+  "issues_created": [
+    {"number": 251, "url": "https://github.com/example-s/example-s/issues/251"},
+    {"number": 252, "url": "https://github.com/example-s/example-s/issues/252"}
+  ],
+  "drafts_waiting": [
+    {"draft_id": "r9182736450", "candidate": 1},
+    {"draft_id": "r9182736451", "candidate": 3},
+    {"draft_id": "r9182736452", "candidate": 4}
+  ],
+  "skipped": [
+    {"candidate": 2, "reason": "user skipped"},
+    {"candidate": 3, "reason": "rejected with canned response: When someone reports a DoS that requires authenticated access"}
+  ],
+  "cve_tool_bookkeeping_dropped": 1,
+  "next_step_reminder": true
+}

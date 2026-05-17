@@ -79,6 +79,7 @@ exclude = [
   '/[A-Z][A-Z0-9_]+_URL(?:#|$)',
   '/[A-Z][A-Z0-9_]+_URL/',
   '/[A-Z][A-Z0-9_]+_URL$',
+
 ]
 
 # File patterns to skip entirely — the agent-isolation pinned-versions
@@ -89,6 +90,11 @@ exclude_path = [
   "uv.lock",
   "tools/*/uv.lock",
   ".git",
+
+  # Eval fixture files contain intentionally fake URLs (placeholder GitHub
+  # repos, private IPs, synthetic issue numbers) and are not documentation.
+  # Link-checking them produces noise with no signal.
+  "tools/skill-evals/evals",
 ]
 
 # Treat unresolvable hostnames the same as failures, no silent passes.

@@ -1,0 +1,10 @@
+{
+  "verdict": "easily_fixable",
+  "stop": false,
+  "stop_condition": null,
+  "key_signals": [
+    "explicit team consensus on approach (approach 1 +1'd by mwilson)",
+    "known file and line number (airflow/models/xcom.py ~line 180)",
+    "single-file change, no API surface, no migration"
+  ]
+}

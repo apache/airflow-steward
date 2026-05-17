@@ -1,0 +1,4 @@
+{
+  "class": "automated-scanner",
+  "rationale": "Body is machine-generated SAST output from 'SecureBot SAST v4.2.1'. It contains four unrelated findings across different files, each with a tool-assigned confidence level but no human-written proof-of-concept or explanation of Security Model violation. Should not be auto-imported; propose the 'Automated scanning results' canned response instead."
+}

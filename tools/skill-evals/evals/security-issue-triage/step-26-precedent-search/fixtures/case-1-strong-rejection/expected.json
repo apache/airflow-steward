@@ -1,0 +1,13 @@
+{
+  "rejection_precedents": [
+    {
+      "number": 187,
+      "closed_at": "2025-08-14",
+      "match_strength": "STRONG",
+      "one_line_shape": "airflow/models/dagrun.py — denial-of-service by authenticated user"
+    }
+  ],
+  "positive_precedents": [],
+  "disposition_signal": "lowers_to_not_cve_worthy",
+  "budget_exhausted": false
+}

@@ -1,0 +1,4 @@
+{
+  "class": "Report",
+  "rationale": "External sender (not @apache.org), describes a specific vulnerability with clear reproduction steps, impact claim, and a code location. Qualifies as a Report and should proceed to field extraction."
+}

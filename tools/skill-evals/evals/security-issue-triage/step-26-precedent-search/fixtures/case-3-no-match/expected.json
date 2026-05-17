@@ -1,0 +1,13 @@
+{
+  "rejection_precedents": [
+    {
+      "number": 155,
+      "closed_at": "2024-11-02",
+      "match_strength": "MODERATE",
+      "one_line_shape": "airflow/utils/email.py — XSS via DAG-author-controlled email content"
+    }
+  ],
+  "positive_precedents": [],
+  "disposition_signal": "neutral",
+  "budget_exhausted": false
+}

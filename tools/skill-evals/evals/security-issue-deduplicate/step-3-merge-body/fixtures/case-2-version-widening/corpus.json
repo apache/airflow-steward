@@ -1,0 +1,7 @@
+[
+  {
+    "number": 55,
+    "title": "Scheduler: RCE via pickle deserialization in XCom",
+    "body": "kept_number: 55\n\nThe issue description: Crafted XCom value containing a pickle payload triggers RCE in the scheduler during DAG execution.\n\nAffected versions: 2.10.0\n\nSecurity mailing list thread: Carol Dev (initial): https://lists.apache.org/thread/aaa111\n\nReporter credited as: Carol Dev\n\nCWE: CWE-502\n\nSeverity: Unknown\n\nCVE tool link: https://cveprocess.apache.org/cve5/CVE-2024-99999"
+  }
+]

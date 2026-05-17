@@ -1,0 +1,4 @@
+{
+  "disposition": "VALID",
+  "rationale": "An external actor with no credentials can access DAG run history that the Security Model requires authentication to reach. The trust-boundary cheat-sheet maps 'external actor → accesses protected resource' to VALID. The Airflow Security Model explicitly states that REST API endpoints must enforce authentication; a missing auth check on a data-returning endpoint is a clear violation. The attack requires no elevated role and is reachable by any network-adjacent attacker."
+}

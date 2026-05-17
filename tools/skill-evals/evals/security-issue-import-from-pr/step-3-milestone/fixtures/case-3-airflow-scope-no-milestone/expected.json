@@ -1,0 +1,6 @@
+{
+  "proposed_milestone": null,
+  "source": "ask_user",
+  "stop": false,
+  "rationale": "Scope is airflow but the PR has no milestone set; the skill must ask the user to pick the next core release rather than inventing one."
+}

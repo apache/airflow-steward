@@ -1,0 +1,8 @@
+{
+  "has_existing_tests": true,
+  "has_new_tests": false,
+  "new_tests_skipped_justified": true,
+  "has_unit_test_command": true,
+  "has_precommit_command": true,
+  "has_typecheck_command": false
+}

@@ -1,0 +1,4 @@
+{
+  "class": "ASF-security-relay",
+  "rationale": "Sender is security@apache.org and the body opens with the canonical ASF forwarding preamble ('Dear PMC, The security vulnerability report has been received by the Apache Security Team and is being passed to you for action'). The GHSA separator and the credit line confirm this is an ASF-relayed report. Should proceed to field extraction using the credit line ('Sam Security of RedTeam Labs') rather than the From header for the reporter-credited-as field."
+}

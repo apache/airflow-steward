@@ -1,0 +1,22 @@
+[
+  {
+    "number": 101,
+    "title": "Webserver: unauthenticated access to DAG run history via REST API",
+    "body": "An unauthenticated remote attacker can query /api/v1/dags/{dag_id}/dagRuns and retrieve full execution history including task logs without any credentials. Tested on Airflow 2.9.1. The endpoint lacks an auth check in airflow/api/"
+  },
+  {
+    "number": 102,
+    "title": "Providers/SFTP: path traversal in SFTPHook when handling remote paths",
+    "body": "SFTPHook.retrieve_file() does not sanitise the remote_path argument. An operator-configured DAG can supply ../../../etc/passwd as remote_path and read arbitrary files from the SFTP server's host. Affected: airflow/providers/sftp/hooks/sftp.py"
+  },
+  {
+    "number": 103,
+    "title": "API: SSRF via connection test endpoint allows internal network scanning",
+    "body": "The POST /api/v1/connections/test endpoint will attempt a live connection to whatever host:port is supplied. An authenticated user can use this to probe internal network hosts. airflow/api_fastapi/execution_api/routes/connections.py accepts"
+  },
+  {
+    "number": 104,
+    "title": "Scheduler: RCE via crafted serialized DAG in DagBag",
+    "body": "A DAG file containing a crafted __reduce__ method in a custom operator can trigger arbitrary code execution during DagBag parsing. File: airflow/dag_processing/processor.py BaseSerialization.deserialize()"
+  }
+]

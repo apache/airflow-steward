@@ -1,0 +1,5 @@
+{
+  "process_step": "1-2",
+  "step_description": "New issue, needs triage label, no assessment discussion",
+  "key_signals": ["needs triage label set", "no comments", "no scope label"]
+}

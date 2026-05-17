@@ -74,6 +74,9 @@ ALLOWLIST_PATHS=(
   ".asf.yaml"
   "NOTICE"
   "LICENSE"
+  # Eval fixture reports simulate real inbound emails and must contain
+  # the concrete project name — they are not skill / tool docs.
+  "tools/skill-evals/evals/"
 )
 
 # Inline markers that signal an intentional explanatory mention

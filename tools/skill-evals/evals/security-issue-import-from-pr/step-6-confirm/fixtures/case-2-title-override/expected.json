@@ -1,0 +1,7 @@
+{
+  "action": "apply_with_overrides",
+  "title_override": "Arbitrary callable invocation via pickle deserialization in XCom backend",
+  "reporter_override": null,
+  "severity_override": null,
+  "rationale": "User replied with 'title: <text>', overriding the title only; all other proposal fields apply as-is."
+}

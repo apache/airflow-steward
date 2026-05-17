@@ -1,0 +1,9 @@
+{
+  "process_step": 11,
+  "labels": ["security issue", "airflow", "cve allocated", "pr merged"],
+  "milestone": "Airflow 3.2.2",
+  "has_assignee": true,
+  "linked_pr_state": "merged",
+  "thread_status": "known",
+  "has_bare_issue_numbers": false
+}

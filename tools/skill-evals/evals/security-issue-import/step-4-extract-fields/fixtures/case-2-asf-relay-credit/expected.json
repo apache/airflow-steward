@@ -1,0 +1,7 @@
+{
+  "title": "Providers/SMTP: cleartext credential logging",
+  "affected_versions": ">= 2.6.0, < 2.10.2",
+  "reporter_credited_as": "Jordan Lee of Horizon Security Research",
+  "severity": "Unknown",
+  "rationale": "Title: stripped '[SECURITY] CVE candidate - Apache Airflow' prefix, kept the descriptive component:description remainder. Affected versions: explicit range stated in the body (>= 2.6.0, < 2.10.2). Reporter credited as: this is an ASF-security-relay (sender security@apache.org, ASF preamble present), so the Credit: line at the end of the forwarded body is authoritative — 'Jordan Lee of Horizon Security Research'. Using 'security@apache.org' as the credited name would be wrong."
+}

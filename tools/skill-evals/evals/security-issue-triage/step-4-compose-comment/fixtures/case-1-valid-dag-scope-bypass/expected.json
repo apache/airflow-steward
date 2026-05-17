@@ -1,0 +1,6 @@
+{
+  "disposition": "VALID",
+  "mention_handles": ["@alice", "@bob"],
+  "has_security_model_quote": true,
+  "has_bare_issue_numbers": false
+}

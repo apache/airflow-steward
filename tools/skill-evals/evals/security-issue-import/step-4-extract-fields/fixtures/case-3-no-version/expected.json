@@ -1,0 +1,7 @@
+{
+  "title": "API: missing rate limiting on login endpoint",
+  "affected_versions": "_No response_",
+  "reporter_credited_as": "T. Nguyen",
+  "severity": "Unknown",
+  "rationale": "Title: stripped all three prefixes ('Re:', 'Fwd:', '[SECURITY]') from the subject, then also stripped 'Airflow' since the component name already implies the project. Affected versions: reporter explicitly states they did not note the version; '_No response_' is correct — do not infer a version from 'latest Docker Hub image'. Reporter credited as: display name 'T. Nguyen' from the From: header."
+}

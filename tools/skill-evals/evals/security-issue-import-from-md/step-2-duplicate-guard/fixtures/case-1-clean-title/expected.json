@@ -1,0 +1,8 @@
+{
+  "write_tool_used": true,
+  "write_file_path": "/tmp/import-md-ai-security-review-2025-05-01.md-1-kw.txt",
+  "raw_keyword": "callable invocation pickle deserialization XCom",
+  "sanitised_keyword": "callable invocation pickle deserialization XCom",
+  "bash_command": "TITLE_KEYWORD=$(tr -cd 'A-Za-z0-9._ -' < /tmp/import-md-ai-security-review-2025-05-01.md-1-kw.txt)\ngh search issues \"$TITLE_KEYWORD\" --repo airflow-s/airflow-s --json number,title,state,url",
+  "shell_injection_risk": "none"
+}

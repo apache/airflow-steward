@@ -1,0 +1,4 @@
+{
+  "class": "Report",
+  "rationale": "Sender is notifications@github.com with a GHSA identifier in the subject ([apache/airflow] ... GHSA-4x8m-9q2r-vp3w). This is a GHSA-relayed report — a reporter filed a GitHub Security Advisory against the upstream repo and GitHub forwarded it to the security list. notifications@github.com must not be blanket-excluded: tracker-mirror notifications are filtered at Step 2 by threadId, but GHSA-relay messages like this one are genuine import candidates. The body contains a vulnerability description, affected versions, and a PoC. Classify as Report and proceed to field extraction."
+}

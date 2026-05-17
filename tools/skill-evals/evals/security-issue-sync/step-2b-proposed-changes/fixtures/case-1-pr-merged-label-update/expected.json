@@ -1,0 +1,15 @@
+{
+  "items": [
+    {
+      "number": 1,
+      "category": "labels",
+      "action": "Remove `pr created`; add `pr merged`",
+      "reason": "apache/airflow#52199 has merged; the tracker label must reflect the current PR state."
+    }
+  ],
+  "labels_to_add": ["pr merged"],
+  "labels_to_remove": ["pr created"],
+  "milestone_create_needed": false,
+  "assignee_proposed": null,
+  "has_bare_issue_numbers": false
+}

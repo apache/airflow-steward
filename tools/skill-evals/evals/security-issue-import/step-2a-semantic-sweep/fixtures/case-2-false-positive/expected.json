@@ -1,0 +1,8 @@
+{
+  "verdict": "NO_MATCH",
+  "match_tracker": null,
+  "action": "create_new_tracker",
+  "axes_matched": [],
+  "reporter_identity_hit": false,
+  "rationale": "Single-axis overlap on broad subsystem (Webserver/API) is below the two-axis MEDIUM threshold. Bug class (missing ownership check within authenticated session) and attack path (authenticated admin) differ from all corpus entries."
+}

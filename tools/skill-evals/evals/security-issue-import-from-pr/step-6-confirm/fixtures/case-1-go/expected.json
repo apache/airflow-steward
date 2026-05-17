@@ -1,0 +1,7 @@
+{
+  "action": "apply",
+  "title_override": null,
+  "reporter_override": null,
+  "severity_override": null,
+  "rationale": "User replied 'go', which means apply the full proposal as-is with no overrides."
+}

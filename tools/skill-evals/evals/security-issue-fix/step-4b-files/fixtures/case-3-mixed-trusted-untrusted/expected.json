@@ -1,0 +1,19 @@
+{
+  "files": [
+    {
+      "path": "airflow/www/security.py",
+      "description": "Fix redirect validation using urlsplit netloc check.",
+      "has_snippet": true,
+      "snippet_trusted": true,
+      "snippet_treatment": "include_as_proposed"
+    },
+    {
+      "path": "airflow/api_connexion/security.py",
+      "description": "Additional hardening suggested by external reporter.",
+      "has_snippet": true,
+      "snippet_trusted": false,
+      "snippet_treatment": "quote_as_untrusted"
+    }
+  ],
+  "untrusted_snippets_flagged": true
+}

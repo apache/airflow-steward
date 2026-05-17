@@ -1,0 +1,10 @@
+{
+  "verdict": "not_easily_fixable",
+  "stop": true,
+  "stop_condition": "Multiple open technical questions remain unanswered before the fix approach can be decided",
+  "key_signals": [
+    "allowlist ownership decision unresolved (admin config vs per-connection)",
+    "reporter confirmation of 2.9.x scope still pending",
+    "integration-test impact of endpoint restriction not yet assessed"
+  ]
+}

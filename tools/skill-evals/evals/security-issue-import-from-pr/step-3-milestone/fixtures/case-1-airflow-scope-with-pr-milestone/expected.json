@@ -1,0 +1,6 @@
+{
+  "proposed_milestone": "Airflow 3.2.2",
+  "source": "pr_milestone",
+  "stop": false,
+  "rationale": "Scope is airflow and the PR already has milestone 'Airflow 3.2.2', which exists on the tracker — use it directly."
+}

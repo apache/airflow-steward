@@ -1,0 +1,7 @@
+{
+  "title": "Scheduler: pickle deserialization in XCom allows RCE",
+  "affected_versions": "2.10.0",
+  "reporter_credited_as": "D. Park",
+  "severity": "Unknown",
+  "rationale": "Title: the subject already contains a CVSS annotation '(CVSSv3: 9.8 CRITICAL)' — strip it along with the rest of the subject line, keeping only the descriptive component:description part. Affected versions: '2.10.0' explicitly stated. Reporter credited as: display name 'D. Park' from the From: header. Severity: must be 'Unknown' even though the reporter supplied a CVSS 9.8 CRITICAL score — reporter-supplied scores are informational only and the team scores independently; copying the reporter's score into this field is explicitly disallowed."
+}

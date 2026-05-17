@@ -1,0 +1,15 @@
+{
+  "items": [
+    {
+      "number": 1,
+      "category": "milestone",
+      "action": "Set milestone to 'Providers 2025-06-15'",
+      "reason": "Providers scope tracker — the milestone should be the next providers wave date, not the PR's milestone (providers PRs have no milestone)."
+    }
+  ],
+  "labels_to_add": [],
+  "labels_to_remove": [],
+  "milestone_create_needed": false,
+  "assignee_proposed": null,
+  "has_bare_issue_numbers": false
+}
