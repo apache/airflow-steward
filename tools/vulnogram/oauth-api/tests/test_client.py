@@ -239,3 +239,12 @@ def test_probe_unexpected_status():
     with _patch_opener(open_fn):
         result = probe(_session())
     assert result.startswith("error: HTTP 500")
+
+
+def test_probe_valid_on_non_login_redirect():
+    # Vulnogram now 302-redirects /cve5/new to /allocatecve. The redirect is
+    # NOT to oauth.apache.org / /users/login, so it indicates the session
+    # passed auth — only the post-auth landing page changed.
+    open_fn = _fake_open(302, b"", {"Location": "/allocatecve"})
+    with _patch_opener(open_fn):
+        assert probe(_session()) == "valid"
