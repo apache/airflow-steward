@@ -148,6 +148,48 @@ calibration explicitly. Don't paraphrase.
 
 ---
 
+## Quality signals to check — image IP
+
+The "Quality signals to check" category is primarily driven by the adopter's
+source files. The following is a **framework-level default** that applies
+regardless of adopter-specific rules.
+
+When the diff adds one or more binary image files (`.png`, `.jpg`, `.jpeg`,
+`.gif`, `.svg`, `.ico`, `.webp`), use judgment rather than raising an
+automatic finding:
+
+- **Contributor-created screenshots, diagrams, and documentation graphics**
+  are legitimate by default — no finding.
+- **Logos, brand assets, or illustrations** that look professionally produced
+  warrant a short comment asking the contributor to confirm the source and
+  licence: *"Could you confirm this image is original work or confirm its
+  licence? If it's from a third-party source, it may need a `LICENSE` entry
+  or a different approach."*
+
+Do not flag every image addition. The signal is the visual character of the
+asset — a hand-drawn architecture diagram is different from a polished brand
+logo. When in doubt, ask rather than block.
+
+## Quality signals to check — compiled artifacts
+
+ASF releases must be source-only. Compiled or binary build artifacts added to
+the repository risk ending up in a release, violating the ASF Release Policy
+(`https://www.apache.org/legal/release-policy.html`).
+
+When the diff adds any of the following file types, raise a `major` finding:
+
+- **JVM**: `.class`, `.jar` (non-empty), `.war`, `.ear`
+- **Python**: `.pyc`, `.pyo`, `.pyd`
+- **Native**: `.so`, `.dll`, `.dylib`, `.exe`, `.o`, `.a`
+- **Packages**: `.whl`, `.egg`
+
+The finding is `major` with the text: *"Compiled artifacts must not be
+committed to the source tree — ASF releases are source-only. Remove this
+file and ensure it is generated at build time."* If the file would be
+included in a release archive, escalate to `blocking`.
+
+---
+
 ## Backports and version-specific PRs
 
 If the adopter's
