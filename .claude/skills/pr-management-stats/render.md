@@ -247,7 +247,7 @@ Distinct from the colour scheme: these are the four conceptual *states* a contri
 
 | Marker | Definition | Colour | Maintainer action |
 |---|---|---|---|
-| `Ready for review` | `ready for maintainer review` label is present | green | run `/maintainer-review` to actually code-review the PR |
+| `Ready for review` | `ready for maintainer review` label is present | green | run `/pr-management-code-review` to actually code-review the PR |
 | `Responded` | PR is triaged AND author has commented or pushed after the triage comment, AND not yet `Ready` | bright cyan | re-triage; may now qualify for `request-author-confirmation` (first leg of the two-sweep mark-ready gate) |
 | `Waiting for Author` | PR is triaged, no author response — OR — PR is a draft (whether triaged or not) | amber | nothing; author owns the next move (may become a sweep candidate after 7d) |
 | `Not yet triaged` | None of the above. Non-draft PR that has never received a quality-criteria comment | blue (or grey) | run `/pr-management-triage` to give it a first look |

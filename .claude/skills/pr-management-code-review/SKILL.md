@@ -1,5 +1,5 @@
 ---
-name: maintainer-review
+name: pr-management-code-review
 mode: Triage
 description: |
   Walk a maintainer through deep, sequential code review of open pull requests on the configured `<upstream>` repo.
@@ -24,7 +24,7 @@ license: Apache-2.0
      <base>   → the PR's base branch (typically `main`)
      Substitute these before running any `gh` command below. -->
 
-# maintainer-review
+# pr-management-code-review
 
 This skill walks a maintainer through **deep, line-aware review**
 of open pull requests, **one PR at a time**. Its job is to answer
