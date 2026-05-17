@@ -160,44 +160,198 @@ user-scope by the harness. Worktrees handle themselves: each
 worktree has its own `<worktree>/.claude/settings.local.json`,
 and each gets its own root added.
 
-Two install sub-steps cover this:
+#### Step P.0 — Ask the user: per-project or whole-user scope?
 
-1. **Install the helper script.** Copy
-   `tools/agent-isolation/sandbox-add-project-root.sh` into
-   `~/.claude/scripts/sandbox-add-project-root.sh` (or symlink it
-   from `~/.claude-config/scripts/` if the operator uses the
-   private sync repo), mode `0755`. The script file lives
-   user-scope so a single install covers every adopter project on
-   the host; what it **writes** is project-local. The same install
-   mechanism the `sandbox-bypass-warn.sh` and `sandbox-status-line.sh`
-   helpers use (see the *Sandbox-bypass visibility hook* and
-   *Sandbox-state status line* sections of the doc).
-2. **Run the helper once with `--all-worktrees`** in the adopter
-   repo's main checkout. The helper enumerates
-   `git worktree list --porcelain` and, for each worktree, writes
-   that worktree's absolute path into that worktree's own
-   `<worktree>/.claude/settings.local.json` (creating the file if
-   it does not yet exist). Idempotent, atomic, tolerant of missing
-   prereqs (see the script's header comment for the full
-   failure-mode list). On success, surface the diff so the operator
-   sees which entries landed; on no-op (paths already present),
-   surface a one-line "already covered" confirmation.
+Before installing anything, ask the operator which scope they
+want — see
+[`docs/setup/secure-agent-setup.md` → *Per-project vs whole-user scope*](../../../docs/setup/secure-agent-setup.md#per-project-vs-whole-user-scope)
+for the full rationale + trade-offs:
 
-   **Sandbox-bypass requirement when invoked from inside an agent
-   session.** `.claude/settings.local.json` is in Claude Code's
-   built-in sandbox `denyWithinAllow` set (verified empirically —
-   see
-   [`docs/setup/secure-agent-setup.md` → *Security rationale*](../../../docs/setup/secure-agent-setup.md#security-rationale--why-project-local-is-safe-to-write-to)),
-   so the helper's Bash write is blocked when invoked through the
-   agent's `Bash` tool. If this skill is being walked from inside
-   a sandboxed session, invoke the helper with
-   `dangerouslyDisableSandbox: true` and the reason
-   *"writing project-local sandbox-allowlist entries (issue #197 fix)"*.
-   The bypass triggers `sandbox-bypass-warn.sh`'s loud-red banner
-   so the operator sees and approves the single write. When the
-   operator runs `setup-isolated-setup-install` directly from a
-   terminal (the typical first-time-install path), no bypass is
-   needed — the script runs outside the agent sandbox.
+- **Per-project (default).** The skill runs the helper for the
+  current project only. Future projects on this host need the
+  skill re-run in each, OR the operator can pick whole-user later.
+  No global git config changes.
+- **Whole-user.** The skill walks the operator's existing local
+  git checkouts and populates their `settings.local.json` files,
+  then sets `git config --global core.hooksPath` so every future
+  `git checkout` / `git clone` / `git worktree add` on the host
+  picks up the framework's universal post-checkout hook.
+
+**Prefer structured Q&A.** When the agent harness offers a
+structured-question tool (e.g. Claude Code's `AskUserQuestion`),
+use a single-select prompt with `Per-project` as the default and
+`Whole-user (with caveats)` as the alternative. Free-form chat is
+the fallback.
+
+If the user picks **per-project**, skip to *Step P.1 — Install
+the helper script* and *Step P.2 — Run the helper for this project*,
+then move on to the next step in the canonical install list.
+
+If the user picks **whole-user**, follow Step P.0a's loud
+disclosure first, then Step P.1, then Steps P.2-whole-user (walk
+existing checkouts) and P.3-whole-user (install the global hook
++ set `core.hooksPath`).
+
+##### Step P.0a — Loud disclosure before setting whole-user scope
+
+If the operator picked whole-user, surface this disclosure
+**before** any global config write. The operator must
+acknowledge it explicitly; no silent proceed:
+
+> **!!! WHOLE-USER SCOPE — `core.hooksPath` GLOBAL OVERRIDE !!!**
+>
+> Setting `git config --global core.hooksPath` makes git look up
+> hooks in **one shared directory** for every repo on this host.
+> Every `.git/hooks/*` in every existing repo on this machine
+> becomes **inert** — git will no longer fire your per-repo
+> `pre-commit`, `commit-msg`, `pre-push`, or any other hook
+> unless you migrate it into the shared dir.
+>
+> The framework installs **only** the `post-checkout` hook in the
+> shared dir. If you rely on per-repo hooks today (formatters,
+> linters, CI integration), you need to:
+>
+> - Either migrate them into `~/.claude/git-hooks/` so they fire
+>   alongside the framework's `post-checkout`, **or**
+> - Pick **per-project** scope instead and re-run this skill in
+>   each project you adopt.
+>
+> Whole-user scope is reversible: `git config --global --unset core.hooksPath`
+> restores per-repo hook lookup.
+
+Confirm the operator wants to proceed with whole-user scope after
+reading the disclosure. If they hesitate or pick per-project,
+fall back to the per-project path.
+
+#### Step P.1 — Install the helper script
+
+(Both scopes.)
+
+Copy `tools/agent-isolation/sandbox-add-project-root.sh` into
+`~/.claude/scripts/sandbox-add-project-root.sh` (or symlink it
+from `~/.claude-config/scripts/` if the operator uses the
+private sync repo), mode `0755`. The script file lives
+user-scope so a single install covers every adopter project on
+the host; what it **writes** is project-local. The same install
+mechanism the `sandbox-bypass-warn.sh` and `sandbox-status-line.sh`
+helpers use (see the *Sandbox-bypass visibility hook* and
+*Sandbox-state status line* sections of the doc).
+#### Step P.2 — Run the helper for this project (per-project scope)
+
+Skip if the operator picked whole-user scope (Step P.2-whole-user
+below covers the equivalent).
+
+Run the helper once with `--all-worktrees` in the adopter
+repo's main checkout. The helper enumerates
+`git worktree list --porcelain` and, for each worktree, writes
+that worktree's absolute path into that worktree's own
+`<worktree>/.claude/settings.local.json` (creating the file if
+it does not yet exist). Idempotent, atomic, tolerant of missing
+prereqs (see the script's header comment for the full
+failure-mode list). On success, surface the diff so the operator
+sees which entries landed; on no-op (paths already present),
+surface a one-line "already covered" confirmation.
+
+**Sandbox-bypass requirement when invoked from inside an agent
+session.** `.claude/settings.local.json` is in Claude Code's
+built-in sandbox `denyWithinAllow` set (verified empirically —
+see
+[`docs/setup/secure-agent-setup.md` → *Security rationale*](../../../docs/setup/secure-agent-setup.md#security-rationale--why-project-local-is-safe-to-write-to)),
+so the helper's Bash write is blocked when invoked through the
+agent's `Bash` tool. If this skill is being walked from inside
+a sandboxed session, invoke the helper with
+`dangerouslyDisableSandbox: true` and the reason
+*"writing project-local sandbox-allowlist entries (issue #197 fix)"*.
+The bypass triggers `sandbox-bypass-warn.sh`'s loud-red banner
+so the operator sees and approves the single write. When the
+operator runs `setup-isolated-setup-install` directly from a
+terminal (the typical first-time-install path), no bypass is
+needed — the script runs outside the agent sandbox.
+
+#### Step P.2-whole-user — Walk existing checkouts (whole-user scope)
+
+Skip if the operator picked per-project scope.
+
+Walk the operator's existing git checkouts and populate each
+one's `.claude/settings.local.json`. This pass is **settings-only**
+by default — it does NOT install per-repo `post-checkout` hooks
+(the global hook installed in Step P.3-whole-user covers that
+for both existing and future repos via `core.hooksPath`).
+
+1. **Prompt the operator for root directories to scan.**
+   Default suggestions: `~/code/`, `~/projects/`, `~/dev/`,
+   `~/work/`. Show the operator the list, let them edit it.
+   Empty list → skip the walk; the operator can re-run this
+   skill later when they want existing repos covered.
+
+2. **Walk each root dir.** Use a depth-limited `find` with
+   reasonable exclusions:
+
+   ```bash
+   find "<root>" -maxdepth 5 -type d -name .git \
+       -not -path '*/node_modules/*' \
+       -not -path '*/.venv/*' \
+       -not -path '*/__pycache__/*' \
+       -not -path '*/build/*' \
+       -not -path '*/dist/*' \
+       -not -path '*/.cache/*' \
+       -prune
+   ```
+
+   For each `.git/` found, the parent dir is a working tree.
+   De-duplicate by canonical path.
+
+3. **For each working tree found, run the helper with
+   `--all-worktrees`.** Same invocation as the per-project
+   variant — the helper itself handles `git worktree list` so
+   linked worktrees of the same repo get processed. The helper's
+   built-in `git check-ignore` guard skips repos whose
+   `.claude/settings.local.json` is not gitignored (defense in
+   depth — the operator should fix the `.gitignore` first).
+
+4. **Tabulate the result** for the operator: how many checkouts
+   were scanned, how many had `.claude/` (so the helper wrote),
+   how many were skipped (no `.claude/` directory, or
+   `.claude/settings.local.json` not gitignored).
+
+5. **Do not install per-repo `post-checkout` hooks** during this
+   pass. The next sub-step covers future and existing repos
+   uniformly via the global hook.
+
+#### Step P.3-whole-user — Install the global post-checkout hook (whole-user scope)
+
+Skip if the operator picked per-project scope.
+
+1. **Install the universal `post-checkout` hook.** Copy
+   `tools/agent-isolation/git-global-post-checkout.sh` into
+   `~/.claude/git-hooks/post-checkout` (or symlink it from
+   `~/.claude-config/git-hooks/post-checkout` if the operator
+   uses the private sync repo), mode `0755`. The hook content is
+   in
+   [`tools/agent-isolation/git-global-post-checkout.sh`](../../../tools/agent-isolation/git-global-post-checkout.sh) —
+   it calls the sandbox-allowlist helper and (for steward-adopted
+   repos) `setup-steward verify --auto-fix-symlinks`.
+
+2. **Set `core.hooksPath` globally** so every git operation across
+   every repo on the host uses the shared hook dir:
+
+   ```bash
+   git config --global core.hooksPath "$HOME/.claude/git-hooks"
+   ```
+
+   Surface the resulting `git config --global --get core.hooksPath`
+   value to the operator to confirm the write.
+
+3. **Reiterate the implication** from Step P.0a's disclosure:
+   per-repo `.git/hooks/*` are now inert across the entire host.
+   The operator must migrate any per-repo hooks they want to keep.
+   `git config --global --unset core.hooksPath` is the reversal.
+
+After this step, future `git clone`, `git worktree add`, and
+`git checkout` operations anywhere on the host invoke the
+framework's universal post-checkout, which keeps each
+Claude-Code-aware project's `.claude/settings.local.json` in
+sync without any further operator action.
 
 The `.` entry stays in the committed project-scope `allowRead`
 regardless — the explicit absolute path in

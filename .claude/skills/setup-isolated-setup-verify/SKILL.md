@@ -185,6 +185,38 @@ Walk each in order:
    [`docs/setup/secure-agent-setup.md` → *Project-root coverage in the sandbox allowlists*](../../../docs/setup/secure-agent-setup.md#project-root-coverage-in-the-sandbox-allowlists)
    for why.
 
+   **Scope detection (per-project vs whole-user).** The install
+   skill offers two scopes. Detect which one is in effect:
+
+   ```bash
+   git config --global --get core.hooksPath
+   ```
+
+   If the output equals `$HOME/.claude/git-hooks` (or its tilde-
+   resolved form), the operator is in **whole-user** scope:
+
+   - ✓ if `~/.claude/git-hooks/post-checkout` exists, is
+     executable, and matches the framework's
+     `tools/agent-isolation/git-global-post-checkout.sh` content.
+   - ⚠ if the hook is missing or non-executable — the `core.hooksPath`
+     pointer is set but the hook content is gone. Remediation:
+     re-run `/setup-isolated-setup-install` Step P.3-whole-user,
+     or `/setup-isolated-setup-update` to refresh the script copy.
+   - ⚠ if the hook content drifted from the framework's source-of-
+     truth — surface the diff, propose `/setup-isolated-setup-update`.
+   - **Loud reminder** (every run, not a ✗): when in whole-user
+     scope, surface a one-line note that per-repo `.git/hooks/*`
+     are inert across the host (per [`docs/setup/secure-agent-setup.md` → *Per-project vs whole-user scope*](../../../docs/setup/secure-agent-setup.md#per-project-vs-whole-user-scope)).
+     This is informational, not a failure — the operator chose it
+     deliberately during install. Surface so a future self
+     debugging "why didn't my pre-commit fire" recognises the
+     cause.
+
+   If `core.hooksPath` is unset (or points elsewhere), the
+   operator is in **per-project** scope (the default). No further
+   sub-check needed — the per-project mode is fully covered by
+   the static + live-probe checks above.
+
 ## After the report
 
 If every check is ✓, say so explicitly and stop — no further
