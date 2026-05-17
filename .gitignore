@@ -6,6 +6,14 @@ logs
 .claude/worktrees/
 .claude/settings.local.json
 
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
 # Python
 __pycache__/
 *.py[cod]
