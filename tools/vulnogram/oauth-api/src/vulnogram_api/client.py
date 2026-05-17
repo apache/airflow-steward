@@ -260,6 +260,12 @@ def probe(session: Session, *, section: str = "cve5", timeout: int = DEFAULT_TIM
 
     Used by :mod:`vulnogram_api.check`. Picks ``/<section>/new`` because
     it requires authentication but does no DB writes.
+
+    A non-login redirect (e.g. Vulnogram now 302-redirects ``/cve5/new`` to
+    ``/allocatecve``) means the session was successfully validated by the
+    app — only the post-auth destination changed. Treat any non-login 3xx
+    as ``valid``; pinning the probe URL would otherwise need a sync release
+    every time the Vulnogram app reshuffles its routing.
     """
     url = f"https://{session.host}/{section}/new"
     try:
@@ -268,6 +274,6 @@ def probe(session: Session, *, section: str = "cve5", timeout: int = DEFAULT_TIM
         return f"error: {e}"
     if _is_login_redirect(status, headers):
         return "expired"
-    if status == 200:
+    if status == 200 or status in (301, 302, 303, 307, 308):
         return "valid"
     return f"error: HTTP {status}"
