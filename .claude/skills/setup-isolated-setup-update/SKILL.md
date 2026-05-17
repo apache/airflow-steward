@@ -126,9 +126,19 @@ Walk each:
    `~/.claude/scripts/sandbox-status-line.sh` or whatever the
    user's actual statusLine command resolves to,
    `~/.claude/agent-isolation/claude-iso.sh` for the global
-   wrapper install), `diff` the user copy against the framework's
-   source-of-truth in `tools/agent-isolation/`. Report any drift
-   as a unified diff; do not re-`cp`.
+   wrapper install,
+   `~/.claude/scripts/sandbox-add-project-root.sh` for the
+   issue-#197 project-root helper, **and** —
+   *only when whole-user scope is in effect, detected via
+   `git config --global --get core.hooksPath` resolving to
+   `~/.claude/git-hooks`* —
+   `~/.claude/git-hooks/post-checkout` for the universal
+   post-checkout hook), `diff` the user copy against the
+   framework's source-of-truth in `tools/agent-isolation/`.
+   Report any drift as a unified diff; do not re-`cp`. The
+   re-install path for each is
+   [`setup-isolated-setup-install`](../setup-isolated-setup-install/SKILL.md)
+   re-run on the affected Step P sub-step.
 4. **Settings.json shape drift.** Diff the user's project
    `.claude/settings.json` against the framework's dogfooded
    one — the framework occasionally adds new `denyRead` paths

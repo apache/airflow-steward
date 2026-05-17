@@ -17,6 +17,7 @@
     - [Security rationale — why project-local is safe to write to](#security-rationale--why-project-local-is-safe-to-write-to)
     - [`sandbox-add-project-root.sh`](#sandbox-add-project-rootsh)
     - [When the helper runs](#when-the-helper-runs)
+    - [Per-project vs whole-user scope](#per-project-vs-whole-user-scope)
   - [The clean-env wrapper](#the-clean-env-wrapper)
   - [Sandbox-bypass visibility hook](#sandbox-bypass-visibility-hook)
     - [Why install it user-scope, not project-scope](#why-install-it-user-scope-not-project-scope)
@@ -620,6 +621,67 @@ The verification surface:
 - [`/setup-steward verify`](../../.claude/skills/setup-steward/verify.md)
   Check 8b — static cross-check that the current worktree's
   abs path is in its own `.claude/settings.local.json`.
+
+### Per-project vs whole-user scope
+
+[`setup-isolated-setup-install`](../../.claude/skills/setup-isolated-setup-install/SKILL.md)
+offers two scopes for the project-root sandbox-allowlist setup.
+The operator picks one during install; both are reversible.
+
+| Scope | What it covers | Mechanism | Reversal |
+|---|---|---|---|
+| **Per-project** (default) | The single adopter repo the operator is sitting in when running the install skill. Each subsequent adopter project needs the install skill re-run there. | The helper runs once with `--all-worktrees` against the current repo; nothing global is touched. The per-repo `post-checkout` hook (installed by `/setup-steward adopt` in steward-adopted repos) chains into the helper on future `git checkout` operations within that repo. | None needed — per-project scope is inert outside the configured repos. |
+| **Whole-user** | Every git repo on the operator's host, existing and future. Includes non-steward Claude-Code-aware projects (any project with a `.claude/` directory). | Walks the operator's existing checkouts under prompted root dirs and writes each one's `settings.local.json`; sets `git config --global core.hooksPath ~/.claude/git-hooks/` and installs the universal [`git-global-post-checkout.sh`](../../tools/agent-isolation/git-global-post-checkout.sh) there. | `git config --global --unset core.hooksPath` restores per-repo hook lookup. The populated `settings.local.json` files stay (they are harmless if the operator no longer wants them, and gitignored so they cause no commit noise). |
+
+#### Important trade-off — `core.hooksPath` shadows per-repo hooks
+
+When `core.hooksPath` is set globally, git looks up hooks **only**
+in that directory for every repo on the host. Every per-repo
+`<repo>/.git/hooks/*` becomes inert across the host. If the
+operator has hooks they care about (pre-commit formatters,
+commit-msg linters, pre-push gates, project-specific
+post-checkout actions), those will no longer fire after whole-user
+scope is set, unless the operator migrates them into
+`~/.claude/git-hooks/`.
+
+The framework installs **only** the `post-checkout` hook in the
+shared dir. Pre-commit / commit-msg / pre-push / other hook types
+need their own files in the shared dir if the operator wants
+them to fire. This is a deliberate trade-off: a single mechanism
+for whole-user coverage at the cost of needing to migrate
+per-repo hooks.
+
+The install skill surfaces this trade-off loudly before setting
+`core.hooksPath` and requires explicit operator acknowledgement.
+See
+[`setup-isolated-setup-install` Step P.0a](../../.claude/skills/setup-isolated-setup-install/SKILL.md#step-p0a--loud-disclosure-before-setting-whole-user-scope).
+
+#### When to pick which scope
+
+- **Pick per-project** when:
+  - You adopt one or two projects on this host and prefer not to
+    touch global git config.
+  - You have per-repo hooks (pre-commit, commit-msg, etc.) you
+    rely on and do not want shadowed.
+  - You are evaluating apache-steward and have not yet decided
+    whether to commit to the framework.
+
+- **Pick whole-user** when:
+  - You adopt many Claude-Code-aware projects and do not want to
+    re-run the install skill in each.
+  - You add worktrees frequently and want each one's
+    `settings.local.json` auto-populated without per-worktree
+    action.
+  - You do not rely on per-repo hooks (or are prepared to migrate
+    them into the shared dir).
+  - You sync `~/.claude/` across machines via the private dotfile
+    repo (the global config + hook propagates with the sync).
+
+Switching scopes later is non-destructive: the install skill is
+idempotent. Re-running it with a different scope is the supported
+upgrade path. The walking pass under whole-user scope is also a
+one-time bulk operation — once existing checkouts are populated,
+the global `post-checkout` keeps everything aligned going forward.
 
 ## The clean-env wrapper
 
