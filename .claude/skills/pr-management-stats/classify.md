@@ -134,6 +134,51 @@ The `Ready` column counts PRs carrying the `ready for maintainer review` label. 
 
 ---
 
+## `is_untriaged` — refined predicate
+
+The "untriaged" classification used in the hero card, the health rating, the
+recommendation rules, and the area pressure score is **not** the simple negation
+of `is_triaged` (the triage-marker scan above). It is a stricter predicate:
+
+```text
+is_untriaged(pr) :=
+    NOT is_triaged(pr)
+    AND author_association NOT IN (OWNER, MEMBER, COLLABORATOR)
+    AND `ready for maintainer review` NOT IN labels(pr)
+```
+
+Three exclusions, three rationales:
+
+1. **No triage marker.** If a maintainer (any maintainer — see the [rationale
+   for "any maintainer"](#rationale--any-maintainer-not-viewer-only)
+   above) has posted the triage template, the PR has been through the funnel.
+2. **Author is not a collaborator/member/owner.** Committer-authored PRs have a
+   different lifecycle (see [`aggregate.md#counters-per-area`](aggregate.md)) —
+   they are not triaged by `pr-management-triage` and surfacing them in the
+   "untriaged" hero card creates a misleading impression of an unattended
+   backlog. The pre-filter F1 in `pr-management-triage/classify-and-act.md`
+   already skips them from action; the stats counter must agree.
+3. **PR does not carry `ready for maintainer review`.** A PR with the label has
+   *demonstrably* cleared the triage bar — a maintainer applied the label —
+   even when the literal `Pull Request quality criteria` marker is absent
+   (because the PR was promoted by a different path: directly by a reviewer,
+   by an older skill version, or by a contributor who responded to an
+   out-of-band review). Treating these as untriaged double-counts them
+   (they already appear in the `Ready for review` hero card) and falsely
+   inflates the "needs attention" recommendation.
+
+The same predicate has two age-bucketed variants used by `aggregate.md`:
+
+```text
+is_untriaged_old(pr) := is_untriaged(pr) AND age_bucket(pr) == ">4w"
+is_untriaged_med(pr) := is_untriaged(pr) AND age_bucket(pr) IN {"1-4w"}
+```
+
+The age uses the `last_author_interaction` defined in the
+"Age bucket" section above.
+
+---
+
 ## Responded before close (Table 1 only)
 
 Table 1's `Responded` column measures, per area, how many triaged PRs got an author reply *before* they were closed or merged. For a PR in the closed-since set:

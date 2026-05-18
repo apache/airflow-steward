@@ -40,9 +40,24 @@ Four equally-sized cards, each one big number with a sub-label:
 | Card | Big number | Sub-label | Colour rule |
 |---|---|---|---|
 | **Repo Health** | the rating label (`✅ Healthy` / `⚠️ Needs attention` / `🔥 Action needed`) | "based on triage backlog + queue size" | green / amber / red, per [`aggregate.md#health-rating`](aggregate.md#health-rating) |
-| **Open PRs (non-bot)** | total open count | `<contrib_count> from contributors · <collab_count> collaborator-authored` | blue (informational) |
+| **Open PRs (non-bot)** | total open count | `<total_non_drafts> non-draft · <total_drafts> draft` (line 1)<br>`<contrib_count> contributor · <collab_count> collaborator-authored` (line 2) | blue (informational) |
 | **Ready for review** | `len(ready_open)` | `<pct>% of contributor queue` | green |
-| **Untriaged non-drafts** | `len(untriaged_nondraft)` | `<X> are >4 weeks old` | red if >0 are >4w, amber if total > 30, green otherwise |
+| **Untriaged non-drafts** | `len(untriaged_nondraft)` (uses [`is_untriaged`](classify.md#is_untriaged--refined-predicate) — contributor-only AND NOT ready-labelled) | `<X> are >4 weeks old` | red if >0 are >4w, amber if total > 30, green otherwise |
+
+The **Open PRs** card's sub-label is a two-line breakdown: the first line splits
+the total by draft state (the user often wants to see "how much of the backlog
+is in review vs. still being worked on" at a glance), the second line splits by
+author class (contributor vs. collaborator). Both splits sum to the same total
+(modulo bot exclusion at fetch time), so a maintainer can quickly cross-check
+the numbers.
+
+The **Untriaged non-drafts** card uses the refined `is_untriaged` predicate from
+[`classify.md`](classify.md#is_untriaged--refined-predicate) — collaborator-
+authored PRs and PRs already carrying `ready for maintainer review` are NOT
+counted here. Without this scope refinement, the card would over-count by
+including (a) committer parking-lot PRs the F1 pre-filter never lets the
+triage skill act on, and (b) reviewer-queue PRs that have already passed the
+triage bar by an alternate path.
 
 Card layout is responsive: 4-column on wide screens, 2-column on narrow, 1-column on mobile-width. The big number uses 32px font; sub-labels are 12px dim grey.
 

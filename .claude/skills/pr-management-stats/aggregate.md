@@ -27,21 +27,35 @@ One `_AreaStats` block per area. Only two counters (`total` and `contributors`) 
 | Field | Count rule | Scope |
 |---|---|---|
 | `total` | count of PRs in the area | **all** — reference only |
+| `total_drafts` | `isDraft == true` | **all** — denominator for the dashboard draft/non-draft split |
+| `total_non_drafts` | `isDraft == false` | **all** — paired with `total_drafts` |
 | `contributors` | `authorAssociation NOT IN (OWNER, MEMBER, COLLABORATOR)` | **all** — denominator for the contributor-scoped counters below |
 | `drafts` | `isDraft == true` | contributor-only |
 | `non_drafts` | `isDraft == false` | contributor-only |
 | `triaged_waiting` | classified `triaged_waiting` (see `classify.md`) | contributor-only |
 | `triaged_responded` | classified `triaged_responded` | contributor-only |
 | `ready_for_review` | label `ready for maintainer review` present | contributor-only |
+| `untriaged_nondraft` | satisfies [`is_untriaged`](classify.md#is_untriaged--refined-predicate) AND `isDraft == false` | contributor-only |
+| `untriaged_old` | `untriaged_nondraft` AND `age_bucket == ">4w"` | contributor-only |
+| `untriaged_med` | `untriaged_nondraft` AND `age_bucket == "1-4w"` | contributor-only |
 | `triager_drafted` | classified `drafted_by_triager` | contributor-only |
 | `age_buckets` | histogram, key = bucket label from `classify.md#age-bucket` | contributor-only |
 | `draft_age_buckets` | histogram over PRs where `drafted_at` is set, same bucket labels | contributor-only |
 
+The three `untriaged_*` counters share the same predicate (see
+[`classify.md#is_untriaged--refined-predicate`](classify.md#is_untriaged--refined-predicate))
+— a PR carrying the `ready for maintainer review` label is **not** counted as
+untriaged regardless of whether the literal triage marker is present, because
+the label itself is evidence that the PR cleared the triage bar.
+
 ### Invariants
 
+- `total == total_drafts + total_non_drafts` (every PR is exactly one)
 - `contributors == drafts + non_drafts` (each contributor PR is one or the other)
 - `triaged_waiting + triaged_responded <= contributors`
 - `ready_for_review <= non_drafts` (a ready PR shouldn't be draft — if the inequality fails, the label is stale; surface a one-line warning but don't correct the data)
+- `untriaged_old + untriaged_med <= untriaged_nondraft <= non_drafts`
+- `triaged_waiting + triaged_responded + ready_for_review + untriaged_nondraft <= non_drafts` (every contributor non-draft is either triaged, ready, or untriaged; the difference covers PRs in a transitional state — e.g. fresh triaged_responded that haven't been marked ready yet)
 - `sum(age_buckets.values()) == contributors`
 - `contributors <= total`
 
@@ -264,10 +278,16 @@ Top-of-dashboard hero card. Computed as a count of fired threshold conditions:
 
 | Condition | Issue points |
 |---|---|
-| Any contributor non-draft PR untriaged AND > 4 weeks old | **2** |
-| > 30 contributor non-draft PRs untriaged AND in 1–4 weeks bucket | **1** |
+| `untriaged_old > 0` — any contributor non-draft `is_untriaged` PR > 4 weeks old | **2** |
+| `untriaged_med > 30` — > 30 contributor non-draft `is_untriaged` PRs in 1–4 weeks bucket | **1** |
 | > 100 PRs labelled `ready for maintainer review` | **1** |
 | > 20 stale-triaged drafts (drafts where triage comment ≥ 7 days old AND no author response) | **1** |
+
+Each "untriaged" condition above uses the refined
+[`is_untriaged`](classify.md#is_untriaged--refined-predicate) predicate —
+so a PR carrying the `ready for maintainer review` label does **not** trigger the
+health-rating points even if it lacks the literal `Pull Request quality criteria`
+marker (the label is itself evidence of triage).
 
 Sum the points and map:
 
