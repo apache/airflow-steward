@@ -151,7 +151,7 @@ skill automates the first half of this step: for each tracker
 in `Needs triage`, it reads the body + comments, applies the
 project's Security Model framing, and — on user confirmation —
 posts a top-level **triage-proposal comment** that classifies
-the candidate disposition into one of five classes and
+the candidate disposition into one of six classes and
 `@`-mentions 2-3 security-team members for input. The
 proposal-comment shape is:
 
@@ -162,7 +162,7 @@ proposal-comment shape is:
   classes);
 - a specific question for the `@`-mentioned reviewers.
 
-The five disposition classes route to different next-steps once
+The six disposition classes route to different next-steps once
 team consensus lands:
 
 | Class | Next step after consensus |
@@ -172,6 +172,7 @@ team consensus lands:
 | `INFO-ONLY` | [`security-issue-invalidate`](../../.claude/skills/security-issue-invalidate/SKILL.md) with the matching canned-response template |
 | `INVALID` | [`security-issue-invalidate`](../../.claude/skills/security-issue-invalidate/SKILL.md) |
 | `PROBABLE-DUP` | [`security-issue-deduplicate`](../../.claude/skills/security-issue-deduplicate/SKILL.md) |
+| `FIX-ALREADY-PUBLIC` | After reporter confirms the cited public PR fixes their report: [`security-issue-invalidate`](../../.claude/skills/security-issue-invalidate/SKILL.md). If the reporter says it does not fix it, re-triage with `--retriage`. No finder credit is recorded per the [no-credit-when-fix-is-already-public policy](../../.claude/skills/security-issue-import-from-pr/SKILL.md#reporter-credit-policy-for-public-pr-imports). |
 
 The triage skill is **read-only** on tracker state — it never
 flips `needs triage` to a scope label, never closes, never

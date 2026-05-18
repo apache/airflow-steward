@@ -9,6 +9,159 @@ Classification is pure function of state from [`fetch.md`](fetch.md) — no netw
 
 ---
 
+## Triage tiers — definitions
+
+The dashboard surfaces four distinct triage-state categories side-by-side
+because the strict marker-only definition under-counts actual triage activity
+and conflates "no maintainer touched this" with "no maintainer left the
+canonical template." All four predicates apply to a single PR; they overlap
+deliberately (see the implication chains below).
+
+### `is_triaged` — *Quality-Criteria-triaged*
+
+```text
+is_triaged(pr) :=
+    EXISTS comment c IN pr.comments
+      WHERE c.authorAssociation IN (OWNER, MEMBER, COLLABORATOR)
+        AND c.body CONTAINS "Pull Request quality criteria"
+        AND (c.createdAt > head_commit.committedDate
+             OR head_commit.committedDate > c.createdAt)   # see [Triage marker](#triage-marker)
+```
+
+**What the literal marker is:** the **substring `Pull Request quality
+criteria`** — this is the visible link text in the canonical triage-comment
+template that every `pr-management-triage` action body carries (see
+[`pr-management-triage/comment-templates.md`](../pr-management-triage/comment-templates.md)).
+The classifier scans every comment's `body` (NOT `bodyText` — the latter
+strips HTML comments, see [Both marker forms count](#both-marker-forms-count)
+below) for the exact substring. The string is also accepted in an HTML-comment
+form left by the legacy `breeze pr auto-triage` command.
+
+The marker is a **single point of failure** — rename the link text in the
+comment template and this detector silently stops counting. Adopters can
+customise the URL the link points to via
+[`<project-config>/pr-management-triage-comment-templates.md`](../../../projects/_template/pr-management-triage-comment-templates.md)'s
+`quality_criteria_url`, but the link **text** must remain `Pull Request
+quality criteria` verbatim.
+
+### `is_engaged` — *de-facto triaged*
+
+```text
+is_engaged(pr) :=
+    EXISTS comment c IN pr.comments
+      WHERE c.authorAssociation IN (OWNER, MEMBER, COLLABORATOR)
+        AND NOT is_bot(c.author.login)
+```
+
+Plus the same predicate applied to `pr.latestReviews` (any maintainer review)
+and to `LabeledEvent` (any maintainer who added the `ready for maintainer
+review` label).
+
+The broader "a maintainer touched this PR at some point" definition. Catches
+review-thread comments, design discussions, label-adds, hand-typed feedback,
+and so on — all the engagement modes that don't include the literal marker
+substring. **`is_engaged` is a superset of `is_triaged`**: every
+Quality-Criteria-triaged PR is also engaged, but not vice-versa.
+
+The terminology in the dashboard:
+
+- **De-facto triaged** = engaged but not Quality-Criteria-triaged.
+  Formally: `is_engaged(pr) AND NOT is_triaged(pr)` — the
+  `defacto_triaged` counter aggregates this set.
+
+### `is_ai_triaged` — *AI-assisted triage*
+
+```text
+is_ai_triaged(pr) :=
+    EXISTS comment c IN pr.comments
+      WHERE c.authorAssociation IN (OWNER, MEMBER, COLLABORATOR)
+        AND c.body CONTAINS "AI-assisted triage tool"
+```
+
+A PR received at least one maintainer comment whose body contains the
+**AI-attribution footer substring** (`AI-assisted triage tool`). Every
+`pr-management-triage` comment template (draft / comment / ping /
+request-author-confirmation / close-comment etc.) ends with this footer
+verbatim — so the detector counts any PR whose triage included a skill-drafted
+comment.
+
+This predicate is **independent of** `is_triaged` and `is_engaged`:
+
+- An AI-drafted draft+comment includes the `Pull Request quality criteria`
+  link → both `is_triaged` and `is_ai_triaged` fire.
+- An AI-drafted **ping** or **request-author-confirmation** uses a different
+  template that does NOT include the criteria link → `is_engaged` and
+  `is_ai_triaged` fire but `is_triaged` does NOT.
+- A maintainer's hand-typed comment in the criteria-template form (rare —
+  this happens when a maintainer manually pastes the link text without the
+  skill) → `is_triaged` and `is_engaged` fire but `is_ai_triaged` does NOT.
+
+The implication chains:
+
+```text
+is_triaged(pr)    ⇒ is_engaged(pr)         # marker requires maintainer comment, which requires engagement
+is_ai_triaged(pr) ⇒ is_engaged(pr)         # AI footer requires maintainer comment, which requires engagement
+is_triaged(pr)    ⇎ is_ai_triaged(pr)      # independent — see cases above
+```
+
+### `is_untriaged` — *broad untriaged*
+
+```text
+is_untriaged(pr) :=
+    NOT is_engaged(pr)                                # broadest — no maintainer touched it
+    AND author_association NOT IN (OWNER, MEMBER, COLLABORATOR)
+    AND NOT is_bot(pr.author.login)
+    AND `ready for maintainer review` NOT IN labels(pr)
+```
+
+**Key change from earlier iterations:** uses `NOT is_engaged` (not `NOT
+is_triaged`). Combining strict-untriaged with de-facto-triaged double-counted
+PRs that maintainers had touched: a strict-only definition flags a PR as
+untriaged even when a maintainer left detailed inline review feedback, just
+because the feedback didn't include the canonical marker string. The broader
+predicate correctly counts only PRs with **zero maintainer engagement**.
+
+Concrete impact on a large `<upstream>` queue: the strict-only count gave
+72 untriaged non-drafts; tightening to `NOT is_engaged` brings it to 47
+(a 35% reduction). The 25 PRs that drop out had ≥1 maintainer comment but
+no template marker — they're de-facto triaged.
+
+The age-bucketed variants used by `aggregate.md`:
+
+```text
+is_untriaged_old(pr) := is_untriaged(pr) AND age_bucket(pr) == ">4w"
+is_untriaged_med(pr) := is_untriaged(pr) AND age_bucket(pr) IN {"1-4w"}
+```
+
+The age uses the `last_author_interaction` defined in the
+"Age bucket" section below.
+
+### Side-by-side summary
+
+| Tier | Predicate | Means | Dashboard card |
+|---|---|---|---|
+| Quality-Criteria-triaged | `is_triaged` | maintainer posted the literal `Pull Request quality criteria` link | **Quality Criteria triaged** (hero row 2, blue) |
+| De-facto triaged | `is_engaged AND NOT is_triaged` | maintainer engaged but no marker | **De-facto triaged** (hero row 2, amber — the gap signal) |
+| AI-triaged | `is_ai_triaged` | comment with the AI-attribution footer | **AI-triaged** (hero row 2, purple — accounting) |
+| Engaged (overall) | `is_engaged` | union of the above two | not a card on its own; equals `triaged + defacto_triaged` |
+| Untriaged | `is_untriaged` | NOT engaged + contributor + non-bot + not ready-labelled | **Untriaged non-drafts** (hero row 1) |
+
+The number of PRs in each tier sums to a clean partition of the contributor
+non-draft pool minus the ready-labelled set:
+
+```text
+contributor_nondraft_not_ready =
+    triaged_nondraft +              # Quality-Criteria-triaged (`is_triaged`)
+    defacto_triaged_nondraft +      # engaged but no marker
+    untriaged_nondraft              # no maintainer engagement
+```
+
+The `transitional` cases (e.g. a freshly-engaged PR whose triage marker
+hasn't been posted yet) are not a separate category; they sit in
+de-facto-triaged until they pick up the marker or the ready label.
+
+---
+
 ## Triage marker
 
 A PR is *triaged* when it has at least one comment that:
@@ -131,6 +284,46 @@ Everything else (including `FIRST_TIME_CONTRIBUTOR`, `FIRST_TIMER`, `CONTRIBUTOR
 ## Ready for review
 
 The `Ready` column counts PRs carrying the `ready for maintainer review` label. That's it — no state inference. The label is the signal.
+
+---
+
+## Stats-only vs action-only triage
+
+The strict `is_triaged` definition (the literal marker scan, [Triage marker](#triage-marker)
+above) remains the source of truth for the **action-related** flows
+(`pr-management-triage` row 3-4 detection, sweep 1a's "stale triaged drafts"
+threshold). The broader `is_engaged` definition is **stats-only** — it does
+not gate any mutation. This keeps the action-flow conservatism while letting
+the dashboard surface the fuller picture.
+
+For the configurable AI-attribution detection substring, adopters can override
+[`<project-config>/pr-management-config.md`](../../../projects/_template/pr-management-config.md)'s
+`ai_attribution_substring` field; the framework defaults to
+`AI-assisted triage tool`. The literal substring is a single point of failure
+— keep it identical between the comment templates and this detector.
+
+---
+
+## `is_bot` — author is a recognised bot
+
+```text
+is_bot(login) :=
+    login.lower() ends with "[bot]"
+    OR login.lower() IN {dependabot, renovate, github-actions}
+```
+
+Bot PRs are a **separate dashboard category** counted as `bot_authored` —
+they don't merge into `contributors` or `collaborators`, and they don't trip
+the untriaged or engaged predicates. Their lifecycle is independent: they
+follow automated update / review cycles and are reviewed-and-merged by
+maintainers without going through the triage funnel. Surfacing them in their
+own count keeps the contributor backlog signal clean.
+
+Adopters with project-specific bots not on this list — e.g. a release-bot or
+a CI-helper bot — should extend the `is_bot` match via
+[`<project-config>/pr-management-config.md`](../../../projects/_template/pr-management-config.md)'s
+`bot_logins` setting (a list of additional logins to recognise; the framework
+defaults always apply).
 
 ---
 

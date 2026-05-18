@@ -33,18 +33,59 @@ Tuesday, May 6, 2026 · 14:33 UTC · viewer @potiuk · 6-week window since 2026-
 
 The title is plain text. Context line includes `<weekday>, <month> <day>, <year> · <HH:MM> UTC · viewer @<login> · 6-week window since <cutoff>`. Use the fetch-start `<now>`, not render-end, so a slow run remains a single-moment snapshot.
 
-### 2. Hero cards (4-column grid)
+### 2. Hero cards — two-row grid
 
-Four equally-sized cards, each one big number with a sub-label:
+Two rows of four cards each:
+
+#### Row 1 — backlog state
 
 | Card | Big number | Sub-label | Colour rule |
 |---|---|---|---|
 | **Repo Health** | the rating label (`✅ Healthy` / `⚠️ Needs attention` / `🔥 Action needed`) | "based on triage backlog + queue size" | green / amber / red, per [`aggregate.md#health-rating`](aggregate.md#health-rating) |
-| **Open PRs (non-bot)** | total open count | `<contrib_count> from contributors · <collab_count> collaborator-authored` | blue (informational) |
+| **Open PRs (non-bot)** | `total_contributors + total_collaborators` | `<total_non_drafts> non-draft · <total_drafts> draft` (line 1)<br>`<contrib_count> contributor · <collab_count> collaborator-authored` (line 2) | blue (informational) |
 | **Ready for review** | `len(ready_open)` | `<pct>% of contributor queue` | green |
-| **Untriaged non-drafts** | `len(untriaged_nondraft)` | `<X> are >4 weeks old` | red if >0 are >4w, amber if total > 30, green otherwise |
+| **Untriaged non-drafts** | `len(untriaged_nondraft)` (uses [`is_untriaged`](classify.md#is_untriaged--broad-untriaged)) | `<X> are >4 weeks old` | red if >0 are >4w, amber if total > 30, green otherwise |
 
-Card layout is responsive: 4-column on wide screens, 2-column on narrow, 1-column on mobile-width. The big number uses 32px font; sub-labels are 12px dim grey.
+#### Row 2 — triage coverage breakdown
+
+This row exposes the **gap between the literal Quality-Criteria marker and
+broad maintainer engagement** so a maintainer can see at a glance how much
+triage is happening that the marker-based count misses.
+
+| Card | Big number | Sub-label | Colour rule |
+|---|---|---|---|
+| **Quality Criteria triaged** | `triaged_waiting + triaged_responded` (literal `Pull Request quality criteria` link present in a maintainer comment) | `<pct>% of contributor non-drafts` | blue (informational) |
+| **De-facto triaged** | [`defacto_triaged`](classify.md#is_engaged--de-facto-triaged) (engaged by a maintainer, no Quality-Criteria marker) | `<pct>% of contributor non-drafts` | amber (gap signal — the bigger this is vs the Quality-Criteria card, the more triage is happening invisibly to the marker counter) |
+| **AI-triaged** | [`ai_triaged`](classify.md#is_ai_triaged--ai-assisted-triage) (received an AI-assisted triage comment) | `<pct>% of Quality-Criteria-triaged` | grey (informational) |
+| **Bot PRs** | [`bot_authored`](classify.md#is_bot--author-is-a-recognised-bot) | `<dependabot> dependabot · <other> other` | grey (separate lifecycle, surfaced for accounting parity) |
+
+The **De-facto triaged** card is the key new signal: on a large `<upstream>`
+queue (~457 human-authored open PRs) the Quality-Criteria count typically
+captures ~21% of PRs but the broad `is_engaged` count captures ~59% — the
+gap (~38 percentage points) is PRs that maintainers engaged with through
+review threads, direct comments, or label-adds without leaving the templated
+`Pull Request quality criteria` marker. Surfacing the gap lets the maintainer
+team see how much queue health the marker-based counter under-states.
+
+The **Bot PRs** card is a separate accounting category — bot-authored PRs
+follow their own automated lifecycle and don't merge into the
+`contributors` / `collaborators` split. Their count is informational; the
+"Untriaged" hero card never includes them (bots are excluded via
+[`is_untriaged`](classify.md#is_untriaged--broad-untriaged)).
+
+The **Open PRs** card's sub-label is a two-line breakdown: the first line splits
+the total by draft state, the second line splits by author class (contributor
+vs. collaborator). Both splits sum to the same total (modulo bot exclusion at
+fetch time).
+
+The **Untriaged non-drafts** card uses the refined `is_untriaged` predicate from
+[`classify.md`](classify.md#is_untriaged--broad-untriaged) — bots, collaborator-
+authored PRs, and PRs already carrying `ready for maintainer review` are NOT
+counted here.
+
+Card layout is responsive: 4-column on wide screens (8 cards total in two rows),
+2-column on narrow, 1-column on mobile-width. The big number uses 32px font;
+sub-labels are 12px dim grey.
 
 ### 3. What needs attention (action panel)
 
@@ -160,18 +201,59 @@ A second hero grid, same layout as the top one, showing the funnel-health summar
 
 This grid completes the dashboard: hero cards at the top (queue size + immediate red flags), recommendations next (what to do), velocity + opened-vs-closed (momentum), pressure by area (where), and triage funnel (process health).
 
+### 9b. Triager activity panel
+
+Sourced from [`aggregate.md#triager-activity-per-triager-per-week`](aggregate.md#triager-activity-per-triager-per-week).
+A ranked table of the top 15 maintainers by **distinct PRs engaged** across
+the last 6 calendar weeks, with **AI/manual split per week**.
+
+Layout — one row per maintainer, columns:
+
+| Column | Content |
+|---|---|
+| `Triager` | `@<login>` with link to GitHub profile |
+| `Total` | Total distinct PRs across the 6-week window (`ai + manual` collapsed) |
+| `AI` | Sub-total of PRs where the maintainer's engagement included the AI-attribution footer |
+| `Manual` | Sub-total of PRs without AI footer |
+| `W-5`…`This wk` | One column per rolling week, each cell rendered as a small `ai / manual` split (e.g. `12/3` = 12 AI + 3 manual) |
+| `Trend` | Inline 6-bar sparkline of the per-week totals, AI portion stacked over manual |
+
+Sort by `Total` descending. Bot accounts excluded via
+[`is_bot`](classify.md#is_bot--author-is-a-recognised-bot).
+
+The AI / Manual split makes one specific question visible: of each maintainer's
+triage throughput, how much is going through the `pr-management-triage` skill
+(detected via the AI-attribution footer substring) vs. through direct
+review-thread typing. Both modes are *real triage* — the maintainer approved
+every AI-drafted comment before it posted — but the split surfaces where the
+skill is providing leverage vs. where the maintainer is doing the writing
+themselves. A high AI ratio for a maintainer typically means they ran a
+batched triage sweep; a high manual ratio means they did deep-review
+conversation.
+
+Below the table, a one-line summary:
+
+```text
+6-week throughput: <N_ai> AI-assisted / <N_manual> manual / <N_total> total
+                   across <N_triagers> active maintainers
+```
+
+Empty state: when there are zero engagements in the window (a quiet 6 weeks),
+render a single low-priority card with the message "No triager activity in
+the last 6 weeks — quiet window or fetch shape missing comment data."
+
 ### 10. Detailed tables (collapsed `<details>` blocks)
 
 Two `<details>` elements, each opening into a compact area-grouped table:
 
-- **Triaged PRs — Final State since `<cutoff>`** — same structure as the [Table 1](#table-1--triaged-prs-final-state) section below.
-- **Triaged PRs — Still Open** — same structure as [Table 2](#table-2--triaged-prs-still-open) below, possibly compact (drop the 8 age-bucket columns) for screen width.
+- **Triaged PRs — Final State since `<cutoff>`** — same structure as the Table 1 section below.
+- **Triaged PRs — Still Open** — same structure as the Table 2 section below, possibly compact (drop the 8 age-bucket columns) for screen width.
 
 Both tables are HTML-rendered with the same colour scheme as the dashboard. Maintainers who want the raw per-area numbers click to expand; the default view is the dashboard sections above.
 
 ### 11. Legend / methodology
 
-A bordered panel at the bottom explaining all the colours, columns, and computed values. Critical content because the dashboard packs a lot of distinct numbers into small footprints. See [`#legend`](#legend) below for the verbatim block.
+A bordered panel at the bottom explaining all the colours, columns, and computed values. Critical content because the dashboard packs a lot of distinct numbers into small footprints. See the Legend section below for the verbatim block.
 
 ---
 

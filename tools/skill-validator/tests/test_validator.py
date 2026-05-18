@@ -24,6 +24,7 @@ from pathlib import Path
 import pytest
 
 from skill_validator import (
+    BODY_INLINE_CATEGORY,
     FORBIDDEN_PATTERNS,
     INJECTION_GUARD_CATEGORY,
     INJECTION_GUARD_CALLOUT_SENTINEL,
@@ -39,6 +40,7 @@ from skill_validator import (
     resolve_link,
     run_validation,
     slugify,
+    validate_body_inline,
     validate_frontmatter,
     validate_injection_guard,
     validate_links,
@@ -788,6 +790,104 @@ class TestValidateInjectionGuard:
         """injection_guard_todo is in SOFT_CATEGORIES — it is advisory."""
         assert INJECTION_GUARD_TODO_CATEGORY in SOFT_CATEGORIES
 
+# body-inline check (Pattern 9 extension)
+# ---------------------------------------------------------------------------
+
+
+def _fenced_skill(cmd: str) -> str:
+    """Wrap *cmd* in a minimal SKILL.md with a fenced bash block."""
+    frontmatter = "---\nname: test\ndescription: test\nlicense: Apache-2.0\n---\n\n"
+    return frontmatter + f"```bash\n{cmd}\n```\n"
+
+
+class TestBodyInline:
+    def test_no_body_arg_silent(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        text = _fenced_skill("gh issue create --title 'Bug' --body-file /tmp/body.txt")
+        violations = list(validate_body_inline(path, text))
+        assert violations == []
+
+    def test_body_space_double_quote_fenced_flagged(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        text = _fenced_skill('gh issue create --title "T" --body "some text"')
+        violations = list(validate_body_inline(path, text))
+        assert len(violations) == 1
+        assert violations[0].category == BODY_INLINE_CATEGORY
+        assert "body-inline" in violations[0].message
+
+    def test_body_space_single_quote_fenced_flagged(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        text = _fenced_skill("gh issue create --title T --body 'some text'")
+        violations = list(validate_body_inline(path, text))
+        assert len(violations) == 1
+        assert violations[0].category == BODY_INLINE_CATEGORY
+
+    def test_body_equals_double_quote_fenced_flagged(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        text = _fenced_skill('gh issue create --body="some text"')
+        violations = list(validate_body_inline(path, text))
+        assert len(violations) == 1
+        assert violations[0].category == BODY_INLINE_CATEGORY
+
+    def test_body_equals_single_quote_fenced_flagged(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        text = _fenced_skill("gh issue create --body='some text'")
+        violations = list(validate_body_inline(path, text))
+        assert len(violations) == 1
+        assert violations[0].category == BODY_INLINE_CATEGORY
+
+    def test_inline_backtick_mention_skipped(self, tmp_path: Path) -> None:
+        """Prose like ``never use --body "..."`` should not fire."""
+        path = tmp_path / "SKILL.md"
+        text = (
+            "---\nname: test\ndescription: test\nlicense: Apache-2.0\n---\n\n"
+            'Do not use `--body "text"` — prefer `--body-file` instead.\n'
+        )
+        violations = list(validate_body_inline(path, text))
+        assert violations == []
+
+    def test_body_file_not_flagged(self, tmp_path: Path) -> None:
+        """``--body-file`` must never be flagged — it is the correct form."""
+        path = tmp_path / "SKILL.md"
+        text = _fenced_skill("gh issue create --title T --body-file /tmp/b.txt")
+        violations = list(validate_body_inline(path, text))
+        assert violations == []
+
+    def test_violation_line_number_correct(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        # _fenced_skill layout (1-indexed):
+        #   1: ---
+        #   2: name: test
+        #   3: description: test
+        #   4: license: Apache-2.0
+        #   5: ---
+        #   6: (blank)
+        #   7: ```bash
+        #   8: gh issue create --body "text"   ← violation here
+        #   9: ```
+        text = _fenced_skill('gh issue create --body "text"')
+        violations = list(validate_body_inline(path, text))
+        assert len(violations) == 1
+        assert violations[0].line == 8
+
+    def test_body_inline_is_soft(self) -> None:
+        assert BODY_INLINE_CATEGORY in SOFT_CATEGORIES
+
+    def test_message_references_body_file(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        text = _fenced_skill('gh pr create --body "description"')
+        violations = list(validate_body_inline(path, text))
+        assert len(violations) == 1
+        assert "--body-file" in violations[0].message
+
+    def test_security_checklist_skipped(self, tmp_path: Path) -> None:
+        """security-checklist.md documents bad patterns intentionally — must not fire."""
+        path = tmp_path / "write-skill" / "security-checklist.md"
+        path.parent.mkdir(parents=True)
+        text = _fenced_skill('gh issue create --body "bad pattern documented here"')
+        violations = list(validate_body_inline(path, text))
+        assert violations == []
+
 
 # ---------------------------------------------------------------------------
 # SOFT category exposure
@@ -799,3 +899,4 @@ class TestSoftCategories:
         assert PRINCIPLE_CATEGORY in SOFT_CATEGORIES
         assert TRIGGER_PRESERVATION_CATEGORY in SOFT_CATEGORIES
         assert INJECTION_GUARD_TODO_CATEGORY in SOFT_CATEGORIES
+        assert BODY_INLINE_CATEGORY in SOFT_CATEGORIES

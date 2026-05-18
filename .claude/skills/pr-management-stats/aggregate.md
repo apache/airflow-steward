@@ -27,21 +27,42 @@ One `_AreaStats` block per area. Only two counters (`total` and `contributors`) 
 | Field | Count rule | Scope |
 |---|---|---|
 | `total` | count of PRs in the area | **all** — reference only |
+| `total_drafts` | `isDraft == true` | **all** — denominator for the dashboard draft/non-draft split |
+| `total_non_drafts` | `isDraft == false` | **all** — paired with `total_drafts` |
 | `contributors` | `authorAssociation NOT IN (OWNER, MEMBER, COLLABORATOR)` | **all** — denominator for the contributor-scoped counters below |
 | `drafts` | `isDraft == true` | contributor-only |
 | `non_drafts` | `isDraft == false` | contributor-only |
 | `triaged_waiting` | classified `triaged_waiting` (see `classify.md`) | contributor-only |
 | `triaged_responded` | classified `triaged_responded` | contributor-only |
 | `ready_for_review` | label `ready for maintainer review` present | contributor-only |
+| `engaged` | satisfies [`is_engaged`](classify.md#is_engaged--de-facto-triaged) (any maintainer touched it) | contributor-only |
+| `defacto_triaged` | satisfies [`is_defacto_triaged`](classify.md#is_engaged--de-facto-triaged) (engaged but no marker) | contributor-only |
+| `ai_triaged` | satisfies [`is_ai_triaged`](classify.md#is_ai_triaged--ai-assisted-triage) (received an AI-assisted triage comment) | contributor-only |
+| `bot_authored` | [`is_bot`](classify.md#is_bot--author-is-a-recognised-bot)(pr.author.login) | **all** — its own category, NOT in `contributors` |
+| `untriaged_nondraft` | satisfies [`is_untriaged`](classify.md#is_untriaged--broad-untriaged) AND `isDraft == false` | contributor-only |
+| `untriaged_old` | `untriaged_nondraft` AND `age_bucket == ">4w"` | contributor-only |
+| `untriaged_med` | `untriaged_nondraft` AND `age_bucket == "1-4w"` | contributor-only |
 | `triager_drafted` | classified `drafted_by_triager` | contributor-only |
 | `age_buckets` | histogram, key = bucket label from `classify.md#age-bucket` | contributor-only |
 | `draft_age_buckets` | histogram over PRs where `drafted_at` is set, same bucket labels | contributor-only |
 
+The three `untriaged_*` counters share the same predicate (see
+[`classify.md#is_untriaged--broad-untriaged`](classify.md#is_untriaged--broad-untriaged))
+— a PR carrying the `ready for maintainer review` label is **not** counted as
+untriaged regardless of whether the literal triage marker is present, because
+the label itself is evidence that the PR cleared the triage bar.
+
 ### Invariants
 
+- `total == total_drafts + total_non_drafts` (every PR is exactly one)
+- `contributors + collaborator_authored + bot_authored == total` (three disjoint author classes)
 - `contributors == drafts + non_drafts` (each contributor PR is one or the other)
 - `triaged_waiting + triaged_responded <= contributors`
+- `triaged_waiting + triaged_responded <= engaged` (Quality-Criteria-triaged is a subset of engaged)
+- `defacto_triaged + (triaged_waiting + triaged_responded) == engaged` (every engaged PR is either Quality-Criteria-triaged or de-facto-only)
 - `ready_for_review <= non_drafts` (a ready PR shouldn't be draft — if the inequality fails, the label is stale; surface a one-line warning but don't correct the data)
+- `untriaged_old + untriaged_med <= untriaged_nondraft <= non_drafts`
+- `engaged + untriaged_nondraft + ready_for_review == non_drafts (contributor)` (the partition: every contributor non-draft is exactly one of `is_engaged` (strict OR de-facto), `is_untriaged` (no maintainer touched), or already-`ready` labelled — the three are mutually exclusive once the `is_untriaged` definition uses `NOT is_engaged` rather than `NOT is_triaged`)
 - `sum(age_buckets.values()) == contributors`
 - `contributors <= total`
 
@@ -258,16 +279,106 @@ This panel makes the *quality* of closures visible — the velocity panel says "
 
 ---
 
+## Triager activity (per-triager, per-week)
+
+The dashboard's "Triager activity" section ranks maintainers by how many
+distinct PRs each one **engaged with** in each of the last 6 calendar weeks.
+"Engaged" uses the same predicate as
+[`is_engaged`](classify.md#is_engaged--de-facto-triaged)
+(any maintainer comment / review).
+
+For each open PR currently in the fetch set, walk
+`pr.comments(last:25).nodes` and the parallel review-thread sub-comments:
+
+```text
+for each comment c by login L where authorAssociation IN
+    (OWNER, MEMBER, COLLABORATOR) AND NOT is_bot(L):
+    bucket = which_week(c.createdAt)   # see #weekly-velocity for bucket math
+    if bucket is one of the 6 windows:
+        kind = "ai" if "AI-assisted triage tool" in c.body else "manual"
+        triager_weekly[L][bucket][kind] += (first-engagement-in-bucket counter)
+```
+
+Per-week counting rule: count **at most one PR per (login, week, kind)** even
+when the same maintainer posts multiple comments in the same week of the same
+kind. The intent is "how many distinct PRs did this maintainer touch each week,
+split by AI-assisted vs manually-typed engagement" not "how many comments did
+they post"; multiple comments by the same person in the same week on the same
+PR of the same kind collapse to a single tally.
+
+### AI vs manual split
+
+Every triager's per-week count is further split into:
+
+- **AI-assisted**: comments whose body contains the AI-attribution footer
+  substring (`AI-assisted triage tool` — same detector as
+  [`is_ai_triaged`](classify.md#is_ai_triaged--ai-assisted-triage)).
+- **Manual**: comments without the footer.
+
+Same PR can contribute to *both* sub-counts for the same maintainer-week if
+they posted both an AI-drafted comment and a manually-typed comment in the
+same window. The dashboard shows the two side-by-side so the maintainer team
+can see how much of each person's throughput is coming through the skill
+versus through direct review.
+
+A maintainer's total for a week is `ai + manual`; both sub-counts use the
+per-PR de-duplication rule (one PR per kind per week).
+
+Counted as engagement:
+
+- Issue-level comments (`pr.comments(last:25)` in the standard fetch).
+- Review-thread comments — walk every
+  `pr.reviewThreads.nodes.comments(first:5)` for the same maintainer test.
+- `LabeledEvent` adding the `ready for maintainer review` label by a
+  maintainer (counts the label-add as the engagement timestamp). This catches
+  reviewers who applied the label without leaving a comment.
+
+The fetch shape in [`fetch.md`](fetch.md) already populates issue-level
+comments and review threads in the open-PR query. The label-add timestamp
+needs the `ready-label-timeline` query
+[(see `fetch.md#ready-label-timeline`)](fetch.md#ready-label-timeline) which
+the dashboard's "Ready-for-review trend by top areas" panel already fires —
+re-use that result.
+
+### Top-N rendering rule
+
+The "Triager activity" panel renders the top 15 maintainers by total PRs
+engaged across the 6-week window. The table layout (one row per triager,
+six week columns + a total column + a sparkline / mini-bars column) is
+defined in [`render.md#triager-activity-panel`](render.md). Maintainers with
+zero engagement in the window are excluded from the panel.
+
+### Caveats
+
+- Engagement is **at-most-one-PR-per-week-per-maintainer-per-PR**, not
+  comment-count. The maintainer who triages 20 PRs in one week and the
+  maintainer who comments 20 times on one PR show as 20 and 1 respectively.
+- The same maintainer can show up in multiple weeks for the same PR if they
+  engaged in each window — that is by design (re-engagement signals
+  continued attention).
+- Bot-account comments are excluded via the same
+  [`is_bot`](classify.md#is_bot--author-is-a-recognised-bot) test used in the
+  open-PR counters; copilot review-bots that post under a `CONTRIBUTOR`
+  association are not counted anyway (the maintainer check filters them).
+
+---
+
 ## Health rating
 
 Top-of-dashboard hero card. Computed as a count of fired threshold conditions:
 
 | Condition | Issue points |
 |---|---|
-| Any contributor non-draft PR untriaged AND > 4 weeks old | **2** |
-| > 30 contributor non-draft PRs untriaged AND in 1–4 weeks bucket | **1** |
+| `untriaged_old > 0` — any contributor non-draft `is_untriaged` PR > 4 weeks old | **2** |
+| `untriaged_med > 30` — > 30 contributor non-draft `is_untriaged` PRs in 1–4 weeks bucket | **1** |
 | > 100 PRs labelled `ready for maintainer review` | **1** |
 | > 20 stale-triaged drafts (drafts where triage comment ≥ 7 days old AND no author response) | **1** |
+
+Each "untriaged" condition above uses the refined
+[`is_untriaged`](classify.md#is_untriaged--broad-untriaged) predicate —
+so a PR carrying the `ready for maintainer review` label does **not** trigger the
+health-rating points even if it lacks the literal `Pull Request quality criteria`
+marker (the label is itself evidence of triage).
 
 Sum the points and map:
 

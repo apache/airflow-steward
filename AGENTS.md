@@ -1293,10 +1293,12 @@ Currently available:
   tracker carrying `needs triage`, reads body + comments, applies the
   project's Security Model framing, and — on user confirmation — posts
   a standalone top-level **triage-proposal comment** that classifies
-  the candidate disposition into one of five classes (`VALID` →
+  the candidate disposition into one of six classes (`VALID` →
   `security-cve-allocate`, `DEFENSE-IN-DEPTH` → public PR for
   hardening, `INFO-ONLY` / `INVALID` → `security-issue-invalidate`,
-  `PROBABLE-DUP` → `security-issue-deduplicate`) and `@`-mentions 2-3
+  `PROBABLE-DUP` → `security-issue-deduplicate`, `FIX-ALREADY-PUBLIC`
+  → reporter verifies the cited public PR, then
+  `security-issue-invalidate` if confirmed) and `@`-mentions 2-3
   security-team members per scope for input. **Read-only on tracker
   state** — never flips `needs triage` to a scope label, never closes,
   never allocates a CVE; the valid/invalid decision belongs to team

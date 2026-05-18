@@ -830,6 +830,121 @@ from the canned-responses file, not by pasting prior outbound mail.
 
 ---
 
+## Step 2c — Search `<upstream>` for an already-public fix
+
+Step 2a finds existing *trackers* that overlap. Step 2b finds
+*prior reports* that were rejected. Step 2c covers a third
+no-tracker-needed case: an **independent public PR in `<upstream>`
+already appears to fix the reported behaviour**. The reporter sent
+`<security-list>` without knowing the fix landed (or is in flight);
+opening a tracker would create a redundant audit-trail entry and
+later force the team through `security-issue-invalidate` to close
+it. Catching the case at import time is cheaper: thank the reporter,
+point at the PR, ask them to verify, and skip tracker creation.
+
+**Run Step 2c on** every `Report` / `ASF-security relay` candidate
+that Step 2a did *not* flag STRONG (STRONG-dedup routes to
+`security-issue-deduplicate`, which already handles the
+already-tracked case). Skip on `automated-scanner`,
+`consolidated-multi-issue`, `media-request`, `spam`,
+`cve-tool-bookkeeping`, and `cross-thread-followup` candidates —
+those never become trackers regardless.
+
+**Detection signals** (any one is sufficient to surface the
+candidate as a potential `fix-already-public`):
+
+1. **Reporter links to a public PR.** The body contains an
+   `https://github.com/<upstream>/pull/<N>` URL. This is the most
+   reliable signal — the reporter already noticed.
+2. **Code-pointer + vulnerability-class match in a recent PR.**
+   For each code pointer extracted in Step 2a (file path + function
+   name), search `<upstream>` for PRs that touch that surface and
+   whose title/body matches the candidate's vulnerability class
+   (e.g. *escape*, *sanitize*, *validate*, *auth*, *XSS*, *CVE*,
+   *security*). Run via the temp-file pattern from Step 2a (key
+   3) — never put report-derived strings directly into the
+   `gh search prs` argument:
+
+   ```bash
+   # Write keywords to a temp file first; sanitise with `tr -cd`.
+   KW=$(tr -cd 'A-Za-z0-9._ -' < /tmp/pubfix-kw-<threadId>.txt)
+   gh search prs "$KW" --repo <upstream> \
+     --merged --merged-at ">=$(date -u -d '180 days ago' +%Y-%m-%d)" \
+     --json number,title,author,mergedAt,url --limit 10
+   gh search prs "$KW" --repo <upstream> --state open \
+     --json number,title,author,createdAt,url --limit 10
+   ```
+
+3. **GHSA cross-reference.** If the body contains a `GHSA-…` ID
+   that Step 2a did *not* match against an existing tracker,
+   search `<upstream>` for a PR that references that GHSA — some
+   projects file the GHSA-linked fix PR before the tracker exists.
+
+**Budget guardrail for Step 2c**: **≤ 3 `gh search prs` calls per
+candidate** (signals 1 + 2 + 3 above). If signal 1 finds a
+reporter-supplied PR URL, signals 2 and 3 are skipped (the
+reporter's own pointer is the strongest match available).
+
+**Match grading**:
+
+- **STRONG** — reporter linked the PR explicitly, OR the matched
+  PR's title/body explicitly names the same vulnerability class
+  on the same code surface (e.g. report says *"XSS in
+  `airflow/www/security/permissions.py:render_label`"* and the
+  PR title is *"Escape user-supplied label in `permissions.py`
+  to fix XSS"*).
+- **MEDIUM** — code surface matches and the vulnerability class
+  is plausible from the PR's diff scope, but the title is
+  generic (*"Fix permissions handling"*).
+- **WEAK** — same file but unrelated function, or same function
+  but a refactor PR with no security framing.
+
+Only STRONG matches route to `fix-already-public` in Step 3.
+MEDIUM matches surface as an *informational* note on the
+candidate's proposal entry (the triager may downgrade to
+`fix-already-public` manually during Step 5 confirmation if they
+read the PR and agree it covers the report). WEAK matches are
+ignored — too noisy to surface.
+
+**PR-was-filed-in-response check.** Before grading a match
+STRONG, confirm the PR was **not** filed *because of* this
+report. Heuristics:
+
+- PR author is on the security-team roster (cached at Step 0)
+  AND the PR creation date is *after* the candidate's email
+  arrival → likely filed in response; downgrade to a regular
+  `Report` candidate and let triage handle the credit
+  question.
+- PR description references the `<security-list>` thread or
+  contains language like *"reported via security@"* → same
+  treatment.
+- PR creation date is **before** the candidate's email arrival
+  → independent fix; STRONG match stands.
+
+**Surfacing in Step 5.** For each STRONG match, attach to the
+candidate's proposal entry:
+
+- a clickable PR link, author handle, merge state + date;
+- a one-line *"this PR appears to fix the reported behaviour"*
+  rationale;
+- a draft *thank-without-credit + verify-with-PR* reply (shape
+  in Step 5).
+
+For MEDIUM matches, attach the PR link with *"possible match,
+review before deciding"* framing — no draft reply unless the
+user upgrades to STRONG during confirmation.
+
+**Hard rule**: Step 2c is **read-only**. No comment on the PR,
+no email draft sent until Step 7 applies the user-confirmed
+disposition. The PR stays unaware of the report — same posture
+as `security-issue-import-from-pr`'s
+[*no outreach to the PR author about the CVE*](../security-issue-import-from-pr/SKILL.md#reporter-credit-policy-for-public-pr-imports)
+rule (the PR is public; revealing that a private security
+report came in about it leaks the private-channel content
+into a public surface).
+
+---
+
 ## Step 3 — Classify each candidate
 
 For each remaining candidate, read the **root message only** (the one
@@ -861,6 +976,7 @@ Decide the candidate's class from the root message:
 | **Media / research-disclosure request**: reporter wants to publish a blog or talk about a finding we already know about | Body asks about disclosure timing, mentions a talk / blog / CVE on another vendor | Surface class `media-request`; do not auto-import. Propose the "When someone submits a media report" canned reply. |
 | **Obvious spam / scam / phishing / crypto-scheme** | Cryptocurrency addresses, "bug bounty program" framing on a project that does not have one, no actual Airflow-specific content | Surface class `spam`; propose no action (user deletes in Gmail). |
 | **Follow-up on existing thread that Step 2 missed** | Root message mentions a CVE already allocated, or the body is *"re: <existing tracker>"* but with a new threadId because the reporter replied from a different address | Surface class `cross-thread-followup`; do not auto-import. Propose a comment on the existing tracker instead. |
+| **Already fixed by a public PR** | Step 2c surfaced a STRONG match: a public PR in `<upstream>` (open or merged, **not** filed in response to this report) already appears to fix the reported behaviour. The reporter sent `<security-list>` independently. | Surface class `fix-already-public`; **do not** create a tracker. Propose a thank-without-credit Gmail draft per the [no-credit-when-fix-is-already-public policy](../security-issue-import-from-pr/SKILL.md#reporter-credit-policy-for-public-pr-imports): thank the reporter, point at the PR, ask them to verify the PR fixes their report, and ask them to come back if it does not. Reply shape is in Step 5; the draft is sent in Step 7 only if the user confirms. **If the reporter later replies saying the PR does not fix their report**, that reply will re-surface in the next skill run (a new thread message will be detected); at that point classify as `Report` and import for proper triage. |
 
 **Classification is advisory, not dispositive.** When in doubt, class
 the candidate as a `Report` and let the user make the call in Step 5 —
@@ -953,12 +1069,61 @@ Present all candidates as a single numbered proposal grouped by class:
   open questions that gate the import.
 - **Candidates not to import** (class `automated-scanner`,
   `consolidated-multi-issue`, `media-request`, `spam`,
-  `cross-thread-followup`): show the class, the reporter, a one-line
-  summary, and the proposed Gmail draft (from `canned-responses.md`)
-  or the proposed follow-up action (e.g. *"comment on existing
-  tracker [<tracker>#NNN](...)"*). These need explicit confirmation —
-  no default-to-tracker. The draft **must** follow the
-  canned-response discipline below.
+  `cross-thread-followup`, `fix-already-public`): show the class,
+  the reporter, a one-line summary, and the proposed Gmail draft
+  (from `canned-responses.md`, or — for `fix-already-public` —
+  from the *fix-already-public reply shape* below) or the proposed
+  follow-up action (e.g. *"comment on existing tracker
+  [<tracker>#NNN](...)"*). These need explicit confirmation — no
+  default-to-tracker. The draft **must** follow the canned-response
+  discipline below.
+
+### fix-already-public reply shape
+
+For each `fix-already-public` candidate, propose this draft (fill
+in the placeholders from the Step 2c match):
+
+> Thank you for taking the time to report this through
+> `<security-list>`. We noticed that
+> [`<upstream>#<NNN>`](https://github.com/<upstream>/pull/NNN)
+> ([`<author>`](https://github.com/<author>), <merged/opened> on
+> YYYY-MM-DD) already appears to address what you described.
+>
+> Per our policy, we do not add a finder when the fix to the
+> reported issue is already public at the time of report — but
+> we very much appreciate your effort in writing to us, and the
+> care you took to send it via the private channel.
+>
+> Could you check whether
+> [`<upstream>#<NNN>`](https://github.com/<upstream>/pull/NNN)
+> fixes the behaviour you observed? If it does, no further action
+> is needed on your side. **If after testing with this PR you
+> still see the issue, please reply on this thread with the
+> failing reproduction** and we will reopen the assessment as a
+> regular report.
+
+Substitute *"opened on"* when the PR is not yet merged. If Step
+2c surfaced multiple candidate PRs and the user has not yet
+narrowed to one, list each PR on its own line and ask the user
+to pick (or keep all if they each cover a different aspect of
+the report).
+
+This reply is the **disposition** for `fix-already-public`
+candidates — no tracker is created, no internal ticket opened.
+The audit trail lives on the `<security-list>` thread (the
+original report + this reply). If the reporter later confirms
+the PR fixes their report, the thread closes naturally. If they
+push back saying the PR does not fix it, their reply will
+re-surface in the next skill run and the candidate will be
+re-classified as a regular `Report`.
+
+**Reporter credit field.** The policy this inherits from
+[`security-issue-import-from-pr`](../security-issue-import-from-pr/SKILL.md#reporter-credit-policy-for-public-pr-imports)
+applies symmetrically: no finder credit for a report that
+arrived after the fix went public. The user can override during
+Step 6 confirmation if there is a project-specific reason to
+credit (e.g. the reporter privately spotted the issue before the
+unrelated PR landed).
 - **Dropped silently** (class `cve-tool-bookkeeping`): do not even
   surface these to the user — they are consumed by
   `security-issue-sync` Step 1e. The skill should just report the
@@ -1105,6 +1270,15 @@ to import; the user only types back to *deviate* from that default):
   this when the team has decided pre-triage that the report does
   not warrant a tracker (Security-Model-fit miss, Dag-author-input
   pattern, recently-closed duplicate, etc.).
+- `NN:reject-with-public-fix <PR-URL>` — reject candidate `NN`
+  upfront with the *fix-already-public reply shape* (see above),
+  using `<PR-URL>` as the cited public PR. Use this when Step 2c
+  missed an existing PR and the user knows about it manually, or
+  to upgrade a MEDIUM Step 2c match to a STRONG `fix-already-public`
+  disposition. **No tracker is created**; no finder credit is
+  recorded per the policy. Supply multiple `<PR-URL>` values
+  separated by commas if more than one PR collectively covers the
+  report.
 - `NN:edit <freeform>` — fold a freeform note (extra context, a
   different title, a smaller body excerpt) into the import; tracker
   is still created with the edits applied.
@@ -1466,12 +1640,28 @@ For each confirmed `Report` / `ASF-security relay`:
    append another entry, it can skip the Step 1 lookup.
 
 For each confirmed non-import (automated-scanner / consolidated /
-media / cross-thread-followup):
+media / cross-thread-followup / fix-already-public):
 
-1. Draft the canned Gmail reply per the classification table in Step 3.
+1. Draft the Gmail reply.
+   - For `automated-scanner` / `consolidated-multi-issue` /
+     `media-request` / `cross-thread-followup`: use the canned
+     reply per the classification table in Step 3 (canned-response
+     discipline applies).
+   - For `fix-already-public`: use the *fix-already-public reply
+     shape* from Step 5, with placeholders filled from the Step 2c
+     match (or from the `NN:reject-with-public-fix <PR-URL>`
+     override). **No tracker is created**; no finder credit is
+     recorded. The Gmail thread carries the entire audit trail —
+     the original report on inbound and this reply on outbound.
 2. If it is a cross-thread follow-up, optionally post a comment on the
    existing `<tracker>` issue cross-linking the new Gmail
    thread ID so the next sync picks it up.
+3. **Never comment on the public PR** for `fix-already-public`
+   dispositions. The PR stays unaware of the private report per
+   the same posture as
+   [`security-issue-import-from-pr`'s no-outreach rule](../security-issue-import-from-pr/SKILL.md#reporter-credit-policy-for-public-pr-imports);
+   revealing that a security report came in about the PR would
+   leak private-channel content into a public surface.
 
 Apply sequentially (not in parallel): one `gh issue create` per
 confirmed candidate, one draft per reply. If any step fails, stop and
