@@ -1,0 +1,5 @@
+{
+  "method": "symbol-grep",
+  "candidate_files": ["airflow/timetables/trigger.py", "airflow/models/dag.py"],
+  "confidence": "medium"
+}

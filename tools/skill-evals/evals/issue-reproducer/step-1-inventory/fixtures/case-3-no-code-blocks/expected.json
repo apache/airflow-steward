@@ -1,0 +1,5 @@
+{
+  "blocks": [],
+  "reporter_env": {"runtime_version": "Airflow 2.9.1, Python 3.11", "os": "Kubernetes deployment", "notes": "PostgreSQL 15"},
+  "block_count": 0
+}

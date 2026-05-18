@@ -1,0 +1,4 @@
+{
+  "shape": "A",
+  "rationale": "The script is self-contained and runnable as-is — it has all necessary imports, uses create_session(), and includes an explicit run instruction."
+}

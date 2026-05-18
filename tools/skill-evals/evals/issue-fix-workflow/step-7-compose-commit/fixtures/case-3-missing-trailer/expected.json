@@ -1,0 +1,7 @@
+{
+  "subject": "AIRFLOW-88101: allow bytes values in XCom.serialize_value()",
+  "body_ok": true,
+  "security_language_present": false,
+  "trailer_present": false,
+  "trailer_key": null
+}

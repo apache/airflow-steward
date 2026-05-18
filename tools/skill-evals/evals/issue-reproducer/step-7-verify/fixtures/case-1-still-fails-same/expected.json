@@ -1,0 +1,5 @@
+{
+  "classification": "still-fails-same",
+  "rationale": "The run produced the same exception class and message the reporter described (TypeError: Object of type bytes is not JSON serializable at json.dumps). The failure is reproducible on current main.",
+  "nature": "bug-as-advertised"
+}

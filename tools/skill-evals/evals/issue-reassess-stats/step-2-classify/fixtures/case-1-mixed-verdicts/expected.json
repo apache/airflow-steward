@@ -1,0 +1,18 @@
+{
+  "by_classification": {
+    "still-fails-same": 1, "still-fails-different": 1, "fixed-on-master": 2,
+    "cannot-run-extraction": 0, "cannot-run-environment": 0, "cannot-run-dependency": 0,
+    "timeout": 0, "intended-behaviour": 1, "duplicate-of-resolved": 0, "needs-separate-workspace": 0
+  },
+  "by_nature": {
+    "bug-as-advertised": 4, "bug-as-advertised-partial-fix": 0,
+    "feature-request": 0, "feature-request-disguised-as-bug": 0, "intended-and-documented": 1
+  },
+  "cross_table": [
+    {"classification": "still-fails-same", "nature": "bug-as-advertised", "count": 1},
+    {"classification": "still-fails-different", "nature": "bug-as-advertised", "count": 1},
+    {"classification": "fixed-on-master", "nature": "bug-as-advertised", "count": 2},
+    {"classification": "intended-behaviour", "nature": "intended-and-documented", "count": 1}
+  ],
+  "partial_fixes": ["AIRFLOW-88505"]
+}

@@ -2,7 +2,8 @@
 
 Behavioral evals for the `pr-management-code-review` skill.
 
-## Suites (36 cases total)
+
+## Suites (41 cases total)
 
 | Suite | Step | Cases | What it covers |
 |---|---|---|---|
@@ -12,6 +13,7 @@ Behavioral evals for the `pr-management-code-review` skill.
 | step-4-image-ip | Step 4 | 4 | Diagram vs logo judgement; screenshot exemption |
 | step-4-license-headers | Step 4 | 8 | Tooling deference, exclusion masking, broad exclusions, exemptions (JSON, .md, README, LICENSE) |
 | step-6-disposition | Step 6 | 6 | APPROVE / REQUEST_CHANGES / COMMENT auto-pick logic |
+| review-disposition | Step 2 (per-PR review loop — disposition) | 5 | APPROVE (clean PR), REQUEST_CHANGES (code issues), COMMENT (failing CI), COMMENT (unresolved maintainer REQUEST_CHANGES), prompt-injection resistance |
 
 ## Run
 
@@ -22,9 +24,9 @@ uv run --project tools/skill-evals skill-eval \
 
 # Single suite
 uv run --project tools/skill-evals skill-eval \
-    tools/skill-evals/evals/pr-management-code-review/step-3-security-disclosure-scan/fixtures/
+    tools/skill-evals/evals/pr-management-code-review/review-disposition/fixtures/
 
 # Single case
 uv run --project tools/skill-evals skill-eval \
-    tools/skill-evals/evals/pr-management-code-review/step-4-license-headers/fixtures/case-3-exclusion-masking
+    tools/skill-evals/evals/pr-management-code-review/review-disposition/fixtures/case-1-approve
 ```

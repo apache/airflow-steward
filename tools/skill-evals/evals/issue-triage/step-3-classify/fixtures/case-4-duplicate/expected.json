@@ -1,0 +1,5 @@
+{
+  "class": "DUPLICATE",
+  "rationale": "A cross-reference search found AIRFLOW-97801 (open), which describes the same root cause: XCom.get_many filtering is broken for keys containing special characters. The component, symptom, and code path all overlap.",
+  "confidence": "high"
+}

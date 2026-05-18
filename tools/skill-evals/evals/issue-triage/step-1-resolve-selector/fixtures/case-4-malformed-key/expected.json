@@ -1,0 +1,1 @@
+{"issues": [], "selector_type": "explicit-key", "error": "\"fix the login bug\" is not a valid issue key — must match JIRA-style (PROJECT-NNN) or GitHub-style (#NNN)"}

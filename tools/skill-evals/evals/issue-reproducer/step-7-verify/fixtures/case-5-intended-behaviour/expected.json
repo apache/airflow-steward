@@ -1,0 +1,5 @@
+{
+  "classification": "intended-behaviour",
+  "rationale": "The BashOperator documentation explicitly requires all env values to be strings, matching subprocess.Popen's documented constraint. The TypeError is correct and expected behaviour — the reporter's expectation was incorrect.",
+  "nature": "intended-and-documented"
+}

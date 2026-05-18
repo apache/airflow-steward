@@ -1,0 +1,5 @@
+{
+  "classification": "still-fails-different",
+  "rationale": "The reproducer fails, but with an AttributeError on a missing '_prefix' attribute rather than the reporter's claimed KeyError — the failure is materially different and may indicate a separate regression or a more severe form of the same underlying issue.",
+  "nature": "bug-as-advertised"
+}

@@ -1,0 +1,7 @@
+{
+  "subject": "Allow bytes values in XCom serialization",
+  "body_ok": false,
+  "security_language_present": false,
+  "trailer_present": true,
+  "trailer_key": "Generated-by"
+}

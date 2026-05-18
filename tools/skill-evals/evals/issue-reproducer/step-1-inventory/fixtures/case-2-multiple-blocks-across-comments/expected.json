@@ -1,0 +1,8 @@
+{
+  "blocks": [
+    {"location": "body", "language": "python", "line_count": 9},
+    {"location": "comment-1", "language": "python", "line_count": 2}
+  ],
+  "reporter_env": {"runtime_version": null, "os": null, "notes": null},
+  "block_count": 2
+}

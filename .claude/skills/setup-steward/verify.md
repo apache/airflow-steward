@@ -115,9 +115,9 @@ Check that the entries from
 Recommended:
 
 - The framework-skill symlink patterns (`security-*`,
-  `pr-management-*`, `setup-isolated-setup-*`,
-  `setup-shared-config-sync`) under both `.claude/skills/`
-  and `.github/skills/` per convention.
+  `pr-management-*`, `issue-*`, `setup-isolated-setup-*`,
+  `setup-shared-config-sync`, `list-steward-*`) under both
+  `.claude/skills/` and `.github/skills/` per convention.
 
 - ✗ if `/.apache-steward/` is not gitignored — the snapshot
   is at risk of being accidentally committed.

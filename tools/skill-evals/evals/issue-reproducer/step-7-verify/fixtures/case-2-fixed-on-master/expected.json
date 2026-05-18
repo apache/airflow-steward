@@ -1,0 +1,5 @@
+{
+  "classification": "fixed-on-master",
+  "rationale": "The reproducer ran cleanly and the pool slot was released correctly after the timeout handler fired. The reported failure (slot held forever) no longer occurs on current main.",
+  "nature": "bug-as-advertised"
+}

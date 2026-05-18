@@ -1,0 +1,15 @@
+{
+  "distribution": {"BUG": 1, "FEATURE-REQUEST": 1, "NEEDS-INFO": 1, "DUPLICATE": 1, "INVALID": 1, "ALREADY-FIXED": 1},
+  "posted": [
+    {"key": "AIRFLOW-99101", "class": "BUG", "comment_url": "https://github.com/apache/airflow/issues/99101#issuecomment-1001"},
+    {"key": "AIRFLOW-99202", "class": "FEATURE-REQUEST", "comment_url": "https://github.com/apache/airflow/issues/99202#issuecomment-1002"},
+    {"key": "AIRFLOW-99303", "class": "NEEDS-INFO", "comment_url": "https://github.com/apache/airflow/issues/99303#issuecomment-1003"},
+    {"key": "AIRFLOW-99404", "class": "DUPLICATE", "comment_url": "https://github.com/apache/airflow/issues/99404#issuecomment-1004"},
+    {"key": "AIRFLOW-99505", "class": "INVALID", "comment_url": "https://github.com/apache/airflow/issues/99505#issuecomment-1005"},
+    {"key": "AIRFLOW-99606", "class": "ALREADY-FIXED", "comment_url": "https://github.com/apache/airflow/issues/99606#issuecomment-1006"}
+  ],
+  "next_step_skills": {
+    "issue-fix-workflow": ["AIRFLOW-99101", "AIRFLOW-99202"],
+    "closure-flow": ["AIRFLOW-99404", "AIRFLOW-99505", "AIRFLOW-99606"]
+  }
+}

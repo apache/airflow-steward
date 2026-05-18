@@ -1,0 +1,4 @@
+{
+  "shape": "H",
+  "rationale": "The reporter describes a behaviour (scheduler becoming unresponsive) entirely in prose with no code, configuration, or stack trace supplied."
+}

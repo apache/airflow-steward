@@ -1,0 +1,5 @@
+{
+  "class": "BUG",
+  "rationale": "The scheduler crashes with a RecursionError on main, confirmed by a maintainer. The failure is a regression from 2.8.0 and is reproducible with a clear set of steps.",
+  "confidence": "high"
+}

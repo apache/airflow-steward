@@ -1,0 +1,7 @@
+{
+  "health": "Action needed",
+  "action_candidates": ["AIRFLOW-88001", "AIRFLOW-88002", "AIRFLOW-88003"],
+  "closure_candidates": ["AIRFLOW-88004", "AIRFLOW-88005", "AIRFLOW-88006"],
+  "new_issue_candidates": [],
+  "total": 8
+}

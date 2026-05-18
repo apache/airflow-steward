@@ -1,0 +1,15 @@
+{
+  "by_classification": {
+    "still-fails-same": 0, "still-fails-different": 0, "fixed-on-master": 3,
+    "cannot-run-extraction": 0, "cannot-run-environment": 0, "cannot-run-dependency": 0,
+    "timeout": 0, "intended-behaviour": 0, "duplicate-of-resolved": 0, "needs-separate-workspace": 0
+  },
+  "by_nature": {
+    "bug-as-advertised": 3, "bug-as-advertised-partial-fix": 0,
+    "feature-request": 0, "feature-request-disguised-as-bug": 0, "intended-and-documented": 0
+  },
+  "cross_table": [
+    {"classification": "fixed-on-master", "nature": "bug-as-advertised", "count": 3}
+  ],
+  "partial_fixes": []
+}

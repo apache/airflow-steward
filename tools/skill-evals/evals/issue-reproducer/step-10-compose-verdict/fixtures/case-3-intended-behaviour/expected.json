@@ -1,0 +1,11 @@
+{
+  "issue_key": "AIRFLOW-99707",
+  "classification": "intended-behaviour",
+  "nature": "intended-and-documented",
+  "shape": "B",
+  "runtime_version": "Airflow 2.9.1 / Python 3.11",
+  "command": "python /tmp/reproduce_AIRFLOW-99707.py",
+  "exit_code": 1,
+  "wall_clock_seconds": 0.4,
+  "confirmed_by_maintainer": true
+}

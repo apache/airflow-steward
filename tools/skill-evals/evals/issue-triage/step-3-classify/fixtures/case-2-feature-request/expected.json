@@ -1,0 +1,5 @@
+{
+  "class": "FEATURE-REQUEST",
+  "rationale": "The reporter is not describing a bug — the current behaviour (requiring TriggerDagRunOperator or ExternalTaskSensor) is as designed. They are requesting a new scheduling primitive (native DAG-completion triggers) that does not exist yet.",
+  "confidence": "high"
+}

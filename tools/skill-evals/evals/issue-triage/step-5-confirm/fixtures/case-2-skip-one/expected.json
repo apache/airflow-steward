@@ -1,0 +1,7 @@
+{
+  "action": "post",
+  "post_items": [1, 3],
+  "skip_items": [2],
+  "edits": [],
+  "reclassifications": []
+}

@@ -1,0 +1,4 @@
+{
+  "shape": "B",
+  "rationale": "The simpler one-liner in the comment body is the preferred candidate — it is nearly self-contained and requires only a missing import for DAG context to run; the full DAG version is complete but more complex."
+}

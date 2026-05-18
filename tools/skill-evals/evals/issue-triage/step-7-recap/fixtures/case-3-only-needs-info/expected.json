@@ -1,0 +1,11 @@
+{
+  "distribution": {"BUG": 0, "FEATURE-REQUEST": 0, "NEEDS-INFO": 2, "DUPLICATE": 0, "INVALID": 0, "ALREADY-FIXED": 0},
+  "posted": [
+    {"key": "AIRFLOW-77001", "class": "NEEDS-INFO", "comment_url": "https://github.com/apache/airflow/issues/77001#issuecomment-3001"},
+    {"key": "AIRFLOW-77002", "class": "NEEDS-INFO", "comment_url": "https://github.com/apache/airflow/issues/77002#issuecomment-3002"}
+  ],
+  "next_step_skills": {
+    "issue-fix-workflow": [],
+    "closure-flow": []
+  }
+}

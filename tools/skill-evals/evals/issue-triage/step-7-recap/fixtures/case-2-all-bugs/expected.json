@@ -1,0 +1,12 @@
+{
+  "distribution": {"BUG": 3, "FEATURE-REQUEST": 0, "NEEDS-INFO": 0, "DUPLICATE": 0, "INVALID": 0, "ALREADY-FIXED": 0},
+  "posted": [
+    {"key": "AIRFLOW-88001", "class": "BUG", "comment_url": "https://github.com/apache/airflow/issues/88001#issuecomment-2001"},
+    {"key": "AIRFLOW-88002", "class": "BUG", "comment_url": "https://github.com/apache/airflow/issues/88002#issuecomment-2002"},
+    {"key": "AIRFLOW-88003", "class": "BUG", "comment_url": "https://github.com/apache/airflow/issues/88003#issuecomment-2003"}
+  ],
+  "next_step_skills": {
+    "issue-fix-workflow": ["AIRFLOW-88001", "AIRFLOW-88002", "AIRFLOW-88003"],
+    "closure-flow": []
+  }
+}

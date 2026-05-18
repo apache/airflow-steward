@@ -1,0 +1,7 @@
+{
+  "subject": "AIRFLOW-88101: security fix for bytes serialization vulnerability in XCom",
+  "body_ok": true,
+  "security_language_present": true,
+  "trailer_present": true,
+  "trailer_key": "Generated-by"
+}

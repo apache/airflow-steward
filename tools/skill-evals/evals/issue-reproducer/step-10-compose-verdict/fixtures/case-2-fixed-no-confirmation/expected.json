@@ -1,0 +1,11 @@
+{
+  "issue_key": "AIRFLOW-99606",
+  "classification": "fixed-on-master",
+  "nature": "bug-as-advertised",
+  "shape": "B",
+  "runtime_version": "Airflow 2.9.1 / Python 3.11",
+  "command": "python /tmp/reproduce_AIRFLOW-99606.py",
+  "exit_code": 0,
+  "wall_clock_seconds": 3.1,
+  "confirmed_by_maintainer": false
+}

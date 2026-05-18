@@ -1,0 +1,7 @@
+{
+  "baselines": [
+    {"year": 2022, "status": "still-fails", "source": "comment-2 by potiuk"},
+    {"year": 2023, "status": "still-fails", "source": "comment-3 by ephraimbuddy"}
+  ],
+  "baseline_count": 2
+}
