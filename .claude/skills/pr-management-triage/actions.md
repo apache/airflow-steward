@@ -220,6 +220,54 @@ error; this is the only action of the skill whose sole purpose
 
 ---
 
+## `promote-bot-draft` — convert a bot-authored draft and label it ready
+
+The action behind [Step 0.5 of `SKILL.md`](SKILL.md#step-05--promote-bot-authored-draft-prs).
+Two mutations bundled per PR: convert draft → non-draft
+(`gh pr ready`) and add the `ready for maintainer review`
+label.
+
+Inherits the workflow-approval guard from
+[`mark-ready`](#mark-ready--add-ready-for-maintainer-review-label)
+verbatim — Golden rule 1b in [`SKILL.md`](SKILL.md) applies
+to every code path that adds the label, including this one.
+
+```bash
+# Pre-check: same action_required index lookup as mark-ready.
+head_sha=$(gh api "repos/<owner>/<repo>/pulls/<N>" --jq '.head.sha')
+pending=$(gh api "repos/<owner>/<repo>/actions/runs?head_sha=${head_sha}&per_page=20" \
+  --jq '[.workflow_runs[] | select(.conclusion == "action_required")] | length')
+if [ "$pending" -gt 0 ]; then
+  echo "refuse promote-bot-draft: <N> has ${pending} workflow run(s) awaiting approval at ${head_sha}" >&2
+  # Reclassify the PR as pending_workflow_approval; the maintainer
+  # handles it via the approve-workflow flow rather than promoting blind.
+  exit 2
+fi
+
+# Mutation 1 — flip draft to ready-for-review.
+gh pr ready <N> --repo <repo>
+
+# Mutation 2 — add the ready-for-maintainer-review label.
+gh pr edit <N> --repo <repo> --add-label "ready for maintainer review"
+```
+
+Order matters: `gh pr ready` first, then the label add. If
+`gh pr ready` fails (PR is no longer a draft, was closed, the
+bot pushed a new commit and the head SHA moved) the action stops
+before labelling — the PR is no longer in the bot-draft
+category and should be re-classified by the normal flow on the
+next run. If the label step fails after a successful ready
+toggle, do **not** roll back: the ready toggle is still a
+maintainer-visible improvement; log the label-add failure for
+the session summary so the maintainer can retry next sweep.
+
+No comment is posted. The bot's own commit message plus the
+`ready for maintainer review` label are sufficient signal — a
+contributor-facing footer would be misdirected for a bot author
+that won't read it.
+
+---
+
 ## `request-author-confirmation` — ask the PR author whether feedback is addressed
 
 Single mutation. Used when the only `deterministic_flag` signal

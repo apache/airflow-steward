@@ -9,8 +9,8 @@ description: |
   options per PR: draft / comment / close / rebase / CI-rerun
   / workflow-approve / ping-stale-reviewer / request author
   confirmation of readiness / mark `ready for maintainer
-  review`. Does **not** perform code review — that lives in
-  `pr-management-code-review`.
+  review` / promote bot-authored draft. Does **not** perform
+  code review — that lives in `pr-management-code-review`.
 when_to_use: |
   Invoke when a maintainer says "triage the PR queue", "go
   through new contributor PRs", "run the morning triage",
@@ -326,6 +326,55 @@ gracefully with warnings.
 
 ---
 
+## Step 0.5 — Promote bot-authored draft PRs
+
+Before the main triage loop, sweep for open *draft* PRs authored
+by the bot logins enumerated in
+[`classify-and-act.md#pre-filters`](classify-and-act.md), row F2
+(`dependabot`, `dependabot[bot]`, `renovate[bot]`,
+`github-actions`, `github-actions[bot]`, anything matching
+`*[bot]`). For each match the skill proposes two mutations —
+convert draft → non-draft (`gh pr ready`) **and** add the
+`ready for maintainer review` label — bundled as the single
+[`promote-bot-draft`](actions.md#promote-bot-draft--convert-a-bot-authored-draft-and-label-it-ready)
+action.
+
+This is a once-per-session pre-pass, not a per-page sweep — bot
+drafts are author-deterministic, low volume, and don't benefit
+from pagination. F2 still excludes the same logins from
+Steps 1–5, so a bot draft the maintainer skips here stays a
+draft and does not surface again in the main loop.
+
+Fetch query (one GraphQL call, no overlap with Step 1's page-1
+fetch):
+
+```text
+is:pr is:open draft:true repo:<repo>
+```
+
+then client-filter the returned authors to the F2 login pattern.
+If the result set is empty, log a one-line "no bot drafts open"
+and proceed to Step 1.
+
+Otherwise present every match as a single group via the
+[interaction loop](interaction-loop.md). Default keystroke is
+`[A]ll` — the action is deterministic and the bot authorship
+removes the contributor-conversation concern that motivates
+per-PR review elsewhere. The maintainer may still pick
+`[E]ach` / `[P]ick NN` / `[S]kip group` for individual review.
+
+**Golden rule 1b still applies.** The `promote-bot-draft` action
+adds the `ready for maintainer review` label, so its
+implementation MUST run the same `action_required` workflow-run
+check that [`mark-ready`](actions.md#mark-ready--add-ready-for-maintainer-review-label)
+does. A bot draft with workflow runs awaiting approval refuses
+promotion and is re-routed to `pending_workflow_approval` —
+unusual for trusted bots in practice, but defensive against the
+case where the head SHA picks up a first-time-contributor commit
+via a merge or a misconfigured bot account.
+
+---
+
 ## Step 1 — Resolve the selector and fetch page 1
 
 Translate the selector into the GraphQL PR-list query from
@@ -480,7 +529,8 @@ On exit, print a one-screen summary:
 
 - counts of PRs handled per action (drafted, commented, closed,
   rebased, reruns triggered, author-confirm requests posted,
-  marked ready, pinged, workflow approvals, suspicious flags)
+  marked ready, bot drafts promoted, pinged, workflow approvals,
+  suspicious flags)
 - counts of PRs skipped and per-reason breakdown (already
   triaged, inside grace window, bot, collaborator)
 - counts of PRs left pending (reached quit, didn't finish the
