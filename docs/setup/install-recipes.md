@@ -118,14 +118,18 @@ cat >> .gitignore <<'GITIGNORE'
 # Symlinks created by /setup-steward into the gitignored snapshot.
 /.claude/skills/security-*
 /.claude/skills/pr-management-*
+/.claude/skills/issue-*
 /.claude/skills/setup-isolated-setup-*
 /.claude/skills/setup-shared-config-sync
+/.claude/skills/list-steward-*
 # Mirror the same patterns under .github/skills/ if your repo uses
 # the double-symlinked convention.
 /.github/skills/security-*
 /.github/skills/pr-management-*
+/.github/skills/issue-*
 /.github/skills/setup-isolated-setup-*
 /.github/skills/setup-shared-config-sync
+/.github/skills/list-steward-*
 GITIGNORE
 
 # 4. Tell your agent: "follow /setup-steward to finish adopting steward."
@@ -205,7 +209,7 @@ follow .claude/skills/setup-steward to adopt steward
 the rest:
 
 1. **Pick the skill families** to symlink in (`security`,
-   `pr-management`).
+   `pr-management`, `issue`).
 2. **Write the lock files**:
    - `.apache-steward.lock` (**committed**) — the project's pin
      (the method + URL + ref you used in the recipe). Future
