@@ -35,6 +35,10 @@ One `_AreaStats` block per area. Only two counters (`total` and `contributors`) 
 | `triaged_waiting` | classified `triaged_waiting` (see `classify.md`) | contributor-only |
 | `triaged_responded` | classified `triaged_responded` | contributor-only |
 | `ready_for_review` | label `ready for maintainer review` present | contributor-only |
+| `engaged` | satisfies [`is_engaged`](classify.md#is_engaged--broader-maintainer-touched-this-predicate) (any maintainer touched it) | contributor-only |
+| `defacto_triaged` | satisfies [`is_defacto_triaged`](classify.md#is_defacto_triaged--engaged-but-no-marker) (engaged but no marker) | contributor-only |
+| `ai_triaged` | satisfies [`is_ai_triaged`](classify.md#is_ai_triaged--received-an-ai-generated-triage-comment) (received an AI-assisted triage comment) | contributor-only |
+| `bot_authored` | [`is_bot`](classify.md#is_bot--author-is-a-recognised-bot)(pr.author.login) | **all** — its own category, NOT in `contributors` |
 | `untriaged_nondraft` | satisfies [`is_untriaged`](classify.md#is_untriaged--refined-predicate) AND `isDraft == false` | contributor-only |
 | `untriaged_old` | `untriaged_nondraft` AND `age_bucket == ">4w"` | contributor-only |
 | `untriaged_med` | `untriaged_nondraft` AND `age_bucket == "1-4w"` | contributor-only |
@@ -51,8 +55,11 @@ the label itself is evidence that the PR cleared the triage bar.
 ### Invariants
 
 - `total == total_drafts + total_non_drafts` (every PR is exactly one)
+- `contributors + collaborator_authored + bot_authored == total` (three disjoint author classes)
 - `contributors == drafts + non_drafts` (each contributor PR is one or the other)
 - `triaged_waiting + triaged_responded <= contributors`
+- `triaged_waiting + triaged_responded <= engaged` (strict-triaged is a subset of engaged)
+- `defacto_triaged + (triaged_waiting + triaged_responded) == engaged` (every engaged PR is either strictly triaged or de-facto-only)
 - `ready_for_review <= non_drafts` (a ready PR shouldn't be draft — if the inequality fails, the label is stale; surface a one-line warning but don't correct the data)
 - `untriaged_old + untriaged_med <= untriaged_nondraft <= non_drafts`
 - `triaged_waiting + triaged_responded + ready_for_review + untriaged_nondraft <= non_drafts` (every contributor non-draft is either triaged, ready, or untriaged; the difference covers PRs in a transitional state — e.g. fresh triaged_responded that haven't been marked ready yet)
@@ -269,6 +276,90 @@ Below the bars, print three summary numbers:
 ```text
 
 This panel makes the *quality* of closures visible — the velocity panel says "how many", this panel says "of what type".
+
+---
+
+## Triager activity (per-triager, per-week)
+
+The dashboard's "Triager activity" section ranks maintainers by how many
+distinct PRs each one **engaged with** in each of the last 6 calendar weeks.
+"Engaged" uses the same predicate as
+[`is_engaged`](classify.md#is_engaged--broader-maintainer-touched-this-predicate)
+(any maintainer comment / review).
+
+For each open PR currently in the fetch set, walk
+`pr.comments(last:25).nodes` and the parallel review-thread sub-comments:
+
+```text
+for each comment c by login L where authorAssociation IN
+    (OWNER, MEMBER, COLLABORATOR) AND NOT is_bot(L):
+    bucket = which_week(c.createdAt)   # see #weekly-velocity for bucket math
+    if bucket is one of the 6 windows:
+        kind = "ai" if "AI-assisted triage tool" in c.body else "manual"
+        triager_weekly[L][bucket][kind] += (first-engagement-in-bucket counter)
+```
+
+Per-week counting rule: count **at most one PR per (login, week, kind)** even
+when the same maintainer posts multiple comments in the same week of the same
+kind. The intent is "how many distinct PRs did this maintainer touch each week,
+split by AI-assisted vs manually-typed engagement" not "how many comments did
+they post"; multiple comments by the same person in the same week on the same
+PR of the same kind collapse to a single tally.
+
+### AI vs manual split
+
+Every triager's per-week count is further split into:
+
+- **AI-assisted**: comments whose body contains the AI-attribution footer
+  substring (`AI-assisted triage tool` — same detector as
+  [`is_ai_triaged`](classify.md#is_ai_triaged--received-an-ai-generated-triage-comment)).
+- **Manual**: comments without the footer.
+
+Same PR can contribute to *both* sub-counts for the same maintainer-week if
+they posted both an AI-drafted comment and a manually-typed comment in the
+same window. The dashboard shows the two side-by-side so the maintainer team
+can see how much of each person's throughput is coming through the skill
+versus through direct review.
+
+A maintainer's total for a week is `ai + manual`; both sub-counts use the
+per-PR de-duplication rule (one PR per kind per week).
+
+Counted as engagement:
+
+- Issue-level comments (`pr.comments(last:25)` in the standard fetch).
+- Review-thread comments — walk every
+  `pr.reviewThreads.nodes.comments(first:5)` for the same maintainer test.
+- `LabeledEvent` adding the `ready for maintainer review` label by a
+  maintainer (counts the label-add as the engagement timestamp). This catches
+  reviewers who applied the label without leaving a comment.
+
+The fetch shape in [`fetch.md`](fetch.md) already populates issue-level
+comments and review threads in the open-PR query. The label-add timestamp
+needs the `ready-label-timeline` query
+[(see `fetch.md#ready-label-timeline`)](fetch.md#ready-label-timeline) which
+the dashboard's "Ready-for-review trend by top areas" panel already fires —
+re-use that result.
+
+### Top-N rendering rule
+
+The "Triager activity" panel renders the top 15 maintainers by total PRs
+engaged across the 6-week window. The table layout (one row per triager,
+six week columns + a total column + a sparkline / mini-bars column) is
+defined in [`render.md#triager-activity-panel`](render.md). Maintainers with
+zero engagement in the window are excluded from the panel.
+
+### Caveats
+
+- Engagement is **at-most-one-PR-per-week-per-maintainer-per-PR**, not
+  comment-count. The maintainer who triages 20 PRs in one week and the
+  maintainer who comments 20 times on one PR show as 20 and 1 respectively.
+- The same maintainer can show up in multiple weeks for the same PR if they
+  engaged in each window — that is by design (re-engagement signals
+  continued attention).
+- Bot-account comments are excluded via the same
+  [`is_bot`](classify.md#is_bot--author-is-a-recognised-bot) test used in the
+  open-PR counters; copilot review-bots that post under a `CONTRIBUTOR`
+  association are not counted anyway (the maintainer check filters them).
 
 ---
 
