@@ -396,6 +396,17 @@ commit again. **Do not bypass the hooks with `--no-verify`** —
 if a hook is failing, fix the underlying issue or update the
 hook configuration in the same PR.
 
+**Before opening or updating a pull request, run
+`prek run --all-files` (or `prek run --from-ref <base>` against
+the PR's base branch) as a hard pre-flight gate.** The
+`prek install` git hook fires on each `git commit`, but only
+against the files in that commit — issues in files committed
+earlier on the branch (or files the current commit didn't
+touch) can slip past it. A whole-tree `prek run` mirrors what
+CI executes and surfaces those regressions locally before the
+PR round-trip, instead of after a CI failure that costs a
+round-trip and a reviewer's attention on a mechanical fix.
+
 **Keep the framework snapshot in sync with the project's pin.**
 The framework lives at `<adopter-tracker>/.apache-steward/` as a
 **gitignored snapshot** that
