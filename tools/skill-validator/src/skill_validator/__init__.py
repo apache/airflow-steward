@@ -140,11 +140,14 @@ TRIGGER_PRESERVATION_CATEGORY = "trigger_preservation"
 INJECTION_GUARD_CATEGORY = "injection_guard"
 INJECTION_GUARD_TODO_CATEGORY = "injection_guard_todo"
 
-SOFT_CATEGORIES: frozenset[str] = frozenset(
-    {PRINCIPLE_CATEGORY, TRIGGER_PRESERVATION_CATEGORY, INJECTION_GUARD_TODO_CATEGORY},
 BODY_INLINE_CATEGORY = "body_inline"
 SOFT_CATEGORIES: frozenset[str] = frozenset(
-    {PRINCIPLE_CATEGORY, TRIGGER_PRESERVATION_CATEGORY, BODY_INLINE_CATEGORY},
+    {
+        PRINCIPLE_CATEGORY,
+        TRIGGER_PRESERVATION_CATEGORY,
+        INJECTION_GUARD_TODO_CATEGORY,
+        BODY_INLINE_CATEGORY,
+    }
 )
 
 # ---------------------------------------------------------------------------
@@ -187,11 +190,14 @@ EXTERNAL_SURFACE_SIGNALS: list[tuple[re.Pattern[str], str]] = [
     # Self-declaration: a golden-rule or hard-rule block in THIS skill that says
     # external content must be treated as data, not instructions.  This is the
     # strongest signal because the author explicitly wrote the rule for this skill.
-    (re.compile(
-        r"(?:golden|hard)\s+rule\b[^.!?\n]*\bexternal\s+content\b[^.!?\n]*"
-        r"\b(?:data|never\s+an\s+instruction)\b",
-        re.IGNORECASE,
-    ), "external-content golden/hard rule"),
+    (
+        re.compile(
+            r"(?:golden|hard)\s+rule\b[^.!?\n]*\bexternal\s+content\b[^.!?\n]*"
+            r"\b(?:data|never\s+an\s+instruction)\b",
+            re.IGNORECASE,
+        ),
+        "external-content golden/hard rule",
+    ),
 ]
 
 ACTION_INVENTORY_COMMA_THRESHOLD = 5

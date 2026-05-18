@@ -26,8 +26,8 @@ import pytest
 from skill_validator import (
     BODY_INLINE_CATEGORY,
     FORBIDDEN_PATTERNS,
-    INJECTION_GUARD_CATEGORY,
     INJECTION_GUARD_CALLOUT_SENTINEL,
+    INJECTION_GUARD_CATEGORY,
     INJECTION_GUARD_TODO_CATEGORY,
     INJECTION_GUARD_TODO_SENTINEL,
     MAX_METADATA_CHARS,
@@ -789,6 +789,7 @@ class TestValidateInjectionGuard:
     def test_injection_guard_todo_category_is_soft(self) -> None:
         """injection_guard_todo is in SOFT_CATEGORIES — it is advisory."""
         assert INJECTION_GUARD_TODO_CATEGORY in SOFT_CATEGORIES
+
 
 # body-inline check (Pattern 9 extension)
 # ---------------------------------------------------------------------------
