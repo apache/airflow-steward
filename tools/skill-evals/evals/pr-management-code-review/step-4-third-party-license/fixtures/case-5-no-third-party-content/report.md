@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD030 MD037 -->
 Diff adds: airflow/providers/http/hooks/http.py
 
 --- /dev/null

@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD030 MD037 -->
 CI status-check rollup: SUCCESS
 Header tooling in rollup: apache-rat (PASSED)
 

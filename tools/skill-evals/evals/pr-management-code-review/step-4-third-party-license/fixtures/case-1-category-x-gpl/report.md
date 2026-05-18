@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD030 MD037 -->
 Diff adds: vendor/slugify/slugify.py
 
 --- /dev/null

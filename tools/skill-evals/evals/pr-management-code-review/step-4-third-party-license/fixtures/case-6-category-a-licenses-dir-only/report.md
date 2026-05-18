@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD030 MD037 -->
 Diff adds: airflow/utils/cron_descriptor.py
 Diff adds: licenses/cron-descriptor.txt
 
