@@ -4,12 +4,13 @@ mode: Triage
 description: |
   For each open `<tracker>` issue carrying the `needs triage`
   label, read body + comments and classify the candidate
-  disposition into one of five classes: VALID / DEFENSE-IN-DEPTH
-  / INFO-ONLY / INVALID / PROBABLE-DUP. On user confirmation,
-  posts a triage-proposal comment that invites the security team
-  to react. Read-only on tracker state — no label flips, closes,
-  or CVE allocations. Supports `--retriage` for re-litigating
-  passed-triage decisions when substantive new activity lands.
+  disposition into one of six classes: VALID / DEFENSE-IN-DEPTH
+  / INFO-ONLY / INVALID / PROBABLE-DUP / FIX-ALREADY-PUBLIC. On
+  user confirmation, posts a triage-proposal comment that invites
+  the security team to react. Read-only on tracker state — no
+  label flips, closes, or CVE allocations. Supports `--retriage`
+  for re-litigating passed-triage decisions when substantive new
+  activity lands.
 when_to_use: |
   Invoke when a security team member says "triage open issues",
   "start triage discussions on the new trackers", or "propose
@@ -98,7 +99,7 @@ comments. Once the team's decision lands and a sibling skill
 applies the state change, *that* state change goes into the rollup
 as a normal entry.
 
-**Golden rule 4 — five disposition classes, no more.** The
+**Golden rule 4 — six disposition classes, no more.** The
 classification is a proposal, not a verdict; the team's reply may
 escalate (`INFO-ONLY` → `VALID` after a clarifying technical
 question lands) or de-escalate (`VALID` → `INVALID` if a
@@ -114,6 +115,7 @@ discussion rather than starting it.
 | `INFO-ONLY` | Report is fact-correct but doesn't violate anything; matches a known canned-response shape (educational reply, no tracker action needed) | close + reporter-reply via the matching canned response |
 | `INVALID` | Misframed, circular, by-design, or out-of-scope per the canned-responses precedents | [`/security-issue-invalidate`](../security-issue-invalidate/SKILL.md) |
 | `PROBABLE-DUP` | Substantive overlap with an existing tracker or closed advisory (same root cause; sibling attack vector with the same fix shape) | [`/security-issue-deduplicate`](../security-issue-deduplicate/SKILL.md) |
+| `FIX-ALREADY-PUBLIC` | A public PR in `<upstream>` (open or merged) already appears to fix the reported behaviour; the reporter sent `<security-list>` independently of that PR. Per the [no-credit-when-fix-is-already-public policy](../security-issue-import-from-pr/SKILL.md#reporter-credit-policy-for-public-pr-imports), reporter is thanked but not credited; reporter is asked to verify the PR addresses what they reported, and to come back if it does not. | [`/security-issue-invalidate`](../security-issue-invalidate/SKILL.md) after reporter confirms the PR fixes their report (or `--retriage` if the reporter says it does not) |
 
 **Golden rule 5 — every `<tracker>` reference is a clickable
 link**, per Golden rule 2 in
@@ -314,6 +316,27 @@ the inputs the classifier needs. Each tracker gets:
    the disposition (the team has already converged enough to
    write code → the right next step is usually `VALID` →
    `/security-cve-allocate`).
+
+   **Independent-public-fix detection.** Beyond PRs that already
+   reference the tracker, also search for *independent* public
+   PRs in `<upstream>` that plausibly fix the reported behaviour
+   without being aware of the report. Triggers:
+   - the reporter themselves links to a public PR in the body
+     (most reliable signal — they already noticed);
+   - a recent merged/open PR touches the same file + function the
+     report cites and its title/body matches the vulnerability
+     class (e.g. "fix XSS in …", "escape … input", "validate
+     …"), found via `gh search prs --repo <upstream> -- <path>
+     <vuln-keyword>` (≤ 2 calls per tracker, mirrors the Step 4
+     `@`-mention routing budget);
+   - the *PR with the fix* body field is empty but a sibling
+     tracker's PR — surfaced by Step 2's cross-reference search —
+     covers the same code surface.
+
+   A hit here routes to `FIX-ALREADY-PUBLIC` in Step 3 (not
+   `PROBABLE-DUP` — the dup class is for *tracker* overlap; this
+   class is for *PR-already-public* overlap when there may be no
+   sibling tracker at all).
 
 4. **Reporter-thread followup** (only when the *Security
    mailing list thread* body field resolves to a Gmail
@@ -582,11 +605,83 @@ The proposal links the candidate kept-tracker and suggests
 `/security-issue-deduplicate <new> <existing>` as the next
 slash command.
 
+#### `FIX-ALREADY-PUBLIC`
+
+Propose when **all** of:
+
+- The Step 2 *Independent-public-fix detection* surfaced a
+  public PR in `<upstream>` (open or merged) that plausibly
+  fixes the reported behaviour — same file + function as the
+  report's code pointer, title/body matches the vulnerability
+  class.
+- That PR was **not** filed in response to this tracker
+  (i.e. the PR predates the tracker, or the PR author is not on
+  the security-team roster and the PR description shows no
+  awareness of `<security-list>` or the tracker).
+- The report's technical premise is *plausibly correct* —
+  enough that the question *"does this PR fix what you
+  reported?"* is the load-bearing next step, not *"is this even
+  a real issue?"* (if the premise is wrong outright, propose
+  `INVALID` instead).
+
+**Reporter credit policy.** Per the
+[no-credit-when-fix-is-already-public policy](../security-issue-import-from-pr/SKILL.md#reporter-credit-policy-for-public-pr-imports)
+that this skill inherits from `security-issue-import-from-pr`:
+when the fix is already public at the time the report arrives,
+the reporter is **thanked but not credited as the finder**, for
+the same incentive-alignment reasoning (a public PR is not a
+responsible disclosure; awarding finder credit for reports of
+already-public fixes trains the next reporter to skip the
+private disclosure step). The team can override per-tracker
+during Step 5 confirmation if there is a project-specific
+reason to credit (e.g. the reporter privately spotted the
+issue before the unrelated PR landed).
+
+**Proposal body must include the draft reporter reply.** Per
+the read-only-on-tracker contract this skill maintains, the
+reply is **not** sent here — it is drafted for the team and
+will be sent later via
+[`/security-issue-invalidate`](../security-issue-invalidate/SKILL.md)
+once the team confirms. Draft template:
+
+> Thanks for the report. We noticed that
+> [`<upstream>#<NNN>`](https://github.com/<upstream>/pull/NNN)
+> ([`<author>`](https://github.com/<author>), merged YYYY-MM-DD)
+> already appears to address what you described. Per our policy,
+> we do not credit a finder when the fix to the reported issue
+> is already public at the time of report — but we very much
+> appreciate you taking the time to write to us.
+>
+> Could you check whether
+> [`<upstream>#<NNN>`](https://github.com/<upstream>/pull/NNN)
+> fixes the behaviour you observed? If it does, no further
+> action is needed on your side. If after testing with the PR
+> you still see the issue, please reply on this thread with
+> the failing reproduction and we will reopen the discussion.
+
+Fill in `<NNN>`, `<author>`, and the merge date from the Step 2
+detection. If the PR is open (not yet merged), substitute
+*"open since YYYY-MM-DD"* for *"merged YYYY-MM-DD"*. If multiple
+candidate PRs were surfaced, the draft lists each (the team
+trims during Step 5 confirmation).
+
+**Sibling skill hand-off.** After team consensus on the
+proposal:
+
+- If the reporter confirms the PR fixes their report →
+  [`/security-issue-invalidate`](../security-issue-invalidate/SKILL.md)
+  closes the tracker; the reporter-credit field stays blank.
+- If the reporter says the PR does **not** fix it →
+  re-triage via `--retriage` with the new evidence; the
+  classification will typically escalate to `VALID` /
+  `DEFENSE-IN-DEPTH` / `INVALID` based on the reporter's
+  follow-up.
+
 ### Confidence and edge cases
 
 The classifier may emit `UNCERTAIN` internally — surface this
 as *"low-confidence proposal, please challenge"* in the comment
-body rather than picking one of the five classes blindly. The
+body rather than picking one of the six classes blindly. The
 team's reply on a flagged-uncertain tracker is what produces
 the next iteration; **never** post a high-confidence-toned
 proposal when the input state is ambiguous.
@@ -806,7 +901,7 @@ rate-limit; the user retries the remaining items with the
 After the post loop, print a recap with:
 
 - Disposition distribution (e.g. *"3 VALID, 1 DEFENSE-IN-DEPTH,
-  2 INVALID, 1 INFO-ONLY, 0 PROBABLE-DUP"*).
+  2 INVALID, 1 INFO-ONLY, 0 PROBABLE-DUP, 1 FIX-ALREADY-PUBLIC"*).
 - Per-tracker line: clickable issue link, class, comment URL.
 - The set of sibling-skill next-step recommendations, grouped:
   - `/security-cve-allocate NNN` for each VALID
@@ -814,6 +909,11 @@ After the post loop, print a recap with:
     INFO-ONLY (the invalidate skill handles both with the right
     canned response)
   - `/security-issue-deduplicate NNN MMM` for each PROBABLE-DUP
+  - `/security-issue-invalidate NNN` for each FIX-ALREADY-PUBLIC,
+    *only after the reporter has confirmed the public PR fixes
+    their report* — until then, the tracker stays open awaiting
+    that verification; if the reporter says the PR does not fix
+    it, re-triage via `--retriage` instead
 - A note that label flips and project-board moves stay with
   `/security-issue-sync` once the team's decision lands — *not*
   with this skill.
