@@ -186,9 +186,10 @@ for the full flow.
 
 ## Skill families
 
-Three skill families ship in the framework. Pick whichever the
-adopter wants to use; symlinks for the picked families land in
-the adopter's skill directory.
+Four skill families ship in the framework (plus one proposed family
+and two meta utilities). Pick whichever families the adopter wants
+to use; symlinks for the picked families land in the adopter's
+skill directory.
 
 The **Modes** column maps each family to the MISSION agent-assistance
 taxonomy — see [`docs/modes.md`](docs/modes.md) for what each mode
@@ -197,8 +198,11 @@ means and which modes are still proposed vs. shipping today.
 | Family | Modes | Purpose | Detail |
 |---|---|---|---|
 | [**setup**](docs/setup/README.md) | (infra) | Isolated agent setup, framework adoption + maintenance, shared-config sync. The prerequisite — at minimum the `setup-steward` skill itself runs out of this family. | 6 skills, [`docs/setup/`](docs/setup/) |
-| [**security**](docs/security/README.md) | A, C | 16-step security-issue handling lifecycle — from `security@` import through CVE publication. Maintainer-only. | 8 skills, [`docs/security/`](docs/security/) |
-| [**pr-management**](docs/pr-management/README.md) | A | Maintainer-facing PR-queue management — triage, stats, deep code review. | 3 skills, [`docs/pr-management/`](docs/pr-management/) |
+| [**security**](docs/security/README.md) | A, C | 16-step security-issue handling lifecycle — from `security@` import through CVE publication, including state sync. Maintainer-only. | 9 skills, [`docs/security/`](docs/security/) |
+| **pr-management** | A | Maintainer-facing PR-queue management — triage, stats, and deep code review. | 3 skills, [`docs/pr-management/`](docs/pr-management/README.md) |
+| **mentoring** | Mentoring | Contributor mentoring — spec and tone guide in place; prototype skill (`pr-management-mentor`) available. **Proposed** — not yet formally adopted. | 1 prototype skill, [`docs/mentoring/`](docs/mentoring/README.md) |
+| **issue** | A, Triage | Issue lifecycle management — triage, bug reproduction, fix drafting, and backlog re-assessment against the current branch. | 5 skills |
+| **utilities** | (meta) | Framework meta-skills: author or update skills (`write-skill`); print a live index of all available skills (`list-steward-skills`). | 2 skills |
 
 ## Maintenance
 
