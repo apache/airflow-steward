@@ -17,7 +17,7 @@ and conflates "no maintainer touched this" with "no maintainer left the
 canonical template." All four predicates apply to a single PR; they overlap
 deliberately (see the implication chains below).
 
-### `is_triaged` — *strict-triaged*
+### `is_triaged` — *Quality-Criteria-triaged*
 
 ```text
 is_triaged(pr) :=
@@ -61,11 +61,11 @@ The broader "a maintainer touched this PR at some point" definition. Catches
 review-thread comments, design discussions, label-adds, hand-typed feedback,
 and so on — all the engagement modes that don't include the literal marker
 substring. **`is_engaged` is a superset of `is_triaged`**: every
-strict-triaged PR is also engaged, but not vice-versa.
+Quality-Criteria-triaged PR is also engaged, but not vice-versa.
 
 The terminology in the dashboard:
 
-- **De-facto triaged** = engaged but not strict-triaged.
+- **De-facto triaged** = engaged but not Quality-Criteria-triaged.
   Formally: `is_engaged(pr) AND NOT is_triaged(pr)` — the
   `defacto_triaged` counter aggregates this set.
 
@@ -140,10 +140,10 @@ The age uses the `last_author_interaction` defined in the
 
 | Tier | Predicate | Means | Dashboard card |
 |---|---|---|---|
-| Strict-triaged | `is_triaged` | maintainer posted the literal `Pull Request quality criteria` link | **Strict-triaged** (hero row 2, blue) |
+| Quality-Criteria-triaged | `is_triaged` | maintainer posted the literal `Pull Request quality criteria` link | **Quality Criteria triaged** (hero row 2, blue) |
 | De-facto triaged | `is_engaged AND NOT is_triaged` | maintainer engaged but no marker | **De-facto triaged** (hero row 2, amber — the gap signal) |
 | AI-triaged | `is_ai_triaged` | comment with the AI-attribution footer | **AI-triaged** (hero row 2, purple — accounting) |
-| Engaged (overall) | `is_engaged` | union of the above two | not a card on its own; equals `strict + defacto` |
+| Engaged (overall) | `is_engaged` | union of the above two | not a card on its own; equals `triaged + defacto_triaged` |
 | Untriaged | `is_untriaged` | NOT engaged + contributor + non-bot + not ready-labelled | **Untriaged non-drafts** (hero row 1) |
 
 The number of PRs in each tier sums to a clean partition of the contributor
@@ -151,9 +151,9 @@ non-draft pool minus the ready-labelled set:
 
 ```text
 contributor_nondraft_not_ready =
-    strict_triaged_nondraft +
-    defacto_triaged_nondraft +
-    untriaged_nondraft
+    triaged_nondraft +              # Quality-Criteria-triaged (`is_triaged`)
+    defacto_triaged_nondraft +      # engaged but no marker
+    untriaged_nondraft              # no maintainer engagement
 ```
 
 The `transitional` cases (e.g. a freshly-engaged PR whose triage marker

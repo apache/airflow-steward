@@ -48,24 +48,24 @@ Two rows of four cards each:
 
 #### Row 2 — triage coverage breakdown
 
-This row exposes the **gap between strict and broad triage coverage** so a
-maintainer can see at a glance how much triage is happening that the strict
-marker-based count misses.
+This row exposes the **gap between the literal Quality-Criteria marker and
+broad maintainer engagement** so a maintainer can see at a glance how much
+triage is happening that the marker-based count misses.
 
 | Card | Big number | Sub-label | Colour rule |
 |---|---|---|---|
-| **Strict-triaged** | `triaged_waiting + triaged_responded` (literal marker present) | `<pct>% of contributor non-drafts` | blue (informational) |
-| **De-facto triaged** | [`defacto_triaged`](classify.md#is_engaged--de-facto-triaged) (engaged by a maintainer, no marker) | `<pct>% of contributor non-drafts` | amber (gap signal — the bigger this is vs strict, the more triage is happening invisibly) |
-| **AI-triaged** | [`ai_triaged`](classify.md#is_ai_triaged--ai-assisted-triage) (received an AI-assisted triage comment) | `<pct>% of strict-triaged` | grey (informational) |
+| **Quality Criteria triaged** | `triaged_waiting + triaged_responded` (literal `Pull Request quality criteria` link present in a maintainer comment) | `<pct>% of contributor non-drafts` | blue (informational) |
+| **De-facto triaged** | [`defacto_triaged`](classify.md#is_engaged--de-facto-triaged) (engaged by a maintainer, no Quality-Criteria marker) | `<pct>% of contributor non-drafts` | amber (gap signal — the bigger this is vs the Quality-Criteria card, the more triage is happening invisibly to the marker counter) |
+| **AI-triaged** | [`ai_triaged`](classify.md#is_ai_triaged--ai-assisted-triage) (received an AI-assisted triage comment) | `<pct>% of Quality-Criteria-triaged` | grey (informational) |
 | **Bot PRs** | [`bot_authored`](classify.md#is_bot--author-is-a-recognised-bot) | `<dependabot> dependabot · <other> other` | grey (separate lifecycle, surfaced for accounting parity) |
 
 The **De-facto triaged** card is the key new signal: on a large `<upstream>`
-queue (~457 human-authored open PRs) the strict count typically captures ~21%
-of PRs but the broad `is_engaged` count captures ~59% — the gap (~38 percentage
-points) is PRs that maintainers engaged with through review threads, direct
-comments, or label-adds without leaving the templated `Pull Request quality
-criteria` marker. Surfacing the gap lets the maintainer team see how much
-queue health the strict counter under-states.
+queue (~457 human-authored open PRs) the Quality-Criteria count typically
+captures ~21% of PRs but the broad `is_engaged` count captures ~59% — the
+gap (~38 percentage points) is PRs that maintainers engaged with through
+review threads, direct comments, or label-adds without leaving the templated
+`Pull Request quality criteria` marker. Surfacing the gap lets the maintainer
+team see how much queue health the marker-based counter under-states.
 
 The **Bot PRs** card is a separate accounting category — bot-authored PRs
 follow their own automated lifecycle and don't merge into the

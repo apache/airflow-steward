@@ -58,8 +58,8 @@ the label itself is evidence that the PR cleared the triage bar.
 - `contributors + collaborator_authored + bot_authored == total` (three disjoint author classes)
 - `contributors == drafts + non_drafts` (each contributor PR is one or the other)
 - `triaged_waiting + triaged_responded <= contributors`
-- `triaged_waiting + triaged_responded <= engaged` (strict-triaged is a subset of engaged)
-- `defacto_triaged + (triaged_waiting + triaged_responded) == engaged` (every engaged PR is either strictly triaged or de-facto-only)
+- `triaged_waiting + triaged_responded <= engaged` (Quality-Criteria-triaged is a subset of engaged)
+- `defacto_triaged + (triaged_waiting + triaged_responded) == engaged` (every engaged PR is either Quality-Criteria-triaged or de-facto-only)
 - `ready_for_review <= non_drafts` (a ready PR shouldn't be draft — if the inequality fails, the label is stale; surface a one-line warning but don't correct the data)
 - `untriaged_old + untriaged_med <= untriaged_nondraft <= non_drafts`
 - `engaged + untriaged_nondraft + ready_for_review == non_drafts (contributor)` (the partition: every contributor non-draft is exactly one of `is_engaged` (strict OR de-facto), `is_untriaged` (no maintainer touched), or already-`ready` labelled — the three are mutually exclusive once the `is_untriaged` definition uses `NOT is_engaged` rather than `NOT is_triaged`)
