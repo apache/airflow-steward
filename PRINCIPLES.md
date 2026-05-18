@@ -17,7 +17,7 @@
 
 # Apache Steward Design Principles
 
-These principles regulate what this framework is and how it evolves. Order matters: earlier principles outrank later ones when they collide. Within the same family, the stricter reading wins until governance documents otherwise.
+These principles regulate what this framework is and how it evolves. Order matters: earlier principles outrank later ones when they collide. Where a single principle admits more than one reading, the stricter reading wins until governance documents otherwise.
 
 A change (PR, skill, tool adapter, release) that violates a principle is wrong even if every test passes. Any committer may block it on principle grounds. The block lifts when the change complies, when a principle-amendment proposal carries through governance with the same weight as a release vote, or, when the author and the blocking committer disagree on whether the change complies, when a PMC vote settles whether the principle is violated. The block holds until one of these resolves it; it is never overridden silently.
 
