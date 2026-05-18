@@ -691,9 +691,7 @@ def collect_skill_dirs(root: Path | None = None) -> set[Path]:
 # be flagged.  The security checklist uses nested 4- and 5-backtick fences for
 # embedded code-block demos; those confuse _FENCED_CODE_RE / _DOUBLE_BACKTICK_RE
 # and leave prose ``--body "..."`` mentions outside any detected code span.
-_BODY_INLINE_SKIP_SUFFIXES: tuple[str, ...] = (
-    "write-skill/security-checklist.md",
-)
+_BODY_INLINE_SKIP_SUFFIXES: tuple[str, ...] = ("write-skill/security-checklist.md",)
 
 
 def _inline_only_code_spans(text: str) -> list[tuple[int, int]]:
@@ -711,9 +709,9 @@ def _inline_only_code_spans(text: str) -> list[tuple[int, int]]:
     """
     fenced_spans = [m.span() for m in _FENCED_CODE_RE.finditer(text)]
     return [
-        (s, e)
-        for (s, e) in _code_spans(text)
-        if not any(fs <= s and e <= fe for fs, fe in fenced_spans)
+        (start, end)
+        for start, end in _code_spans(text)
+        if not any(fs <= start and end <= fe for fs, fe in fenced_spans)
     ]
 
 

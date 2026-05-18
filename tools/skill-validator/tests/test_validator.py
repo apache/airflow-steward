@@ -621,10 +621,8 @@ class TestTriggerPreservation:
 
 def _fenced_skill(cmd: str) -> str:
     """Wrap *cmd* in a minimal SKILL.md with a fenced bash block."""
-    return (
-        "---\nname: test\ndescription: test\nlicense: Apache-2.0\n---\n\n"
-        f"```bash\n{cmd}\n```\n"
-    )
+    frontmatter = "---\nname: test\ndescription: test\nlicense: Apache-2.0\n---\n\n"
+    return frontmatter + f"```bash\n{cmd}\n```\n"
 
 
 class TestBodyInline:
@@ -668,7 +666,7 @@ class TestBodyInline:
         path = tmp_path / "SKILL.md"
         text = (
             "---\nname: test\ndescription: test\nlicense: Apache-2.0\n---\n\n"
-            "Do not use `--body \"text\"` — prefer `--body-file` instead.\n"
+            'Do not use `--body "text"` — prefer `--body-file` instead.\n'
         )
         violations = list(validate_body_inline(path, text))
         assert violations == []
