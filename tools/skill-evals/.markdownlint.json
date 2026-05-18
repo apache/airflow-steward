@@ -1,9 +1,9 @@
 {
   "extends": "../../.markdownlint.json",
-
-  "$comment": "Eval fixtures simulate `gh issue view` output, which renders GitHub issue bodies as YAML literal blocks (`body: |`). The body content is indented 2 spaces, so `### Section` headings inside the body violate MD023 (heading-start-left). Headings in GitHub issue templates also use trailing `:` in some section names, violating MD026. Fixture report.md files also contain mock GitHub comment URLs using `#issuecomment-NNNN` fragments — these are not same-document anchors, so MD051 (link-fragments) is disabled here as well.",
-
+  "$comment": "Eval fixtures simulate `gh issue view` output, which renders GitHub issue bodies as YAML literal blocks (`body: |`). The body content is indented 2 spaces, so `### Section` headings inside the body violate MD023 (heading-start-left). Headings in GitHub issue templates also use trailing `:` in some section names, violating MD026. Fixture report.md files also contain mock GitHub comment URLs using `#issuecomment-NNNN` fragments \u2014 these are not same-document anchors, so MD051 (link-fragments) is disabled here as well. Fixture report.md files additionally contain raw unified-diff content where `+` and `-` are treated as list markers by MD030 \u2014 disabled for that reason. Fixture files also contain regex patterns with square brackets (e.g. `[A-Z][A-Z0-9_]`) that MD052 misreads as undefined link references \u2014 disabled for that reason.",
   "MD023": false,
   "MD026": false,
-  "MD051": false
+  "MD051": false,
+  "MD030": false,
+  "MD052": false
 }

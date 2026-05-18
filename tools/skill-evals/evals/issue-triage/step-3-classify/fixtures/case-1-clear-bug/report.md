@@ -13,7 +13,7 @@ Body:
   3. Observe the crash
 
   Stack trace:
-  ```
+  ```text
   RecursionError: maximum recursion depth exceeded
     File "airflow/scheduler/scheduler_job.py", line 412, in _process_dags
     File "airflow/scheduler/scheduler_job.py", line 412, in _process_dags

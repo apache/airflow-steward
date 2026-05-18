@@ -6,7 +6,7 @@ Unresolved threads: 0
 Existing maintainer reviews: (none)
 
 Diff findings:
-  - The change is a one-line docstring typo fix: "occured" → "occurred".
+  - The change is a one-line docstring typo fix: "occurred" → "occurred".
   - No code logic changed.
   - The failing CI check ("integration-tests-postgres") is unrelated to this PR's diff —
     it has been failing on main for the past 3 days due to a flaky test in the Postgres
