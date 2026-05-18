@@ -1,0 +1,5 @@
+{
+  "valid": 3,
+  "errors": [{"key": "AIRFLOW-BROKEN", "error": "JSON parse error: Expecting ',' delimiter: line 4 column 3 (char 89)"}],
+  "total_files": 4
+}

@@ -1,0 +1,5 @@
+{
+  "class": "NEEDS-INFO",
+  "rationale": "The report provides no reproduction steps, no Airflow version, no DAG definition, no error output, and no environment details. It is impossible to classify without this information.",
+  "confidence": "high"
+}

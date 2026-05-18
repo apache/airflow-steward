@@ -1,0 +1,11 @@
+{
+  "issue_key": "AIRFLOW-88101",
+  "classification": "still-fails-same",
+  "nature": "bug-as-advertised",
+  "shape": "A",
+  "runtime_version": "Airflow 2.9.1 / Python 3.11",
+  "command": "python /tmp/reproduce_AIRFLOW-88101.py",
+  "exit_code": 1,
+  "wall_clock_seconds": 0.8,
+  "confirmed_by_maintainer": true
+}

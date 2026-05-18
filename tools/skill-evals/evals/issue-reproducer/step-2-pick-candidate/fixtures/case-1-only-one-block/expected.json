@@ -1,0 +1,5 @@
+{
+  "chosen_block": {"location": "body", "language": "python", "line_count": 5},
+  "reason": "only block",
+  "fallback_chain": []
+}

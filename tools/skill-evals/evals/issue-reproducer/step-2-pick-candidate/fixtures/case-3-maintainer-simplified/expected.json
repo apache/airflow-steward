@@ -1,0 +1,7 @@
+{
+  "chosen_block": {"location": "comment-3", "language": "python", "line_count": 8},
+  "reason": "maintainer-simplified",
+  "fallback_chain": [
+    {"location": "body", "reason": "original reporter version — larger but complete"}
+  ]
+}

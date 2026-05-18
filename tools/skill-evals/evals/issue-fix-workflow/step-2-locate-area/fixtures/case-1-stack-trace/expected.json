@@ -1,0 +1,5 @@
+{
+  "method": "stack-trace",
+  "candidate_files": ["airflow/models/xcom.py"],
+  "confidence": "high"
+}

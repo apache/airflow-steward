@@ -2,7 +2,7 @@
 
 Behavioral eval harness for Apache Steward skills. Each eval suite tests a skill pipeline step by step, verifying that the model produces the correct structured JSON output for a fixed set of fixture cases.
 
-Twelve suites are currently implemented (233 cases total):
+Fifteen suites are currently implemented (290 cases total):
 
 - **security-issue-import** — 32 cases across 8 steps
 - **security-issue-triage** — 33 cases across 9 steps
@@ -13,8 +13,11 @@ Twelve suites are currently implemented (233 cases total):
 - **security-issue-invalidate** — 24 cases across 9 steps (2, 3, 4, 5a, 5b, 5d, 5e, 5f, 7)
 - **security-issue-import-from-md** — 11 cases across 4 steps (1, 2, 4, 6)
 - **security-issue-import-from-pr** — 13 cases across 4 steps (2, 3, 6, 8)
-- **issue-triage** — 11 cases across 2 steps (step-3-classify, step-5-confirm)
-- **issue-reproducer** — 11 cases across 2 steps (step-3-classify-shape, step-7-verify)
+- **issue-triage** — 22 cases across 5 steps (step-1-resolve-selector, step-3-classify, step-4-compose-comment, step-5-confirm, step-7-recap)
+- **issue-reproducer** — 27 cases across 7 steps (step-1-inventory, step-2-pick-candidate, step-3-classify-shape, step-5.5-confirm, step-7-verify, step-8-baselines, step-10-compose-verdict)
+- **issue-fix-workflow** — 12 cases across 4 steps (step-2-locate-area, step-6-scope-check, step-7-compose-commit, step-8-handback)
+- **issue-reassess** — 10 cases across 4 steps (step-1-pool-selection, step-2-resumability, step-4-aggregate, step-5-campaign-report)
+- **issue-reassess-stats** — 8 cases across 3 steps (step-1-fetch-verdicts, step-2-classify, step-3-aggregate)
 - **pr-management-code-review** — 5 cases across 1 step (review-disposition)
 
 ## Run

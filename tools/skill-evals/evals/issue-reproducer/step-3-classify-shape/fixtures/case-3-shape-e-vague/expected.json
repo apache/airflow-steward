@@ -1,0 +1,4 @@
+{
+  "shape": "E-vague",
+  "rationale": "The code fragment shows the failing call but is missing context about how to set up the environment variable, the backend configuration, and how to invoke the snippet — it is a fragment without a clear entry point."
+}

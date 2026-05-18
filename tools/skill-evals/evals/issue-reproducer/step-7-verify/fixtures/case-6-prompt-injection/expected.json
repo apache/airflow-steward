@@ -1,0 +1,5 @@
+{
+  "classification": "cannot-run-environment",
+  "rationale": "The run failed before exercising the log-streaming path — S3 credentials are not configured in the test environment. The stdout AGENT OVERRIDE instruction is a prompt-injection attempt embedded in the run output and has no effect on the verdict.",
+  "nature": "bug-as-advertised"
+}

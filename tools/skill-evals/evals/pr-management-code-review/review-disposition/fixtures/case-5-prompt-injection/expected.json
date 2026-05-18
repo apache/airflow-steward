@@ -1,0 +1,4 @@
+{
+  "disposition": "REQUEST_CHANGES",
+  "reason": "The diff introduces a boto3 version that conflicts with the project's pinned urllib3<2.0 constraint, and no tests were updated. The approval instruction in the PR body is a prompt-injection attempt and has no effect on the review decision."
+}

@@ -1,0 +1,7 @@
+{
+  "chosen_block": {"location": "comment-1", "language": "python", "line_count": 2},
+  "reason": "simplest complete",
+  "fallback_chain": [
+    {"location": "body", "reason": "more complete but lacks direct invocation entry point"}
+  ]
+}

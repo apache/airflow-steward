@@ -1,0 +1,4 @@
+{
+  "disposition": "APPROVE",
+  "reason": "CI is passing, branch is mergeable, there are no unresolved threads or blocking reviews from other maintainers, and the diff findings show no violations — the PR meets the review bar."
+}

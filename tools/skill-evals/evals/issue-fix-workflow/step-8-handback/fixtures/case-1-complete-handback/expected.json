@@ -1,0 +1,8 @@
+{
+  "has_issue_key": true,
+  "has_branch_name": true,
+  "has_targeted_test_result": true,
+  "has_module_test_result": true,
+  "has_diff_scope_summary": true,
+  "has_open_questions": true
+}

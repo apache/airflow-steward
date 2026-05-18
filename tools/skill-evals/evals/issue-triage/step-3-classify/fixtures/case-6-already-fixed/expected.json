@@ -1,0 +1,5 @@
+{
+  "class": "ALREADY-FIXED",
+  "rationale": "Commit abc1234 (2026-03-20) explicitly references AIRFLOW-99606 and touches the scheduler pool-release path. The reproducer confirms the fix is on main — the issue just needs closing.",
+  "confidence": "high"
+}

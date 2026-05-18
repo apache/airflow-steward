@@ -1,0 +1,5 @@
+{
+  "class": "INVALID",
+  "rationale": "The metadata database is a documented architectural requirement for Airflow, confirmed by a maintainer citing the prerequisites page. The reporter's expectation contradicts the project's documented design; SQLite is already available for simple local use.",
+  "confidence": "high"
+}
