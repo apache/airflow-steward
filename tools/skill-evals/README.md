@@ -19,6 +19,8 @@ Fifteen suites are currently implemented:
 - **issue-reassess** — 10 cases across 4 steps (step-1-pool-selection, step-2-resumability, step-4-aggregate, step-5-campaign-report)
 - **issue-reassess-stats** — 8 cases across 3 steps (step-1-fetch-verdicts, step-2-classify, step-3-aggregate)
 - **pr-management-code-review** — 5 cases across 1 step (review-disposition)
+- **contributor-nomination** — 21 cases across 4 steps (step-0-resolve-inputs, step-3-gather-signal, step-4-assess, step-5-render)
+- **contributor-activity-sweep** — 12 cases across 3 steps (step-0-resolve-inputs, step-1-classify-reviews, step-2-render)
 
 ## Run
 
