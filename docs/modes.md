@@ -50,7 +50,7 @@ sequencing commitments behind them.
 
 | Mode | Purpose | Status | Skill count |
 |---|---|---|---|
-| **Triage** | Issues, security reports, PRs: spot, classify, route, surface duplicates. Every output is a suggestion the human signs off on. | stable (security) / experimental (pr-management, issue-management) | 12 |
+| **Triage** | Issues, security reports, PRs: spot, classify, route, surface duplicates. Every output is a suggestion the human signs off on. | stable (security) / experimental (pr-management, issue-management, contributor-nomination) | 13 |
 | **Mentoring** | Joins issue and PR threads in a teaching register: clarifying questions, pointers to project conventions, paired examples from prior PRs, hand-off to a human when scope exceeds the agent. | proposed | 0 |
 | **Drafting** | Agent drafts a fix for a well-scoped problem and opens a PR; every PR is reviewed and merged by a human committer. | stable (security-only); experimental (issue-management) | 2 |
 | **Pairing** | Developer-side dev-cycle skills with mentorship intrinsic — multi-agent review pipelines, self-review and pre-flight patterns, scoped fix drafting under the developer's driver's seat. | proposed | 0 |
@@ -74,6 +74,7 @@ do not act without human review.
 | [`pr-management-code-review`](../.claude/skills/pr-management-code-review/SKILL.md) | Maintainer-facing deep code review. | experimental |
 | [`issue-triage`](../.claude/skills/issue-triage/SKILL.md) | General-issue-tracker triage (per-issue classification + disposition proposal). | experimental |
 | [`issue-reassess`](../.claude/skills/issue-reassess/SKILL.md) | Pool-level sweep of resolved / EOL issues for re-assessment. | experimental |
+| [`contributor-nomination`](../.claude/skills/contributor-nomination/SKILL.md) | Nomination-readiness brief for a named contributor — activity breadth, consistency, and evidence prose for a committer or PMC thread. | experimental |
 | [`security-issue-import`](../.claude/skills/security-issue-import/SKILL.md) | Inbound security-report classification + initial routing. | stable |
 | [`security-issue-import-from-pr`](../.claude/skills/security-issue-import-from-pr/SKILL.md) | Open a tracker from a security-relevant public PR. | stable |
 | [`security-issue-import-from-md`](../.claude/skills/security-issue-import-from-md/SKILL.md) | Bulk-import findings from a markdown report. | stable |

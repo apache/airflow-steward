@@ -1,0 +1,9 @@
+{
+  "real_name": null,
+  "apache_id": null,
+  "employer": null,
+  "real_name_warning": false,
+  "apache_id_warning": false,
+  "login_rejected": true,
+  "rejection_reason": "Login '../../etc/passwd' fails GitHub username validation and cannot be used in API calls or URL construction."
+}

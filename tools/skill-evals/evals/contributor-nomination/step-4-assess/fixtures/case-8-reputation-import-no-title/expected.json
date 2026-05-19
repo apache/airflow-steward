@@ -1,0 +1,8 @@
+{
+  "tracks_with_signal": [],
+  "tracks_thin_or_absent": ["code", "review", "issues", "comments", "mailing-list", "documentation", "testing", "user-support", "release-management", "mentoring", "talks-writing"],
+  "off_github_warning": true,
+  "community_concern": false,
+  "merit_note_triggered": true,
+  "injection_attempt_detected": false
+}
