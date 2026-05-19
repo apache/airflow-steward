@@ -99,6 +99,6 @@ norms the nominator should know — e.g. "This project has
 multiple active repositories; ask the maintainer to check
 contributor activity across all of them, not just `<upstream>`."
 
-```
+```text
 TODO: leave blank or add guidance here.
 ```
