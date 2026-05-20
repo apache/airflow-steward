@@ -943,13 +943,7 @@ def _make_valid_skill(root: Path, name: str) -> Path:
     skill_dir = root / ".claude" / "skills" / name
     skill_dir.mkdir(parents=True, exist_ok=True)
     (skill_dir / "SKILL.md").write_text(
-        "---\n"
-        f"name: {name}\n"
-        "description: A test skill.\n"
-        "license: Apache-2.0\n"
-        "---\n"
-        "# Body\n"
-        "Some content.\n"
+        f"---\nname: {name}\ndescription: A test skill.\nlicense: Apache-2.0\n---\n# Body\nSome content.\n"
     )
     return skill_dir
 
@@ -963,7 +957,9 @@ class TestMain:
         rc = main([])
         assert rc == 0
 
-    def test_returns_1_when_hard_violations_found(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+    def test_returns_1_when_hard_violations_found(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+    ) -> None:
         root = _skill_root(tmp_path)
         skill_dir = root / ".claude" / "skills" / "bad-skill"
         skill_dir.mkdir(parents=True)
@@ -975,7 +971,9 @@ class TestMain:
         assert rc == 1
         assert "violation" in capsys.readouterr().out
 
-    def test_skip_categories_suppresses_violations(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_skip_categories_suppresses_violations(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         root = _skill_root(tmp_path)
         skill_dir = root / ".claude" / "skills" / "bad-skill"
         skill_dir.mkdir(parents=True)
@@ -986,7 +984,9 @@ class TestMain:
         rc = main(["--skip-categories=general"])
         assert rc == 0
 
-    def test_strict_promotes_soft_violations_to_hard(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_strict_promotes_soft_violations_to_hard(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         root = _skill_root(tmp_path)
         skill_dir = root / ".claude" / "skills" / "soft-skill"
         skill_dir.mkdir(parents=True)
