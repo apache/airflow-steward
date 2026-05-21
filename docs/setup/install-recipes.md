@@ -106,6 +106,7 @@ rm -f ${ZIP} ${ZIP}.sha512 ${ZIP}.asc
 #    Pick ONE branch based on your existing convention.
 #
 #    A — flat layout (default):
+mkdir -p .claude/skills
 cp -r .apache-steward/.claude/skills/setup-steward .claude/skills/setup-steward
 #
 #    B — double-symlinked layout (per-skill symlinks):
@@ -183,6 +184,7 @@ git clone --depth=1 \
     .apache-steward
 
 # Copy the `setup-steward` skill — pick A / B / D (see Method 1 step 2)
+mkdir -p .claude/skills
 cp -r .apache-steward/.claude/skills/setup-steward .claude/skills/setup-steward
 # OR for double-symlinked (B):
 # cp -r .apache-steward/.claude/skills/setup-steward .github/skills/setup-steward
@@ -212,6 +214,7 @@ git clone --depth=1 \
     .apache-steward
 
 # Copy the `setup-steward` skill — pick A / B / D (see Method 1 step 2)
+mkdir -p .claude/skills
 cp -r .apache-steward/.claude/skills/setup-steward .claude/skills/setup-steward
 # OR for double-symlinked (B):
 # cp -r .apache-steward/.claude/skills/setup-steward .github/skills/setup-steward
