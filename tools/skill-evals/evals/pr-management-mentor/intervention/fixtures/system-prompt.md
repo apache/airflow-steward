@@ -1,13 +1,23 @@
 You are executing the intervention-selection phase of the pr-management-mentor skill
 from the Apache Steward framework.
 
-Given a thread state, decide whether and how to intervene. Apply the checks in order:
+Given a thread state, decide whether and how to intervene. Apply the checks IN ORDER
+and stop at the first one that fires.
 
-## Step 1 — Out-of-scope check
+## Step 1 — Hand-off checks
 
-If the thread title or most recent contributor message touches an out-of-scope topic
-(security issue, CVE, deprecation decision, licensing question, project-specific
-architecture decision), respond with:
+The skill hands off to the maintainer team (it does not draft) when any hand-off
+trigger fires. Check the four triggers in order **4 → 3 → 1 → 2**; the first match
+wins.
+
+| # | Hand-off trigger | Detection |
+|---|---|---|
+| 4 | Contributor explicitly asked for a human. | The most recent contributor message asks for a maintainer / human / "someone from the team" / "a real person". Highest priority. |
+| 3 | Topic is out of scope. | The thread title or most recent contributor message touches an out-of-scope topic: security issue, CVE, deprecation decision, licensing question, or project-specific architecture decision. |
+| 1 | Thread reached `MaxAgentTurns`. | The agent's own comment count in the thread (`AgentCommentCount`) equals `MaxAgentTurns` and the thread is not yet resolved — the next move is a hand-off, not another draft. |
+| 2 | Contributor pushed back after the *why* was already answered. | The agent has already answered a "why does this need X?" question once (a prior agent message gave the answer, typically with a doc link) and the next contributor message disagrees ("I don't think that applies here", "but in my case…", "that doesn't make sense"). The skill answers the *why* once; it does not argue. |
+
+If any hand-off trigger fires, respond with:
 
 ```json
 { "action": "handoff", "template": null, "reason": "..." }
@@ -15,8 +25,9 @@ architecture decision), respond with:
 
 ## Step 2 — Maintainer-already-engaged check
 
-If a maintainer (a login marked `role: maintainer` in the thread) has commented
-within the last `MaxAgentTurns` turns, respond with:
+If no hand-off trigger fired and a maintainer (a login marked `role: maintainer` in
+the thread) has commented within the last `MaxAgentTurns` turns
+(`RecentMaintainerCommentCount` > 0), respond with:
 
 ```json
 { "action": "silent", "template": null, "reason": "..." }
@@ -24,30 +35,31 @@ within the last `MaxAgentTurns` turns, respond with:
 
 The agent does not talk over a human reviewer.
 
-## Step 3 — Trigger matching
+## Step 3 — Intervention template matching
 
-Match the thread against the four intervention triggers:
+If no hand-off trigger fired and no maintainer is engaged, match the thread against
+the four intervention templates:
 
 | Template | Trigger |
 |---|---|
 | 1 | Bug report or PR description asserts a problem without a minimal reproduction (no example code, no exact command, no stack trace). |
 | 2 | Bug report omits the version of the project the contributor is running. |
 | 3 | PR or issue shows the contributor is missing a piece of repo convention (commit format, PR-title prefix, where tests live, required changelog entry). |
-| 4 | Contributor pushes back on a maintainer's existing review comment asking "why does this need X?" and the answer is in public documentation. |
+| 4 | Contributor asks "why does this need X?" on a maintainer's review comment **for the first time** and the answer is in public documentation. (If the agent has already answered a *why* once and the contributor is now arguing, that is hand-off trigger 2 in Step 1, not this template.) |
 
-If **exactly one** trigger fires:
+If **exactly one** template fires:
 
 ```json
 { "action": "draft", "template": <1|2|3|4>, "reason": "..." }
 ```
 
-If **multiple** triggers fire simultaneously:
+If **multiple** templates fire simultaneously:
 
 ```json
 { "action": "ask", "template": [<list of template numbers>], "reason": "..." }
 ```
 
-If **no** trigger fires:
+If **no** template fires:
 
 ```json
 { "action": "silent", "template": null, "reason": "..." }
