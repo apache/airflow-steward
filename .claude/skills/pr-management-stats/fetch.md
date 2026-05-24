@@ -39,7 +39,7 @@ query(
             }
           }
         }
-        comments(last: 10) {
+        comments(last: 25) {
           nodes {
             author { login }
             authorAssociation
@@ -47,11 +47,38 @@ query(
             body
           }
         }
+        latestReviews(last: 10) {
+          nodes { author { login } state submittedAt }
+        }
+        reviewThreads(first: 30) {
+          nodes {
+            isResolved
+            comments(first: 3) {
+              nodes { author { login } authorAssociation createdAt body }
+            }
+          }
+        }
+        timelineItems(last: 50, itemTypes: [LABELED_EVENT, READY_FOR_REVIEW_EVENT, CONVERT_TO_DRAFT_EVENT]) {
+          nodes {
+            ... on LabeledEvent { createdAt actor { login } label { name } }
+            ... on ReadyForReviewEvent { createdAt actor { login } }
+            ... on ConvertToDraftEvent { createdAt actor { login } }
+          }
+        }
       }
     }
   }
 }
 ```text
+
+**These engagement fields are not optional.** `latestReviews`,
+`reviewThreads`, and `timelineItems` are required by the `is_engaged`
+predicate in [`classify.md`](classify.md). Dropping any of them
+under-counts engagement and over-counts untriaged PRs — see
+[Why no `statusCheckRollup` / `mergeable` — and why `reviewThreads`
+IS required](#why-no-statuscheckrollup--mergeable--and-why-reviewthreads-is-required)
+below for the rationale. `comments(last: N)` uses **25** here (not 10)
+so the marker scan reliably finds the QC-marker comment on chatty PRs.
 
 ### `searchQuery`
 
@@ -73,7 +100,12 @@ gh api graphql \
 
 ### Batch size
 
-50 is the default. Empirically the open-PR selection set (no rollup, no review threads) stays well under GraphQL's complexity ceiling at 50. If a rare response returns `"errors": [{"type": "MAX_NODE_LIMIT_EXCEEDED", ...}]`, drop to 25 and retry — but that's a fallback, not a default.
+**30** is the default. The open-PR selection set now includes the four
+engagement signals (`comments(last:25)`, `latestReviews`, `reviewThreads`,
+`timelineItems`) the `is_engaged` predicate needs — that costs ~11
+complexity points per 30 PRs, well under the budget. Empirically `50`
+also works but is borderline; if a response returns
+`"errors": [{"type": "MAX_NODE_LIMIT_EXCEEDED", ...}]`, drop to 20.
 
 ---
 
@@ -359,9 +391,37 @@ Parse line-by-line: a non-comment, non-blank line is `<pattern> <owner1> <owner2
 
 ---
 
-## Why no `statusCheckRollup` / `mergeable` / `reviewThreads`
+## Why no `statusCheckRollup` / `mergeable` — and why `reviewThreads` IS required
 
-`pr-management-triage` needs all three for classification; `pr-management-stats` does not. Dropping them keeps the query complexity well below GitHub's per-page ceiling, which is how we can safely run `batchSize=50` here versus `20` in `pr-management-triage`. If a future stats column ever needs one of those fields, raise only that query's complexity — don't pull them into the default shape "just in case".
+`statusCheckRollup` and `mergeable` are not needed for stats — those drive
+per-PR classification in `pr-management-triage` but aggregate counts don't use
+them. Dropping them keeps the query lighter, which is how we can run a larger
+`batchSize` here (30–50) than in `pr-management-triage` (20).
+
+`reviewThreads`, `latestReviews`, and `timelineItems` (for
+`LABELED_EVENT`/`READY_FOR_REVIEW_EVENT`/`CONVERT_TO_DRAFT_EVENT`), **on the
+other hand, ARE required** for stats — the `is_engaged` predicate in
+[`classify.md`](classify.md) counts maintainer engagement across:
+
+- issue comments (`comments`) — already included
+- submitted reviews (`latestReviews`) — required
+- line-level review comments (`reviewThreads`) — required
+- label adds + draft conversions by maintainers (`timelineItems`) — required
+
+A maintainer who left only a line-level review comment (no issue comment, no
+submitted review) would otherwise look like "no engagement" and the PR would
+be misclassified as untriaged. On a large queue the under-count is material —
+on `<upstream>` (~530 open PRs at the time of writing) it inflates the untriaged count by ~10×.
+
+(An earlier iteration of this doc claimed `reviewThreads` was not needed for
+stats; that was a documentation bug. The current schema in the OPEN_PRS_QUERY
+template above includes all four engagement signals. The same fix is encoded
+in the reference implementation at
+[`tools/pr-management-stats/reference.py`](../../../tools/pr-management-stats/reference.py).)
+
+If a future stats column ever needs `statusCheckRollup` or `mergeable`, raise
+only that query's complexity — don't pull them into the default shape "just
+in case".
 
 ---
 

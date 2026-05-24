@@ -15,13 +15,18 @@
 # specific language governing permissions and limitations
 # under the License.
 #
-# Every ecosystem update below uses a 7-day cooldown (all four
-# semver buckets set to 7) so a just-released version has a week to
-# settle (retags, withdrawals, upstream incident reports) before
-# Dependabot proposes bumping to it. This mirrors the same window
-# applied locally via `[tool.uv] exclude-newer = "7 days"` in the
-# root pyproject.toml and `exclude-newer-span = "P7D"` baked into
-# every tool's uv.lock.
+# Every ecosystem update below uses a 7-day cooldown so a just-
+# released version has a week to settle (retags, withdrawals,
+# upstream incident reports) before Dependabot proposes bumping to
+# it. This mirrors the same window applied locally via
+# `[tool.uv] exclude-newer = "7 days"` in the root pyproject.toml
+# and `exclude-newer-span = "P7D"` baked into every tool's uv.lock.
+#
+# `uv` ecosystems use the full cooldown form (default-days plus the
+# four semver-* buckets). `github-actions` and `pre-commit` only
+# support `default-days` — adding the semver-* keys there causes
+# dependabot to reject the whole config (see comment on the
+# github-actions block).
 ---
 version: 2
 updates:
@@ -29,11 +34,14 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    # github-actions and pre-commit ecosystems do not support the
+    # semver-{major,minor,patch}-days cooldown keys — dependabot
+    # rejects the whole config block when they are present, which
+    # is why this ecosystem produced zero PRs between adoption on
+    # 2026-04-29 and the fix on 2026-05-25. Only `default-days` is
+    # honoured here.
     cooldown:
       default-days: 7
-      semver-major-days: 7
-      semver-minor-days: 7
-      semver-patch-days: 7
     groups:
       github-actions:
         patterns:
@@ -45,9 +53,6 @@ updates:
       interval: "weekly"
     cooldown:
       default-days: 7
-      semver-major-days: 7
-      semver-minor-days: 7
-      semver-patch-days: 7
     groups:
       pre-commit-hooks:
         patterns:
