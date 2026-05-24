@@ -17,7 +17,7 @@ Context to load first:
 Steps:
 
 1. **Create the sync branch off the integration base**, then switch to
-   it: `git switch -c spec/sync-specs`. (One reviewable PR for the
+   it: `git checkout -b spec/sync-specs`. (One reviewable PR for the
    sync.) Never commit the sync to the integration branch.
 2. Inventory the code with parallel subagents:
    - every `.claude/skills/*/SKILL.md` (name, mode, what it does);
