@@ -21,7 +21,7 @@ Steps:
    `IMPLEMENTATION_PLAN.md` that is not already substantially covered by
    an open PR. One only.
 2. **Create its branch off the integration base**, then switch to it:
-   `git switch -c <slug>` where `<slug>` is the work item's branch (e.g.
+   `git checkout -b <slug>` where `<slug>` is the work item's branch (e.g.
    `spec/pairing-self-review`). NEVER commit the work to the integration
    branch. One branch per work item.
 3. Read only the spec file(s) and `.claude/skills/` / `tools/` / `docs/`

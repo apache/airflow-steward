@@ -174,10 +174,10 @@ while true; do
         # still fail on a stale lock, which was the spurious "could not switch
         # to base" error.
         if [ "$(current_branch)" != "$BASE" ]; then
-            if ! switch_out="$(git switch "$BASE" 2>&1)"; then
-                echo "Error: could not switch to base '$BASE'. git reported:" >&2
-                printf '  %s\n' "$switch_out" >&2
-                echo "Resolve the working tree (commit/stash changes, or remove a stale .git/index.lock), then re-run." >&2
+            if ! checkout_out="$(git checkout "$BASE" 2>&1)"; then
+                echo "Error: could not check out base '$BASE'. git reported:" >&2
+                printf '  %s\n' "$checkout_out" >&2
+                echo "Resolve the working tree (commit or stash changes), then re-run." >&2
                 break
             fi
         fi
