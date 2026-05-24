@@ -1,3 +1,16 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [pr-management-stats reference implementation](#pr-management-stats-reference-implementation)
+  - [Layout](#layout)
+  - [Invocation](#invocation)
+  - [Contract for the agent](#contract-for-the-agent)
+  - [Parity implementations](#parity-implementations)
+  - [Cross-references](#cross-references)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 <!-- SPDX-License-Identifier: Apache-2.0
      https://www.apache.org/licenses/LICENSE-2.0 -->
 
@@ -36,8 +49,8 @@ tools/pr-management-stats/
 
 ```bash
 python3 tools/pr-management-stats/reference.py \
-    --repo apache/airflow \
-    --viewer potiuk \
+    --repo <upstream> \
+    --viewer <maintainer-handle> \
     --since 2026-04-12 \
     --out /tmp/dashboard.html
 ```

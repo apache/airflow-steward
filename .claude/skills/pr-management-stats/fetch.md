@@ -411,7 +411,7 @@ other hand, ARE required** for stats — the `is_engaged` predicate in
 A maintainer who left only a line-level review comment (no issue comment, no
 submitted review) would otherwise look like "no engagement" and the PR would
 be misclassified as untriaged. On a large queue the under-count is material —
-on `apache/airflow` (~530 open PRs) it inflates the untriaged count by ~10×.
+on `<upstream>` (~530 open PRs at the time of writing) it inflates the untriaged count by ~10×.
 
 (An earlier iteration of this doc claimed `reviewThreads` was not needed for
 stats; that was a documentation bug. The current schema in the OPEN_PRS_QUERY
