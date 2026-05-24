@@ -1,0 +1,13 @@
+{
+  "has_base_ref": true,
+  "has_files_changed": true,
+  "has_diff_size": true,
+  "correctness_section_present": true,
+  "security_section_present": true,
+  "conventions_section_present": true,
+  "summary_present": true,
+  "readiness_signal": "advisory-only",
+  "blocking_count": 0,
+  "advisory_count": 1,
+  "has_attribution_footer": true
+}
