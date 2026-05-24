@@ -1,0 +1,77 @@
+<!-- SPDX-License-Identifier: Apache-2.0
+     https://www.apache.org/licenses/LICENSE-2.0 -->
+
+---
+title: Adapters (Gmail / PonyMail / Jira / GitHub)
+status: experimental
+kind: feature
+mode: infra
+source: >
+  MISSION.md § Rationale ("ASF integrations live behind clean
+  configuration boundaries; non-ASF adopters swap them") and § Technical
+  scope (extensible adapter layer). Implemented in tools/gmail/,
+  tools/ponymail/, tools/jira/, tools/github/.
+acceptance:
+  - Project-specific integrations live behind adapter modules, not
+    hardcoded into skills.
+  - A non-ASF adopter can swap an adapter (e.g. private GitHub repo for
+    private mailing list) with config substitution, not skill edits.
+  - Mail-reading adapters route fetched content through the privacy
+    redactor before any LLM read.
+---
+
+# Adapters (Gmail / PonyMail / Jira / GitHub)
+
+## What it does
+
+Isolates the systems a project already uses behind adapter modules so the
+skills stay project-agnostic. The same skill executes against an ASF
+project's private mailing list or a non-ASF project's private GitHub repo
+by swapping the adapter, not the skill.
+
+## Where it lives
+
+- `tools/gmail/` — private-mail read/draft (drafts to the outbox; never
+  sends).
+- `tools/ponymail/` — public mailing-list archive search.
+- `tools/jira/` — issue-tracker adapter for projects on Jira.
+- `tools/github/` — issues/PRs/labels read + write-back helpers.
+
+## Behaviour & contract
+
+- **Pluggable, config-driven.** Skills reference placeholders
+  (`<tracker>`, `<upstream>`, `<security-list>`, …); the adapter resolves
+  them from `<project-config>/`. No `apache/<project>` strings hardcoded
+  into a skill.
+- **Mail adapters draft, never send** — outbound goes to the maintainer's
+  drafts folder; the human presses Send.
+- **Mail adapters redact-after-fetch** — fetched private content passes
+  through the privacy redactor
+  ([privacy-llm-gate.md](privacy-llm-gate.md)) before any LLM read.
+- **Write-back is confirm-before-apply** and routed through the sandbox's
+  `ask` gate ([agent-isolation-sandbox.md](agent-isolation-sandbox.md)).
+
+## Out of scope
+
+- The privacy *policy* and gate (separate area, referenced above).
+- Sending outbound mail (a human action).
+
+## Acceptance criteria
+
+1. No skill hardcodes a project-specific repo/list; all go through an
+   adapter + placeholder.
+2. Mail adapters draft only and redact before LLM read.
+3. Each adapter ships with its own tests.
+
+## Validation
+
+```bash
+for t in gmail ponymail jira github; do
+  uv run --project tools/$t --group dev pytest || echo "check tools/$t test setup"
+done
+```
+
+## Known gaps
+
+- `experimental` overall — adapter coverage varies; a new adopter system
+  (e.g. GitLab, a different mail backend) is a gap the plan pass records.

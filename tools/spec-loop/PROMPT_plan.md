@@ -1,0 +1,37 @@
+<!-- SPDX-License-Identifier: Apache-2.0
+     https://www.apache.org/licenses/LICENSE-2.0 -->
+
+You are running the **plan** beat of the spec-driven loop for this
+repository. Plan only — do NOT implement anything and do NOT commit code.
+
+Context to load first:
+
+- `tools/spec-loop/AGENTS.md` — operational rules (repo map, validation
+  commands, branch + hard-limit rules). The repo-wide `/AGENTS.md` also
+  applies.
+- `tools/spec-loop/specs/*` — the functional description of the product.
+- `tools/spec-loop/IMPLEMENTATION_PLAN.md` (if present; may be stale).
+
+Steps:
+
+1. Study each spec in `tools/spec-loop/specs/` and compare it against the
+   actual code it names in **Where it lives** (`.claude/skills/`,
+   `tools/`, `docs/`). You may use parallel subagents for reading. Do NOT
+   assume something is missing — confirm with a code search first.
+2. For each spec, identify the **gaps**: a `proposed` area with no skill,
+   a documented step that drifted from the code, a missing test, a
+   `Known gaps` item. Each gap is a candidate work item.
+3. Rewrite `tools/spec-loop/IMPLEMENTATION_PLAN.md` as a prioritised list
+   of work items. Each work item names: the change, the spec it serves,
+   its **Validation** command, and a branch slug (`spec/<slug>` —
+   **no numbers**).
+4. Do NOT create work items against an `off` spec (e.g. Auto-merge) —
+   that would skip the proof MISSION requires.
+
+Rules:
+
+- Plan only. No edits to skills, tools, or docs. No commits in this beat.
+- Keep the plan prioritised and concise; one work item = one branch = one
+  PR.
+- Treat `tools/` as the standard library — prefer extending an existing
+  tool over a new ad-hoc one.

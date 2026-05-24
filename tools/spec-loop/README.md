@@ -1,0 +1,64 @@
+<!-- SPDX-License-Identifier: Apache-2.0
+     https://www.apache.org/licenses/LICENSE-2.0 -->
+
+# spec-loop
+
+A spec-driven build loop for this framework, in the general
+[Ralph](https://ghuntley.com/ralph/) style (run a fresh agent context
+against a fixed prompt, repeat), adapted to the framework's
+human-in-the-loop posture. The full write-up is in
+[`docs/spec-driven-development.md`](../../docs/spec-driven-development.md);
+this is the operator quickstart.
+
+## The pieces
+
+| File | Role |
+|---|---|
+| [`specs/`](specs/) | The functional description of the product — one spec per area. The desired state the loop reconciles code against. |
+| [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) | Prioritised **work items** (the gaps). One work item = one branch = one PR. |
+| [`AGENTS.md`](AGENTS.md) | Loop-scoped operational rules (repo map, validation commands, branch + hard-limit rules). |
+| `PROMPT_plan.md` / `PROMPT_build.md` / `PROMPT_update.md` / `PROMPT_consolidate.md` | The per-beat prompts. |
+| `loop.sh` | The runner. |
+
+## Modes
+
+```bash
+./tools/spec-loop/loop.sh              # build, unlimited iterations
+./tools/spec-loop/loop.sh 10           # build, max 10 iterations
+./tools/spec-loop/loop.sh plan         # gap-analysis → rewrite the plan (no code changes)
+./tools/spec-loop/loop.sh update       # back-fill specs from functionality others contributed
+./tools/spec-loop/loop.sh consolidate  # shrink the plan when it grows too long
+```
+
+- **plan** — compares `specs/` against the code and rewrites
+  `IMPLEMENTATION_PLAN.md`. Plans only; no commits.
+- **build** — implements the single highest-priority work item on its own
+  `spec/<slug>` branch, validates, and commits there.
+- **update** — the inverse of plan: scans the code for functionality not
+  yet described by a spec (someone contributed it the normal way) and
+  brings the specs back in sync, on a `spec/sync-specs` branch.
+- **consolidate** — shrinks the plan without losing planned work (build
+  auto-switches to this when the plan grows past ~500 lines).
+
+## The two non-negotiables
+
+- **A branch per work item.** Build/update never commit to the
+  integration base; each carves out its own branch, so every change is
+  one reviewable, revertible PR.
+- **Never pushes, never opens a PR.** `git push` and `gh pr create` are in
+  `.claude/settings.json` `ask` — the human's step. Each beat ends at a
+  local commit and prints the exact push + `gh pr create --web` commands.
+
+## Stop / configure
+
+- Stop: `Ctrl+C`, or `touch STOP` (exits after the current iteration).
+- `SPEC_LOOP_BASE` — integration branch to fork from (default
+  `spec-driven`; set to `main` once this lands on `main`).
+- `SPEC_LOOP_MODEL` — model passed to the agent CLI (default `sonnet`).
+
+## Not the RFCs
+
+The specs are the *functional description of the code*. The
+[`docs/rfcs/`](../../docs/rfcs/) are the separate normative governance
+layer — the loop respects them as constraints and never reads or edits
+them.
