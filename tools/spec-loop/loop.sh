@@ -35,8 +35,7 @@
 # iteration finishes).
 #
 # Env overrides:
-#   SPEC_LOOP_BASE   branch to fork work items from
-#                    (default: the branch you start the loop on, e.g. main)
+#   SPEC_LOOP_BASE   branch to fork work items from (default: main)
 #   SPEC_LOOP_AGENT  Claude-compatible agent CLI to run (default: claude)
 #   SPEC_LOOP_MODEL  model passed to the agent CLI (default: sonnet)
 #   SPEC_LOOP_PR_LIMIT  open PRs to list for duplicate-work checks (default: 100)
@@ -64,10 +63,11 @@ current_branch() {
     printf '%s\n' "$branch"
 }
 
-# Default the integration base to the branch the loop is started on
-# (typically the repo default, e.g. main). Fall back to main if detached.
-BASE="${SPEC_LOOP_BASE:-$(current_branch)}"
-BASE="${BASE:-main}"
+# Default the integration base to main — the repo's integration target —
+# regardless of which branch the loop is launched from. Work items fork
+# from here. Override with SPEC_LOOP_BASE to build on top of a different
+# branch.
+BASE="${SPEC_LOOP_BASE:-main}"
 AGENT="${SPEC_LOOP_AGENT:-claude}"
 MODEL="${SPEC_LOOP_MODEL:-sonnet}"
 PR_LIMIT="${SPEC_LOOP_PR_LIMIT:-100}"
@@ -167,10 +167,19 @@ while true; do
     ACTIVE_PROMPT="$PROMPT_FILE"
 
     if [ "$MODE" = "build" ] || [ "$MODE" = "update" ]; then
-        # Return to the integration base so the next branch forks cleanly.
-        if ! git switch "$BASE" >/dev/null 2>&1; then
-            echo "Error: could not switch to base '$BASE' (uncommitted changes?)." >&2
-            echo "Resolve the working tree, then re-run." >&2; break
+        # Return to the integration base (default: main) so the build prompt
+        # can fork a fresh spec/<slug> branch off it for the work item — one
+        # new branch per change. Only switch when we're NOT already on the
+        # base; switching to the branch we're already on is a no-op that can
+        # still fail on a stale lock, which was the spurious "could not switch
+        # to base" error.
+        if [ "$(current_branch)" != "$BASE" ]; then
+            if ! switch_out="$(git switch "$BASE" 2>&1)"; then
+                echo "Error: could not switch to base '$BASE'. git reported:" >&2
+                printf '  %s\n' "$switch_out" >&2
+                echo "Resolve the working tree (commit/stash changes, or remove a stale .git/index.lock), then re-run." >&2
+                break
+            fi
         fi
         BASE_HEAD="$(git rev-parse HEAD)"
     fi
