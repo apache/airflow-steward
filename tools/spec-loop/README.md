@@ -66,9 +66,8 @@ as defence in depth the loop also hard-denies `git push` and `gh` via
 ## Stop / configure
 
 - Stop: `Ctrl+C`, or `touch STOP` (exits after the current iteration).
-- `SPEC_LOOP_BASE` — branch to fork work items from. Defaults to the
-  branch you start the loop on (typically `main`); set it explicitly to
-  build on top of a different branch.
+- `SPEC_LOOP_BASE` — branch to fork work items from. Defaults to `main`;
+  set it explicitly to build on top of a different branch.
 - `SPEC_LOOP_AGENT` — Claude-compatible agent CLI or wrapper to run
   (default `claude`).
 - `SPEC_LOOP_MODEL` — model passed to the agent CLI (default `sonnet`).
