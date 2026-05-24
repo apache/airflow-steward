@@ -16,9 +16,6 @@ acceptance:
     license, internal link integrity, placeholder conventions).
   - There is a live, generated index of available skills (no cached copy).
   - Skill behaviour can be measured by an eval harness.
-  - Every skill ships a behavioural eval suite under
-    tools/skill-evals/evals/<skill-name>/ (per /AGENTS.md § Reusable
-    skills).
 ---
 
 # Meta & quality tooling
@@ -73,9 +70,5 @@ uv run --project tools/skill-validator --group dev skill-validate
 
 ## Known gaps
 
-- **Eval coverage is incomplete** — the harness has ~15 suites but the
-  repo has more skills than that; skills added before the per-skill-eval
-  convention have no suite. Back-filling one suite per uncovered skill is
-  a tracked work item.
-- Other gaps appear as new quality checks worth adding (e.g. a spec
+- `stable`; gaps appear as new quality checks worth adding (e.g. a spec
   validator analogous to the skill validator) — recorded by the plan pass.

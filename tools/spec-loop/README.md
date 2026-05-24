@@ -31,15 +31,12 @@ this is the operator quickstart.
 ```
 
 - **plan** — compares `specs/` against the code and rewrites
-  `IMPLEMENTATION_PLAN.md`. Plans only; no commits. It also checks open
-  PRs and does not add work items that are already in flight.
+  `IMPLEMENTATION_PLAN.md`. Plans only; no commits.
 - **build** — implements the single highest-priority work item on its own
-  `<slug>` branch, validates, and commits there. If the top plan
-  item is already covered by an open PR, it skips to the next uncovered
-  item.
+  `spec/<slug>` branch, validates, and commits there.
 - **update** — the inverse of plan: scans the code for functionality not
   yet described by a spec (someone contributed it the normal way) and
-  brings the specs back in sync, on a `sync-specs` branch.
+  brings the specs back in sync, on a `spec/sync-specs` branch.
 - **consolidate** — shrinks the plan without losing planned work (build
   auto-switches to this when the plan grows past ~500 lines).
 
@@ -52,32 +49,12 @@ this is the operator quickstart.
   `.claude/settings.json` `ask` — the human's step. Each beat ends at a
   local commit and prints the exact push + `gh pr create --web` commands.
 
-## Security
-
-The loop runs the agent with `--dangerously-skip-permissions`, so it
-**must** be launched inside the project's sandbox harness, with no
-push/write credentials in the environment. The flag bypasses the agent
-permission layer (`.claude/settings.json` deny/ask) but **not** the OS
-sandbox (clean-env + filesystem/network), which stays the real boundary;
-as defence in depth the loop also hard-denies `git push` and `gh` via
-`--disallowedTools`. Full rationale:
-[`docs/spec-driven-development.md` § Security and the dangerously-skip-permissions flag](../../docs/spec-driven-development.md#security-and-the-dangerously-skip-permissions-flag).
-
 ## Stop / configure
 
 - Stop: `Ctrl+C`, or `touch STOP` (exits after the current iteration).
-- `SPEC_LOOP_BASE` — branch to fork work items from. Defaults to `main`;
-  set it explicitly to build on top of a different branch.
-- `SPEC_LOOP_AGENT` — Claude-compatible agent CLI or wrapper to run
-  (default `claude`).
+- `SPEC_LOOP_BASE` — integration branch to fork from (default
+  `spec-driven`; set to `main` once this lands on `main`).
 - `SPEC_LOOP_MODEL` — model passed to the agent CLI (default `sonnet`).
-- `SPEC_LOOP_PR_LIMIT` — number of open PRs to include in duplicate-work
-  checks (default `100`).
-- `SPEC_LOOP_PLAN_MAX` — plan line count that triggers one consolidation
-  round before building (default `500`). The consolidate beat targets
-  ~300 lines (hysteresis) and runs at most once until the plan drops back
-  under the limit, so a plan that is long because of *pending work* never
-  re-consolidates in a loop.
 
 ## Not the RFCs
 

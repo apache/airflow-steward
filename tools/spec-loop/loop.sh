@@ -15,32 +15,19 @@
 #       ./loop.sh consolidate [N] shrink the plan
 #   * BRANCH PER WORK ITEM: before each build iteration the loop returns
 #     to the integration base; the build prompt then carves out
-#     <slug> for the one work item it implements. One work item =
+#     spec/<slug> for the one work item it implements. One work item =
 #     one branch = one PR.
 #   * NEVER pushes, NEVER opens a PR. `git push` / `gh pr create` are in
 #     .claude/settings.json `ask` — they are the human's step. The loop
 #     ends at a local commit and the build prompt prints the human-run
 #     push + `gh pr create --web` commands.
 #
-# SECURITY — read before running:
-#   This loop runs the agent with `--dangerously-skip-permissions`, which
-#   bypasses the AGENT permission layer (.claude/settings.json deny/ask)
-#   but NOT the OS sandbox (clean-env + filesystem/network). Per the
-#   project's security model it MUST be launched inside the sandbox
-#   harness, with no push/write credentials in the environment. Full
-#   rationale: docs/spec-driven-development.md § Security and the
-#   dangerously-skip-permissions flag.
-#
 # Stop gracefully: press Ctrl+C, or `touch STOP` (exits after the current
 # iteration finishes).
 #
 # Env overrides:
-#   SPEC_LOOP_BASE   branch to fork work items from (default: main)
-#   SPEC_LOOP_AGENT  Claude-compatible agent CLI to run (default: claude)
+#   SPEC_LOOP_BASE   integration branch to fork work items from (default: spec-driven)
 #   SPEC_LOOP_MODEL  model passed to the agent CLI (default: sonnet)
-#   SPEC_LOOP_PR_LIMIT  open PRs to list for duplicate-work checks (default: 100)
-#   SPEC_LOOP_PLAN_MAX  plan line count that triggers ONE consolidation
-#                    round before building (default: 500)
 
 set -uo pipefail
 
@@ -53,37 +40,9 @@ cd "$ROOT" || exit 1
 
 LOOP_DIR="tools/spec-loop"
 PLAN="$LOOP_DIR/IMPLEMENTATION_PLAN.md"
-
-current_branch() {
-    local branch
-    branch="$(git rev-parse --abbrev-ref HEAD 2>/dev/null)" || return 1
-    if [ "$branch" = "HEAD" ]; then
-        return 0
-    fi
-    printf '%s\n' "$branch"
-}
-
-# Default the integration base to main — the repo's integration target —
-# regardless of which branch the loop is launched from. Work items fork
-# from here. Override with SPEC_LOOP_BASE to build on top of a different
-# branch.
-BASE="${SPEC_LOOP_BASE:-main}"
-# The control branch: where loop.sh, the prompts, the plan and the specs
-# live. Captured now, before the loop checks anything out, because a
-# build/update iteration checks out BASE (e.g. main) — which need not carry
-# the spec-loop tooling. Every tooling read below goes through this ref via
-# `git show`, so the loop works when launched from a feature branch while
-# building on main.
-TOOLING_REF="$(current_branch)"
-TOOLING_REF="${TOOLING_REF:-HEAD}"
-AGENT="${SPEC_LOOP_AGENT:-claude}"
+BASE="${SPEC_LOOP_BASE:-spec-driven}"
 MODEL="${SPEC_LOOP_MODEL:-sonnet}"
-PR_LIMIT="${SPEC_LOOP_PR_LIMIT:-100}"
-# Plan length that triggers ONE consolidation round before building. The
-# consolidate beat preserves every planned work item, so a plan that is long
-# because of *pending work* (not stale history) cannot shrink below this —
-# hence the one-shot latch below, which avoids re-consolidating forever.
-PLAN_CONSOLIDATE_THRESHOLD="${SPEC_LOOP_PLAN_MAX:-500}"
+PLAN_CONSOLIDATE_THRESHOLD=500
 
 # ---- parse arguments -------------------------------------------------
 if [ "${1:-}" = "plan" ]; then
@@ -98,28 +57,16 @@ else
     MODE="build";       PROMPT_FILE="$LOOP_DIR/PROMPT_build.md";       MAX_ITERATIONS=0
 fi
 
-# Reject a non-numeric iteration count. The plan/update/consolidate second
-# argument flows straight into the integer comparisons below, where a typo'd
-# value would otherwise error to stderr and be silently treated as 0 — i.e.
-# run unbounded instead of failing.
-if ! [[ "$MAX_ITERATIONS" =~ ^[0-9]+$ ]]; then
-    echo "Error: iteration count must be a non-negative integer, got '${MAX_ITERATIONS}'." >&2
-    exit 1
-fi
-
 [ -f "$PROMPT_FILE" ] || { echo "Error: $PROMPT_FILE not found" >&2; exit 1; }
 
-if ! command -v "$AGENT" >/dev/null 2>&1; then
-    echo "Error: agent CLI '$AGENT' not found on PATH." >&2
-    echo "Set SPEC_LOOP_AGENT to a Claude-compatible CLI or wrapper." >&2
-    exit 1
+if ! command -v claude >/dev/null 2>&1; then
+    echo "Error: 'claude' agent CLI not found on PATH." >&2; exit 1
 fi
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "Mode:   $MODE"
 echo "Prompt: $PROMPT_FILE"
 echo "Base:   $BASE  (work items fork from here)"
-echo "Agent:  $AGENT"
 echo "Model:  $MODEL"
 [ "$MAX_ITERATIONS" -gt 0 ] && echo "Max:    $MAX_ITERATIONS iterations"
 echo "Stop:   Ctrl+C  or  touch STOP"
@@ -128,51 +75,15 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 
 rm -f STOP
 ITERATION=0
-CONSOLIDATE_TRIED=false   # one-shot latch; resets when the plan drops back under the limit
 
 # spinner during silent agent calls
 spinner() {
-    local pid=$1 i=0
-    # Index frames as array elements, not string offsets: ${frames:$i:1} is
-    # byte-based under a C/POSIX locale (common in the clean-env sandbox) and
-    # would slice a multibyte braille glyph into garbage.
-    local frames=(⠋ ⠙ ⠹ ⠸ ⠼ ⠴ ⠦ ⠧ ⠇ ⠏)
+    local pid=$1 frames='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏' i=0
     while kill -0 "$pid" 2>/dev/null; do
-        printf "\r  %s  working... (Ctrl+C to stop)" "${frames[i]}"
-        i=$(( (i+1) % ${#frames[@]} )); sleep 0.15
+        printf "\r  %s  working... (Ctrl+C to stop)" "${frames:$i:1}"
+        i=$(( (i+1) % ${#frames} )); sleep 0.15
     done
     printf "\r                                              \r"
-}
-
-open_pr_context() {
-    echo ""
-    echo "## Open pull-request context"
-    echo ""
-    echo "The runner collected this immediately before the iteration. Treat open"
-    echo "pull requests as in-flight work: do not add plan items that are already"
-    echo "substantially covered by an open PR, and do not pick a build item that"
-    echo "duplicates one."
-    echo ""
-
-    if ! command -v gh >/dev/null 2>&1; then
-        echo "- unavailable: gh CLI not found on PATH."
-        return 0
-    fi
-
-    local prs
-    prs="$(gh pr list \
-        --state open \
-        --limit "$PR_LIMIT" \
-        --json number,title,headRefName,baseRefName,url,isDraft \
-        --template '{{range .}}- #{{.number}} {{.title}} ({{.headRefName}} -> {{.baseRefName}}){{if .isDraft}} [draft]{{end}} {{.url}}{{"\n"}}{{end}}' \
-        2>/dev/null)"
-    if [ $? -ne 0 ]; then
-        echo "- unavailable: gh pr list failed. Check GitHub authentication or network access."
-    elif [ -z "$prs" ]; then
-        echo "- No open pull requests found."
-    else
-        printf '%s\n' "$prs"
-    fi
 }
 
 while true; do
@@ -187,186 +98,48 @@ while true; do
 
     ACTIVE_PROMPT="$PROMPT_FILE"
 
-    if [ "$MODE" = "build" ]; then
-        # Consolidate at most ONCE when the plan grows too long, then build
-        # even if it is still over: the remaining length is planned work
-        # items, which the consolidate beat preserves by design. The latch
-        # resets once the plan drops back under the limit (e.g. after items
-        # merge and a plan pass prunes them), so we never re-consolidate in a
-        # loop without making progress. Prefer the working-tree plan (so
-        # local edits count); fall back to the control branch ($TOOLING_REF)
-        # if the tree is on a base (e.g. main) that lacks the spec-loop tooling.
-        PLAN_LINES=$( { [ -f "$PLAN" ] && cat "$PLAN" || git show "$TOOLING_REF:$PLAN" 2>/dev/null; } | wc -l )
-        if [ "$PLAN_LINES" -le "$PLAN_CONSOLIDATE_THRESHOLD" ]; then
-            CONSOLIDATE_TRIED=false
-        elif [ "$CONSOLIDATE_TRIED" = false ]; then
-            echo "  [plan] $PLAN is ${PLAN_LINES} lines (> ${PLAN_CONSOLIDATE_THRESHOLD}) — one consolidation round"
-            ACTIVE_PROMPT="$LOOP_DIR/PROMPT_consolidate.md"
-            CONSOLIDATE_TRIED=true
-        else
-            echo "  [plan] $PLAN still ${PLAN_LINES} lines after consolidation — length is planned work; building"
-        fi
-    fi
-
-    # A genuine build/update iteration (not a consolidate swap-in) carves a
-    # work-item branch off BASE. Plan/consolidate beats — and the consolidate
-    # swap-in — instead stay on the control branch, where the tooling lives.
-    BUILD_ITERATION=false
-    if { [ "$MODE" = "build" ] || [ "$MODE" = "update" ]; } && [ "$ACTIVE_PROMPT" = "$PROMPT_FILE" ]; then
-        BUILD_ITERATION=true
-    fi
-
-    # Assemble the prompt BEFORE any checkout, while the working tree is still
-    # on the control branch. Prefer the working-tree copy (local edits count);
-    # fall back to the control branch ($TOOLING_REF) if the tree is on a base
-    # that lacks the tooling. Either way the read never breaks after checkout.
-    PROMPT_WITH_CONTEXT="$(mktemp "${TMPDIR:-/tmp}/spec-loop-prompt.XXXXXX")" || exit 1
-    if [ -f "$ACTIVE_PROMPT" ]; then
-        cat "$ACTIVE_PROMPT" > "$PROMPT_WITH_CONTEXT"
-    elif ! git show "$TOOLING_REF:$ACTIVE_PROMPT" > "$PROMPT_WITH_CONTEXT" 2>/dev/null; then
-        echo "Error: could not read '$ACTIVE_PROMPT' from the working tree or control branch '$TOOLING_REF'." >&2
-        rm -f "$PROMPT_WITH_CONTEXT"; break
-    fi
-    open_pr_context >> "$PROMPT_WITH_CONTEXT"
-
-    if [ "$BUILD_ITERATION" = true ]; then
-        # The work-item branch forks off BASE (e.g. main), which need not
-        # carry the spec-loop tooling. Tell the agent to read the plan and
-        # specs from the control branch, not the working tree.
-        if [ "$TOOLING_REF" != "$BASE" ]; then
-            {
-                echo ""
-                echo "## Tooling source — read the plan and specs from here"
-                echo ""
-                echo "This iteration builds on the integration base \`$BASE\`, which does"
-                echo "NOT carry the spec-loop tooling. The plan and specs live on the"
-                echo "control branch \`$TOOLING_REF\`. Read them from there with \`git show\`,"
-                echo "never from the working tree:"
-                echo ""
-                echo '```'
-                echo "git show $TOOLING_REF:tools/spec-loop/IMPLEMENTATION_PLAN.md"
-                echo "git ls-tree -r --name-only $TOOLING_REF tools/spec-loop/specs/"
-                echo "git show $TOOLING_REF:tools/spec-loop/specs/<file>"
-                echo '```'
-                echo ""
-                if [ "$MODE" = "update" ]; then
-                    echo "Read the current specs from \`$TOOLING_REF\` (commands above) as the"
-                    echo "baseline, then author the updated spec files on this work branch —"
-                    echo "the sync PR adds them to \`$BASE\`. Update is the one beat that"
-                    echo "writes specs; do that here, not on the control branch."
-                else
-                    echo "Implement the product change on the work branch; do NOT edit specs"
-                    echo "there — they are not on \`$BASE\`. The control branch owns the specs."
-                fi
-            } >> "$PROMPT_WITH_CONTEXT"
-        fi
-
-        # Freshness check: refuse to fork off a stale base. Fetch the base's
-        # tracking branch and verify BASE is not behind it. Forking off a stale
-        # local base is how a loop re-does work that's already merged upstream:
-        # the agent sees "no such file" locally, dutifully re-creates it, and
-        # the resulting branch collides with the merged PR's source branch on
-        # the remote.
-        BASE_UPSTREAM="$(git rev-parse --abbrev-ref "${BASE}@{upstream}" 2>/dev/null || true)"
-        if [ -n "$BASE_UPSTREAM" ]; then
-            BASE_REMOTE="${BASE_UPSTREAM%%/*}"
-            if ! git fetch --quiet "$BASE_REMOTE" "$BASE" 2>/dev/null; then
-                echo "⚠ Could not fetch '$BASE_REMOTE' — freshness check skipped (network or auth issue)." >&2
-            else
-                BEHIND_BY="$(git rev-list --count "${BASE}..${BASE_UPSTREAM}" 2>/dev/null || echo 0)"
-                if [ "$BEHIND_BY" -gt 0 ]; then
-                    echo "✗ Base '$BASE' is $BEHIND_BY commit(s) behind '$BASE_UPSTREAM'." >&2
-                    echo "  Fast-forward before re-running:" >&2
-                    echo "    git checkout $BASE && git merge --ff-only $BASE_UPSTREAM" >&2
-                    echo "  Forking off a stale base re-does merged work — the new branch" >&2
-                    echo "  may collide with one already on the remote for the same change." >&2
-                    rm -f "$PROMPT_WITH_CONTEXT"; break
-                fi
-            fi
-        else
-            echo "⚠ Base '$BASE' has no upstream tracking branch — freshness check skipped." >&2
-        fi
-
-        # Check out the base now — right before the agent runs, not earlier —
-        # so the reads above came from the control branch. The agent then
-        # forks its own <slug> branch off this base.
-        if [ "$(current_branch)" != "$BASE" ]; then
-            if ! checkout_out="$(git checkout "$BASE" 2>&1)"; then
-                echo "Error: could not check out base '$BASE'. git reported:" >&2
-                printf '  %s\n' "$checkout_out" >&2
-                echo "Resolve the working tree (commit or stash changes), then re-run." >&2
-                rm -f "$PROMPT_WITH_CONTEXT"; break
-            fi
+    if [ "$MODE" = "build" ] || [ "$MODE" = "update" ]; then
+        # Return to the integration base so the next branch forks cleanly.
+        if ! git switch "$BASE" >/dev/null 2>&1; then
+            echo "Error: could not switch to base '$BASE' (uncommitted changes?)." >&2
+            echo "Resolve the working tree, then re-run." >&2; break
         fi
         BASE_HEAD="$(git rev-parse HEAD)"
     fi
 
+    if [ "$MODE" = "build" ]; then
+        # If the plan has grown too long, consolidate it this round instead.
+        PLAN_LINES=$(wc -l < "$PLAN" 2>/dev/null || echo 0)
+        if [ "$PLAN_LINES" -gt "$PLAN_CONSOLIDATE_THRESHOLD" ]; then
+            echo "  [plan] $PLAN is ${PLAN_LINES} lines — running a consolidation round"
+            ACTIVE_PROMPT="$LOOP_DIR/PROMPT_consolidate.md"
+        fi
+    fi
+
     # Run one iteration with a fresh context.
     #   -p                              headless / non-interactive
-    #   --dangerously-skip-permissions  let the agent edit + validate
-    #                                   unattended. Bypasses the AGENT
-    #                                   permission layer, NOT the OS sandbox
-    #                                   (see the SECURITY header above).
-    #   --disallowedTools …             defense-in-depth: hard-deny push and
-    #                                   gh so a stray call cannot reach the
-    #                                   remote even with permissions skipped.
-    "$AGENT" -p \
+    #   --dangerously-skip-permissions  autonomous edits; the loop's safety
+    #                                   is branch-per-item + no-push (above)
+    #                                   and the OS sandbox underneath.
+    cat "$ACTIVE_PROMPT" | claude -p \
         --dangerously-skip-permissions \
-        --disallowedTools "Bash(git push:*)" "Bash(gh:*)" \
         --output-format=text \
-        --model "$MODEL" < "$PROMPT_WITH_CONTEXT" &
-    AGENT_PID=$!
-    spinner "$AGENT_PID" & SPINNER_PID=$!
-    wait "$AGENT_PID"
-    wait "$SPINNER_PID" 2>/dev/null
-    rm -f "$PROMPT_WITH_CONTEXT"
+        --model "$MODEL" &
+    CLAUDE_PID=$!
+    spinner "$CLAUDE_PID" & SPINNER_PID=$!
+    wait "$CLAUDE_PID"; kill "$SPINNER_PID" 2>/dev/null; wait "$SPINNER_PID" 2>/dev/null
 
-    CUR_BRANCH="$(current_branch)"
+    CUR_BRANCH="$(git branch --show-current)"
     LAST_COMMIT="$(git log --oneline -1 2>/dev/null)"
     echo "[ branch ] $CUR_BRANCH"
     [ -n "$LAST_COMMIT" ] && echo "[ commit ] $LAST_COMMIT"
 
-    if [ "$BUILD_ITERATION" = true ]; then
-        # Report the work-item branch the agent produced, by name, so you know
-        # exactly what to push.
-        if [ "$CUR_BRANCH" != "$BASE" ] && [ "$CUR_BRANCH" != "$TOOLING_REF" ]; then
-            # Branch-name collision check: a remote branch with the same name
-            # often means the agent just re-did work that already shipped under
-            # this slug (a merged PR's source branch typically lingers on the
-            # remote). Warn loudly — pushing would either be rejected or, worse,
-            # overwrite the merged history. Check every configured remote, not
-            # just origin: a fork-based workflow has the lineage on `upstream`.
-            COLLISION_FOUND=false
-            for remote in $(git remote); do
-                if git ls-remote --heads --exit-code "$remote" "$CUR_BRANCH" >/dev/null 2>&1; then
-                    echo "⚠ Remote '$remote' already has a branch named '$CUR_BRANCH'." >&2
-                    COLLISION_FOUND=true
-                fi
-            done
-            if [ "$COLLISION_FOUND" = true ]; then
-                echo "  Likely the source branch of a PR that already shipped under this slug." >&2
-                echo "  Inspect before pushing — do not push blind:" >&2
-                echo "    git fetch --all && git log --oneline --all -- <changed-file>" >&2
-            fi
-            echo "[ new branch ] $CUR_BRANCH  (forked off $BASE)"
-            echo "               push it with:  git push -u origin $CUR_BRANCH"
-        else
-            echo "⚠ No work-item branch was created (still on '$CUR_BRANCH'). Check the agent output above." >&2
-        fi
-
-        # Safety guard: a build/update iteration must never commit to the base.
+    # Safety guard: a build/update iteration must never commit to the base.
+    if { [ "$MODE" = "build" ] || [ "$MODE" = "update" ]; } && [ "$ACTIVE_PROMPT" = "$PROMPT_FILE" ]; then
         if [ "$CUR_BRANCH" = "$BASE" ] && [ "$(git rev-parse HEAD)" != "$BASE_HEAD" ]; then
             echo "✗ This iteration committed to '$BASE' instead of a work-item branch." >&2
-            echo "  Stopping so you can review (expected a new <slug> branch)." >&2
+            echo "  Stopping so you can review (expected a new spec/<slug> branch)." >&2
             break
-        fi
-
-        # Return to the control branch so the tooling (plan, prompts, specs) is
-        # present again and you are never stranded on the base. The work-item
-        # branch the agent created persists; this only moves HEAD.
-        if [ "$(current_branch)" != "$TOOLING_REF" ]; then
-            git checkout "$TOOLING_REF" >/dev/null 2>&1 || \
-                echo "⚠ Could not return to control branch '$TOOLING_REF' (now on '$(current_branch)')." >&2
         fi
     fi
     echo ""
