@@ -260,3 +260,5 @@ records it for cross-adopter pattern detection.
 - [`AGENTS.md`](../AGENTS.md) — repository-level rules every
   mode inherits (external content as data, polite-but-firm
   tone, brevity, confidentiality).
+- [`docs/mode-economics.md`](mode-economics.md) — indicative token-cost
+  shape per mode and model class; for maintainers evaluating adoption.
