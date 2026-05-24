@@ -1389,7 +1389,20 @@ When adding a new skill:
 - start with YAML frontmatter containing `name`, `description`, and `when_to_use`;
 - make every state-changing action a *proposal* that requires explicit user
   confirmation before it runs;
-- avoid agent-specific syntax so the skill remains portable across tools.
+- avoid agent-specific syntax so the skill remains portable across tools;
+- **write an eval suite for the skill.** Every skill ships with a
+  behavioural eval under
+  [`tools/skill-evals/evals/<skill-name>/`](tools/skill-evals/) that
+  exercises each pipeline step with fixture cases and pins the expected
+  structured output — the same shape as the existing suites
+  (`security-issue-import`, `issue-triage`, …). Evals are not optional
+  polish: an LLM-driven skill's behaviour is a distribution, and the eval
+  is how a reviewer (and CI) confirms a change did not regress it. Run a
+  suite with
+  `uv run --project tools/skill-evals skill-eval tools/skill-evals/evals/<skill-name>/`;
+  see [`tools/skill-evals/README.md`](tools/skill-evals/README.md) for the
+  layout (`step-*/fixtures/case-*`). A skill PR without a matching eval
+  suite is incomplete.
 
 ## Keeping evals and mode-economics in sync
 

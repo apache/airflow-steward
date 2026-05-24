@@ -30,6 +30,9 @@ Run the spec's own **Validation** block first. General checks:
 # Validate skill definitions (frontmatter, links, placeholders)
 uv run --project tools/skill-validator --group dev skill-validate
 
+# A skill's behavioural eval suite (every skill must have one)
+uv run --project tools/skill-evals skill-eval tools/skill-evals/evals/<skill-name>/
+
 # A tool's own tests (substitute the tool path)
 uv run --project tools/<tool> --group dev pytest
 
@@ -38,8 +41,12 @@ bash -n <script>.sh && shellcheck <script>.sh
 ```
 
 There is no repo-wide test runner; validate the specific surface the
-spec touches. If a spec adds a tool, that tool must ship with its own
-tests and they must pass before commit.
+spec touches. If a work item adds or changes a **skill**, it must also
+add/extend that skill's eval suite under
+`tools/skill-evals/evals/<skill-name>/` (per `/AGENTS.md` § Reusable
+skills — a skill without an eval suite is incomplete). If a work item
+adds a **tool**, that tool ships its own tests. Both must pass before
+commit.
 
 ## Branch rules (the user's constraint: one branch per fix/feature)
 

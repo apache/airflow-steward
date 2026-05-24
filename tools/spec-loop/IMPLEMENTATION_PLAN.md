@@ -71,6 +71,17 @@ slugs, not numbers (numbering implies an order the specs don't carry).
    [`specs/drafting-mode.md`](specs/drafting-mode.md). Branch
    `spec/generic-drafting`.
 
+7. **Meta — back-fill missing skill eval suites.** Per `/AGENTS.md`
+   § Reusable skills, every skill ships an eval suite under
+   `tools/skill-evals/evals/<skill-name>/`. Several skills predate that
+   convention and have none. Add one suite per uncovered skill — one
+   branch per skill (or per family). Spec:
+   [`specs/meta-and-quality-tooling.md`](specs/meta-and-quality-tooling.md).
+   Branch `spec/eval-<skill-name>`.
+
+   Also: when a build iteration creates a new skill, its eval suite is
+   part of that same work item — not a separate one.
+
 ---
 
 ## Notes & discoveries
