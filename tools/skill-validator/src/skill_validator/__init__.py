@@ -141,12 +141,14 @@ INJECTION_GUARD_CATEGORY = "injection_guard"
 INJECTION_GUARD_TODO_CATEGORY = "injection_guard_todo"
 
 BODY_INLINE_CATEGORY = "body_inline"
+GH_LIST_CATEGORY = "gh_list_no_limit"
 SOFT_CATEGORIES: frozenset[str] = frozenset(
     {
         PRINCIPLE_CATEGORY,
         TRIGGER_PRESERVATION_CATEGORY,
         INJECTION_GUARD_TODO_CATEGORY,
         BODY_INLINE_CATEGORY,
+        GH_LIST_CATEGORY,
     }
 )
 
@@ -912,6 +914,45 @@ def validate_body_inline(path: Path, text: str) -> Iterable[Violation]:
         )
 
 
+# ---------------------------------------------------------------------------
+# gh list --limit check
+# ---------------------------------------------------------------------------
+
+_GH_LIST_RE = re.compile(r"\bgh\s+(issue|pr)\s+list\b")
+
+
+def _join_continuations(block_body: str) -> str:
+    r"""Join shell line-continuations (trailing ``\``) within a fenced block."""
+    return re.sub(r"\\\n\s*", " ", block_body)
+
+
+def validate_gh_list_limit(path: Path, text: str) -> Iterable[Violation]:
+    """Flag ``gh issue list`` / ``gh pr list`` in fenced blocks without ``--limit``.
+
+    Unbounded list calls silently return GitHub CLI's default page size, so
+    downstream counts or filters can operate on an incomplete result set.
+    """
+    for block_match in _FENCED_CODE_RE.finditer(text):
+        joined = _join_continuations(block_match.group())
+        for cmd_match in _GH_LIST_RE.finditer(joined):
+            line_start = joined.rfind("\n", 0, cmd_match.start()) + 1
+            line_end = joined.find("\n", cmd_match.end())
+            if line_end == -1:
+                line_end = len(joined)
+            logical_line = joined[line_start:line_end]
+            if "--limit" in logical_line:
+                continue
+            line_no = text[: block_match.start()].count("\n") + joined[: cmd_match.start()].count("\n") + 1
+            yield Violation(
+                path,
+                line_no,
+                f"gh-list-no-limit: `{cmd_match.group()}` has no `--limit` — "
+                f"unbounded list calls silently cap at 30 results on large repos; "
+                f"add `--limit <N>` (or `--limit 100` as a safe default)",
+                category=GH_LIST_CATEGORY,
+            )
+
+
 def collect_doc_files(root: Path | None = None) -> set[Path]:
     """Return every .md file under docs/ and projects/_template/."""
     repo_root = root or find_repo_root()
@@ -949,6 +990,7 @@ def run_validation(root: Path | None = None) -> list[Violation]:
         violations.extend(validate_links(path, text, skill_dirs, doc_files))
         violations.extend(validate_placeholders(path, text))
         violations.extend(validate_body_inline(path, text))
+        violations.extend(validate_gh_list_limit(path, text))
 
     return violations
 
@@ -1011,6 +1053,7 @@ _SOFT_RULE_PREFIXES: tuple[str, ...] = (
     "parenthetical rationale",
     "trigger phrase",
     "injection-guard TODO",
+    "gh-list-no-limit",
 )
 
 

@@ -26,6 +26,7 @@ import pytest
 from skill_validator import (
     BODY_INLINE_CATEGORY,
     FORBIDDEN_PATTERNS,
+    GH_LIST_CATEGORY,
     INJECTION_GUARD_CALLOUT_SENTINEL,
     INJECTION_GUARD_CATEGORY,
     INJECTION_GUARD_TODO_CATEGORY,
@@ -49,6 +50,7 @@ from skill_validator import (
     slugify,
     validate_body_inline,
     validate_frontmatter,
+    validate_gh_list_limit,
     validate_injection_guard,
     validate_links,
     validate_placeholders,
@@ -932,6 +934,62 @@ class TestSoftCategories:
         assert TRIGGER_PRESERVATION_CATEGORY in SOFT_CATEGORIES
         assert INJECTION_GUARD_TODO_CATEGORY in SOFT_CATEGORIES
         assert BODY_INLINE_CATEGORY in SOFT_CATEGORIES
+        assert GH_LIST_CATEGORY in SOFT_CATEGORIES
+
+
+# ---------------------------------------------------------------------------
+# gh list --limit check
+# ---------------------------------------------------------------------------
+
+
+def _fenced(cmd: str) -> str:
+    """Wrap a command in a fenced bash block."""
+    return f"```bash\n{cmd}\n```\n"
+
+
+class TestGhListLimit:
+    def test_fires_for_gh_issue_list_no_limit(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        violations = list(validate_gh_list_limit(path, _fenced("gh issue list --repo <repo>")))
+        assert any("gh-list-no-limit" in v.message for v in violations)
+
+    def test_fires_for_gh_pr_list_no_limit(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        violations = list(validate_gh_list_limit(path, _fenced("gh pr list --repo <repo>")))
+        assert any("gh-list-no-limit" in v.message for v in violations)
+
+    def test_fires_on_sub_doc(self, tmp_path: Path) -> None:
+        path = tmp_path / "actions.md"
+        violations = list(validate_gh_list_limit(path, _fenced("gh pr list --repo <repo> --state open")))
+        assert any("gh-list-no-limit" in v.message for v in violations)
+
+    def test_violation_is_soft_category(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        violations = list(validate_gh_list_limit(path, _fenced("gh issue list --repo <repo>")))
+        assert all(v.category == GH_LIST_CATEGORY for v in violations)
+
+    def test_silent_when_limit_on_same_line(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        violations = list(validate_gh_list_limit(path, _fenced("gh issue list --repo <repo> --limit 100")))
+        assert not any("gh-list-no-limit" in v.message for v in violations)
+
+    def test_silent_when_limit_on_continuation_line(self, tmp_path: Path) -> None:
+        path = tmp_path / "selectors.md"
+        text = _fenced("gh pr list \\\n  --repo <repo> \\\n  --state open \\\n  --limit 100")
+        violations = list(validate_gh_list_limit(path, text))
+        assert not any("gh-list-no-limit" in v.message for v in violations)
+
+    def test_silent_for_inline_backtick_mention(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        text = "Use `gh issue list` with `--limit` to avoid truncation.\n"
+        violations = list(validate_gh_list_limit(path, text))
+        assert not any("gh-list-no-limit" in v.message for v in violations)
+
+    def test_silent_outside_fenced_block(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        text = "Run gh issue list --repo <repo> to see open issues.\n"
+        violations = list(validate_gh_list_limit(path, text))
+        assert not any("gh-list-no-limit" in v.message for v in violations)
 
 
 # ---------------------------------------------------------------------------

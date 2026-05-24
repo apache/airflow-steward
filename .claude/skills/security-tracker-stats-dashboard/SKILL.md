@@ -1,16 +1,6 @@
 ---
 name: security-tracker-stats-dashboard
-description: |
-  Generate a self-contained HTML dashboard of `<tracker>` repository
-  statistics: issue-lifecycle bands (untriaged / triaged / PR-merged /
-  fixed-released / closed-other), opened-vs-untriaged backlog,
-  cumulative opened/closed, mean time to triage, mean time to first
-  response, and — when `<upstream>` is configured — mean time
-  createdAt -> PR-opened, PR-open -> PR-merged, and PR-merged ->
-  advisory announced. All charts are line / area (no bars) with
-  `connectgaps: true`. Vertical annotations on every chart mark the
-  milestones declared in the project's overlay (e.g. "skill
-  adoption", "team handover", "process change").
+description: Generate a self-contained HTML dashboard of `<tracker>` repository statistics for security-team review.
 when_to_use: |
   Invoke when the user says "regenerate the tracker dashboard", "show
   monthly/quarterly stats", "tracker stats", "dashboard", or

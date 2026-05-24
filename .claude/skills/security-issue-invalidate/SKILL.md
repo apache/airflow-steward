@@ -244,11 +244,14 @@ in Gmail.
 ```bash
 # Find open trackers with a INVALID triage proposal
 gh issue list --repo <tracker> --state open --label "needs triage" \
+  --limit 100 \
   --json number,title,comments \
   --jq '.[] | select(.comments | map(.body) | any(
     startswith("**Triage proposal**") and contains("INVALID")
   )) | .number'
 ```
+
+If the result count equals the limit, note that there may be additional results not shown.
 
 Then, per resolved tracker, check the triage-proposal comment's
 reactions and follow-up comments for the team-consensus marker
