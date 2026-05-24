@@ -27,7 +27,10 @@ Steps:
 4. Implement the work item **completely** — no placeholders, no stubs.
    Skills: follow the skill format (frontmatter `name` / `description` /
    `license`, SPDX header, placeholder convention, every state change a
-   confirmed proposal). Tools: ship tests.
+   confirmed proposal) **and ship an eval suite** under
+   `tools/skill-evals/evals/<skill-name>/` exercising each step with
+   fixture cases (per `/AGENTS.md` § Reusable skills — a skill without a
+   matching eval suite is incomplete). Tools: ship tests.
 5. Run the work item's **Validation** command(s) from its spec (the
    backpressure). Fix until they pass.
 6. If this work item closes a `Known gap` or moves a spec's `status`,
