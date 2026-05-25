@@ -20,9 +20,9 @@ Placeholders:
 - `<flagged_count>` — number of currently-flagged PRs by this
   author (for the `close` template)
 - `<reviewers>` — space-separated `@login` mentions. **Use in
-  reviewer-re-review variants and `mark-ready-with-ping` only**
-  — those templates address the reviewer as the next-action
-  recipient, so `@`-pinging them is appropriate.
+  reviewer-re-review variants only** — those templates address
+  the reviewer as the next-action recipient, so `@`-pinging
+  them is appropriate.
 - `<reviewer_logins>` — comma-separated backtick-quoted logins
   (e.g. `` `phanikumv` ``, `` `phanikumv`, `eladkal` ``) —
   **no `@`-pings**. Use in author-primary templates
@@ -57,9 +57,9 @@ When a comment's only addressee is the PR author (the
 and `review-nudge` author-primary templates), the body references
 the reviewer **without** `@`-mentioning them. The default
 `<reviewers>` placeholder renders as `@login` and is appropriate
-when the reviewer is one of the message's addressees (e.g. the
-reviewer-re-review variants and `mark-ready-with-ping`). In
-author-primary templates we use a different placeholder,
+when the reviewer is one of the message's addressees (the
+reviewer-re-review variants). In author-primary templates we
+use a different placeholder,
 `<reviewer_logins>`, that renders the same logins **as
 backtick-quoted code** (e.g. `` `phanikumv` ``,
 `` `phanikumv`, `eladkal` ``) — recognisable as a GitHub handle
@@ -75,7 +75,7 @@ than by the bot.
 
 | Placeholder | Renders as | Use in |
 |---|---|---|
-| `<reviewers>` | `@login [, @login ...]` | reviewer-re-review variants, `mark-ready-with-ping` |
+| `<reviewers>` | `@login [, @login ...]` | reviewer-re-review variants |
 | `<reviewer_logins>` | `` `login` [, `login` ...] `` (no `@`) | `request-author-confirmation`, `reviewer-ping` (author-primary), `review-nudge` (author-primary) |
 
 ---
