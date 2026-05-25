@@ -72,14 +72,18 @@ who is subscribed to the adopting project's security list (see
 access for the skills to see inbound reports and create drafts on
 the right threads.
 
-There is an ASF-wide alternative on the horizon:
-[`rbowen/ponymail-mcp`](https://github.com/rbowen/ponymail-mcp) (by
-Rich Bowen, former ASF board director and ComDev lead) now supports
-OAuth authentication and can read private ASF lists. Once ASF OAuth
-is wired in, individual triagers should be able to run the skills
-without connecting their personal Gmail — authenticating directly
-against ASF credentials (and, eventually, the ASF's new MFA) will be
-sufficient. Until then, Gmail MCP is the way.
+There is now an official ASF alternative for the **read** side:
+[`apache/comdev`'s `mcp/ponymail-mcp/`](https://github.com/apache/comdev/tree/main/mcp/ponymail-mcp)
+(under the ComDev PMC; originally authored by Rich Bowen, former ASF
+board director and ComDev lead, with supply-chain hardening and
+private-list restrictions layered in upstream) supports ASF LDAP
+OAuth and can read private ASF lists. Individual triagers can wire
+it up to read inbound `security@<project>.apache.org` threads
+without subscribing a personal Gmail account — see
+[`tools/ponymail/tool.md`](../tools/ponymail/tool.md) for the
+setup. **Drafts remain Gmail-only** today (PonyMail MCP is
+read-only and has no `create_draft` equivalent), so Gmail MCP is
+still required for the reply path.
 
 **Without this connection:** `security-issue-import` cannot find new
 reports, `security-issue-sync` cannot reconcile status with the mail
@@ -112,8 +116,9 @@ click through instead. The concrete tool + URL is declared in
 [`<project-config>/project.md → CVE tooling`](<project-config>/project.md#cve-tooling).
 
 The same PMC gate applies to ponymail URL lookups on private ASF
-lists; until `ponymail-mcp` is wired in with ASF OAuth, only PMC
-members can see private-list archives directly.
+lists — only PMC members (via ASF LDAP) can see private-list
+archives directly, whether through `ponymail-mcp`'s OAuth flow or
+the `lists.apache.org` web UI.
 
 ### 5. Browser (for the human-click steps)
 

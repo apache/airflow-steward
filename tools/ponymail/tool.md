@@ -40,8 +40,9 @@ adapter with a writable Drafts mailbox) as
 `preferred for create_draft, list_drafts` so the skills' reply-draft
 operations have a place to land.
 
-The backing MCP server is [`rbowen/ponymail-mcp`](https://github.com/rbowen/ponymail-mcp)
-(Python) which wraps the public PonyMail HTTP API at
+The backing MCP server is the official ASF
+[`apache/comdev` `mcp/ponymail-mcp/`](https://github.com/apache/comdev/tree/main/mcp/ponymail-mcp)
+(Node.js) which wraps the public PonyMail HTTP API at
 [`lists.apache.org`](https://lists.apache.org/) and layers ASF LDAP
 OAuth on top so private-list archives (e.g. `security@<project>.apache.org`,
 `private@<project>.apache.org`) are reachable from the MCP client.
@@ -103,7 +104,8 @@ draft composition regardless of which read backend is active.
 
 Prerequisites:
 
-- Python 3.11+ (the MCP server is a Python package).
+- Node.js 20+ (the MCP server is a Node.js package; see the `engines`
+  field of its [`package.json`](https://github.com/apache/comdev/blob/main/mcp/ponymail-mcp/package.json)).
 - An ASF LDAP account with access to the lists the project needs.
   Typically that is the project's PMC LDAP group (e.g.
   `pmc-<project>`), which gates the `<security-list>` and
@@ -113,16 +115,18 @@ Prerequisites:
 
 ### 1. Install the MCP server
 
-The server is published as [`rbowen/ponymail-mcp`](https://github.com/rbowen/ponymail-mcp).
-Install it with `uv tool install`, `pipx install`, or via the
-package-manager of your choice. Confirm the binary resolves on
-`PATH`:
+The server lives in the [`apache/comdev`](https://github.com/apache/comdev)
+repository under `mcp/ponymail-mcp/`. There is no published binary —
+clone the repo and install dependencies from the subdirectory:
 
 ```bash
-uv tool install git+https://github.com/rbowen/ponymail-mcp
-which ponymail-mcp
-# /home/<user>/.local/bin/ponymail-mcp
+git clone https://github.com/apache/comdev.git
+cd comdev/mcp/ponymail-mcp
+npm install
 ```
+
+The MCP server is invoked as `node <abs-path>/index.js`. Note the
+absolute path to `index.js` — the next step needs it.
 
 ### 2. Register the MCP with Claude Code
 
@@ -142,18 +146,35 @@ The `mcpServers` entry looks like:
 {
   "mcpServers": {
     "ponymail": {
-      "command": "ponymail-mcp",
-      "args": [],
+      "command": "node",
+      "args": ["/absolute/path/to/comdev/mcp/ponymail-mcp/index.js"],
       "env": {}
     }
   }
 }
 ```
 
+Or, equivalently, register from the command line (user scope shown):
+
+```bash
+claude mcp add ponymail node \
+  /absolute/path/to/comdev/mcp/ponymail-mcp/index.js -s user
+```
+
 The tool names that Claude Code surfaces after registration are
 prefixed with `mcp__ponymail__` (derived from the key under
 `mcpServers`). If you name the server differently, the prefix
 changes and this directory's docs need to be re-pointed.
+
+The comdev server also honours a small set of environment variables
+(see its [`README.md`](https://github.com/apache/comdev/blob/main/mcp/ponymail-mcp/README.md)):
+`PONYMAIL_BASE_URL` (defaults to `https://lists.apache.org`),
+`PONYMAIL_SESSION_COOKIE` (manual cookie override that skips OAuth),
+`PONYMAIL_RESTRICTED_LISTS` and `PONYMAIL_ALLOWED_LISTS` (deny / opt-in
+patterns). By default the server **blocks all private lists** and
+expects the operator to opt the relevant ones in via
+`PONYMAIL_ALLOWED_LISTS` — list those that match the project's
+`<security-list>` / `<private-list>` if the skills need to read them.
 
 Restart Claude Code (or run `/mcp` → `reconnect`) so the new server
 is picked up and its tools appear in the deferred-tool list.

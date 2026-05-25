@@ -30,8 +30,9 @@
 # PonyMail — MCP operation catalogue
 
 Shared reference for the `mcp__ponymail__*` tool calls against the
-[`rbowen/ponymail-mcp`](https://github.com/rbowen/ponymail-mcp) MCP
-server. Skills reference this file for call shape, parameter
+official ASF
+[`apache/comdev` `mcp/ponymail-mcp/`](https://github.com/apache/comdev/tree/main/mcp/ponymail-mcp)
+MCP server. Skills reference this file for call shape, parameter
 semantics, and the split between list-prefix and domain in every
 query.
 
