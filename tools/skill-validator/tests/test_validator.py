@@ -24,6 +24,11 @@ from pathlib import Path
 import pytest
 
 from skill_validator import (
+    _MODE_STATUS_BY_NAME,
+    _MODE_TAXONOMY,
+    _OFF_MODES,
+    _PRIVACY_EXTERNAL_CONTENT_MODES,
+    ALLOWED_MODES,
     FORBIDDEN_PATTERNS,
     GH_LIST_CATEGORY,
     INJECTION_GUARD_CALLOUT_SENTINEL,
@@ -32,9 +37,11 @@ from skill_validator import (
     INJECTION_GUARD_TODO_SENTINEL,
     MAX_METADATA_CHARS,
     PRINCIPLE_CATEGORY,
+    PRIVACY_CATEGORY,
     SECURITY_PATTERN_CATEGORY,
     SOFT_CATEGORIES,
     TRIGGER_PRESERVATION_CATEGORY,
+    _read_mode_table,
     collect_doc_files,
     collect_files_to_check,
     collect_skill_dirs,
@@ -54,6 +61,7 @@ from skill_validator import (
     validate_links,
     validate_placeholders,
     validate_principle_compliance,
+    validate_privacy_patterns,
     validate_security_patterns,
     validate_trigger_preservation,
 )
@@ -177,6 +185,26 @@ class TestValidateFrontmatter:
         text = "---\nname: foo\ndescription: bar\nlicense: Apache-2.0\n---\n"
         violations = list(validate_frontmatter(path, text))
         assert violations == []
+
+    def test_mode_taxonomy_matches_docs_modes(self) -> None:
+        docs_modes = Path(__file__).parents[3] / "docs" / "modes.md"
+        modes_table = (
+            docs_modes.read_text(encoding="utf-8")
+            .split("## Modes at a glance", 1)[1]
+            .split("## Triage", 1)[0]
+        )
+        modes: dict[str, str] = {}
+        for line in modes_table.splitlines():
+            if not line.startswith("| **"):
+                continue
+            cells = [cell.strip() for cell in line.strip("|").split("|")]
+            modes[cells[0].strip("*")] = cells[2]
+        assert _read_mode_table() == modes
+        assert _MODE_STATUS_BY_NAME == modes
+        assert _MODE_TAXONOMY == set(modes)
+        assert _OFF_MODES == {mode for mode, status in modes.items() if status == "off"}
+        assert ALLOWED_MODES == _MODE_TAXONOMY - _OFF_MODES
+        assert _PRIVACY_EXTERNAL_CONTENT_MODES == frozenset(ALLOWED_MODES - {"Pairing"})
 
     def test_metadata_under_limit(self, tmp_path: Path) -> None:
         path = tmp_path / "SKILL.md"
@@ -695,6 +723,30 @@ class TestPrincipleCompliance:
 
 
 class TestTriggerPreservation:
+    @pytest.fixture(autouse=True)
+    def _isolate_git_env(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Insulate temp-repo git calls from inherited git environment.
+
+        When the suite runs inside a pre-commit/prek hook, git env vars
+        (GIT_DIR, GIT_INDEX_FILE, GIT_OBJECT_DIRECTORY, ...) point at the host
+        repo. Without scrubbing them, ``git add``/``commit`` in the tmp_path
+        repo below — and the validator's ``git show`` — operate against the
+        host repo's index/objects instead of the isolated one, which fails
+        with "invalid object … Error building trees".
+        """
+        for var in (
+            "GIT_DIR",
+            "GIT_WORK_TREE",
+            "GIT_INDEX_FILE",
+            "GIT_OBJECT_DIRECTORY",
+            "GIT_ALTERNATE_OBJECT_DIRECTORIES",
+            "GIT_COMMON_DIR",
+            "GIT_NAMESPACE",
+            "GIT_PREFIX",
+            "GIT_CEILING_DIRECTORIES",
+        ):
+            monkeypatch.delenv(var, raising=False)
+
     def test_unavailable_base_ref_no_op(self, tmp_path: Path) -> None:
         """When git or the base ref isn't reachable, the check returns no violations."""
         skill = tmp_path / "SKILL.md"
@@ -1163,6 +1215,7 @@ class TestSoftCategories:
         assert INJECTION_GUARD_TODO_CATEGORY in SOFT_CATEGORIES
         assert SECURITY_PATTERN_CATEGORY in SOFT_CATEGORIES
         assert GH_LIST_CATEGORY in SOFT_CATEGORIES
+        assert PRIVACY_CATEGORY in SOFT_CATEGORIES
 
 
 # ---------------------------------------------------------------------------
@@ -1218,6 +1271,186 @@ class TestGhListLimit:
         text = "Run gh issue list --repo <repo> to see open issues.\n"
         violations = list(validate_gh_list_limit(path, text))
         assert not any("gh-list-no-limit" in v.message for v in violations)
+
+
+# ---------------------------------------------------------------------------
+# Pattern 6 — Privacy-LLM gate-check
+# ---------------------------------------------------------------------------
+
+_GATE = "privacy-llm-check"
+
+
+def _p6_skill(
+    mode: str = "Triage",
+    has_tracker: bool = True,
+    read_line: str = "gh issue view <N> --repo <tracker> --json body",
+    gate_text: str = "",
+) -> str:
+    parts = ["---", "name: test-skill", "description: bar", "license: Apache-2.0"]
+    if mode:
+        parts.append(f"mode: {mode}")
+    parts.append("---")
+    body_parts = ["# body"]
+    if has_tracker:
+        body_parts.append("Reads from the <tracker> repo.")
+    if read_line:
+        body_parts.append(f"Use `{read_line}`.")
+    if gate_text:
+        body_parts.append(gate_text)
+    parts.extend(body_parts)
+    return "\n".join(parts) + "\n"
+
+
+def _gate_block() -> str:
+    return "```bash\nuv run --project <framework>/tools/privacy-llm/checker \\\n  privacy-llm-check\n```\n"
+
+
+def _gate_section() -> str:
+    return f"## Step 0 — Pre-flight check\n\n{_gate_block()}"
+
+
+class TestPrivacyPatternP6:
+    def test_fires_triage_with_tracker_and_read_no_gate(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        violations = list(validate_privacy_patterns(path, _p6_skill(mode="Triage")))
+        assert any("privacy-llm-gate" in v.message for v in violations)
+
+    def test_fires_drafting_with_tracker_and_read_no_gate(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        violations = list(validate_privacy_patterns(path, _p6_skill(mode="Drafting")))
+        assert any("privacy-llm-gate" in v.message for v in violations)
+
+    def test_fires_mentoring_with_tracker_and_read_no_gate(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        violations = list(validate_privacy_patterns(path, _p6_skill(mode="Mentoring")))
+        assert any("privacy-llm-gate" in v.message for v in violations)
+
+    def test_violation_is_soft_category(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        violations = list(validate_privacy_patterns(path, _p6_skill()))
+        assert all(v.category == PRIVACY_CATEGORY for v in violations)
+
+    def test_silent_when_gate_present_in_fenced_command(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        violations = list(validate_privacy_patterns(path, _p6_skill(gate_text=_gate_section())))
+        assert not any("privacy-llm-gate" in v.message for v in violations)
+
+    def test_silent_when_gate_present_in_indented_fenced_command(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        gate = (
+            "## Prerequisites\n\n"
+            "   ```bash\n"
+            "   uv run --project <framework>/tools/privacy-llm/checker \\\n"
+            "     privacy-llm-check\n"
+            "   ```"
+        )
+        violations = list(validate_privacy_patterns(path, _p6_skill(gate_text=gate)))
+        assert not any("privacy-llm-gate" in v.message for v in violations)
+
+    def test_silent_when_gate_present_in_step_0_subsection(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        gate = f"## Step 0 — Resolve inputs\n\n### Privacy-LLM gate\n\n{_gate_block()}"
+        violations = list(validate_privacy_patterns(path, _p6_skill(gate_text=gate)))
+        assert not any("privacy-llm-gate" in v.message for v in violations)
+
+    def test_gate_in_html_comment_does_not_satisfy(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        text = _p6_skill(gate_text=f"<!-- TODO: wire up {_GATE} -->")
+        violations = list(validate_privacy_patterns(path, text))
+        assert any("privacy-llm-gate" in v.message for v in violations)
+
+    def test_gate_in_prose_does_not_satisfy(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        text = _p6_skill(gate_text=f"Remember to run {_GATE} later.")
+        violations = list(validate_privacy_patterns(path, text))
+        assert any("privacy-llm-gate" in v.message for v in violations)
+
+    def test_gate_in_inline_code_does_not_satisfy(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        text = _p6_skill(gate_text=f"TODO: `{_GATE}`")
+        violations = list(validate_privacy_patterns(path, text))
+        assert any("privacy-llm-gate" in v.message for v in violations)
+
+    def test_gate_in_fenced_bad_example_does_not_satisfy(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        gate = f"## Don't do this\n\n{_gate_block()}"
+        violations = list(validate_privacy_patterns(path, _p6_skill(gate_text=gate)))
+        assert any("privacy-llm-gate" in v.message for v in violations)
+
+    def test_gate_in_later_fenced_section_does_not_satisfy(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        gate = f"## History\n\n{_gate_block()}"
+        violations = list(validate_privacy_patterns(path, _p6_skill(gate_text=gate)))
+        assert any("privacy-llm-gate" in v.message for v in violations)
+
+    def test_gate_after_step_0_section_does_not_satisfy(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        gate = f"## Step 0 — Pre-flight check\n\nNo gate here.\n\n## History\n\n{_gate_block()}"
+        violations = list(validate_privacy_patterns(path, _p6_skill(gate_text=gate)))
+        assert any("privacy-llm-gate" in v.message for v in violations)
+
+    def test_gate_in_appendix_step_0_snippet_does_not_satisfy(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        gate = f"## Appendix: Step 0 from an older version\n\n{_gate_block()}"
+        violations = list(validate_privacy_patterns(path, _p6_skill(gate_text=gate)))
+        assert any("privacy-llm-gate" in v.message for v in violations)
+
+    def test_gate_in_step_0_bad_example_subsection_does_not_satisfy(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        gate = f"## Step 0 — Pre-flight check\n\n### Bad example\n\n{_gate_block()}"
+        violations = list(validate_privacy_patterns(path, _p6_skill(gate_text=gate)))
+        assert any("privacy-llm-gate" in v.message for v in violations)
+
+    def test_rest_issue_get_counts_as_tracker_body_read(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        text = _p6_skill(read_line="gh api repos/<tracker>/issues/<N>")
+        violations = list(validate_privacy_patterns(path, text))
+        assert any("privacy-llm-gate" in v.message for v in violations)
+
+    def test_rest_issue_get_with_leading_slash_counts_as_tracker_body_read(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        text = _p6_skill(read_line="gh api /repos/<tracker>/issues/<N>")
+        violations = list(validate_privacy_patterns(path, text))
+        assert any("privacy-llm-gate" in v.message for v in violations)
+
+    def test_rest_issue_patch_is_exempt(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        text = _p6_skill(read_line="gh api repos/<tracker>/issues/<N> -X PATCH -f title=x")
+        violations = list(validate_privacy_patterns(path, text))
+        assert not any("privacy-llm-gate" in v.message for v in violations)
+
+    def test_multiline_rest_issue_patch_is_exempt(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        text = _p6_skill(
+            read_line="gh api repos/<tracker>/issues/<N> \\\n  -X PATCH \\\n  -f title=x",
+        )
+        violations = list(validate_privacy_patterns(path, text))
+        assert not any("privacy-llm-gate" in v.message for v in violations)
+
+    def test_silent_when_no_tracker_reference(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        violations = list(validate_privacy_patterns(path, _p6_skill(has_tracker=False, read_line="")))
+        assert not any("privacy-llm-gate" in v.message for v in violations)
+
+    def test_silent_when_tracker_but_no_issue_body_read(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        violations = list(validate_privacy_patterns(path, _p6_skill(read_line="")))
+        assert not any("privacy-llm-gate" in v.message for v in violations)
+
+    def test_silent_when_no_mode(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        violations = list(validate_privacy_patterns(path, _p6_skill(mode="")))
+        assert not any("privacy-llm-gate" in v.message for v in violations)
+
+    def test_silent_for_pairing_mode(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        violations = list(validate_privacy_patterns(path, _p6_skill(mode="Pairing")))
+        assert not any("privacy-llm-gate" in v.message for v in violations)
+
+    def test_silent_on_sub_doc(self, tmp_path: Path) -> None:
+        path = tmp_path / "step-0-preflight.md"
+        violations = list(validate_privacy_patterns(path, _p6_skill()))
+        assert not any("privacy-llm-gate" in v.message for v in violations)
 
 
 # ---------------------------------------------------------------------------

@@ -201,6 +201,17 @@ continue.
    `breeze` is required for the area of the fix, also
    `breeze --version`. Any missing tool stops the skill;
    installing them mid-run is out of scope.
+6. **Privacy-LLM gate-check** passes:
+
+   ```bash
+   uv run --project <framework>/tools/privacy-llm/checker \
+     privacy-llm-check
+   ```
+
+   This skill reads the `<tracker>` issue body to update the
+   "PR with the fix" field; the redact-after-fetch protocol
+   (see [`tools/privacy-llm/wiring.md`](../../../tools/privacy-llm/wiring.md))
+   applies to that fetch.
 
 Only after **every** check is green, proceed to Step 1.
 

@@ -68,9 +68,54 @@ PROJECTS_TEMPLATE_DIR = Path("projects/_template")
 REQUIRED_FRONTMATTER_KEYS = {"name", "description", "license"}
 OPTIONAL_FRONTMATTER_KEYS = {"when_to_use", "mode"}
 ALLOWED_LICENSES = {"Apache-2.0"}
-# MISSION mode taxonomy — see docs/modes.md.
-# "Auto-merge" deliberately excluded: it is off per MISSION sequencing.
-ALLOWED_MODES = {"Triage", "Mentoring", "Drafting", "Pairing"}
+
+
+def _read_mode_table() -> dict[str, str]:
+    """Read the canonical MISSION mode table from ``docs/modes.md``."""
+    starts = [Path.cwd().resolve(), Path(__file__).resolve().parent]
+    roots: list[Path] = []
+    for start in starts:
+        roots.extend([start, *start.parents])
+
+    rejected: list[str] = []
+    for root in roots:
+        modes_doc = root / DOCS_DIR / "modes.md"
+        if not modes_doc.is_file():
+            continue
+        text = modes_doc.read_text(encoding="utf-8")
+        if "## Modes at a glance" not in text:
+            rejected.append(f"{modes_doc}: missing '## Modes at a glance' section marker")
+            continue
+        modes_table = text.split("## Modes at a glance", 1)[1].split("## Triage", 1)[0]
+        modes: dict[str, str] = {}
+        for line in modes_table.splitlines():
+            if not line.startswith("| **"):
+                continue
+            cells = [cell.strip() for cell in line.strip("|").split("|")]
+            if len(cells) < 3:
+                continue
+            mode = cells[0].strip("*")
+            status = cells[2].strip()
+            if mode and status:
+                modes[mode] = status
+        if modes:
+            return modes
+        rejected.append(
+            f"{modes_doc}: found '## Modes at a glance' but parsed 0 modes "
+            f"(expected rows like '| **<Mode>** | … | <status> |')"
+        )
+
+    if rejected:
+        raise RuntimeError("could not parse mode taxonomy from docs/modes.md — " + "; ".join(rejected))
+    searched = dict.fromkeys(str(r / DOCS_DIR / "modes.md") for r in roots)
+    raise RuntimeError("could not locate docs/modes.md; searched: " + ", ".join(searched))
+
+
+# MISSION mode taxonomy — docs/modes.md is canonical.
+_MODE_STATUS_BY_NAME = _read_mode_table()
+_MODE_TAXONOMY = set(_MODE_STATUS_BY_NAME)
+_OFF_MODES = {mode for mode, status in _MODE_STATUS_BY_NAME.items() if status == "off"}
+ALLOWED_MODES = _MODE_TAXONOMY - _OFF_MODES
 
 # Forbidden hardcoded project references (fixed strings, case-sensitive)
 FORBIDDEN_PATTERNS: list[str] = [
@@ -147,6 +192,7 @@ INJECTION_GUARD_TODO_CATEGORY = "injection_guard_todo"
 
 GH_LIST_CATEGORY = "gh_list_no_limit"
 SECURITY_PATTERN_CATEGORY = "security_pattern"
+PRIVACY_CATEGORY = "privacy"
 SOFT_CATEGORIES: frozenset[str] = frozenset(
     {
         PRINCIPLE_CATEGORY,
@@ -154,6 +200,7 @@ SOFT_CATEGORIES: frozenset[str] = frozenset(
         INJECTION_GUARD_TODO_CATEGORY,
         SECURITY_PATTERN_CATEGORY,
         GH_LIST_CATEGORY,
+        PRIVACY_CATEGORY,
     }
 )
 
@@ -219,6 +266,36 @@ _FIELD_PLACEHOLDER_RE = re.compile(
     r"(?!(?:@|[\"']@))"
     r"(?:[\"'][^\"'\s]*<[^>]+>[^\"'\s]*[\"']|[^\s\"']*<[^>]+>[^\s\"']*)"
 )
+
+# ---------------------------------------------------------------------------
+# Privacy-LLM gate-check constants (write-skill/security-checklist.md § Pattern 6)
+# ---------------------------------------------------------------------------
+
+# Modes that can process external / attacker-controlled content and need the
+# Privacy-LLM gate when they read private tracker bodies.  Derived from
+# docs/modes.md taxonomy constants above: Pairing is intentionally excluded
+# because the human remains in the loop; Auto-merge is currently excluded only
+# because it is in _OFF_MODES.  When the first Auto-merge skill ships, remove
+# it from _OFF_MODES so body-reading Auto-merge skills are gated by default.
+_PRIVACY_EXTERNAL_CONTENT_MODES: frozenset[str] = frozenset(ALLOWED_MODES - {"Pairing"})
+
+_TRACKER_PLACEHOLDER = "<tracker>"
+_TRACKER_ISSUE_VIEW_RE = re.compile(r"\bgh\s+issue\s+view\b")
+_TRACKER_ISSUE_API_RE = re.compile(r"\bgh\s+api\s+/?repos/<tracker>/issues/[^\s`]+")
+_TRACKER_ISSUE_API_MUTATION_RE = re.compile(r"\s-X\s+(?:PATCH|POST|PUT|DELETE)\b")
+# TODO: detect body reads through ``gh api graphql`` and
+# ``gh issue list --json body`` once the validator has command parsing
+# rich enough to avoid broad prose false positives.
+_PRIVACY_LLM_GATE_PHRASE = "privacy-llm-check"
+_PRIVACY_GATE_SECTION_RE = re.compile(
+    r"^(?:"
+    r"prerequisites?(?:\b|$)"
+    r"|pre[- ]?flight(?:\b|$)"
+    r"|step\s*0(?:\b|$)"
+    r")",
+    re.IGNORECASE,
+)
+_ANTI_EXAMPLE_SECTION_RE = re.compile(r"\b(?:don'?t|anti[- ]?example|bad|wrong)\b", re.IGNORECASE)
 
 ACTION_INVENTORY_COMMA_THRESHOLD = 5
 
@@ -421,7 +498,7 @@ def extract_headings(text: str) -> set[str]:
 # or attacker-controlled content.
 _BODY_INLINE_RE = re.compile(r'--body[\s=]["\']')
 
-_FENCED_CODE_RE = re.compile(r"^```[\s\S]*?^```", re.MULTILINE)
+_FENCED_CODE_RE = re.compile(r"^[ \t]{0,3}```[\s\S]*?^[ \t]{0,3}```", re.MULTILINE)
 _DOUBLE_BACKTICK_RE = re.compile(r"``[\s\S]+?``")
 _SINGLE_BACKTICK_RE = re.compile(r"(?<!`)`(?!`)[\s\S]+?(?<!`)`(?!`)")
 
@@ -756,6 +833,118 @@ def validate_security_patterns(path: Path, text: str) -> Iterable[Violation]:
 
 
 # ---------------------------------------------------------------------------
+# Privacy-LLM gate-check (write-skill/security-checklist.md § Pattern 6)
+# ---------------------------------------------------------------------------
+
+
+def _heading_text(raw: str) -> str:
+    text = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", raw.strip())
+    text = text.strip("#").strip()
+    return text
+
+
+def _fenced_code_blocks(text: str) -> list[str]:
+    return [m.group(0) for m in _FENCED_CODE_RE.finditer(text)]
+
+
+def _fenced_code_blocks_in_privacy_gate_sections(text: str) -> list[str]:
+    """Return fenced code blocks inside Prerequisites / Preflight / Step 0 sections."""
+    heading_re = re.compile(r"^(#{1,6})\s+(.+)$", re.MULTILINE)
+    headings = list(heading_re.finditer(text))
+    heading_index = 0
+    stack: list[tuple[int, str]] = []
+    blocks: list[str] = []
+
+    for block in _FENCED_CODE_RE.finditer(text):
+        while heading_index < len(headings) and headings[heading_index].start() < block.start():
+            heading = headings[heading_index]
+            level = len(heading.group(1))
+            title = _heading_text(heading.group(2))
+            stack = [(old_level, old_title) for old_level, old_title in stack if old_level < level]
+            stack.append((level, title))
+            heading_index += 1
+
+        titles = [title for _, title in stack]
+        if any(_ANTI_EXAMPLE_SECTION_RE.search(title) for title in titles):
+            continue
+        if any(_PRIVACY_GATE_SECTION_RE.search(title) for title in titles):
+            blocks.append(block.group(0))
+
+    return blocks
+
+
+def _shell_logical_lines(text: str) -> list[str]:
+    lines: list[str] = []
+    current: list[str] = []
+    for line in text.splitlines():
+        stripped = line.rstrip()
+        if stripped.endswith("\\"):
+            current.append(stripped[:-1].strip())
+            continue
+        if current:
+            current.append(stripped.strip())
+            lines.append(" ".join(part for part in current if part))
+            current = []
+        else:
+            lines.append(line)
+    if current:
+        lines.append(" ".join(part for part in current if part))
+    return lines
+
+
+def _has_tracker_body_read(text: str) -> bool:
+    body = _strip_html_comments(_skill_body(text))
+    if _TRACKER_ISSUE_VIEW_RE.search(body):
+        return True
+    for command in _shell_logical_lines(body):
+        if _TRACKER_ISSUE_API_RE.search(command) and not _TRACKER_ISSUE_API_MUTATION_RE.search(command):
+            return True
+    return False
+
+
+def _has_privacy_gate_command(text: str) -> bool:
+    body = _strip_html_comments(_skill_body(text))
+    return any(
+        _PRIVACY_LLM_GATE_PHRASE in block for block in _fenced_code_blocks_in_privacy_gate_sections(body)
+    )
+
+
+def validate_privacy_patterns(path: Path, text: str) -> Iterable[Violation]:
+    """Check Privacy-LLM gate-check convention from ``write-skill/security-checklist.md``.
+
+    Pattern 6 applies to SKILL.md entry points whose mode processes external
+    content and whose workflow reads full issue bodies from the private
+    ``<tracker>`` repository. The gate is considered present only when
+    ``privacy-llm-check`` appears in a fenced command block; prose, HTML
+    comments, TODO notes, and anti-examples do not satisfy the check.
+    """
+    if path.name != "SKILL.md":
+        return
+
+    fm = parse_frontmatter(text) or {}
+    mode = fm.get("mode", "")
+    if mode not in _PRIVACY_EXTERNAL_CONTENT_MODES:
+        return
+
+    if _TRACKER_PLACEHOLDER not in text:
+        return
+    if not _has_tracker_body_read(text):
+        return
+
+    if not _has_privacy_gate_command(text):
+        yield Violation(
+            path,
+            None,
+            f"privacy-llm-gate: mode '{mode}' + '<tracker>' body read implies "
+            f"private-content access but the Privacy-LLM gate-check is missing — "
+            f"add 'uv run --project <framework>/tools/privacy-llm/checker "
+            f"privacy-llm-check' in the Prerequisites / Step 0 section "
+            f"(see write-skill/security-checklist.md § Pattern 6)",
+            category=PRIVACY_CATEGORY,
+        )
+
+
+# ---------------------------------------------------------------------------
 # Trigger-phrase non-regression
 # ---------------------------------------------------------------------------
 
@@ -1035,6 +1224,7 @@ def run_validation(root: Path | None = None) -> list[Violation]:
             violations.extend(validate_frontmatter(path, text))
             violations.extend(validate_injection_guard(path, text))
             violations.extend(validate_principle_compliance(path, text))
+            violations.extend(validate_privacy_patterns(path, text))
             violations.extend(validate_trigger_preservation(path, text, repo_root=repo_root))
 
         # All skill files get link + placeholder + security-pattern validation
@@ -1107,6 +1297,7 @@ _SOFT_RULE_PREFIXES: tuple[str, ...] = (
     "security-pattern-4",
     "security-pattern-9",
     "gh-list-no-limit",
+    "privacy-llm-gate",
 )
 
 

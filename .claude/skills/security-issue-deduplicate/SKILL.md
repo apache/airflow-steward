@@ -162,6 +162,17 @@ in `docs/prerequisites.md`.
    `gh issue view <kept> --repo <tracker> --json number`
    and the same for `<dropped>` — before any write.
 3. `uv --version` returns.
+4. **Privacy-LLM gate-check** passes:
+
+   ```bash
+   uv run --project <framework>/tools/privacy-llm/checker \
+     privacy-llm-check
+   ```
+
+   This skill reads both tracker issue bodies in Step 1;
+   the redact-after-fetch protocol
+   (see [`tools/privacy-llm/wiring.md`](../../../tools/privacy-llm/wiring.md))
+   applies to those fetches.
 
 If any check fails, stop. A partial dedup (body merged but
 dropped tracker left open, or CVE JSON not regenerated) is worse
