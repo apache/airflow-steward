@@ -31,6 +31,11 @@
     - [Mentioning project maintainers and security-team members](#mentioning-project-maintainers-and-security-team-members)
     - [Other editorial guidelines](#other-editorial-guidelines)
   - [Reusable skills](#reusable-skills)
+  - [Keeping evals and mode-economics in sync](#keeping-evals-and-mode-economics-in-sync)
+    - [When the rule fires](#when-the-rule-fires)
+    - [Running evals](#running-evals)
+    - [Agent-run self-eval](#agent-run-self-eval)
+    - [Updating mode economics](#updating-mode-economics)
   - [Before submitting](#before-submitting)
   - [References](#references)
 
@@ -1386,6 +1391,164 @@ When adding a new skill:
   confirmation before it runs;
 - avoid agent-specific syntax so the skill remains portable across tools.
 
+## Keeping evals and mode-economics in sync
+
+When you change a skill or a tool adapter the skills load, two
+follow-up actions are part of the change, not optional polish:
+
+1. **Run the affected skill's eval suite** to confirm the prompts the
+   harness extracts from `SKILL.md` still produce the expected
+   structured output.
+2. **Update [`docs/mode-economics.md`](docs/mode-economics.md)** if
+   the change materially shifts the per-invocation token shape — a
+   new step that loads substantial context, a removed read path, a
+   new skill entirely.
+
+Both signals catch the same class of regression: a skill that
+silently starts producing different output (eval failure) or a skill
+that silently became materially more expensive to run (cost-table
+drift). The eval suite is the unit test; the mode-economics table is
+the performance budget.
+
+### When the rule fires
+
+| You touched | Run evals for | Update mode-economics if |
+|---|---|---|
+| `.claude/skills/<skill>/SKILL.md`, an extracted step subdoc, or any prompt material a step's `step-config.json` extracts | That skill's suite under `tools/skill-evals/evals/<skill>/` | The change adds or removes a step, alters a context-heavy read, or restructures the call catalogue |
+| `tools/<adapter>/` docs or operation catalogues that skills load (e.g. `tools/github/operations.md`, `tools/gmail/operations.md`, `tools/ponymail/operations.md`) | Every skill that names this adapter in its prerequisites or step bodies — `grep -l <adapter-path> .claude/skills/*/SKILL.md` to enumerate | A new operation enlarges a typical skill's loaded context, or a removed one shrinks it |
+| Pure prose edits (typo / clarification / link fix) with no behavioural impact on the model's output | No eval rerun required | No update required |
+
+If you are unsure whether your change is "behavioural" or
+"prose-only", re-run the affected eval suite anyway — it is cheap
+and protects against the false-negative case where a "clarification"
+actually changes how the model responds.
+
+### Running evals
+
+The harness lives in [`tools/skill-evals/`](tools/skill-evals/)
+(full README at
+[`tools/skill-evals/README.md`](tools/skill-evals/README.md)).
+It is pure-stdlib Python ≥ 3.10 — no third-party dependencies, no
+API key required, no build step. Two modes:
+
+- **Print mode (default)** — emits the system prompt, user prompt,
+  and expected JSON per case. The operator pastes into the model
+  under test and diffs the response against `expected.json`
+  manually.
+- **`--cli` mode** — pipes the constructed prompt through a shell
+  command (any LLM CLI that reads stdin and writes stdout works),
+  extracts the JSON the model produced, and reports
+  `PASS` / `FAIL` / `MANUAL` / `ERROR` per case. Exits non-zero on
+  any `FAIL` or `ERROR`. `MANUAL` is reserved for structural
+  expected.json files (top-level `has_*` flags / `mention_*`
+  lists); those still print prompts for manual review.
+
+```bash
+# Print mode — paste prompts into the model under test
+PYTHONPATH=tools/skill-evals/src python3 -m skill_evals.runner \
+    tools/skill-evals/evals/<skill-name>/
+
+# Single case (print mode)
+PYTHONPATH=tools/skill-evals/src python3 -m skill_evals.runner \
+    tools/skill-evals/evals/<skill-name>/<step-name>/fixtures/case-N-<name>
+
+# Automated mode — run against Claude Code (or any LLM CLI)
+PYTHONPATH=tools/skill-evals/src python3 -m skill_evals.runner --cli "claude -p" \
+    tools/skill-evals/evals/<skill-name>/
+
+# Add --verbose to also print prompts + model stdout per case
+PYTHONPATH=tools/skill-evals/src python3 -m skill_evals.runner --cli "claude -p" -v \
+    tools/skill-evals/evals/<skill-name>/<step-name>/fixtures/
+```
+
+Budget guidance:
+
+- **Single step rewrite** — run that step's cases plus one
+  representative case from any other step whose prompt the change
+  touched indirectly.
+- **Whole-skill restructure** — run the full suite.
+- **Tool-adapter doc edit** — for each affected skill, run the step
+  whose prompt body changed (per the `step-config.json` heading)
+  plus the step that triggers the adapter call.
+
+When the change adds behaviour worth covering — a new step, a new
+edge case the existing fixtures do not hit, a new prompt-injection
+shape the skill should defend against — add a fixture under the
+relevant step's `fixtures/` directory: `case-N-<name>/` containing
+`report.md` (mock tool outputs) + `expected.json` (ground-truth
+model output). The README's *Structure* and *Adversarial cases*
+sections walk through the layout.
+
+### Agent-run self-eval
+
+The agent making the change can run the suite in-session in either
+mode:
+
+- **Self-eval via `--cli`** — point the runner at a CLI that invokes
+  the same model class authoring the change (e.g.
+  `--cli "claude -p"`). The runner handles prompt construction,
+  invocation, JSON extraction, and comparison automatically; the
+  agent reads the per-case `PASS` / `FAIL` / `MANUAL` / `ERROR`
+  summary and the non-zero exit code.
+- **Self-eval via print mode** — run the runner without `--cli` to
+  print prompts, then act as the model under test using **only**
+  the printed system + user prompts as input. Do not re-read the
+  `SKILL.md`, source files, or any other context the runner did not
+  include — the eval's value is in catching prompt-vs-output
+  mismatches, which only works when the model under test sees only
+  the eval-constructed input. Diff the produced JSON against
+  `expected.json`: JSON equality for exact-match cases; per-flag
+  check for composition cases that use boolean flags
+  (`has_security_model_quote`, `has_bare_issue_numbers`) or
+  membership lists (`mention_handles`).
+
+**Self-eval is a smoke test, not a regression check.** The same
+model that just authored the change is now grading whether the
+change is correct, so subtle biases the change introduced may go
+undetected. Self-eval catches the cheap failure class — invalid
+JSON, missing fields, off-spec output shape, fixture / prompt
+drift — and is worth running on every skill or adapter change.
+
+For substantive changes (new steps, prompt restructures, behaviour
+changes that cross a class boundary like Triage classification
+thresholds or injection-defence wording), also run a **cross-model
+pass**: a human pastes the prompts into a different model class than
+the one that authored the change, and diffs that output against
+`expected.json` independently. This catches the self-confirmation
+bias that self-eval cannot.
+
+### Updating mode economics
+
+[`docs/mode-economics.md`](docs/mode-economics.md) is hand-maintained
+— it is the indicative cost budget per skill per invocation, not a
+generated artefact. After a change that moves the per-invocation
+envelope:
+
+1. Find the row for the modified skill under
+   [§ Per-mode token shape](docs/mode-economics.md#per-mode-token-shape).
+2. Re-estimate using the anchors at the top of the doc
+   ([§ What "tokens" means here](docs/mode-economics.md#what-tokens-means-here)):
+   ~530 tokens per 400-word report body, ~5 000 per medium PR diff,
+   3 000–8 000 per typical mail thread, plus the `SKILL.md`
+   overhead. For an exact `SKILL.md` token count, run
+   `cl100k_base` tokenisation against the file; or apply the
+   doc's existing small / typical / large bands as an
+   order-of-magnitude estimate.
+3. Adjust the **high end** of the existing range when the change
+   adds context; adjust the **low end** when the change removes one
+   (rare). Update the *Primary cost driver* / *Notes* column if the
+   new driver is qualitatively different from the old one.
+
+For a brand-new skill, add a row under the correct mode section
+(Triage / Mentoring / Drafting / Pairing) with a token range, a
+one-line invocation description, and the primary cost driver. Use
+a neighbouring skill of similar shape as the anchor for the range.
+
+For documentation-only changes that do not touch the skill's reads
+or prompt body — a typo fix, a link update, a clarifying paragraph
+that does not change what the model is asked to produce —
+`mode-economics.md` does not need an update.
+
 ## Before submitting
 
 - Re-read the diff and check that every change is intentional.
@@ -1394,6 +1557,12 @@ When adding a new skill:
   exists on the current stable version (adopting project's anchors:
   [`<project-config>/security-model.md`](<project-config>/security-model.md)).
 - Self-review the tone of any modified canned response against the "polite but firm" guidance above.
+- If the change touched a skill or a tool adapter the skills load,
+  follow the
+  [Keeping evals and mode-economics in sync](#keeping-evals-and-mode-economics-in-sync)
+  rules above — run the affected eval suite(s) (agent self-eval on
+  every change, cross-model on substantive changes) and update
+  `docs/mode-economics.md` if the per-invocation token shape moved.
 
 ## References
 

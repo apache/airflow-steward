@@ -45,6 +45,48 @@ PYTHONPATH=tools/skill-evals/src python3 -m skill_evals.runner \
 
 The runner prints the system prompt, user prompt, and expected output for each case. Paste into any model and compare the response against the expected JSON. The harness is intentionally model-agnostic — no API key or CLI dependency required.
 
+### Automated mode (`--cli`)
+
+For unattended runs, pass `--cli "<shell command>"`. The runner pipes
+`<system_prompt>\n\n<user_prompt>` to the command on stdin, captures
+stdout, extracts the model's JSON, and compares against `expected.json`
+automatically. Per-case status is `PASS`, `FAIL`, `MANUAL` (structural
+expected.json — see below), or `ERROR` (CLI failure / non-JSON output);
+the runner exits non-zero on any `FAIL` or `ERROR`.
+
+```bash
+# Run every case for a skill against Claude Code's print mode
+PYTHONPATH=tools/skill-evals/src python3 -m skill_evals.runner --cli "claude -p" \
+    tools/skill-evals/evals/issue-triage/
+
+# Any LLM CLI that reads a prompt on stdin and writes the response to
+# stdout works — `llm`, `gpt`, a thin curl wrapper, etc.
+PYTHONPATH=tools/skill-evals/src python3 -m skill_evals.runner --cli "llm -m gpt-4o-mini" \
+    tools/skill-evals/evals/issue-triage/step-3-classify/fixtures/
+
+# Add --verbose to also print prompts and the model's raw stdout per case.
+PYTHONPATH=tools/skill-evals/src python3 -m skill_evals.runner --cli "claude -p" --verbose \
+    tools/skill-evals/evals/issue-triage/step-3-classify/fixtures/case-1-clear-bug
+```
+
+**JSON extraction** tries three strategies in order: parse the whole
+stdout as JSON, look for the first ```` ```json ```` fenced block, then
+the largest balanced `{...}` (or `[...]`) substring. Models that wrap
+output in prose or markdown fences still work.
+
+**Structural cases (composition steps).** When `expected.json` describes
+prose properties via boolean flags (`has_security_model_quote`,
+`has_bare_issue_numbers`) or membership lists (`mention_handles`),
+automatic JSON-equality comparison is meaningless. Those cases report
+`MANUAL` and the runner skips the CLI call; review them by re-running
+without `--cli` (or with `--verbose`).
+
+**Self-eval caveat.** When the model invoked by `--cli` is the same
+model (or model class) that just authored the skill change, the
+comparison is a self-eval pass — useful as a smoke test for prompt /
+output-shape regressions, but weaker than a cross-model run. For
+substantive changes, also run against a different model class.
+
 ## Structure
 
 ```text

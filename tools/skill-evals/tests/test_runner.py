@@ -27,14 +27,16 @@ import pytest
 from skill_evals.runner import (
     build_corpus_text,
     build_roster_text,
+    compare_outputs,
+    extract_json_from_output,
     extract_skill_section,
     find_cases,
     find_repo_root,
+    is_structural_expected,
     load_case,
     load_step_config,
     main,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -68,7 +70,9 @@ def _make_fixtures_dir(
     return fixtures_dir
 
 
-def _make_case(fixtures_dir: Path, name: str, *, report: str = "report text", expected: dict | None = None) -> Path:
+def _make_case(
+    fixtures_dir: Path, name: str, *, report: str = "report text", expected: dict | None = None
+) -> Path:
     case_dir = fixtures_dir / name
     case_dir.mkdir(parents=True, exist_ok=True)
     (case_dir / "report.md").write_text(report)
@@ -110,7 +114,7 @@ def test_build_corpus_text_multiple_items():
 
 
 def test_build_corpus_text_repr_escapes_quotes():
-    result = build_corpus_text([{"number": 1, "title": "She said \"hi\"", "body": "x"}])
+    result = build_corpus_text([{"number": 1, "title": 'She said "hi"', "body": "x"}])
     # title is repr'd so quotes are escaped
     assert "'She said" in result or '"She said' in result
 
@@ -278,7 +282,7 @@ def test_load_step_config_uses_step_config_json(tmp_path: Path):
         repo_root / "step-dir",
         step_config={"skill_md": "skills/my-skill/SKILL.md", "step_heading": "## Target Step"},
     )
-    system_prompt, user_prompt_template = load_step_config(fixtures_dir)
+    system_prompt, _user_prompt_template = load_step_config(fixtures_dir)
     assert "Prompt content here" in system_prompt
     assert "Other Step" not in system_prompt
 
@@ -532,3 +536,236 @@ def test_main_bad_user_prompt_template_raises(tmp_path: Path):
 
     with pytest.raises(KeyError):
         main([str(fixtures_dir)])
+
+
+# ---------------------------------------------------------------------------
+# is_structural_expected
+# ---------------------------------------------------------------------------
+
+
+def test_is_structural_expected_plain_kvs():
+    assert is_structural_expected({"class": "BUG", "confidence": "high"}) is False
+
+
+def test_is_structural_expected_has_flag():
+    assert is_structural_expected({"has_security_model_quote": True}) is True
+
+
+def test_is_structural_expected_mention_list():
+    assert is_structural_expected({"mention_handles": ["@alice"]}) is True
+
+
+def test_is_structural_expected_non_dict():
+    assert is_structural_expected(["a", "b"]) is False  # type: ignore[arg-type]
+
+
+def test_is_structural_expected_empty_dict():
+    assert is_structural_expected({}) is False
+
+
+# ---------------------------------------------------------------------------
+# extract_json_from_output
+# ---------------------------------------------------------------------------
+
+
+def test_extract_json_whole_output():
+    value, err = extract_json_from_output('{"verdict": "ok"}')
+    assert err is None
+    assert value == {"verdict": "ok"}
+
+
+def test_extract_json_whole_output_with_whitespace():
+    value, err = extract_json_from_output('\n  {"verdict": "ok"}\n\n')
+    assert err is None
+    assert value == {"verdict": "ok"}
+
+
+def test_extract_json_fenced_block():
+    text = 'Here is the output:\n\n```json\n{"verdict": "ok"}\n```\n\nThank you.'
+    value, err = extract_json_from_output(text)
+    assert err is None
+    assert value == {"verdict": "ok"}
+
+
+def test_extract_json_bare_fenced_block():
+    text = 'Result:\n```\n{"verdict": "ok"}\n```'
+    value, err = extract_json_from_output(text)
+    assert err is None
+    assert value == {"verdict": "ok"}
+
+
+def test_extract_json_largest_brace_block():
+    text = 'I think the answer is {"verdict": "ok"} based on the data.'
+    value, err = extract_json_from_output(text)
+    assert err is None
+    assert value == {"verdict": "ok"}
+
+
+def test_extract_json_picks_largest_brace_block():
+    text = 'Small: {"a": 1}. Larger and correct: {"verdict": "ok", "rationale": "longer text here"}.'
+    value, err = extract_json_from_output(text)
+    assert err is None
+    assert value == {"verdict": "ok", "rationale": "longer text here"}
+
+
+def test_extract_json_array_top_level():
+    value, err = extract_json_from_output("[1, 2, 3]")
+    assert err is None
+    assert value == [1, 2, 3]
+
+
+def test_extract_json_no_json_returns_error():
+    value, err = extract_json_from_output("Just prose, no JSON anywhere.")
+    assert value is None
+    assert err is not None and "no JSON" in err
+
+
+def test_extract_json_empty_output_returns_error():
+    value, err = extract_json_from_output("")
+    assert value is None
+    assert err is not None
+
+
+def test_extract_json_malformed_braces_returns_error():
+    value, err = extract_json_from_output('{"verdict": missing-quotes}')
+    assert value is None
+    assert err is not None
+
+
+# ---------------------------------------------------------------------------
+# compare_outputs
+# ---------------------------------------------------------------------------
+
+
+def test_compare_outputs_equal_dicts():
+    ok, diff = compare_outputs({"a": 1, "b": 2}, {"a": 1, "b": 2})
+    assert ok is True
+    assert diff == ""
+
+
+def test_compare_outputs_dict_key_order_irrelevant():
+    ok, _ = compare_outputs({"b": 2, "a": 1}, {"a": 1, "b": 2})
+    assert ok is True
+
+
+def test_compare_outputs_unequal_dicts_show_diff():
+    ok, diff = compare_outputs({"class": "BUG"}, {"class": "INVALID"})
+    assert ok is False
+    assert "BUG" in diff
+    assert "INVALID" in diff
+
+
+def test_compare_outputs_unequal_marks_added_and_removed():
+    ok, diff = compare_outputs({"a": 1}, {"a": 1, "b": 2})
+    assert ok is False
+    assert "+" in diff or "-" in diff
+
+
+# ---------------------------------------------------------------------------
+# --cli mode integration
+# ---------------------------------------------------------------------------
+
+
+def _make_cli_case(tmp_path: Path, *, expected: dict, report: str = "the report") -> tuple[Path, Path]:
+    """Build a minimal fixtures dir + one case dir; return (fixtures_dir, case_dir)."""
+    repo_root = _make_repo(tmp_path)
+    skill_md = repo_root / "SKILL.md"
+    skill_md.write_text("## Step\n\nSystem instructions.\n")
+    fixtures_dir = _make_fixtures_dir(
+        repo_root / "step-dir",
+        step_config={"skill_md": "SKILL.md", "step_heading": "## Step"},
+        user_prompt_template="Report: {report}\n",
+    )
+    case_dir = _make_case(fixtures_dir, "case-1", report=report, expected=expected)
+    return fixtures_dir, case_dir
+
+
+def test_cli_mode_pass_with_echo(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+    """A CLI that echoes the expected JSON should PASS."""
+    expected = {"verdict": "ok"}
+    fixtures_dir, _ = _make_cli_case(tmp_path, expected=expected)
+    rc, stdout, _ = _run_main(
+        capsys,
+        ["--cli", f"echo '{json.dumps(expected)}'", str(fixtures_dir)],
+    )
+    assert rc == 0
+    assert "PASS" in stdout
+    assert "1 passed" in stdout
+
+
+def test_cli_mode_fail_with_wrong_json(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+    """A CLI that returns the wrong JSON should FAIL and exit non-zero."""
+    fixtures_dir, _ = _make_cli_case(tmp_path, expected={"verdict": "ok"})
+    rc, stdout, _ = _run_main(
+        capsys,
+        ["--cli", 'echo \'{"verdict": "wrong"}\'', str(fixtures_dir)],
+    )
+    assert rc == 1
+    assert "FAIL" in stdout
+    assert "1 failed" in stdout
+
+
+def test_cli_mode_manual_skips_structural(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+    """Structural expected.json (has_* / mention_*) is reported MANUAL, not auto-compared."""
+    fixtures_dir, _ = _make_cli_case(
+        tmp_path, expected={"has_security_model_quote": True, "mention_handles": []}
+    )
+    rc, stdout, _ = _run_main(
+        capsys,
+        # CLI would return junk; runner should not even invoke it for MANUAL cases.
+        ["--cli", "exit 1", str(fixtures_dir)],
+    )
+    assert rc == 0
+    assert "MANUAL" in stdout
+    assert "1 manual" in stdout
+
+
+def test_cli_mode_error_on_non_json_output(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+    """A CLI that returns prose without any JSON should ERROR and exit non-zero."""
+    fixtures_dir, _ = _make_cli_case(tmp_path, expected={"verdict": "ok"})
+    rc, stdout, _ = _run_main(
+        capsys,
+        ["--cli", "echo 'just prose, no JSON here'", str(fixtures_dir)],
+    )
+    assert rc == 1
+    assert "ERROR" in stdout
+    assert "1 errored" in stdout
+
+
+def test_cli_mode_error_on_non_zero_exit(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+    """A CLI that exits non-zero should ERROR and exit non-zero."""
+    fixtures_dir, _ = _make_cli_case(tmp_path, expected={"verdict": "ok"})
+    rc, stdout, _ = _run_main(capsys, ["--cli", "false", str(fixtures_dir)])
+    assert rc == 1
+    assert "ERROR" in stdout
+
+
+def test_cli_mode_extracts_json_from_fenced_response(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+    """The runner should find JSON inside a ```json fence in the CLI's stdout."""
+    fixtures_dir, _ = _make_cli_case(tmp_path, expected={"verdict": "ok"})
+    # printf interprets escapes so we get a real fenced block on stdout.
+    rc, stdout, _ = _run_main(
+        capsys,
+        [
+            "--cli",
+            'printf \'Sure!\\n\\n```json\\n{"verdict": "ok"}\\n```\\n\'',
+            str(fixtures_dir),
+        ],
+    )
+    assert rc == 0
+    assert "PASS" in stdout
+
+
+def test_cli_mode_summary_counts(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+    """Multiple cases should be summarised correctly."""
+    expected = {"verdict": "ok"}
+    fixtures_dir, _ = _make_cli_case(tmp_path, expected=expected)
+    # Add a second case that will FAIL by reusing the same fixtures dir.
+    _make_case(fixtures_dir, "case-2-fail", report="x", expected={"verdict": "different"})
+    rc, stdout, _ = _run_main(
+        capsys,
+        ["--cli", f"echo '{json.dumps(expected)}'", str(fixtures_dir)],
+    )
+    assert rc == 1  # because one case FAILs
+    assert "1 passed" in stdout
+    assert "1 failed" in stdout
