@@ -179,45 +179,40 @@ github:
       required_signatures: false
 
 notifications:
-  # The framework is hosted under the Airflow PMC umbrella for now,
-  # but all notification streams from this repo are routed to the
-  # dedicated `dev-magpie@airflow.apache.org` sub-list so that the
-  # Airflow PMC's main `dev@`, `commits@`, and `jobs@` lists are not
-  # polluted with framework traffic. The sub-list belongs to the
-  # nascent Magpie effort (see `MISSION.md` /
-  # `docs/board-resolution-draft.md`) and will move with the repo
-  # when it relocates to its own TLP.
+  # The framework is hosted under the Airflow PMC umbrella, and its
+  # commit / PR / issue / discussion traffic lands on the PMC's own
+  # lists rather than the previously-used `dev-magpie@` sub-list.
+  # Traffic volume on the Airflow PMC's lists is already strong and
+  # noisy enough that adding this repo's events does not materially
+  # change the signal/noise profile — separating them onto a
+  # dedicated sub-list was not worth the cost of subscribers having
+  # to follow a second list to see what was happening here. When the
+  # framework eventually moves to its own TLP it will inherit its
+  # own `commits@` list and the schemes below will be re-pointed at
+  # that list in the same change.
   #
-  # IMPORTANT: do **not** route any notification stream to
-  # `dev@airflow.apache.org`, `commits@airflow.apache.org`, or
-  # `jobs@airflow.apache.org`. Those are the Airflow PMC's main
-  # lists; every PR, issue, push, comment, and status-check event
-  # from this repo does not belong there.
+  # Routing follows Airflow's `.asf.yaml` destinations:
+  #   - jobs            → jobs@    (CI run notifications)
+  #   - everything else → commits@
   #
   # ASF Infra defaults any *unset* notification field to
-  # `dev@<project>.apache.org`, so **every documented scheme below
-  # MUST stay explicitly populated** — dropping a line here silently
-  # re-enables that dev@ default for that event type. Per the ASF
-  # asf.yaml schema
+  # `dev@<project>.apache.org`. The four `_status` / `_comment`
+  # schemes (`issues_status`, `issues_comment`, `pullrequests_status`,
+  # `pullrequests_comment`) are set explicitly to `commits@` here —
+  # **not** left to that default — so PR review comments, CI-status
+  # flips, and label / milestone changes go to the same list as the
+  # lifecycle events rather than landing on `dev@airflow.apache.org`.
+  # Per the ASF asf.yaml schema
   # (https://github.com/apache/infrastructure-asfyaml/blob/main/asfyaml/feature/notifications.py
-  # `VALID_NOTIFICATION_SCHEMES`), the schemes that apply to a public
-  # GitHub repo are the eleven below (we set ten; `commits_by_path`
-  # is an optional path-specific override and is left unset). If
-  # Infra adds a new scheme, set it explicitly in the same change to
-  # keep the dev@ default suppressed.
-  #
-  # All ten schemes go to a single list — `dev-magpie@` — by design:
-  # the Magpie sub-list is the one place a subscriber needs to watch
-  # to follow the framework end-to-end (CI, commits, issues, PRs,
-  # discussions). When the repo gets its own TLP and the list shape
-  # diversifies (a dedicated commits@ / jobs@ under the new PMC),
-  # split the schemes across those lists then.
-  jobs:                  dev-magpie@airflow.apache.org
-  commits:               dev-magpie@airflow.apache.org
-  issues:                dev-magpie@airflow.apache.org
-  issues_status:         dev-magpie@airflow.apache.org
-  issues_comment:        dev-magpie@airflow.apache.org
-  pullrequests:          dev-magpie@airflow.apache.org
-  pullrequests_status:   dev-magpie@airflow.apache.org
-  pullrequests_comment:  dev-magpie@airflow.apache.org
-  discussions:           dev-magpie@airflow.apache.org
+  # `VALID_NOTIFICATION_SCHEMES`), if Infra adds a new scheme, set
+  # it explicitly in the same change to keep the `dev@` default
+  # suppressed.
+  jobs:                  jobs@airflow.apache.org
+  commits:               commits@airflow.apache.org
+  issues:                commits@airflow.apache.org
+  issues_status:         commits@airflow.apache.org
+  issues_comment:        commits@airflow.apache.org
+  pullrequests:          commits@airflow.apache.org
+  pullrequests_status:   commits@airflow.apache.org
+  pullrequests_comment:  commits@airflow.apache.org
+  discussions:           commits@airflow.apache.org
