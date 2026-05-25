@@ -640,14 +640,18 @@ Process for finding the real reporter and the original thread:
    **Apply the [bot/AI credit policy](../../../tools/vulnogram/bot-credits-policy.md)
    to the extracted credit string** before proposing the update. If the
    credit handle matches the bot detection rule (`*[bot]` suffix,
-   known-bot list, `*-bot`/`*-ai`/`*-agent`/`*-gpt` suffix patterns,
-   `noreply`/`security-alerts@` service sender), do **not** propose
-   landing the credit. Instead, surface in Step 2 *"skipped credit:
-   `<handle>` (matches bot policy — `<which rule fired>`)"* **and
-   propose a Gmail draft on the reporter's thread** per the policy's
-   *clarification-reply* step, asking whether the AI/bot handle is
-   the intended credit or whether there's a human behind it to credit
-   instead. The user can override the skip per the policy doc.
+   known-bot list, `*-bot`/`*-ai`/`*-agent`/`*-gpt` suffix patterns),
+   propose landing the credit anyway — the CVE JSON generator will
+   emit it with `type: "tool"` per the policy's finder-side rule.
+   Surface in Step 2 *"credited as tool: `<handle>` (matches bot
+   policy — `<which rule fired>`)"* **and propose a Gmail draft on
+   the reporter's thread** per the policy's *clarification-reply*
+   step, asking whether a human behind the bot/AI handle should be
+   **additionally** credited as finder (the tool credit stands
+   regardless of the reply). The user can override the routing per
+   the policy doc. Service-sender addresses (noreply / relays) are
+   still suppressed from the field — they are routing artefacts, not
+   identities.
 
    If the reporter has been *asked* the credit question but has not yet
    responded, do not propose a change — leave the placeholder in place

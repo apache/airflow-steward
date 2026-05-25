@@ -6,6 +6,8 @@
   - [Why](#why)
   - [Detection — when does the rule fire?](#detection--when-does-the-rule-fire)
   - [Default behaviour — what the skills do when the rule fires](#default-behaviour--what-the-skills-do-when-the-rule-fires)
+    - [Finder side (*Reporter credited as*)](#finder-side-reporter-credited-as)
+    - [Remediation-developer side (*Remediation developer*)](#remediation-developer-side-remediation-developer)
   - [Where the rule applies](#where-the-rule-applies)
   - [Where the rule does NOT apply](#where-the-rule-does-not-apply)
   - [Worked examples](#worked-examples)
@@ -17,34 +19,52 @@
 
 # CVE-credit policy for bot / AI accounts
 
-The CVE record's `credits[]` array records *people* who discovered a
-vulnerability (`type: "finder"`) or shipped the fix
-(`type: "remediation developer"`). When an obvious bot or AI account
-appears as the candidate for either role, the default is to **not**
-credit them. The skills that populate the *Reporter credited as* and
-*Remediation developer* tracker body fields enforce this rule at the
-point of extraction, and ask the user before adding the credit when
-the rule matches.
+The CVE 5.x `credits[]` schema distinguishes between people who
+discovered a vulnerability (`type: "finder"`), automation that
+discovered it (`type: "tool"`), and people who shipped the fix
+(`type: "remediation developer"`). When an obvious bot or AI
+account appears as a candidate credit, the framework routes it
+asymmetrically:
 
-This file is the single source of truth for *who counts as a bot* and
-*how the skills behave when one is detected*. Skills reference it
-instead of duplicating the heuristic.
+* **On the finder side** (*Reporter credited as* body field), the
+  bot is credited with `type: "tool"`. Scanners, AI agents, and
+  automation that surface a real vulnerability deserve the credit
+  — just under the schema's tool category, not as a human finder.
+* **On the remediation-developer side** (*Remediation developer*
+  body field), the bot is **not** credited. A dependency-bump
+  PR from Dependabot is the automation doing what humans
+  configured it to do, not a credit-worthy remediation effort.
+
+This file is the single source of truth for *who counts as a bot*
+and *how the skills + the CVE JSON generator behave when one is
+detected*. Both reference it instead of duplicating the heuristic.
 
 ## Why
 
 * Bot accounts (Dependabot, Renovate, GHSA Probot, GitHub Actions,
   Snyk, Mend, …) act on behalf of an organisation or a piece of
-  automation — they are not the *person* who found the bug or fixed
-  it. Naming them as `finder` or `remediation developer` in a public
-  CVE record misrepresents authorship and pollutes the CNA-feed
-  with handles that are not actionable as contributor credit.
-* AI / LLM agents that opened a PR or filed a report are tools the
-  human used. The human who drove the agent — if there is one
-  identifiable in the thread — is the candidate for credit. The
-  agent itself never is.
+  automation. Naming them as `finder` in a public CVE record is
+  inaccurate — they are not human researchers. Naming them as
+  `tool` is accurate and is what CVE 5.x's
+  [credit-type enum](https://cveproject.github.io/cve-schema/schema/CVE_Record_Format.json)
+  was designed for: the same axis as `finder`, just for automation.
+* AI / LLM agents that opened a PR or filed a report fit the same
+  shape — they are tools the human used. If the human behind the
+  agent is identifiable in the thread, they get the human
+  `finder` credit *in addition to* the tool credit; the agent
+  itself is the tool row.
 * Forwarding services (`noreply@github.com`,
   `security-alerts@<scanner>.com`, …) sit between the actual
-  reporter and us; their address is a relay, not an identity.
+  reporter and us; their address is a relay, not an identity. They
+  are not credited at all — the actual reporter (or the scanner
+  whose alerts the relay forwards) is what the skills extract.
+* On the remediation-developer side the asymmetry is intentional:
+  a CVE record's remediation credit speaks to *who fixed it*, and
+  a Dependabot dep-bump (or any other "automation did the
+  mechanical change") does not warrant credit. There is no
+  remediation-side equivalent to `type: "tool"` — the cleanest
+  expression of "no human deserves credit here" is to omit the
+  row entirely.
 
 ## Detection — when does the rule fire?
 
@@ -85,84 +105,101 @@ public CVE record).
 
 ## Default behaviour — what the skills do when the rule fires
 
-Each skill that extracts a credit candidate applies these rules at
-extraction time:
+The action depends on which credit field is involved.
 
-1. **Skip silently in the data flow.** Do not write the bot's name
-   into the *Reporter credited as* or *Remediation developer* body
-   field. Leave the field at its current value (typically
-   `_No response_` for a fresh tracker, or whatever the prior
-   resolved value was for an existing tracker).
-2. **Surface the skip in the user-facing proposal.** Include a
-   one-line entry in the proposal's "skipped" section of the shape:
+### Finder side (*Reporter credited as*)
+
+The skills that extract a reporter-credit candidate (see
+[Where the rule applies](#where-the-rule-applies) below) treat a
+detected bot as a **tool credit**:
+
+1. **Include the bot in the *Reporter credited as* field**, on
+   its own line, exactly as detected. The
+   [CVE JSON generator](generate-cve-json/) reads the field on its
+   next regeneration, runs the same detection rule on every line,
+   and emits the bot row with `type: "tool"` (instead of the
+   default `type: "finder"`). The generator is the single point
+   where `finder`-vs-`tool` is decided — skills do not need to
+   annotate the field.
+2. **Surface the routing in the user-facing proposal.** Include a
+   one-line entry of the shape:
 
    ```text
-   skipped credit: <handle> (matches bot policy — ends with [bot])
-                                                  ^^^^^ which rule matched
-   skipped credit: <handle> (matches bot policy — in known-bot list)
-   skipped credit: <handle> (matches bot policy — *-bot suffix pattern)
-   skipped credit: <email>  (matches bot policy — noreply service sender)
+   credited as tool: <handle> (matches bot policy — ends with [bot])
+                                                    ^^^^^ which rule matched
+   credited as tool: <handle> (matches bot policy — in known-bot list)
+   credited as tool: <handle> (matches bot policy — *-bot suffix pattern)
+   credited as tool: <handle> (matches bot policy — *scanner* pattern)
    ```
 
-   The reason — *which* rule fired — is mandatory; it lets the user
-   judge whether the skip is correct.
-3. **Honour an explicit override.** The user may override the skip
-   for a specific tracker with any of these phrasings (or obvious
-   variants):
+   The reason — *which* rule fired — is mandatory; it lets the
+   user judge whether the routing is correct.
+3. **Honour an explicit override.** The user may override the
+   tool routing for a specific tracker with any of these
+   phrasings (or obvious variants):
 
-   * *"include `<handle>` anyway"*
-   * *"credit `<handle>` as finder"*
-   * *"credit `<handle>` as remediation developer"*
-   * *"yes, add `<handle>`"*
+   * *"credit `<handle>` as finder"* — the credit lands in the
+     field; the user is explicitly telling the generator the
+     handle is a human researcher despite matching the
+     heuristic. Today the generator still re-classifies on
+     pattern match, so an override of this shape requires
+     editing the row to a form that does not match (e.g.
+     `Alice (Dependabot Security Research)` → drop the
+     `Dependabot` word, or move the affiliation outside the
+     credit string).
+   * *"omit `<handle>` from credits"* — drop the row entirely
+     (the tool is not credit-worthy in this specific case).
+   * *"yes, credit `<handle>` as tool"* — explicit confirmation
+     of the default; no action needed beyond proceeding.
 
-   When the user confirms the override, set the appropriate body
-   field exactly as the user dictated. Do not auto-extend the
-   override to other trackers — overrides are per-tracker.
+   Overrides are per-tracker; do not auto-extend.
 
 4. **Draft a clarification reply to the reporter when an email
    thread exists *and* the tracker is in direct-reporter mode.**
-   When the candidate would have been credited as the *finder*
-   (i.e. the reporter themselves is the bot-looking name), the
-   tracker has an inbound `<security-list>` mail thread to reply
-   on, **and** the tracker's routing mode (per
+   When the bot/AI handle is the only candidate the skill found
+   for the *finder* role, the tracker has an inbound
+   `<security-list>` mail thread, **and** the tracker's routing
+   mode (per
    [`docs/security/forwarder-routing-policy.md`](../../docs/security/forwarder-routing-policy.md))
    is *direct-reporter*, propose a **Gmail draft** (not a sent
-   message) on the same thread asking whether the bot/AI handle
-   is the intended credit or whether there's a human behind it
-   who should be credited instead. The draft should be:
+   message) on the same thread. The draft asks whether a human
+   behind the bot/AI should be **additionally** credited as
+   `finder` — the bot stays in the field as a tool credit
+   regardless; the question is whether to *also* add a human
+   finder row. The draft should be:
 
    * **Polite and short** — one or two short paragraphs; no
      accusations, no jargon.
-   * **Specific** — name the handle that was detected and which
-     rule fired (so the reporter sees the same reasoning the
-     security team did).
-   * **Actionable** — offer two clear paths: *"credit `<handle>`
-     as-is"* or *"credit `<human-name>` instead — please reply
-     with the preferred attribution"*.
+   * **Specific** — name the handle that was credited as tool
+     and the rule that fired (so the reporter sees the same
+     reasoning the security team did).
+   * **Actionable** — offer one clear path: *"if a human was
+     behind `<handle>` who should also be credited as finder,
+     please reply with their name; otherwise the tool credit
+     stands as-is"*.
    * **Sent only after explicit user confirmation** per the
      [framework's never-send-without-asking rule](../../AGENTS.md).
 
    **In via-forwarder mode the standalone clarification draft
-   is suppressed.** It is a *credit-acceptance confirmation*
-   message (asking the reporter to confirm the AI/bot handle is
-   the intended credit, or to accept a different one) — and
-   credit-acceptance confirmations are on the
+   is suppressed.** Even with the new tool-credit default it
+   remains a *credit-acceptance confirmation* message (asking
+   the reporter to confirm or extend the credit attribution),
+   and credit-acceptance confirmations are on the
    [forwarder-routing-policy negative list](../../docs/security/forwarder-routing-policy.md#negative-space--do-not-relay).
-   The forwarder cannot meaningfully accept a credit on behalf
-   of the original reporter, so the message becomes a chase-up
-   loop. The bot-credit detection still runs and still keeps
-   the bot/AI handle out of the credit field; what is suppressed
-   is the dedicated message to confirm the alternative.
+   The forwarder cannot meaningfully accept or extend a credit
+   on behalf of the original reporter. The bot-credit detection
+   still runs, the tool row still lands in the field, and the
+   generator still emits `type: "tool"` for it; what is
+   suppressed is the dedicated message asking for a human
+   addition.
 
-   The credit *question* itself (initial ask, *"if the reporter
-   has a preferred credit form, please pass it back"*) is **not**
-   suppressed — it is folded as a single line into whatever
-   milestone draft the via-forwarder lifecycle next produces (the
-   Step 7 receipt-of-confirmation, the *Report accepted as
-   valid* milestone, the *CVE allocated* notification). The
-   credit field stays at `_No response_` (or whatever the
-   original report's `Credit:` line yielded after bot filtering)
-   until a meaningful answer comes back.
+   The credit *question* itself (initial ask, *"if a human was
+   behind the tool, please pass back their preferred
+   attribution"*) is **not** suppressed in via-forwarder mode —
+   it is folded as a single line into whatever milestone draft
+   the lifecycle next produces (the Step 7 receipt-of-
+   confirmation, the *Report accepted as valid* milestone, the
+   *CVE allocated* notification).
 
    When the tracker has no inbound mail thread at all (e.g. a
    `security-issue-import-from-pr` tracker — the
@@ -175,30 +212,71 @@ extraction time:
    inline and propose adding it to the canned-responses file as a
    follow-up.
 
+### Remediation-developer side (*Remediation developer*)
+
+The skills that extract a remediation-developer candidate (see
+[Where the rule applies](#where-the-rule-applies) below) **skip**
+the bot — there is no remediation-side equivalent of `type:
+"tool"`, and a dependency-bump from automation does not warrant
+a credit row. Behaviour:
+
+1. **Skip silently in the data flow.** Do not write the bot's
+   name into the *Remediation developer* body field. Leave the
+   field at its current value (typically `_No response_` for a
+   fresh tracker, or whatever the prior resolved value was for
+   an existing tracker).
+2. **Surface the skip in the user-facing proposal.** Include a
+   one-line entry of the shape:
+
+   ```text
+   skipped credit: <handle> (matches bot policy — ends with [bot])
+   skipped credit: <handle> (matches bot policy — in known-bot list)
+   skipped credit: <handle> (matches bot policy — *-bot suffix pattern)
+   ```
+3. **Honour an explicit override** with the same per-tracker
+   phrasings as the finder side (e.g. *"credit `<handle>` as
+   remediation developer"*).
+4. **No clarification draft.** The remediation-developer field is
+   reconciled by the skills from PR-author signals, not from
+   reporter input — there is no thread to ask. If a human
+   committer was the *real* remediation developer (the bot only
+   pushed mechanical formatting), the user adds them with an
+   explicit override.
+
 ## Where the rule applies
 
 This policy fires at every site where the suite *auto-extracts* a
 credit candidate without explicit user instruction:
 
-| Skill | Extraction site |
-|---|---|
-| [`security-issue-import`](../../.claude/skills/security-issue-import/SKILL.md) | Reporter name from email `From:` header; ASF-relay `Credit:` line |
-| [`security-issue-import-from-pr`](../../.claude/skills/security-issue-import-from-pr/SKILL.md) | PR author → *Remediation developer* |
-| [`security-issue-import-from-md`](../../.claude/skills/security-issue-import-from-md/SKILL.md) | Reporter / finder name from markdown metadata |
-| [`security-issue-sync`](../../.claude/skills/security-issue-sync/SKILL.md) | Reporter credit mined from email replies; PR author auto-append to *Remediation developer* |
-| [`security-issue-deduplicate`](../../.claude/skills/security-issue-deduplicate/SKILL.md) | Credit consolidation from two trackers |
+| Skill | Extraction site | Field | Action |
+|---|---|---|---|
+| [`security-issue-import`](../../.claude/skills/security-issue-import/SKILL.md) | Reporter name from email `From:` header; ASF-relay `Credit:` line | *Reporter credited as* | Include → tool |
+| [`security-issue-import-from-pr`](../../.claude/skills/security-issue-import-from-pr/SKILL.md) | PR author | *Remediation developer* | Skip |
+| [`security-issue-import-from-md`](../../.claude/skills/security-issue-import-from-md/SKILL.md) | Reporter / finder name from markdown metadata | *Reporter credited as* | Include → tool |
+| [`security-issue-sync`](../../.claude/skills/security-issue-sync/SKILL.md) | Reporter credit mined from email replies | *Reporter credited as* | Include → tool |
+| [`security-issue-sync`](../../.claude/skills/security-issue-sync/SKILL.md) | PR author auto-append | *Remediation developer* | Skip |
+| [`security-issue-deduplicate`](../../.claude/skills/security-issue-deduplicate/SKILL.md) | Credit consolidation from two trackers | both | Per-row by field type |
 
 The rule does **not** fire when the user *explicitly* types a name
 into a credit field, or when a tracker already carries a credit that
 a human security-team member set — those are explicit decisions and
-the skill respects them.
+the skill respects them. (On the finder side, the generator will
+still re-classify the row as `tool` if the name matches the policy;
+to force a human `finder` row, the user must edit the row to a form
+that does not match the heuristic — see the override note in
+[Default behaviour → Finder side](#finder-side-reporter-credited-as)
+above.)
 
 ## Where the rule does NOT apply
 
-* [`generate-cve-json`](generate-cve-json/SKILL.md) stays neutral.
-  Whatever is in the tracker's credit fields is what lands in the
-  CVE JSON. The filter is upstream, at the skills, so that an
-  intentional human override survives JSON regeneration.
+* [`generate-cve-json`](generate-cve-json/) **applies the bot
+  detection on the finder side** to decide between `type: "finder"`
+  and `type: "tool"`. It does **not** filter rows out (every
+  non-empty line in *Reporter credited as* becomes a credit entry)
+  and it does **not** apply the detection on the remediation-
+  developer side — those decisions live in the skills upstream so
+  an intentional human override on the remediation side survives
+  JSON regeneration.
 * The *PR with the fix* body field on a tracker still records the
   PR even when its author is a bot — the field captures the
   artifact, not the author. Only *Remediation developer* is
@@ -207,41 +285,70 @@ the skill respects them.
 ## Worked examples
 
 **`security-issue-import-from-pr` import of a Dependabot PR.** The
-PR's author is `dependabot[bot]`. The skill skips the
-*Remediation developer* assignment and surfaces:
-`skipped credit: dependabot[bot] (matches bot policy — ends with
-[bot])`. The user can override with *"credit dependabot[bot] as
-remediation developer"* if a real human at Dependabot HQ is owed the
-credit (unusual but allowed).
+PR's author is `dependabot[bot]`. The skill **skips** the
+*Remediation developer* assignment (remediation side) and
+surfaces: `skipped credit: dependabot[bot] (matches bot policy —
+ends with [bot])`. The user can override with *"credit
+dependabot[bot] as remediation developer"* if a real human at
+Dependabot HQ is owed the credit (unusual but allowed). No
+finder-side action — the PR-import path does not extract a
+reporter credit.
 
 **`security-issue-sync` mining a reporter email reply.** The
 reporter wrote *"please credit me as claude-bot, I used Claude
-Code"*. The skill skips the credit, surfaces `skipped credit:
-claude-bot (matches bot policy — *-bot suffix pattern)`, **and
-proposes a Gmail draft** on the original report thread asking
-*"the credit you suggested (`claude-bot`) reads like an AI/agent
-handle — would you prefer we credit you under your name (e.g. the
-one on the original report) instead, or is `claude-bot` the
-attribution you want?"* The user reviews the draft and approves
-the send. If the reporter replies with a human name, sync picks
-it up on the next pass.
+Code"*. The skill **includes** `claude-bot` in *Reporter credited
+as*, surfaces `credited as tool: claude-bot (matches bot policy —
+*-bot suffix pattern)`, **and proposes a Gmail draft** on the
+original report thread asking *"we've credited `claude-bot` as a
+tool (CVE 5.x `type: tool`); if a human was behind it who should
+also be credited as finder, please reply with their name —
+otherwise the tool credit stands as-is"*. The user reviews the
+draft and approves the send. If the reporter replies with a human
+name, sync picks it up on the next pass and the generator emits
+a second credit row of `type: "finder"` alongside the tool row.
 
 **`security-issue-import` from a relay address.** The `From:`
-header is `security-alerts@scanner.example.com`. The skill skips
-*Reporter credited as*, surfaces `skipped credit:
-security-alerts@scanner.example.com (matches bot policy — noreply
-service sender)`, and prompts the user for the actual reporter
-identity (typically findable inside the email body).
+header is `security-alerts@scanner.example.com`. The relay
+address is a routing artefact, not a credit candidate — the skill
+extracts the actual reporter from the email body and credits
+that. The relay sender never lands in *Reporter credited as* at
+all (the noreply-service rule prevents the From-header heuristic
+from picking it up). If the email body contains
+*"automated scan by SecurityScanner-7"*, that string lands in the
+field and the generator emits it with `type: "tool"`.
 
 **`security-issue-import` of an ASF-relay report with an
 automation credit line.** The forwarded body ends with *"This
 vulnerability was discovered and reported by Automated Security
 Scanner v3 (run by ACME Sec Team)"*. The skill matches both the
 `automated` known-name and the `*scanner*` contains-pattern,
-skips *Reporter credited as*, surfaces `skipped credit:
-"Automated Security Scanner v3" (matches bot policy — known
-automation name + *scanner* pattern)`, and routes the
-credit-preference question to `@raboof` / Arnout via the
-ASF-relay credit-preference flow. The user can override with
-*"credit ACME Sec Team as finder"* if the human team behind the
-scanner is owed the credit.
+**includes** the string in *Reporter credited as*, surfaces
+`credited as tool: "Automated Security Scanner v3" (matches bot
+policy — known automation name + *scanner* pattern)`, and folds
+the *"is there a human at ACME Sec Team who should also be
+credited as finder?"* question into the next milestone draft
+routed to `@raboof` / Arnout via the ASF-relay credit-preference
+flow. The user can override with *"add ACME Sec Team as finder"*
+to land a second human credit row alongside the tool row.
+
+**`generate-cve-json` regeneration with a mixed-credit field.**
+The *Reporter credited as* field on tracker #NNN currently
+reads:
+
+```text
+Alice Smith, ACME Security Research
+Dependabot
+```
+
+The generator emits two `credits[]` entries:
+
+```json
+[
+  {"lang": "en", "type": "finder", "value": "Alice Smith, ACME Security Research"},
+  {"lang": "en", "type": "tool",   "value": "Dependabot"}
+]
+```
+
+No skill action is needed at regeneration time — the field text
+is the source of truth; the type assignment is computed per row
+from `is_bot_credit()` in the generator.
