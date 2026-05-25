@@ -65,6 +65,11 @@ ponymail_mcp = "ponymail_mcp"
 gh = "gh"
 mcp = "mcp"
 MCP = "MCP"
+# `ERRO` is docker / containerd / nerdctl's literal truncated log
+# level — appears in CLI output as `ERRO[0000] …`. Quoted verbatim
+# in `docs/setup/sandbox-troubleshooting.md` so grep on the real
+# error string matches the doc entry.
+ERRO = "ERRO"
 
 [files]
 # Skip auto-generated lockfiles + the cargo-style pinned-versions

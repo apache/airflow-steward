@@ -1547,6 +1547,12 @@ gaps; together they are the actual sandbox.
   and Seatbelt (macOS) enforce the policy at the OS layer, the
   SNI / DoH blind spot, the feedback-mechanism layering, and the
   residual risks the setup does not eliminate.
+- [`sandbox-troubleshooting.md`](sandbox-troubleshooting.md) —
+  catalog of known sandbox-shaped failure modes (SSH agent /
+  Yubikey unreachable, test port-bind blocked, docker / podman
+  socket denied) with symptom → root cause → settings.json fix
+  for each. Grep here first when a normal-looking operation fails
+  inside the sandbox.
 - [`AGENTS.md`](../../AGENTS.md) — placeholder convention used in skill
   files (`<tracker>`, `<upstream>`, `<security-list>`, …).
 - [`README.md`](../../README.md) — framework overview and how the

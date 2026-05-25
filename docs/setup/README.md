@@ -57,6 +57,12 @@ framework safe to use.
 - [**`unadopt.md`**](unadopt.md) — counterpart to `install-recipes.md`:
   remove the framework artefacts the adopt flow installed. One
   path, full plan surfaced before any write.
+- [**`sandbox-troubleshooting.md`**](sandbox-troubleshooting.md) —
+  catalog of known sandbox-shaped failure modes (SSH agent /
+  Yubikey unreachable, test port-bind blocked, docker/podman
+  socket denied) with symptom → root cause → settings.json fix
+  for each. The page to grep when a normal-looking operation
+  fails in the sandbox in an unexpected way.
 
 ## Typical lifecycle
 
