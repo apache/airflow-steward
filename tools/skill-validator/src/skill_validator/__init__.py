@@ -193,6 +193,7 @@ INJECTION_GUARD_TODO_CATEGORY = "injection_guard_todo"
 GH_LIST_CATEGORY = "gh_list_no_limit"
 SECURITY_PATTERN_CATEGORY = "security_pattern"
 PRIVACY_CATEGORY = "privacy"
+LOWERCASE_F_FIELD_CATEGORY = "lowercase_f_field"
 SOFT_CATEGORIES: frozenset[str] = frozenset(
     {
         PRINCIPLE_CATEGORY,
@@ -201,6 +202,7 @@ SOFT_CATEGORIES: frozenset[str] = frozenset(
         SECURITY_PATTERN_CATEGORY,
         GH_LIST_CATEGORY,
         PRIVACY_CATEGORY,
+        LOWERCASE_F_FIELD_CATEGORY,
     }
 )
 
@@ -1146,6 +1148,68 @@ def collect_files_to_check(root: Path | None = None) -> list[Path]:
     return list(base.rglob("*.md"))
 
 
+# ---------------------------------------------------------------------------
+# Lowercase -f field check (Pattern 2)
+# ---------------------------------------------------------------------------
+
+# Field names that commonly carry attacker-controlled content and must use
+# -F field=@file rather than -f field='value'.  Fields that are always
+# framework-internal static values (query strings, state toggles, OIDs,
+# sort keys, etc.) are excluded — they never originate outside the framework.
+_LOWERCASE_F_SUSCEPTIBLE_FIELDS: frozenset[str] = frozenset(
+    {"title", "body", "description", "name", "label", "milestone"},
+)
+
+# Matches -f <susceptible-field>='...' or -f <susceptible-field>="..."
+# The field name must be one of the susceptible set; the value must start
+# with a quote (single or double) immediately after the equals sign.
+_LOWERCASE_F_FIELD_RE = re.compile(
+    r"-f\s+(" + "|".join(sorted(_LOWERCASE_F_SUSCEPTIBLE_FIELDS)) + r")=['\"]",
+)
+
+# Files that intentionally document the bad pattern and must not be flagged.
+_LOWERCASE_F_SKIP_SUFFIXES: tuple[str, ...] = ("write-skill/security-checklist.md",)
+
+
+def validate_lowercase_f_field(path: Path, text: str) -> Iterable[Violation]:
+    """Flag ``-f field='value'`` / ``-f field="value"`` for susceptible fields.
+
+    Passing user-supplied or attacker-controlled content (titles, bodies,
+    descriptions, names) as inline ``-f field='...'`` arguments is a
+    shell-injection vector — the value goes through shell quoting and can
+    break out.  The safe form is ``-F field=@file``, which reads the value
+    verbatim from a temp file written by the Write tool, bypassing the shell
+    tokeniser entirely.
+
+    Only flags fields in ``_LOWERCASE_F_SUSCEPTIBLE_FIELDS``; safe static
+    fields (``query``, ``state``, ``oid``, ``type``, ``sort``, …) are
+    ignored.  Inline backtick prose mentions are also skipped.
+
+    All violations are **SOFT** — advisory only.
+    """
+    if any(str(path).endswith(suffix) for suffix in _LOWERCASE_F_SKIP_SUFFIXES):
+        return
+    # Only inspect content inside fenced code blocks (real commands).
+    # Prose mentions outside fenced blocks (e.g. in backtick spans or plain
+    # text) are skipped by this gate — no separate inline-span check needed.
+    fenced_spans = [m.span() for m in _FENCED_CODE_RE.finditer(text)]
+    for m in _LOWERCASE_F_FIELD_RE.finditer(text):
+        pos = m.start()
+        if not any(fs <= pos < fe for fs, fe in fenced_spans):
+            continue
+        field = m.group(1)
+        line_no = text[:pos].count("\n") + 1
+        yield Violation(
+            path,
+            line_no,
+            f"lowercase-f-field: '-f {field}=<quoted>' passes a susceptible field "
+            f"as an inline shell argument — use '-F {field}=@<tmpfile>' written "
+            f"by the Write tool instead to avoid shell-injection risk "
+            f"(see write-skill/security-checklist.md § Pattern 2)",
+            category=LOWERCASE_F_FIELD_CATEGORY,
+        )
+
+
 def collect_skill_dirs(root: Path | None = None) -> set[Path]:
     """Return the set of skill directories (immediate children of .claude/skills)."""
     base = (root or find_repo_root()) / SKILLS_DIR
@@ -1232,6 +1296,7 @@ def run_validation(root: Path | None = None) -> list[Violation]:
         violations.extend(validate_placeholders(path, text))
         violations.extend(validate_security_patterns(path, text))
         violations.extend(validate_gh_list_limit(path, text))
+        violations.extend(validate_lowercase_f_field(path, text))
 
     return violations
 
@@ -1290,6 +1355,7 @@ _SOFT_RULE_PREFIXES: tuple[str, ...] = (
     "chain-handoff",
     "criteria-source",
     "distinct-from",
+    "lowercase-f-field",
     "parenthetical rationale",
     "trigger phrase",
     "injection-guard TODO",

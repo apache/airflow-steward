@@ -35,6 +35,7 @@ from skill_validator import (
     INJECTION_GUARD_CATEGORY,
     INJECTION_GUARD_TODO_CATEGORY,
     INJECTION_GUARD_TODO_SENTINEL,
+    LOWERCASE_F_FIELD_CATEGORY,
     MAX_METADATA_CHARS,
     PRINCIPLE_CATEGORY,
     PRIVACY_CATEGORY,
@@ -59,6 +60,7 @@ from skill_validator import (
     validate_gh_list_limit,
     validate_injection_guard,
     validate_links,
+    validate_lowercase_f_field,
     validate_placeholders,
     validate_principle_compliance,
     validate_privacy_patterns,
@@ -1204,6 +1206,118 @@ class TestSecurityPatterns:
 
 
 # ---------------------------------------------------------------------------
+# Lowercase -f field check (Pattern 2)
+# ---------------------------------------------------------------------------
+
+
+def _fenced_skill_lf(cmd: str) -> str:
+    """Wrap *cmd* in a minimal SKILL.md with a fenced bash block."""
+    return f"---\nname: test\ndescription: test\nlicense: Apache-2.0\n---\n\n```bash\n{cmd}\n```\n"
+
+
+class TestLowercaseFField:
+    def test_title_single_quote_flagged(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        text = _fenced_skill_lf("gh api repos/<tracker>/milestones -f title='v1.0'")
+        violations = list(validate_lowercase_f_field(path, text))
+        assert len(violations) == 1
+        assert violations[0].category == LOWERCASE_F_FIELD_CATEGORY
+        assert "lowercase-f-field" in violations[0].message
+        assert "title" in violations[0].message
+
+    def test_title_double_quote_flagged(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        text = _fenced_skill_lf('gh api repos/<tracker>/milestones -f title="v1.0"')
+        violations = list(validate_lowercase_f_field(path, text))
+        assert len(violations) == 1
+        assert violations[0].category == LOWERCASE_F_FIELD_CATEGORY
+
+    def test_description_flagged(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        text = _fenced_skill_lf("gh api repos/<tracker>/milestones -f description='some text'")
+        violations = list(validate_lowercase_f_field(path, text))
+        assert len(violations) == 1
+        assert "description" in violations[0].message
+
+    def test_name_flagged(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        text = _fenced_skill_lf("gh api repos/<tracker>/labels -f name='bug'")
+        violations = list(validate_lowercase_f_field(path, text))
+        assert len(violations) == 1
+
+    def test_body_flagged(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        text = _fenced_skill_lf("gh api repos/<tracker>/issues -f body='some text'")
+        violations = list(validate_lowercase_f_field(path, text))
+        assert len(violations) == 1
+
+    def test_query_not_flagged(self, tmp_path: Path) -> None:
+        """GraphQL query strings are always framework-hardcoded — not susceptible."""
+        path = tmp_path / "SKILL.md"
+        text = _fenced_skill_lf("gh api graphql -f query='{ viewer { login } }'")
+        violations = list(validate_lowercase_f_field(path, text))
+        assert violations == []
+
+    def test_state_not_flagged(self, tmp_path: Path) -> None:
+        """Static state values (open/closed) are always safe."""
+        path = tmp_path / "SKILL.md"
+        text = _fenced_skill_lf("gh api repos/<tracker>/milestones -f state=open")
+        violations = list(validate_lowercase_f_field(path, text))
+        assert violations == []
+
+    def test_oid_not_flagged(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        text = _fenced_skill_lf("gh api graphql -f oid=abc123def456")
+        violations = list(validate_lowercase_f_field(path, text))
+        assert violations == []
+
+    def test_uppercase_F_not_flagged(self, tmp_path: Path) -> None:
+        """Uppercase -F is the correct form — must never be flagged."""
+        path = tmp_path / "SKILL.md"
+        text = _fenced_skill_lf("gh api repos/<tracker>/issues -F title=@/tmp/title.txt")
+        violations = list(validate_lowercase_f_field(path, text))
+        assert violations == []
+
+    def test_prose_mention_not_flagged(self, tmp_path: Path) -> None:
+        """Inline backtick prose like ``-f title='...'`` must not fire."""
+        path = tmp_path / "SKILL.md"
+        text = (
+            "---\nname: test\ndescription: test\nlicense: Apache-2.0\n---\n\n"
+            "Avoid using `-f title='value'` — use `-F title=@file` instead.\n"
+        )
+        violations = list(validate_lowercase_f_field(path, text))
+        assert violations == []
+
+    def test_outside_fenced_block_not_flagged(self, tmp_path: Path) -> None:
+        """Bare prose outside a fenced block must not fire."""
+        path = tmp_path / "SKILL.md"
+        text = (
+            "---\nname: test\ndescription: test\nlicense: Apache-2.0\n---\n\n"
+            "Run: gh api milestones -f title='v1'\n"
+        )
+        violations = list(validate_lowercase_f_field(path, text))
+        assert violations == []
+
+    def test_checklist_file_skipped(self, tmp_path: Path) -> None:
+        """The security checklist documents the bad pattern — must not self-flag."""
+        path = tmp_path / "write-skill" / "security-checklist.md"
+        path.parent.mkdir()
+        text = _fenced_skill_lf("gh api repos/<tracker>/milestones -f title='v1.0'")
+        violations = list(validate_lowercase_f_field(path, text))
+        assert violations == []
+
+    def test_violation_line_number_correct(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        text = _fenced_skill_lf("gh api repos/<tracker>/milestones -f title='v1.0'")
+        # Layout: 1:--- 2:name 3:description 4:license 5:--- 6:blank 7:```bash 8:command
+        violations = list(validate_lowercase_f_field(path, text))
+        assert violations[0].line == 8
+
+    def test_lowercase_f_field_in_soft_categories(self) -> None:
+        assert LOWERCASE_F_FIELD_CATEGORY in SOFT_CATEGORIES
+
+
+# ---------------------------------------------------------------------------
 # SOFT category exposure
 # ---------------------------------------------------------------------------
 
@@ -1216,6 +1330,7 @@ class TestSoftCategories:
         assert SECURITY_PATTERN_CATEGORY in SOFT_CATEGORIES
         assert GH_LIST_CATEGORY in SOFT_CATEGORIES
         assert PRIVACY_CATEGORY in SOFT_CATEGORIES
+        assert LOWERCASE_F_FIELD_CATEGORY in SOFT_CATEGORIES
 
 
 # ---------------------------------------------------------------------------
