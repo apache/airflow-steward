@@ -394,7 +394,7 @@ one pass sync:
 5. Re-pushes the regenerated JSON to the Vulnogram record over
    the OAuth API.
 6. Moves the Vulnogram record `READY → PUBLIC` via
-   [`vulnogram-api-record-publish`](../../tools/vulnogram/vulnogram-api/SKILL.md)
+   [`vulnogram-api-record-publish`](../../tools/vulnogram/oauth-api/README.md)
    — the CNA-feed dispatch to [`cve.org`](https://cve.org),
    formerly a manual UI click but now driven by sync since the
    archive URL is the real-world signal that the advisory has
