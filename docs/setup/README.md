@@ -37,7 +37,8 @@ framework safe to use.
 | Skill | Purpose |
 |---|---|
 | [`setup-isolated-setup-install`](../../.claude/skills/setup-isolated-setup-install/SKILL.md) | First-time install of the secure agent setup. |
-| [`setup-isolated-setup-verify`](../../.claude/skills/setup-isolated-setup-verify/SKILL.md) | Verify the secure setup landed correctly. |
+| [`setup-isolated-setup-verify`](../../.claude/skills/setup-isolated-setup-verify/SKILL.md) | Verify the secure setup landed correctly (static checks on settings.json, hooks, pinned versions). |
+| [`setup-isolated-setup-doctor`](../../.claude/skills/setup-isolated-setup-doctor/SKILL.md) | Diagnose in-session sandbox friction (SSH agent, port bind, docker/podman socket) and map each fail to a catalog entry. |
 | [`setup-isolated-setup-update`](../../.claude/skills/setup-isolated-setup-update/SKILL.md) | Surface drift between the installed setup and the framework's latest. |
 | [`setup-steward upgrade`](../../.claude/skills/setup-steward/upgrade.md) | Pull the framework checkout to latest `origin/main`. |
 | [`setup-steward verify`](../../.claude/skills/setup-steward/verify.md) | Verify the framework is integrated correctly into an adopter tracker. |
