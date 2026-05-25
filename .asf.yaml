@@ -132,10 +132,18 @@ github:
       # `asf-allowlist-check` (paths: `.github/**`) and
       # `lint .claude/settings.json against baseline` from
       # sandbox-lint (paths: `.claude/settings.json` +
-      # `tools/sandbox-lint/**`). Also excluded: `lychee` (the
-      # link-check runs on every PR, but external link rot is a
-      # maintenance concern handled by the daily schedule — it is
-      # not a merge-blocker).
+      # `tools/sandbox-lint/**`).
+      #
+      # CodeQL (`Analyze (python)`, `Analyze (actions)`) is NOT
+      # required. The framework repo is docs- and skills-heavy with
+      # no published runtime artefacts — the per-PR incremental
+      # value of CodeQL gating is low relative to the noise it
+      # produces on changes that do not touch real attack surface.
+      # The `codeql.yml` workflow still runs on every PR for
+      # visibility (findings surface in the Security tab), but a
+      # finding does not block merge. Re-introduce as a required
+      # gate if/when the project starts publishing runtime
+      # artefacts that warrant per-PR static analysis.
       required_status_checks:
         # `strict: false` — don't require the PR branch to be up
         # to date with `main` before merging. With `strict: true`,
@@ -144,13 +152,15 @@ github:
         # for multi-contributor repos.
         strict: false
         contexts:
-          # CodeQL — two matrix legs (Python + GitHub Actions YAML).
-          - "Analyze (python)"
-          - "Analyze (actions)"
-          # zizmor (GitHub Actions security lint; complements CodeQL).
+          # zizmor — GitHub Actions security lint.
           - "zizmor"
           # Pre-commit (prek) — static checks across the repo.
           - "prek"
+          # Lychee — link checker. Runs on every PR (no path
+          # filter), so it gates merge on link rot introduced in
+          # the PR. The daily schedule run still catches drift on
+          # files the PR did not touch.
+          - "lychee"
           # Per-project pytest matrix from tests.yml. Mirrors the
           # `matrix.project[].name` list there; keep these two
           # lists in sync when projects are added or renamed.
