@@ -22,17 +22,21 @@ Fifteen suites are currently implemented:
 
 ## Run
 
+The runner is pure Python standard library — no third-party dependencies and no
+build step. Run it directly with `python3` (>=3.10) from the repo root, pointing
+`PYTHONPATH` at the package source:
+
 ```bash
 # All cases for a skill
-uv run --project tools/skill-evals skill-eval \
+PYTHONPATH=tools/skill-evals/src python3 -m skill_evals.runner \
     tools/skill-evals/evals/security-issue-import/
 
 # All cases for a single step
-uv run --project tools/skill-evals skill-eval \
+PYTHONPATH=tools/skill-evals/src python3 -m skill_evals.runner \
     tools/skill-evals/evals/security-issue-import/step-2a-semantic-sweep/fixtures/
 
 # Single case
-uv run --project tools/skill-evals skill-eval \
+PYTHONPATH=tools/skill-evals/src python3 -m skill_evals.runner \
     tools/skill-evals/evals/security-issue-import/step-2a-semantic-sweep/fixtures/case-1-clear-duplicate
 ```
 
