@@ -2,7 +2,7 @@
 
 Behavioral eval harness for Apache Steward skills. Each eval suite tests a skill pipeline step by step, verifying that the model produces the correct structured JSON output for a fixed set of fixture cases.
 
-Fifteen suites are currently implemented:
+Twenty suites are currently implemented:
 
 - **security-issue-import** — 32 cases across 8 steps
 - **security-issue-triage** — 33 cases across 9 steps
@@ -16,25 +16,32 @@ Fifteen suites are currently implemented:
 - **issue-triage** — 22 cases across 5 steps (step-1-resolve-selector, step-3-classify, step-4-compose-comment, step-5-confirm, step-7-recap)
 - **issue-reproducer** — 27 cases across 7 steps (step-1-inventory, step-2-pick-candidate, step-3-classify-shape, step-5.5-confirm, step-7-verify, step-8-baselines, step-10-compose-verdict)
 - **issue-fix-workflow** — 12 cases across 4 steps (step-2-locate-area, step-6-scope-check, step-7-compose-commit, step-8-handback)
-- **issue-reassess** — 10 cases across 4 steps (step-1-pool-selection, step-2-resumability, step-4-aggregate, step-5-campaign-report)
 - **issue-reassess-stats** — 8 cases across 3 steps (step-1-fetch-verdicts, step-2-classify, step-3-aggregate)
-- **pr-management-code-review** — 5 cases across 1 step (review-disposition)
+- **pr-management-code-review** — 41 cases across 7 steps (step-3-security-disclosure-scan, step-4-third-party-license, step-4-compiled-artifacts, step-4-image-ip, step-4-license-headers, step-6-disposition, review-disposition)
+- **pr-management-mentor** — 20 cases across 2 steps (tone-checks, hand-off)
+- **pr-management-stats** — 13 cases across 2 steps (classify, pressure-weight)
+- **pr-management-triage** — 26 cases across 2 steps (pre-filter, decision-table)
 - **contributor-nomination** — 21 cases across 4 steps (step-0-resolve-inputs, step-3-gather-signal, step-4-assess, step-5-render)
 - **contributor-activity-sweep** — 12 cases across 3 steps (step-0-resolve-inputs, step-1-classify-reviews, step-2-render)
+- **list-steward-skills** — 7 cases across 2 steps (step-1-command, step-2-present)
 
 ## Run
 
+The runner is pure Python standard library — no third-party dependencies and no
+build step. Run it directly with `python3` (>=3.10) from the repo root, pointing
+`PYTHONPATH` at the package source:
+
 ```bash
 # All cases for a skill
-uv run --project tools/skill-evals skill-eval \
+PYTHONPATH=tools/skill-evals/src python3 -m skill_evals.runner \
     tools/skill-evals/evals/security-issue-import/
 
 # All cases for a single step
-uv run --project tools/skill-evals skill-eval \
+PYTHONPATH=tools/skill-evals/src python3 -m skill_evals.runner \
     tools/skill-evals/evals/security-issue-import/step-2a-semantic-sweep/fixtures/
 
 # Single case
-uv run --project tools/skill-evals skill-eval \
+PYTHONPATH=tools/skill-evals/src python3 -m skill_evals.runner \
     tools/skill-evals/evals/security-issue-import/step-2a-semantic-sweep/fixtures/case-1-clear-duplicate
 ```
 

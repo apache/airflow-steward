@@ -2,8 +2,11 @@
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
-- [🚀 Release-manager hand-off — `CVE_ID` (CVE JSON auto-pushed)](#-release-manager-hand-off--cve_id-cve-json-auto-pushed)
-  - [Step-by-step](#step-by-step)
+- [🚀 Release-manager hand-off — `CVE_ID`  *(CVE JSON auto-pushed)*](#-release-manager-hand-off--cve_id--cve-json-auto-pushed)
+  - [Step 1 of 3 — address reviewer feedback (if any), then promote to READY](#step-1-of-3--address-reviewer-feedback-if-any-then-promote-to-ready)
+  - [Step 2 of 3 — preview the advisory email, then send it](#step-2-of-3--preview-the-advisory-email-then-send-it)
+  - [Step 3 of 3 — sync closes out the rest (no further action from you)](#step-3-of-3--sync-closes-out-the-rest-no-further-action-from-you)
+  - [Reference links (only if you want them)](#reference-links-only-if-you-want-them)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -25,20 +28,30 @@
      `.claude/skills/security-issue-sync/SKILL.md` for the decision
      flow.
 
-     Idempotency: the marker on the line below is the **same** as the
-     manual-paste variant's. The skill's idempotency grep keys on the
-     marker only; the variant choice is detected by re-reading the
-     comment body and checking which template's signature it carries.
-     On a re-sync where the previous comment is the manual-paste
-     variant but the current push succeeded, the skill PATCH-edits the
-     comment body in place to the OAuth-pushed body (no second comment).
+     **Gate**: this comment is ONLY posted when the CVE record's
+     state in Vulnogram is `REVIEW` (verified by sync via
+     `vulnogram-api-record-fetch` after Step 5b's push attempt).
+     When the record is still `DRAFT` after the push attempt — for
+     any reason — sync posts the
+     `remediation-developer-fill-fields-comment.md` instead and the
+     tracker stays assigned to the remediation developer. The RM
+     never receives a hand-off while the record is in `DRAFT`.
+
+     Idempotency: the marker on the first line is the **same** as
+     the manual-paste variant's. The skill's idempotency grep keys
+     on the marker only; the variant choice is detected by
+     re-reading the comment body and checking which template's
+     signature it carries. On a re-sync where the previous comment
+     is the manual-paste variant but the current push succeeded,
+     the skill PATCH-edits the comment body in place to the
+     OAuth-pushed body (no second comment).
 
      The OAuth-pushed variant intentionally carries **no `uv run`
      invocations as RM-facing instructions** — the API push (and any
-     re-push triggered by a body change) is run by `security-issue-sync`
-     during sync, not by the release manager. The RM's surface is
-     restricted to Vulnogram UI clicks, reviewer-thread responses, and
-     the advisory send.
+     re-push triggered by a body change) is run by
+     `security-issue-sync` during sync, not by the release manager.
+     The RM's surface is restricted to Vulnogram UI clicks,
+     reviewer-thread responses, and the advisory send.
 
      Placeholders the skill substitutes:
 
@@ -52,12 +65,13 @@
        EMAIL_TAB_URL             <cve_tool_record_url_template>#email
        JSON_ANCHOR_URL           Tracker body deep-link to the embedded
                                  CVE JSON section
-       ARCHIVE_SCAN_URL          The PonyMail / archive search URL for
-                                 USERS_LIST (parameterised on CVE_ID)
-       MILESTONE_URL             Tracker-side URL of the milestone this
-                                 tracker belongs to (used in the
-                                 conditional close-milestone line of the
-                                 wrap-up comment in Step 6)
+       BOARD_URL                 Project-board URL with the `Status:
+                                 Announced` filter pre-applied
+       MILESTONE_URL             Tracker-side URL of the milestone
+                                 this tracker belongs to (used in
+                                 the conditional close-milestone
+                                 line of the wrap-up comment in
+                                 Step 3)
        FRAMEWORK_RECORD_MD_URL   Link to tools/vulnogram/record.md on
                                  the framework's GitHub
        FRAMEWORK_SYNC_SKILL_URL  Link to .claude/skills/security-issue-sync/
@@ -73,103 +87,68 @@
 -->
 <!-- apache-steward: release-manager-handoff v1 -->
 
-## 🚀 Release-manager hand-off — `CVE_ID` (CVE JSON auto-pushed)
+## 🚀 Release-manager hand-off — [`CVE_ID`](SOURCE_TAB_URL)  *(CVE JSON auto-pushed)*
 
-RM_HANDLE, the release containing the fix has shipped — this tracker
-now belongs to you. **The CVE JSON has already been pushed to
-[`#source`](SOURCE_TAB_URL) by the security team via the OAuth API at
-`PUSH_TIMESTAMP`**, and `security-issue-sync` keeps the record in
-lock-step with the tracker body on every subsequent sync run. Your
-remaining work is a small handful of Vulnogram-UI clicks plus the
-advisory send — no shell commands required.
+RM_HANDLE — the release with the fix has shipped, and the CVE record on Vulnogram is in **`REVIEW`** state with all mandatory content populated. The security team's last sync auto-pushed the CVE JSON over the OAuth API at `PUSH_TIMESTAMP` and the record state advanced to `REVIEW`, which is the precondition for this hand-off.
 
-### Step-by-step
+This tracker is now yours to drive from **Steps 13 → 14 → 15** of the security process. Three actions, in order; each one is a single click in Vulnogram; **no shell commands required from you at any point**.
 
-1. **Confirm the record is in `REVIEW`.** Open
-   [`#source`](SOURCE_TAB_URL). If the record is still in `DRAFT`,
-   click the Vulnogram UI button to move `DRAFT` → `REVIEW`. (The
-   data is already in place — `PUSH_TIMESTAMP`.)
-
-2. **Respond to any pending reviewer asks** in the
-   [`#email` tab](EMAIL_TAB_URL). Reviewer comments arrive by email on
-   `SECURITY_LIST` with the CVE ID in the subject line —
-   [`security-issue-sync`](FRAMEWORK_SYNC_SKILL_URL) detects them
-   automatically and updates the tracker body if a field needs to
-   change. If the body changes, the JSON regenerates and re-pushes as
-   part of the next sync; you do not push manually.
-
-3. **Set `READY`** via the Vulnogram UI button when the reviewer
-   thread closes. The record is now ready for the advisory-send step.
-
-4. **Preview the advisory email** on the
-   [`#email` tab](EMAIL_TAB_URL). Inspect how the email will render:
-   subject, body, recipient list. The preview surfaces formatting
-   issues (truncation, broken markdown, missing patch links) that the
-   JSON view does not. If anything needs to change, edit the
-   corresponding tracker body field — the JSON regenerates and
-   re-pushes; re-preview before sending.
-
-5. **Send the advisory** from the Vulnogram form. The form sends to
-   `USERS_LIST` and `ANNOUNCE_LIST`. **Do not touch the tracker
-   labels** — sync handles the label flips automatically when it sees
-   the advisory on the users-list (see Step 6).
-
-6. **(fully automatic — sync skill drives the lifecycle close-out.)**
-   On the next sync run after the advisory lands in the
-   [users-list archive](ARCHIVE_SCAN_URL),
-   [`security-issue-sync`](FRAMEWORK_SYNC_SKILL_URL):
-   - Captures the published advisory URL into the *Public advisory
-     URL* body field.
-   - **Extracts the public-facing short summary** from the advisory
-     email body and writes it back to the *Short summary for the
-     publish* body field, so the tracker matches what actually
-     shipped.
-   - **Flips the tracker labels**: adds `announced - emails sent` and
-     `announced`; removes `fix released`. The `announced` label
-     triggers the project-board automation to move the item from the
-     `Fix released` column to the `Announced` column.
-   - Regenerates the embedded CVE JSON (now picking up the updated
-     short summary as `descriptions[].value` and the archive URL as a
-     `vendor-advisory` reference) and **re-pushes the JSON to the
-     Vulnogram record** over the OAuth API.
-   - **Moves the record `REVIEW → PUBLIC`** via the OAuth API. This
-     triggers the CNA-feed dispatch to `cve.org`. (Previously a
-     manual UI click; sync now drives it on the same trigger as the
-     archive-URL capture, since the archive URL is the real-world
-     signal that the advisory has actually shipped.)
-   - **Closes the tracker** as `completed`.
-   - **Posts a follow-up comment** tagging the RM with the wrap-up
-     checklist: archive the now-closed tracker from the project
-     board's `Announced` column, and — **if every sibling on the
-     tracker's milestone is also closed** at that moment — close the
-     milestone via the link in the comment ([`MILESTONE_URL`](MILESTONE_URL)).
-     If other siblings on the milestone are still open, the wrap-up
-     comment omits the close-milestone line; the close happens when
-     the *last* sibling tracker reaches the same Step 6.
-
-7. **Follow the wrap-up comment** posted by sync in Step 6. Archive
-   the closed tracker from the project board's `Announced` column
-   (it stays accessible via the *Archived items* filter). If the
-   comment also linked the milestone (last-sibling case), click
-   through and close it — that's the explicit *"everything destined
-   for this release has shipped and been announced"* signal.
+> **You will never see this comment while the record is in `DRAFT`.** Sync gates the hand-off on the record reaching `REVIEW`. If you ever see this comment paired with a `DRAFT` state on the linked record, please ping @potiuk on this issue before clicking anything in Vulnogram — that combination is a bug we want to know about, not a state for you to resolve.
+>
+> *(The security team has already pushed the CVE JSON content into Vulnogram and filled every body field on this tracker that the public advisory needs. Your job is to: address any CVE-reviewer feedback that lands during `REVIEW`, move the record to `READY` when review closes, then send the advisory email. That's it.)*
 
 ---
 
-**If the OAuth push fails on a future sync** (session expired, schema
-rejection, transient HTTP error), the sync's recap surfaces the
-failure and PATCH-edits this comment back to the manual-paste variant
-([`release-manager-handoff-comment.md`](FRAMEWORK_RECORD_MD_URL)). The
-most common cause is a stale OAuth session cookie on the operator
-machine — the security team re-runs `vulnogram-api-setup`, the next
-sync resumes auto-pushing, and the comment flips back to this
-variant. **You as the RM are never asked to run shell commands** in
-this fallback path.
+### Step 1 of 3 — address reviewer feedback (if any), then promote to READY
+
+Open the record's [`#source` tab](SOURCE_TAB_URL) in your browser. **State** field at the top should read `REVIEW` — that is the precondition for this comment firing, so it should match. If it doesn't, stop and ping @potiuk; otherwise:
+
+1. **Click the [`#email` tab](EMAIL_TAB_URL)** on the same page. Scroll through any reviewer comments left by the ASF Security Team's CVE reviewers. **You do not need to act on reviewer comments yourself** — they arrive by email on `SECURITY_LIST` with the CVE ID in the subject, and sync detects them on the next run, opens corresponding body-field updates on this tracker, and re-pushes the JSON. If the comments tab is empty, or carries a closure note (*"OK, looks good"* / *"approved"*), proceed to the next step.
+
+2. **When the reviewer thread is clear** (no open comments, or all comments have an *"OK, looks good"*-style closer), use the **State** dropdown on `#source` to change `REVIEW` → `READY`. Click **Save**. *The record is now staged for advisory send.*
+
+> 💡 *How do you know the reviewer thread is clear?* Two signals: (a) no new reviewer email on `SECURITY_LIST` carrying the CVE ID for ~3 days, or (b) an explicit "looks good" reply from the reviewer. Most CVEs go through `REVIEW` with no reviewer comments at all — in that case, you can usually move `REVIEW → READY` immediately after Step 1.1's tab-check confirms there's nothing to address.
 
 ---
 
-**References:**
+### Step 2 of 3 — preview the advisory email, then send it
 
-- Vulnogram state machine: [`tools/vulnogram/record.md`](FRAMEWORK_RECORD_MD_URL).
-- Reusable email wording (if you draft anything by hand): [`canned-responses.md`](CANNED_RESPONSES_URL).
-- Full lifecycle (Steps 12-15): [`README.md`](FRAMEWORK_README_URL#for-release-managers--steps-1215).
+With the record in `READY`, click the [`#email` tab](EMAIL_TAB_URL) on the same record page. This shows you, in the exact format that goes out, what the advisory email will look like when sent to `USERS_LIST` and `ANNOUNCE_LIST`.
+
+**Check that:**
+- The subject line is `CVE_ID: <one-line description>` and the description matches what you'd want public.
+- The body's short-summary paragraph reads as instructions to a user (*"Users are advised to upgrade to version X"*), not just a technical description of the bug.
+- The *Affected versions* range is correct.
+- The reporter credit line is present and spelled correctly.
+
+**If anything looks wrong**: don't edit it in Vulnogram. Comment on this tracker (just `@potiuk: the X field needs Y`) and we'll fix the corresponding body field here, regenerate the JSON, and re-push within the next sync. Re-preview after that.
+
+**If everything looks right**: click the **Send Email** button on the `#email` tab. The advisory ships to `USERS_LIST` and `ANNOUNCE_LIST`. **That is the only manual send action you make for this CVE.**
+
+> ⚠️ **Do not touch the tracker labels yourself.** Sync flips `fix released` → `announced - emails sent` + `announced` automatically when it sees the advisory in the public archive (usually within the same day). If you flip them manually you race the automation.
+
+---
+
+### Step 3 of 3 — sync closes out the rest (no further action from you)
+
+Once the advisory archives on `lists.apache.org/list.html?USERS_LIST` (typically within minutes of sending), the next sync run does this for you, end-to-end:
+
+1. Captures the published advisory URL into this tracker's body.
+2. Regenerates the CVE JSON (now including the archive URL as a `vendor-advisory` reference) and re-pushes it to Vulnogram via the OAuth API.
+3. Moves the Vulnogram record `READY` → `PUBLIC` (this is the CNA-feed dispatch — once it lands, `cve.org` starts propagating).
+4. Flips this tracker's labels (`fix released` → `announced - emails sent` + `announced`).
+5. Closes this tracker as `completed`.
+6. **Archives this tracker** from the `Announced` column on the [Security issues board](BOARD_URL) (`archiveProjectV2Item` GraphQL mutation — sync, not you).
+7. *(Conditional)* **Closes the [`MILESTONE_TITLE`](MILESTONE_URL) milestone** if this tracker was the last open issue on it.
+
+The CVE will propagate to `cve.org` on its own within a few hours; sync will detect the publication on a subsequent run and post a courtesy *"CVE is live on cve.org"* note to the reporter on the original email thread.
+
+**You're done.** The lifecycle is complete from your side at Step 2 (Send Email). Everything above is sync's job — no further comments will tag you with manual cleanups.
+
+---
+
+### Reference links (only if you want them)
+
+- **The full lifecycle in one place** — [`README.md` Steps 12–15](FRAMEWORK_README_URL#for-release-managers--steps-1215)
+- **Vulnogram-specific mechanics** (state machine, paste-flow details) — [`tools/vulnogram/record.md`](FRAMEWORK_RECORD_MD_URL)
+- **Reusable email wording for ad-hoc replies** — [`canned-responses.md`](CANNED_RESPONSES_URL)

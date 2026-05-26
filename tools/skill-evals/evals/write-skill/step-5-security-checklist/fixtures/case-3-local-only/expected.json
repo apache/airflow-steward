@@ -1,0 +1,1 @@
+{"reads_external_content": false, "privacy_llm_gate_required": false, "injection_guard_callout_required": false, "rationale": "The skill reads only a developer-committed YAML file within the repository and makes no external API calls, so none of the injection-defence patterns are required."}

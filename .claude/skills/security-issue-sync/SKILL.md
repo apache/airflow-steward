@@ -696,17 +696,17 @@ update, label change, or next-step recommendation in Step 2:
 | Reporter reply with a confirmed credit line (*"please credit me as …"*, *"use handle X"*, *"anonymous is fine"*) | Replace the `Reporter credited as` placeholder with the confirmed form; mark the credit question as resolved so the next status-update draft does not re-ask it. |
 | Reporter explicit opt-out of credit (*"do not credit me"*, *"anonymous"*) | Set the field to `anonymous` and flag the advisory to use that form. |
 | Release manager's `[RESULT][VOTE] Release Airflow <version>` on `<dev-list>` for a version that carries the fix | Record the release manager in the "Known release managers" subsection of [`AGENTS.md`](../../../AGENTS.md) if not already there; flag Step 13 (advisory) as assigned to that person. |
-| Advisory archived on `<users-list>` (the announcement message is now visible in `lists.apache.org/list.html?<users-list>` — scan the archive with the CVE ID when `fix released` is set and the *"Public advisory URL"* body field is empty) | This is the **post-advisory lifecycle close-out trigger**. Propose, in a single combined apply: (1) populate the *"Public advisory URL"* body field with the archive URL; (2) **extract the public-facing short summary from the advisory email body** (the prose between the CVE header and the *Affected version range* block of the archived message) and write it back to the *"Short public summary for publish"* body field, so the tracker's summary matches what actually shipped; (3) flip the tracker labels — add `announced - emails sent` and `announced`, remove `fix released`; (4) regenerate the CVE JSON attachment (the generator picks up the new short summary as `descriptions[].value` and the URL as a `vendor-advisory` reference); (5) re-push the regenerated JSON to the Vulnogram record over the OAuth API; (6) **move the Vulnogram record `REVIEW → PUBLIC`** via the OAuth API — this is the CNA-feed dispatch to `cve.org`, formerly gated on a manual UI click but now driven by sync on the archive-URL signal (the URL is the real-world signal that the advisory has actually shipped); (7) move the project-board column to `Announced`; (8) close the tracker as `completed`; (9) post a follow-up "wrap-up" comment tagging the release manager with the residual manual steps: archive the closed tracker from the `Announced` column, and — **if every sibling on the tracker's milestone is also closed at that moment** — close the milestone too (the comment carries the milestone URL as a clickable link in the last-sibling case; if other siblings are still open, the comment omits the close-milestone line and the milestone close happens when the *last* sibling tracker reaches this step). The OAuth API push + `REVIEW → PUBLIC` step degrade to a paste fallback in the [`release-manager-handoff-comment.md`](../../../tools/vulnogram/release-manager-handoff-comment.md) variant when the OAuth session is not available. |
+| Advisory archived on `<users-list>` (the announcement message is now visible in `lists.apache.org/list.html?<users-list>` — scan the archive with the CVE ID when `fix released` is set and the *"Public advisory URL"* body field is empty) | This is the **post-advisory lifecycle close-out trigger**. Propose, in a single combined apply: (1) populate the *"Public advisory URL"* body field with the archive URL; (2) **extract the public-facing short summary from the advisory email body** (the prose between the CVE header and the *Affected version range* block of the archived message) and write it back to the *"Short public summary for publish"* body field, so the tracker's summary matches what actually shipped; (3) flip the tracker labels — add `announced - emails sent` and `announced`, remove `fix released`; (4) regenerate the CVE JSON attachment (the generator picks up the new short summary as `descriptions[].value` and the URL as a `vendor-advisory` reference); (5) re-push the regenerated JSON to the Vulnogram record over the OAuth API; (6) **move the Vulnogram record `REVIEW → PUBLIC`** via the OAuth API — this is the CNA-feed dispatch to `cve.org`, formerly gated on a manual UI click but now driven by sync on the archive-URL signal (the URL is the real-world signal that the advisory has actually shipped); (7) move the project-board column to `Announced`; (8) close the tracker as `completed`; (9) **archive the tracker from the `Announced` column** on the board via the `archiveProjectV2Item` GraphQL mutation; (10) — **if every sibling on the tracker's milestone is also closed at that moment** — close the milestone too via the milestone-PATCH recipe in [Step 4](#step-4--apply-confirmed-changes); (11) post a **purely informational** wrap-up comment tagging the release manager as a timeline-event marker that the lifecycle is complete — **no manual asks**, since (9) and (10) are already sync-driven and the RM has no remaining actions post-Send-Email. The OAuth API push + `REVIEW → PUBLIC` step degrade to a paste fallback in the [`release-manager-handoff-comment.md`](../../../tools/vulnogram/release-manager-handoff-comment.md) variant when the OAuth session is not available. |
 | Advisory message sent to `announce@apache.org` / `<users-list>` but archive URL not yet visible | No-op transition; **do not** flip the `fix released → announced` labels here. The label flip is part of the combined "archive URL captured" apply above and only fires when the archive URL is confirmed live on `lists.apache.org` (this is the load-bearing real-world signal that the advisory actually shipped — a `[VOTE]/[ANNOUNCE]` mail thread in flight without an archived URL is ambiguous). |
 | Project-board column drifted from the issue's label-derived state (e.g. a tracker carries `pr merged` but is still in the `PR created` column on [Project 2](<project-board-url>), or `announced` + *Public advisory URL* body field populated but the column is still `Fix released`) | Propose moving the project item to the correct column per the mapping table in Step 2b. The board is the primary security-team overview surface; a stale column hides ownership handoffs from the team at a glance. |
 | `announced` label set and CVE record on `cveprocess.apache.org` now reports state PUBLISHED (checked via `curl -s https://cveprocess.apache.org/cve5/<CVE-ID>.json` / the ASF CVE tool API, or an explicit release-manager comment on the issue stating the Vulnogram push is done) | Propose closing the issue. Do not update any labels. This is the terminal transition. |
 | CVE record has open **review comments / reviewer proposals** (detected via the Gmail-search path in Step 1e — reviewer-comment notifications from Vulnogram land on `<security-list>` with the CVE ID in the subject line; the `cveprocess.apache.org/cve5/<CVE-ID>.json` endpoint is behind ASF OAuth and is not readable from this skill's context, so Gmail is the load-bearing signal source). | Surface each open review comment in Step 2a with **clickable links** to the Gmail thread and to the CVE record on `cveprocess.apache.org` (the reader can authenticate in-browser to see live state), verbatim-quoted; then for each one that maps cleanly to a tracking-issue body field (CWE, Affected versions, Reporter credited as, Public advisory URL, Short public summary), **propose the matching body-field update** as a numbered item in Step 2b. The body is the source of truth for the CVE JSON — regeneration in Step 5 will pull the update back into the paste-ready attachment, and the release manager's only remaining action is the Vulnogram paste + comment-resolution click. Comments that do not map to a body field (severity/CVSS, out-of-scope challenges, free-form rewrites) are surfaced verbatim and flagged for human decision. See Step 1e for the full Gmail-search recipe and the reviewer-comment-to-field mapping table. |
 | The referenced `<upstream>` PR has been opened but is still in `open` state | Propose `pr created` label; update the *"PR with the fix"* body field with the PR URL. |
-| The referenced `<upstream>` PR moved to `merged` | Propose swapping `pr created` → `pr merged`; update milestone to the shipping release if now known. |
+| The referenced `<upstream>` PR moved to `merged` | Propose swapping `pr created` → `pr merged`; update milestone to the shipping release if now known. **Also**: check whether all six mandatory CVE body fields are populated (*CWE*, *Affected versions*, *Severity*, *Reporter credited as*, *Short public summary for publish*, *PR with the fix*). If any is empty / `_No response_`, propose posting (or PATCH-updating) the *Remediation-developer fill-fields comment* per [the dedicated bullet in Step 2b](#step-2--build-a-proposal-do-not-apply-anything-yet) — the remediation developer is best-positioned to fill these in, and the tracker stays assigned to them until the fields are complete. This is the **first** of two firing points for the fill-fields comment; the second is the `pr merged` → `fix released` row below. |
 | The *"PR with the fix"* body field has at least one PR URL **and** the *"Remediation developer"* body field is missing the PR author's name (or is `_No response_`) | Propose appending the PR author's display name (`gh pr view <N> --repo <upstream> --json author --jq '.author.name // .author.login'`) to the *"Remediation developer"* body field. **Append, never overwrite** — manual edits (co-authors added by the triager, name spelling corrections, "Anonymous" overrides) must survive subsequent syncs. Run once per fresh PR URL added to the field; skip if the resolved name is already present (case-insensitive substring match). The CVE JSON generator reads the field on its next regeneration and emits one `type: "remediation developer"` credit per line, so this hand-off keeps the credit attached even if Vulnogram drops the CLI flag. See the *"Auto-resolve --remediation-developer"* note in Step 5 for the historical CLI-flag fallback. |
 | The *"Affected versions"* body field is missing, holds a pre-convention shape, or carries the project's pre-release sentinel, and the tracker is **not** at `fix released` yet | Propose populating / refining *"Affected versions"* per the project's convention. The per-scope shape, the pre-release sentinel (if any), and the lifecycle live in [`<project-config>/scope-labels.md` — *Affected versions convention by scope*](../../../<project-config>/scope-labels.md#affected-versions-convention-by-scope). After updating, regenerate the CVE JSON attachment so the parser picks up the new shape. |
 | A tracker is transitioning to `fix released` (per the row below) and *"Affected versions"* still carries the project's pre-release sentinel | Propose replacing the sentinel with the concrete released version per the project's convention; see [`<project-config>/scope-labels.md` — *Affected versions convention by scope*](../../../<project-config>/scope-labels.md#affected-versions-convention-by-scope) for the recipe. After the body update, regenerate the CVE JSON attachment so `versions[]` picks up the bounded `lessThan` shape and the record becomes review-ready. |
-| A release carrying the fix has shipped. Detection is **scope-dependent** — different scope labels on a project can ride different release trains, each with its own *"is it released?"* signal (which artifact registry to consult, what to query, how to map a tracker's milestone to that registry, partial-release edge cases). The per-scope detection recipe lives in [`<project-config>/scope-labels.md` — *Detecting that a fix release has shipped*](../../../<project-config>/scope-labels.md#detecting-that-a-fix-release-has-shipped). The "or an explicit *fix shipped in X.Y.Z* comment" fallback applies across all scopes regardless of the project-specific signal. | **Gate: every mandatory CVE field must be populated before this hand-off.** Before proposing either the label swap or the assignee swap, check that all six of these body fields are populated (not empty, not `_No response_`): *CWE*, *Affected versions*, *Severity*, *Reporter credited as*, *Short public summary for publish*, *PR with the fix*. **If any is missing, do NOT propose the hand-off.** Instead, propose a comment on the tracker `@`-mentioning the *Remediation developer* (read from the body field) that lists exactly which fields are still missing and asks them to fill them in — the release manager needs every field populated to send the advisory at Step 13. A subsequent sync run will detect that the gate is now clear and proceed. **When every gate field is populated:** propose swapping `pr merged` → `fix released` (Step 12). This is the release manager's cue to own Steps 13–15 (advisory send → URL capture → Vulnogram PUBLIC → close). **Also propose swapping the assignee from the remediation developer to the release manager** (looked up via the three-source cascade in Step 2c — [`<project-config>/release-trains.md`](../../../<project-config>/release-trains.md) "Release managers for releases currently relevant to the security tracker" → Release Plan wiki → `[RESULT][VOTE]` thread on `dev@`), so the issue list reflects ownership hand-off. See the *Assignee hand-off at the `fix released` transition* paragraph under **Assignees** in Step 2b for the full rule. |
+| A release carrying the fix has shipped. Detection is **scope-dependent** — different scope labels on a project can ride different release trains, each with its own *"is it released?"* signal (which artifact registry to consult, what to query, how to map a tracker's milestone to that registry, partial-release edge cases). The per-scope detection recipe lives in [`<project-config>/scope-labels.md` — *Detecting that a fix release has shipped*](../../../<project-config>/scope-labels.md#detecting-that-a-fix-release-has-shipped). The "or an explicit *fix shipped in X.Y.Z* comment" fallback applies across all scopes regardless of the project-specific signal. | **Two-stage gate: every mandatory CVE field must be populated AND the CVE record state in Vulnogram must be `REVIEW`.** Before proposing either the label swap or the assignee swap, run both checks. **Stage 1 — body fields**: check that all six body fields are populated (not empty, not `_No response_`): *CWE*, *Affected versions*, *Severity*, *Reporter credited as*, *Short public summary for publish*, *PR with the fix*. If any is missing, **do NOT propose the hand-off**. Instead, propose posting (or PATCH-updating) the *Remediation-developer fill-fields comment* per the dedicated bullet in Step 2b — issue stays assigned to the remediation developer; no label swap, no assignee swap, no RM hand-off. **Stage 2 — CVE state**: with Stage 1 clear, Step 5b's `vulnogram-api-record-update` push includes `body.CNA_private.state = "REVIEW"` (the new auto-promote behaviour — see Step 5b for details). After the push, verify the record state is now `REVIEW` (via `vulnogram-api-record-fetch` / the equivalent state probe). If the state is still `DRAFT` after the push (push failed, CNA-schema validation rejected the JSON, transient error), **re-fire the fill-fields comment** with the refreshed blocker description, and **do NOT propose the hand-off / label swap / assignee swap on this pass**. The RM never receives a hand-off while the record is in `DRAFT`. **When both stages are clear (state == REVIEW)**: propose swapping `pr merged` → `fix released` (Step 12). This is the release manager's cue to own Steps 13–15 (advisory send → URL capture → Vulnogram PUBLIC → close). **Also propose swapping the assignee from the remediation developer to the release manager** (looked up via the three-source cascade in Step 2c — [`<project-config>/release-trains.md`](../../../<project-config>/release-trains.md) "Release managers for releases currently relevant to the security tracker" → Release Plan wiki → `[RESULT][VOTE]` thread on `dev@`), so the issue list reflects ownership hand-off. See the *Assignee hand-off at the `fix released` transition* paragraph under **Assignees** in Step 2b for the full rule. |
 | GHSA state transition (opened, accepted, published, rejected) in a GHSA-forwarded email | If the GHSA is closed as "not accepted" but the security team accepted the report on `security@`, flag the divergence in the status comment so it is not lost. |
 | Team member saying *"let's also backport to v3-2-test"* / *"please mark X for backport"* | Note the requested backport label on the public PR as an item for Step 9 of the `security-issue-fix` workflow. |
 | Reporter flagging a second distinct vulnerability on the same thread | Surface as an explicit question to the user — it may warrant a separate tracking issue. |
@@ -918,7 +918,7 @@ process the issue is currently at:
 | Release with the fix has shipped, advisory not sent yet (swap `pr merged` → `fix released`) | 12 |
 | `fix released` set, advisory not yet sent — release manager owns the advisory | 13 |
 | Advisory sent, no archive URL yet (no labels flipped; the `fix released → announced` label flip is deferred to the combined "archive URL captured" apply) | 13 → 14 |
-| **Archive URL captured** — sync's combined apply fires at this moment: writes the URL into the body, extracts the public short summary from the advisory and writes it into the body, flips `fix released → announced - emails sent + announced`, regenerates + re-pushes the JSON, moves the Vulnogram record `REVIEW → PUBLIC` via API, moves the board to `Announced`, closes the tracker, and posts the conditional wrap-up comment with the milestone URL when last-sibling on the milestone. See the `Advisory archived on <users-list>` row in [Step 2](#step-2--build-a-proposal-do-not-apply-anything-yet) for the full sequence. | 14 → 15 |
+| **Archive URL captured** — sync's combined apply fires at this moment: writes the URL into the body, extracts the public short summary from the advisory and writes it into the body, flips `fix released → announced - emails sent + announced`, regenerates + re-pushes the JSON, moves the Vulnogram record `REVIEW → PUBLIC` via API, moves the board to `Announced`, closes the tracker, **archives the tracker from the board**, **closes the milestone if last-sibling**, and posts the purely-informational wrap-up comment as a timeline marker (no manual asks). See the `Advisory archived on <users-list>` row in [Step 2](#step-2--build-a-proposal-do-not-apply-anything-yet) for the full sequence. | 14 → 15 |
 | **Closed**, `announced` set, cve.org check **not yet run** for this tracker since close | post-15 (cve.org publication check — see [1g](#1g-recently-closed-trackers--check-cveorg-publication-state)) |
 | Closed, credits missing | 16 |
 
@@ -1023,19 +1023,40 @@ will change and *why*. Group them by category:
   a date. For a provider-wave milestone the description should name
   the release manager so the advisory owner is visible at a glance:
 
+  **Use the Write tool** (not Bash) to write each field value verbatim
+  to a temp file, then pass via `-F`:
+
+  *Write tool call:* `file_path: /tmp/ms-title-<tracker>.txt`,
+  `content: <Milestone>`
+
+  *Write tool call:* `file_path: /tmp/ms-desc-<tracker>.txt`,
+  `content: <optional>`
+
   ```bash
   # Core or chart (due_on mirrored from upstream when available):
   gh api repos/<tracker>/milestones \
-    -f title='<Milestone>' -f state=open \
-    -f description='<optional>' \
+    -F title=@/tmp/ms-title-<tracker>.txt \
+    -f state=open \
+    -F description=@/tmp/ms-desc-<tracker>.txt \
     -f due_on='<ISO8601 from upstream, omit if upstream has none>'
+  ```
 
+  For provider waves, update the Write tool calls with:
+
+  *Write tool call:* `file_path: /tmp/ms-title-<tracker>.txt`,
+  `content: Providers YYYY-MM-DD`
+
+  *Write tool call:* `file_path: /tmp/ms-desc-<tracker>.txt`,
+  `content: Providers release cut on YYYY-MM-DD, RM: <Name>`
+
+  ```bash
   # Provider wave (cut date + RM from the Release Plan wiki /
   # dev@ [VOTE] thread; upstream does not milestone providers
   # waves so due_on typically comes from the wiki):
   gh api repos/<tracker>/milestones \
-    -f title='Providers YYYY-MM-DD' -f state=open \
-    -f description='Providers release cut on YYYY-MM-DD, RM: <Name>'
+    -F title=@/tmp/ms-title-<tracker>.txt \
+    -f state=open \
+    -F description=@/tmp/ms-desc-<tracker>.txt
   ```
 
   After the create call, assign the milestone to the issue via
@@ -1549,6 +1570,101 @@ will change and *why*. Group them by category:
   single preformatted block and hiding every link. Do not
   indent entries for "readability".
 
+- **Remediation-developer fill-fields comment** — when this sync
+  pass detects that mandatory CVE body fields are not yet
+  populated, propose posting (or PATCH-updating) a comment tagging
+  the **remediation developer** with the concrete list of missing
+  fields. The tracker stays assigned to the remediation developer;
+  the release-manager hand-off is **not** fired until the gate
+  clears.
+
+  **This is its own first-class comment, not a rollup entry**, for
+  the same reason as the RM hand-off — it carries a concrete
+  call-to-action that needs to be visible at-a-glance, not hidden
+  inside a `<details>` block.
+
+  **Trigger — two firing points**:
+
+  1. **At the `pr created` → `pr merged` transition (Step 11)** —
+     when sync proposes the `pr created` → `pr merged` label swap,
+     check whether all six mandatory body fields are populated
+     (*CWE*, *Affected versions*, *Severity*, *Reporter credited
+     as*, *Short public summary for publish*, *PR with the fix*).
+     If any field is empty / `_No response_`, propose the
+     fill-fields comment with that field list. Issue stays
+     assigned to the remediation developer (who is also the fix-PR
+     author and the current assignee in the common case). **Do
+     not propose any RM-related action at Step 11**; that belongs
+     to Step 12.
+  2. **At the `pr merged` → `fix released` transition (Step 12)** —
+     after sync's Step 5b push attempt, check the CVE record state
+     in Vulnogram. If the state is still `DRAFT` for any reason
+     (one of the body fields was still empty, the JSON push was
+     blocked, the API push happened but the state did not advance
+     because the JSON failed CNA-schema validation, etc.),
+     **re-fire** the fill-fields comment with the refreshed list
+     of what is still blocking. **Do not** fire the RM hand-off,
+     do not flip the label to `fix released`, do not swap the
+     assignee — those all gate on `state == REVIEW`. A subsequent
+     sync run that finds the state finally promoted to `REVIEW`
+     will clear the gate and fire the RM hand-off then.
+
+  **Idempotency + PATCH-in-place**. Same shape as the hand-off
+  comment: scan for the marker
+  ```html
+  <!-- apache-steward: remediation-developer-fill-fields v1 -->
+  ```
+  on line 1 of each comment. Three outcomes:
+
+  - **No marker found** — POST a fresh comment.
+  - **Marker found, current body matches the body the skill would
+    render this run** — no-op; surface as
+    *"fill-fields comment already posted on `<comment-url>` and
+    the missing-fields list is unchanged (skipping)"*.
+  - **Marker found, current body does NOT match** (typically: the
+    missing-fields list changed because the remediation developer
+    filled some — but not all — fields between sync runs) —
+    PATCH-edit the existing comment with the refreshed list.
+
+  **Body source.** `tools/<cve-tool>/remediation-developer-fill-fields-comment.md`
+  (for Vulnogram:
+  [`tools/vulnogram/remediation-developer-fill-fields-comment.md`](../../../tools/vulnogram/remediation-developer-fill-fields-comment.md)).
+  This template carries no OAuth-pushed / manual-paste variants —
+  the remediation developer's job is to fill in body fields, and
+  the API-push state is invisible to them.
+
+  **Resolving placeholders.** Inherits the same resolution rules
+  as the hand-off comment for the placeholders it shares
+  (`CVE_ID`, `SOURCE_TAB_URL`, `TRACKER_URL`, `SECURITY_LIST`,
+  `SECURITY_LIST_DOMAIN`, `FRAMEWORK_README_URL`,
+  `FRAMEWORK_SYNC_SKILL_URL`). Plus two unique placeholders:
+
+  - `REMEDIATION_DEVELOPER_HANDLE` — read from the tracker's
+    *Remediation developer* body field. When the field carries a
+    `Full Name (@handle)` line, extract the `@handle` token. When
+    only the name is set, fall back to the fix-PR author's
+    `@`-handle (looked up via `gh pr view --json author --jq
+    .author.login`) and propose adding the `@handle` to the body
+    field on the same sync pass (so the next sync resolves
+    cleanly).
+  - `MISSING_FIELDS_LIST` — Markdown bullet list, one line per
+    empty mandatory field, of the shape
+    Markdown bullets shaped `- **<Field name>** — currently the
+    empty placeholder; <one-line hint on how to fill it>`. The hint
+    comes from the project's
+    *Issue-template fields* docs; for Vulnogram-based projects
+    the hint is the field's `description` from
+    `<project-config>/.github/ISSUE_TEMPLATE/issue_report.yml`.
+
+  **Apply mechanic.** See the *Remediation-developer fill-fields
+  comment* bullet in Step 4 below; POST vs PATCH decided by the
+  marker check above.
+
+  **Recap.** Surface the comment URL (new or PATCH-edited) in the
+  recap (Step 6) so the user can click through and verify the
+  list, plus a one-line note *"hand-off to RM blocked on N
+  field(s); fill-fields comment posted/refreshed"*.
+
 - **Release-manager hand-off comment** — when this sync pass
   proposes the `pr merged` → `fix released` label swap (Step 12),
   **also** propose posting a separate hand-off comment that walks
@@ -1563,13 +1679,22 @@ will change and *why*. Group them by category:
   comment. Folding it into the rollup would bury the call-to-action
   inside a `<details>` block.
 
-  **Trigger.** Fires *exactly once* per tracker, at the same sync
-  pass that proposes `pr merged` → `fix released`. Do not propose it
-  earlier — the tracker is not yet the release manager's
-  responsibility before that swap, and a hand-off comment posted at
-  `cve allocated` or `pr merged` would lose context by the time the
-  release actually ships. Do not propose it on subsequent runs once
-  it has already been posted (idempotency check below).
+  **Trigger — gated on `state == REVIEW`.** Fires *exactly once*
+  per tracker, at the sync pass that proposes
+  `pr merged` → `fix released` **AND** finds the CVE record state
+  in Vulnogram is `REVIEW` (verified by sync after Step 5b's push
+  attempt — the push includes the `body.CNA_private.state =
+  "REVIEW"` advance when all six mandatory body fields are
+  populated). When the CVE record is still in `DRAFT` after the
+  push attempt, **do not** fire this hand-off; fire the
+  *Remediation-developer fill-fields comment* instead and leave
+  the tracker assigned to the remediation developer. **The RM
+  must never receive this hand-off while the record is in
+  `DRAFT`** — that invariant is asserted in the template body
+  itself so the RM can recognise a misfire if it ever happens.
+  Do not propose it earlier than Step 12; do not propose it on
+  subsequent runs once it has already been posted (idempotency
+  check below).
 
   **Idempotency + variant edit-in-place.** Before proposing, scan
   the issue's existing comments for the marker
@@ -1961,25 +2086,33 @@ before moving on to the next item. Use:
   comment's *"the JSON has been regenerated to include the archive
   URL and pushed to the record"* claim is true at the moment the
   RM reads it.
-- **Wrap-up comment (post-close):** load
+- **Wrap-up comment (post-close, informational only):** load
   [`tools/<cve-tool>/release-manager-wrap-up-comment.md`](../../../tools/vulnogram/release-manager-wrap-up-comment.md)
   and post it as the **last** action of the *Advisory archived on
-  `<users-list>`* combined apply, right after the tracker close
-  succeeds. The comment is the residual-manual-steps ping to the RM
-  (archive from the `Announced` column, and — conditionally —
-  close the milestone).
+  `<users-list>`* combined apply, right after sync has already
+  (a) archived the tracker from the project board via
+  `archiveProjectV2Item` and (b) closed the milestone if the
+  just-closed tracker was the last open sibling. **The comment is
+  purely informational** — a timeline-event marker confirming
+  what sync did, **not** a ping for residual manual actions. The
+  RM has zero remaining actions post-Send-Email; asking them to
+  do what sync already did creates the same confusion class the
+  state-gated hand-off was designed to eliminate (worked example:
+  RM feedback on the original wrap-up template — *"Same here for
+  step 3 - not idiot safe (I fail to understand)"*).
 
   Placeholders to substitute: `CVE_ID`, `RM_HANDLE` (from the
   release-manager identity resolved in Step 1f / `release-trains.md`),
-  `TRACKER_URL`, `BOARD_URL` (project-board URL with
-  `?filterQuery=status%3AAnnounced` appended),
   `PUBLISH_TIMESTAMP` (from the just-completed
   `vulnogram-api-record-publish` call), `ADVISORY_URL` (the
   archive URL captured in the same apply), and the conditional
   `MILESTONE_BULLET` — see below.
 
   **`MILESTONE_BULLET` is the only conditional in the template.**
-  Resolve via a sibling-state check right before substitution:
+  When sync's milestone-close action fired in the same apply
+  (i.e. the just-closed tracker was the last open sibling on its
+  milestone), substitute with a one-line *informational* note —
+  not an ask:
 
   ```bash
   ms=$(gh issue view <N> --repo <tracker> --json milestone \
@@ -1993,7 +2126,7 @@ before moving on to the next item. Use:
     if [ "$open" -eq 0 ]; then
       ms_url=$(gh api repos/<tracker>/milestones/$ms --jq '.html_url')
       ms_title=$(gh api repos/<tracker>/milestones/$ms --jq '.title')
-      bullet="Close the [\`$ms_title\`]($ms_url) milestone — every tracker on it is now closed too."
+      bullet="Milestone [\`$ms_title\`]($ms_url) closed automatically (every tracker on it is now done)."
     else
       bullet=""
     fi
@@ -2282,10 +2415,51 @@ per machine — see
 [`tools/vulnogram/oauth-api/README.md`](../../../tools/vulnogram/oauth-api/README.md)),
 **sync pushes the JSON to the record directly** instead of leaving the
 paste step to the release manager. The push is mechanical and follows
-from the same JSON the user just approved as part of the body update;
-it does **not** advance the Vulnogram state machine
-(`DRAFT` → `REVIEW` → `READY` → `PUBLIC`) — those transitions stay
-with the RM because they include the CNA-feed dispatch trigger.
+from the same JSON the user just approved as part of the body update.
+
+**State auto-promote (DRAFT → REVIEW) — driven by the generator,
+not by sync.** The CVE JSON the generator produces already carries
+the correct `CNA_private.state` value based on the readiness of
+the tracker's body fields. The generator's logic (see
+`compute_cna_private_state` in
+[`tools/vulnogram/generate-cve-json`](../../../tools/vulnogram/generate-cve-json/src/generate_cve_json/cve_json.py)):
+
+- `DRAFT` — when any required field is missing (no title, no
+  description, no affected versions, no CWE, no non-Unknown
+  severity, no credit, no reference).
+- `REVIEW` — when every field a release manager needs to send
+  the advisory is present, **but** no public advisory URL has
+  been captured yet.
+- `PUBLIC` — when the CNA is review-ready AND at least one
+  `references[]` entry is tagged `vendor-advisory` (i.e. the
+  *Public advisory URL* body field is populated with the
+  archived users-list URL).
+
+Sync's role is therefore **just** to push the generated JSON and
+verify the saved state matches what the generator computed.
+Vulnogram accepts the state field verbatim from the pushed
+document; no separate state-flip call is needed for the
+`DRAFT` → `REVIEW` transition. This is the load-bearing gate for
+the release-manager hand-off (see Step 2b's *Two-stage gate*):
+the RM never receives the hand-off comment while the record is
+still in `DRAFT`.
+
+The remaining transitions stay separate:
+
+- `REVIEW` → `READY` is a **release-manager UI click** in
+  Vulnogram, done as Step 1 of the RM hand-off after any reviewer
+  comments on the record are resolved. (The generator does not
+  emit `READY` — it is intentionally a human decision that
+  reviewer feedback is closed.)
+- `READY` → `PUBLIC` is **sync-driven** via the
+  `vulnogram-api-record-publish` CLI (see Step 4 below), fired
+  when the advisory archive URL has been captured on
+  `lists.apache.org/list.html?<users-list>` — the CNA-feed
+  dispatch trigger has a real-world signal (the archived
+  advisory) so sync drives it.
+
+Step 6 below describes how to verify the state advance landed
+(and what to do if it did not).
 
 ### Decision flow
 
@@ -2350,6 +2524,49 @@ with the RM because they include the CNA-feed dispatch trigger.
    short-circuit "already pushed this JSON" — every successful
    sync run that re-regenerated the JSON should re-push to keep
    the record byte-identical to the tracker body.
+
+6. **Verify the state advance landed (DRAFT → REVIEW gate).** When
+   step 4 above succeeded **and** the JSON pushed included
+   `body.CNA_private.state = "REVIEW"`, immediately fetch the
+   record to confirm the state actually advanced:
+
+   ```bash
+   uv run --project <framework>/tools/vulnogram/oauth-api vulnogram-api-record-fetch \
+     --cve-id <CVE-ID> --jq '.body.CNA_private.state'
+   ```
+
+   *(If `vulnogram-api-record-fetch` is not yet available on the
+   operator's machine — the CLI was added together with this
+   gate; see [`tools/vulnogram/oauth-api/README.md`](../../../tools/vulnogram/oauth-api/README.md)
+   — fall back to extracting the state from the
+   `record-update` call's response envelope, which already
+   includes the saved `CNA_private.state`.)*
+
+   Three outcomes:
+
+   - **`"REVIEW"` or any later state (`READY` / `PUBLIC`)** →
+     state-gate clear. Step 5c picks the OAuth-pushed hand-off
+     variant and Step 4 of the *Reconcile* flow posts /
+     PATCH-flips the RM hand-off comment. Step 6 recap notes
+     *"CVE record state auto-promoted to REVIEW at
+     `PUSH_TIMESTAMP`."*
+   - **`"DRAFT"`** → state-gate NOT cleared. Surface the
+     specific reason: the most common case is one of the body
+     fields was empty so the JSON did not include
+     `state = "REVIEW"` in the first place (Stage 1 of the
+     two-stage gate caught this); the other common case is that
+     a body field carried a value the CNA schema rejected
+     silently (the upsert saved fields it could parse but did not
+     advance the state). Either way, **do not post the RM
+     hand-off comment**. Fire the *Remediation-developer
+     fill-fields comment* instead per the dedicated Step 2b
+     bullet, and surface the state-gate-not-cleared blocker in
+     the Step 6 recap.
+   - **Fetch failed (transient HTTP error, session expired
+     between push and fetch)** → conservative fallback: surface
+     the fetch failure as a blocker, post nothing on the
+     RM-hand-off front this run, and retry the verification on
+     the next sync.
 
 ## Step 5c — Reconcile the release-manager hand-off comment
 

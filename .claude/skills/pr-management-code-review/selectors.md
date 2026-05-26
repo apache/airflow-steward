@@ -117,7 +117,7 @@ since="${SINCE:-30 days ago}"   # default; overridable via since:<window>
 
 # 1) Files in open PRs authored by viewer:
 viewer_open_prs=$(gh pr list --repo <repo> --author "$viewer" \
-  --state open --json number --jq '.[].number')
+  --state open --limit 100 --json number --jq '.[].number')
 
 mine_via_open_prs=$(for n in $viewer_open_prs; do
   gh pr view "$n" --repo <repo> --json files --jq '.files[].path'
@@ -490,8 +490,8 @@ gh pr list \
 ```
 
 Often combined with `area:<LBL>` to scope. Without `area:` it's
-typically too broad for a single sitting; warn the maintainer if
-the result count exceeds 30.
+typically too broad for a single sitting. If the result count equals
+the `--limit` value, note that there may be additional results not shown.
 
 ---
 

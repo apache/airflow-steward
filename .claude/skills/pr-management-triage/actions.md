@@ -620,6 +620,7 @@ path.
 ```bash
 # 1. List open PRs by the author
 gh pr list --repo <repo> --author <author_login> --state open \
+  --limit 100 \
   --json number --jq '.[].number'
 
 # 2. For each PR, in parallel — close + label + comment
@@ -629,6 +630,8 @@ for pr in $PR_NUMBERS; do
   gh pr edit "$pr" --repo <repo> --add-label "suspicious changes detected"
 done
 ```
+
+If the result count equals the limit, note that there may be additional results not shown.
 
 Body template: [`comment-templates.md#suspicious-changes`](comment-templates.md).
 

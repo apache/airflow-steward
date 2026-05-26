@@ -1,0 +1,128 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [📝 Fill in remaining CVE fields — REMEDIATION_DEVELOPER_HANDLE](#-fill-in-remaining-cve-fields--remediation_developer_handle)
+  - [Fields that still need values](#fields-that-still-need-values)
+  - [How to fill them](#how-to-fill-them)
+  - [What happens next (automatic)](#what-happens-next-automatic)
+  - [If any of the fields is unclear](#if-any-of-the-fields-is-unclear)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
+<!-- SPDX-License-Identifier: Apache-2.0
+     https://www.apache.org/licenses/LICENSE-2.0 -->
+
+<!--
+     Remediation-developer "fill remaining CVE fields" comment posted
+     by `security-issue-sync` when the CVE record is still in `DRAFT`
+     state because mandatory body fields on the tracking issue have
+     not yet been populated.
+
+     **Trigger.** Two firing points in the lifecycle:
+
+       (a) at the `pr created` → `pr merged` transition (Step 11),
+           when sync detects the fix PR has merged but the mandatory
+           CVE body fields (CWE, Severity, Short public summary,
+           Affected versions, Reporter credited as, PR with the fix)
+           are not all populated. The comment names the missing
+           fields and tags the remediation developer.
+
+       (b) at the `pr merged` → `fix released` transition (Step 12),
+           when sync has just attempted to push the CVE JSON to
+           Vulnogram (Step 5b) and the record state is **still
+           `DRAFT`** after the push — meaning either the JSON push
+           was blocked, or the body fields are still incomplete
+           (the push refuses to advance the state if the JSON does
+           not validate cleanly against the CNA schema). The comment
+           re-fires; the tracker stays assigned to the remediation
+           developer; **no hand-off to the release manager** happens
+           on this pass.
+
+     **The release-manager hand-off comment is gated on the CVE
+     record reaching the `REVIEW` state**, which can only happen
+     after the body fields are filled in and the JSON push advances
+     the state. This template is what keeps the work with the
+     remediation developer until that gate clears.
+
+     Placeholders the skill substitutes:
+
+       CVE_ID                       e.g. CVE-2026-40690
+       REMEDIATION_DEVELOPER_HANDLE GitHub handle of the remediation
+                                    developer, with leading `@`
+                                    (read from the *Remediation
+                                    developer* body field; falls
+                                    back to the fix-PR author
+                                    @-handle when the field is empty)
+       MISSING_FIELDS_LIST          Markdown bullet list of the
+                                    mandatory body fields that are
+                                    still empty / `_No response_`,
+                                    one per line (e.g.
+                                    "- **CWE** — currently
+                                    `_No response_`; pick from
+                                    https://cwe.mitre.org/data/")
+       TRACKER_URL                  Full URL of the tracking issue
+                                    (the issue this comment is being
+                                    posted on)
+       SOURCE_TAB_URL               <cve_tool_record_url_template>#source
+                                    (read-only check link for the
+                                    remediation developer)
+       SECURITY_LIST                e.g. security@<project>.apache.org
+       SECURITY_LIST_DOMAIN         e.g. <project>.apache.org
+       FRAMEWORK_README_URL         Link to README.md on the
+                                    framework's GitHub
+       FRAMEWORK_SYNC_SKILL_URL     Link to .claude/skills/
+                                    security-issue-sync/SKILL.md on
+                                    the framework's GitHub
+
+     The HTML marker on the first line is load-bearing: the skill
+     detects an already-posted fill-fields comment by grepping for
+     this exact string. When the marker is found and a sync run
+     re-fires the trigger (e.g. fields still empty on the next
+     pass), the existing comment's body is PATCH-edited in place with
+     the refreshed missing-fields list, not duplicated with a fresh
+     POST — same PATCH-don't-post rule as the rollup and hand-off
+     comments. The first-line marker convention is documented in
+     the skill's Step 4 apply mechanic.
+
+     Do not paraphrase the marker. Do not move it off line 1. Do not
+     add a `<!-- v2 -->` until the schema actually changes — the
+     skill's grep is anchored on `v1`.
+-->
+<!-- apache-steward: remediation-developer-fill-fields v1 -->
+
+## 📝 Fill in remaining CVE fields — REMEDIATION_DEVELOPER_HANDLE
+
+The fix PR for [`CVE_ID`](SOURCE_TAB_URL) has merged. Before this tracker can be handed off to the release manager for advisory composition, the CVE record needs every mandatory field populated.
+
+> **Why this is in your court, not the RM's**: the CVE record at [`SOURCE_TAB_URL`](SOURCE_TAB_URL) is currently in `DRAFT` state. The hand-off to the release manager only fires once the record reaches `REVIEW`, and the record can only advance to `REVIEW` after the body fields below are filled in. As the person who wrote the fix, you also have the deepest context on these fields (CWE class, affected version range, short summary wording). **The RM will never receive a hand-off while the record is in `DRAFT`** — that's the gate this comment is enforcing.
+
+### Fields that still need values
+
+MISSING_FIELDS_LIST
+
+### How to fill them
+
+1. Open this tracker's body (the GitHub `…` menu → *Edit*).
+2. Update the listed sections — they are near the bottom under headings like `### CWE`, `### Severity`, `### Short public summary for publish`. Replace `_No response_` with the value.
+3. Click **Update issue** at the bottom of the edit form.
+
+### What happens next (automatic)
+
+The next sync run will:
+
+1. Detect that the previously-empty fields are now populated.
+2. Regenerate the embedded CVE JSON in this tracker's body.
+3. Push the updated JSON to [`SOURCE_TAB_URL`](SOURCE_TAB_URL) over the Vulnogram OAuth API. The push includes the state advance `DRAFT` → `REVIEW`.
+4. Verify the record state is now `REVIEW`.
+5. Hand the tracker off to the release manager via the regular [release-manager hand-off comment](FRAMEWORK_SYNC_SKILL_URL) — that comment names the RM, sets them as assignee, and walks them through Steps 13–15 (advisory composition, send, publish).
+
+If the next sync still finds the record in `DRAFT` (e.g. one of the new field values failed CNA-schema validation, or the API push was blocked), **this comment re-fires** with the updated missing-fields list. The cycle ends when sync sees `REVIEW`.
+
+### If any of the fields is unclear
+
+Comment on this tracker with your question, or ping [`SECURITY_LIST`](mailto:SECURITY_LIST). For a field-by-field rubric (what kind of value goes in CWE / Severity / Short summary) see the security team's handling process at [`README.md`](FRAMEWORK_README_URL#for-remediation-developers).
+
+---
+
+**Reference**: [tracker body](TRACKER_URL) · [CVE record (read-only)](SOURCE_TAB_URL) · [handling process](FRAMEWORK_README_URL) · [sync skill spec](FRAMEWORK_SYNC_SKILL_URL)
