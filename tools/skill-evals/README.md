@@ -4,6 +4,7 @@ Behavioral eval harness for Apache Steward skills. Each eval suite tests a skill
 
 Nineteen suites are currently implemented:
 
+- **setup-isolated-setup-install** — 8 cases across 2 steps (step-snapshot-drift, step-scope-confirm)
 - **security-issue-import** — 32 cases across 8 steps
 - **security-issue-triage** — 33 cases across 9 steps
 - **security-issue-deduplicate** — 18 cases across 6 steps (steps 1, 2, 3, 4, 5, 6)
