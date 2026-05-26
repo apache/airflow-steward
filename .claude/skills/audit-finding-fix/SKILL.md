@@ -3,12 +3,12 @@ name: audit-finding-fix
 mode: Drafting
 description: |
   For a batch of findings from a non-security audit tool
-  (`<audit-tool>`: ruff, flake8, mypy, pylint, Apache Verum,
-  Apache Caer, CodeQL, or equivalent) against `<upstream>`,
-  draft the smallest fix for each finding. Re-runs the tool
-  after each batch to confirm the findings are cleared.
-  Produces a commit and a hand-back artefact; never opens a PR
-  on autopilot or merges.
+  (`<audit-tool>` — ruff / flake8 / mypy / pylint / CodeQL /
+  Apache Verum / Apache Caer / equivalent; full list in the body)
+  against `<upstream>`, draft the smallest fix for each finding.
+  Re-runs the tool after each batch to confirm the findings are
+  cleared. Produces a commit and a hand-back artefact; never opens
+  a PR on autopilot or merges.
 when_to_use: |
   Invoke when a maintainer says "fix these lint findings",
   "address the ruff violations", "clean up the audit report",
