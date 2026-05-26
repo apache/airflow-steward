@@ -17,6 +17,7 @@ when_to_use: |
   Skip when the user explicitly wants an assessment of nomination
   readiness — use contributor-nomination instead.
 argument-hint: "<github-handle> [window:Nm]"
+capability: capability:stats
 license: Apache-2.0
 ---
 

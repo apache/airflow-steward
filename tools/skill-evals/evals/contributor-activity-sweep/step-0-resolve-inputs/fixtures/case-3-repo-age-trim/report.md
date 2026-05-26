@@ -8,7 +8,7 @@
 ## API responses
 
 **gh api repos/apache/airflow-steward --jq '.created_at'**
-```
+```json
 "2026-03-01T09:00:00Z"
 ```
 
