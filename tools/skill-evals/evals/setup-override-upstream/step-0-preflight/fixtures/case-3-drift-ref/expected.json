@@ -1,0 +1,1 @@
+{"state": "drift-ref", "action": "propose-upgrade-nonblocking", "reason": "Committed ref is v1.2.0 but local snapshot is at v1.1.0; sync recommended before designing the framework abstraction."}

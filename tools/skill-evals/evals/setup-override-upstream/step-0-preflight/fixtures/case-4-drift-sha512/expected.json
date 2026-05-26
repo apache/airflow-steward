@@ -1,0 +1,1 @@
+{"state": "drift-sha512", "action": "propose-upgrade-blocking", "reason": "SVN-zip SHA-512 mismatch between committed lock and locally fetched zip; security-flagged, must investigate before proceeding."}

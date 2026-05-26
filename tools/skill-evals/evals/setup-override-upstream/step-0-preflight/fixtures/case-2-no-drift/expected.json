@@ -1,0 +1,1 @@
+{"state": "no-drift", "action": "proceed", "reason": "Both lock files present and in sync; method, URL, and ref all match."}
