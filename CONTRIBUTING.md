@@ -18,6 +18,7 @@
   - [Getting set up](#getting-set-up)
     - [Lightening the agent context](#lightening-the-agent-context)
   - [Making changes](#making-changes)
+  - [Authoring with an agent](#authoring-with-an-agent)
   - [Running the dev loop](#running-the-dev-loop)
   - [Opening a pull request](#opening-a-pull-request)
   - [Your first contribution](#your-first-contribution)
@@ -525,6 +526,153 @@ Rules of thumb for each layer:
   eval case under [`tools/skill-evals/evals/<skill>/`](tools/skill-evals/evals/)
   needs its `expected.json` updated in the same PR. See AGENTS.md
   *Keeping evals and mode-economics in sync* for the rule.
+
+## Authoring with an agent
+
+Most contributions to this repository are authored **agentically**,
+in a conversation between you and a coding agent (Claude Code today;
+any of the harnesses tracked in [Agent harnesses](#agent-harnesses)
+once their adapters land). The loop is different from traditional
+programming, and worth describing explicitly — getting the rhythm
+right is the difference between a smooth contribution and a
+frustrating one.
+
+**The framework is documentation-as-code.** Skills are markdown.
+Tool contracts are markdown. RFCs are markdown. Even the Python /
+Groovy bridges are best authored by describing intent to the agent
+and reviewing the diff, not by typing each line by hand. The
+artefact you ship is text; the *method* by which the text gets
+produced is a conversation.
+
+**Lead with intent, not with code.** When you sit down to make a
+change, open with **what** you want and **why** — not a code
+snippet, not a file path, not a half-drafted solution. The agent's
+job is to figure out **how**. Examples of good opening prompts:
+
+- *"I want `security-issue-triage` to also flag reports that arrive
+  with a draft GHSA URL in the body. Why: those reports are
+  almost always pre-coordinated by an external CNA, and the
+  current flow treats them as fresh inbound — which wastes a
+  triage cycle. Find the right step and propose the change."*
+- *"Add a Bugzilla bridge per `tools/<system>/tool.md`. Why: see
+  issue #302 — Apache OpenOffice is blocked on this. Don't write
+  the full implementation yet; first show me the contract surface
+  (subcommand list + flag shapes) and we'll iterate."*
+- *"The placeholder linter is flagging a false positive on
+  `<security-list>` inside a quoted block. Why: the rule is "no
+  hardcoded project names in skill prose", and quoted examples
+  *are* prose. Trace the rule, propose the narrowest fix that
+  preserves the original intent, and run the existing tests."*
+
+Each of these is **intent-first**. You're telling the agent the
+shape of the answer and the constraint that matters, then handing
+over the synthesis. The agent will surface decisions you didn't
+think of (which is exactly what you want it to do) — and you'll
+correct the ones it gets wrong.
+
+**Iterate, don't dictate.** Once the agent proposes a change, treat
+the proposal as a draft, not a final. The loop is:
+
+1. **Agent proposes** — a diff, a new file, a refactor plan.
+2. **You read carefully** — does the change match what you meant?
+   Does it respect the placeholder convention? Does it follow the
+   proposal / confirm / apply pattern? Does it touch files outside
+   the intended layer?
+3. **You push back specifically** — *"the variable name should
+   match what `tools/jira/tool.md` calls it"*, *"this needs a
+   guardrail case in the eval suite"*, *"don't add a comment that
+   restates the function name"*. Specific corrections converge fast;
+   vague ones produce mush.
+4. **Agent revises** — and the loop repeats.
+5. **Tests run** — `prek run --all-files`, `uv run pytest` in the
+   affected Python package, the eval suite for the affected skill.
+   When something fails, the failure is part of the conversation —
+   show the agent the error, let it diagnose.
+
+The conversation usually converges in three or four rounds. If
+it doesn't, the intent was probably under-specified — back up,
+restate the goal more sharply, and try again from a clean turn.
+
+**Probe boundary conditions explicitly.** This is the single
+highest-leverage habit. After the agent has a working first cut,
+ask:
+
+- *"What happens if the field is empty? If it's malformed JSON?
+  If the upstream API returns a 503? If two skills disagree on the
+  same input?"*
+- *"What's the smallest input that breaks this?"*
+- *"What's the existing skill / tool that does something similar —
+  and does this change behave the same way at the edges?"*
+
+The agent will often find edge cases it didn't handle, propose
+fixes, and (importantly) codify the edge cases as eval fixtures
+or test cases. That codification is what stops the same edge case
+regressing six months later when somebody else iterates on the
+same skill.
+
+**Author = editor; agent = typist with opinions.** Your job is
+to know what *should* exist and to recognise when the draft has
+landed. The agent's job is to type confidently, surface decisions,
+and push back when your instruction is internally inconsistent.
+Both jobs are essential — neither side runs the loop alone. When
+the agent says *"this contradicts the rule in AGENTS.md line 47"*
+or *"the eval case under `step-3-classify/` will fail with this
+change"*, listen — that's the agent earning its seat.
+
+**Where traditional programming still applies.** The Python and
+Groovy bridges under `tools/` are real code with real tests. The
+loop is the same — intent-first, iterate, probe edges — but the
+feedback signal is stronger because `pytest` / `mypy` / `ruff`
+catch concrete bugs the eval-suite approach can't. When working
+on a Python bridge:
+
+- Run `uv run pytest` *between every revision*, not just at the
+  end. A failing test halfway through is information; a stack of
+  failing tests at the end is a mess.
+- `mypy` errors are the agent's responsibility to diagnose, not
+  yours — paste the error back into the conversation and let the
+  agent reason about it.
+- Resist the temptation to hand-edit the agent's code mid-loop.
+  If something needs to change, *tell the agent what to change* —
+  hand-edits desynchronise the agent's mental model from the
+  actual file and the next iteration drifts.
+
+**Concrete first moves.** The framework provides agent entry
+points for the two most common authoring tasks:
+
+- **New skill** — invoke [`/write-skill`](.claude/skills/write-skill/SKILL.md).
+  The meta-skill walks you through the framework's skill shape
+  (frontmatter, resources, placeholder convention, prompt-injection
+  defences, privacy-LLM gate-check), scaffolds the directory, and
+  validates the result via [`skill-validator`](tools/skill-validator/).
+- **Modify an existing skill** — open the conversation with the
+  skill's `SKILL.md` in context. State what behaviour should change
+  and why; the agent will propose the diff plus the eval-case
+  updates that go with it.
+- **New tool bridge** — start from the contract doc (`tools/<system>/tool.md`
+  or [`tools/mail-source/contract.md`](tools/mail-source/contract.md))
+  and the closest existing bridge as a reference. Ask the agent to
+  draft the subcommand surface first, then the implementation, then
+  the README.
+- **Documentation change** — quote the existing prose, state what
+  feels wrong, let the agent propose a rewrite. Doc PRs are the
+  fastest agentic loop in the repository.
+
+**When the agent gets stuck or goes in circles**, the usual causes:
+the intent is under-specified (restate it more sharply); the agent
+is missing context from a file it didn't read (point at the file
+explicitly); the change spans more than one concern (split the
+work). Walking away for a minute and coming back with a fresh
+opening prompt often beats forcing the existing conversation to
+converge.
+
+**The agent is not the reviewer.** Once you're happy with the
+change, **you** are responsible for the PR — its scope, its
+commit message, its description, and its correctness. CI, the
+eval suite, and the human reviewer on the PR are the
+verification layer. The agentic loop produces the artefact; the
+PR review process verifies it. Both are necessary; neither
+substitutes for the other.
 
 ## Running the dev loop
 
