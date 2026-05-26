@@ -814,7 +814,9 @@ def test_cli_mode_manual_skips_structural(tmp_path: Path, capsys: pytest.Capture
     rc, stdout, _ = _run_main(
         capsys,
         # CLI would return junk; runner should not even invoke it for MANUAL cases.
-        ["--cli", "exit 1", str(fixtures_dir)],
+        # (`false` rather than `exit 1` because the runner uses shell=False;
+        # `exit` is a shell builtin and would not be found as a binary.)
+        ["--cli", "false", str(fixtures_dir)],
     )
     assert rc == 0
     assert "MANUAL" in stdout
