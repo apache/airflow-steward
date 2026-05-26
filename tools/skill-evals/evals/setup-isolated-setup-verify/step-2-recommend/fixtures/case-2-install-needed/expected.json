@@ -1,0 +1,9 @@
+{
+  "overall": "fail",
+  "follow_up": [
+    {
+      "skill": "setup-isolated-setup-install",
+      "reason": "checks 2, 3, 4 failed — hook configuration, scripts, and claude-iso missing"
+    }
+  ]
+}

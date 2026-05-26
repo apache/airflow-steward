@@ -2,7 +2,7 @@
 
 Behavioral eval harness for Apache Steward skills. Each eval suite tests a skill pipeline step by step, verifying that the model produces the correct structured JSON output for a fixed set of fixture cases.
 
-Eighteen suites are currently implemented:
+Nineteen suites are currently implemented:
 
 - **security-issue-import** — 32 cases across 8 steps
 - **security-issue-triage** — 33 cases across 9 steps
@@ -22,6 +22,7 @@ Eighteen suites are currently implemented:
 - **pr-management-stats** — 13 cases across 2 steps (classify, pressure-weight)
 - **pr-management-triage** — 26 cases across 2 steps (pre-filter, decision-table)
 - **list-steward-skills** — 7 cases across 2 steps (step-1-command, step-2-present)
+- **setup-isolated-setup-verify** — 11 cases across 2 steps (step-1-classify, step-2-recommend)
 
 ## Run
 

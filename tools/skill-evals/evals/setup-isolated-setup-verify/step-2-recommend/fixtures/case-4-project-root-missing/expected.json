@@ -1,0 +1,9 @@
+{
+  "overall": "fail",
+  "follow_up": [
+    {
+      "skill": "sandbox-add-project-root.sh --all-worktrees",
+      "reason": "check 8 — project root missing from .claude/settings.local.json for both worktrees; helper script is installed"
+    }
+  ]
+}

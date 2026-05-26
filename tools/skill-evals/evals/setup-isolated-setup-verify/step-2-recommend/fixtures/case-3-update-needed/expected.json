@@ -1,0 +1,9 @@
+{
+  "overall": "warn",
+  "follow_up": [
+    {
+      "skill": "setup-isolated-setup-update",
+      "reason": "check 5 — claude-code 2.2.0 is newer than pinned 2.1.150; snapshot ref drift also detected"
+    }
+  ]
+}
