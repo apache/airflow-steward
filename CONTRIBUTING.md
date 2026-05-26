@@ -3,13 +3,24 @@
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
 - [Contributing](#contributing)
-  - [Project structure](#project-structure)
+  - [What this framework is](#what-this-framework-is)
+  - [Repository layout](#repository-layout)
     - [Directory tree](#directory-tree)
+  - [Skill families](#skill-families)
+    - [Skill anatomy](#skill-anatomy)
+  - [Tool families](#tool-families)
+  - [Cross-cutting concerns](#cross-cutting-concerns)
+  - [Agent harnesses](#agent-harnesses)
+  - [Code in this repo](#code-in-this-repo)
+    - [Python (uv-managed)](#python-uv-managed)
+    - [Groovy](#groovy)
+    - [Shell + documentation-as-code](#shell--documentation-as-code)
   - [Getting set up](#getting-set-up)
     - [Lightening the agent context](#lightening-the-agent-context)
   - [Making changes](#making-changes)
   - [Running the dev loop](#running-the-dev-loop)
   - [Opening a pull request](#opening-a-pull-request)
+  - [Your first contribution](#your-first-contribution)
   - [Confidentiality](#confidentiality)
   - [Authoritative references](#authoritative-references)
 
@@ -20,178 +31,423 @@
 
 # Contributing
 
-Thanks for helping improve this repository. It is a reusable framework
-for running the ASF security-disclosure process as a set of agent-driven
-skills. Adopting projects ship a per-project configuration layer
-(`<project-config>/`) in their own tracker repo and consume this
-framework as a gitignored snapshot managed by the
-[`setup-steward`](.claude/skills/setup-steward/SKILL.md) skill —
-see [`projects/_template/`](projects/_template/) for the scaffold
-an adopter copies and fills in.
+Thanks for helping improve this repository. It is the **generic,
+project-agnostic framework** for agent-assisted repository
+maintainership across ASF projects (and equally for any non-ASF
+open-source community that wants in). The framework currently
+lives at `apache/airflow-steward`; a rename to **Apache Magpie**
+is in flight — see [`MISSION.md`](MISSION.md) and the heads-up
+at the top of [`README.md`](README.md).
 
-Before sending a patch, please skim this file end-to-end: it lays out
-the layering the repository depends on, and a patch that ignores the
-layering is hard to land no matter how correct it is in isolation.
+Before sending a patch, please skim this file end-to-end: it lays
+out the layering the repository depends on, the cross-cutting
+concerns every change must respect, and the dev loop CI enforces.
+A patch that ignores any of these is hard to land no matter how
+correct it is in isolation.
 
-## Project structure
+## What this framework is
 
-The tree has four layers, each with a clearly-scoped job. The invariant
-is that a skill running against an adopting project should be able to
-resolve every piece of context it needs from some combination of the
-four — no hard-coded project assumptions anywhere.
+Four streams of day-to-day work, all built on the same skill +
+tool + sandbox + HITL substrate:
 
-- **Root docs** carry the cross-cutting rules every contributor, agent,
-  and reviewer is expected to have read. [`README.md`](README.md) is the
-  canonical 16-step handling process, from report-arrival to CVE
-  publication. [`AGENTS.md`](AGENTS.md) is the editorial contract: tone,
-  brevity, confidentiality, linking conventions, the placeholder
-  substitution rule (`<PROJECT>`, `<tracker>`, `<upstream>`), and the
-  informational-only treatment of reporter-supplied CVSS scores.
-  [`docs/security/how-to-fix-a-security-issue.md`](docs/security/how-to-fix-a-security-issue.md) and
-  [`docs/security/new-members-onboarding.md`](docs/security/new-members-onboarding.md) are
-  human-facing guides that sit alongside those.
-- **Skills** live under
-  [`.claude/skills/`](.claude/skills/). Each is a `SKILL.md` that
-  encodes one workflow — importing a new report, syncing a tracker
-  against the world, allocating a CVE, drafting a fix PR, or
-  deduplicating two trackers. Skills use the `<PROJECT>` /
-  `<tracker>` / `<upstream>` placeholders everywhere and resolve them
-  at runtime. They must not contain project-specific strings.
-- **Per-user config** is scaffolded by `setup-steward` at
-  `.apache-steward-overrides/user.md` in the adopter repo. It carries
-  per-user preferences (PMC status, local clone paths, optional tool
-  backends) and is **committed** so it ships with the adopter repo.
-  If the file is missing, skills fall back to interactive prompting
-  and offer to save the answer back. See the `user.md` template in
-  [`.claude/skills/setup-steward/adopt.md`](.claude/skills/setup-steward/adopt.md) for the full shape.
-- **Projects** live under [`projects/`](projects/), one subtree per
-  supported ASF project. The active subtree holds every
-  project-specific fact the skills depend on — the security model, the
-  scope labels, the milestone conventions, the release trains, the
-  canned reporter replies, the title-normalisation rules.
-  [`projects/_template/`](projects/_template/) is the bootstrap
-  scaffold for adding a new project.
-- **Tools** live under [`tools/`](tools/), one subtree per external
-  system the skills talk to. Each subtree is project-agnostic; it
-  documents the adapter surface (search queries, threading rules, API
-  semantics, state machines) in terms of placeholders that the active
-  project fills in. The `vulnogram/generate-cve-json/` subtree is the
-  only Python package — a `uv`-managed CLI that emits paste-ready CVE
-  5.x JSON from a tracker body.
+- **Security-issue handling** — inbound triage, deduplication,
+  agent-drafted reporter replies under human review, CVE
+  allocation, audit-logged tracking through publication.
+- **Issue and PR triage and management** — including audit-tool
+  findings ingested as actionable issues.
+- **Conversational contributor mentoring** — meeting new
+  contributors where they are; the agent absorbs the mechanical
+  review so the human conversation stays on design.
+- **Development-cycle skills for committers and contributors** —
+  multi-agent dev workflows, self-review and pre-flight patterns,
+  scoped agent-drafted patches under the developer's seat.
+
+The framework is **project-agnostic by design**. Adopters configure
+their identity, rosters, canned responses, release trains, and
+security model in their own `<project-config>/` directory in their
+adopter tracker repo, alongside a gitignored snapshot of this
+framework managed by the
+[`setup-steward`](.claude/skills/setup-steward/SKILL.md) skill.
+None of that adopter-side content lives here.
+
+The framework's normative commitments are codified in
+[RFC-AI-0004](docs/rfcs/RFC-AI-0004.md) — six principles
+(HITL, sandbox, vendor neutrality, conversational + correctable,
+write-access discipline, privacy by design) that every change
+must respect. If you only read one document before contributing,
+read that one.
+
+## Repository layout
+
+The tree has four layers, each with a clearly-scoped job. A
+skill running against an adopter project must be able to resolve
+every piece of context it needs from some combination of the four
+— no hard-coded project assumptions anywhere in this repo.
+
+- **Root docs** carry the cross-cutting rules every contributor
+  and agent is expected to have read.
+  [`README.md`](README.md) is the framework overview and adoption
+  entry point. [`AGENTS.md`](AGENTS.md) is the editorial contract:
+  tone, brevity, confidentiality, linking conventions, the
+  placeholder substitution rule (`<PROJECT>`, `<tracker>`,
+  `<upstream>`, `<security-list>`). [`MISSION.md`](MISSION.md) is
+  the establishment proposal that explains why the project exists.
+  [`docs/rfcs/`](docs/rfcs/) holds the normative RFCs.
+- **Skills** live under [`.claude/skills/`](.claude/skills/).
+  Each is a `SKILL.md` that encodes one workflow. Skills use the
+  `<PROJECT>` / `<tracker>` / `<upstream>` placeholders everywhere
+  and resolve them at runtime; they must not contain project-
+  specific strings.
+- **Tools** live under [`tools/`](tools/), one subtree per
+  external system the skills talk to. Each subtree is
+  project-agnostic. Adapter-side variables are declared in the
+  subtree and filled in by the adopter's `<project-config>/`.
+- **Project template** under [`projects/_template/`](projects/_template/)
+  is the bootstrap scaffold for an adopter's `<project-config>/`
+  directory. The adopter clones it into their own tracker repo
+  and fills in the TODOs.
 
 ### Directory tree
 
 ```text
 .
-├── README.md                      # Canonical 16-step handling process + conventions
-├── AGENTS.md                      # Editorial rules: tone, brevity, confidentiality,
-│                                  # placeholder substitution, reporter-CVSS policy
-├── CONTRIBUTING.md                # This file
-├── docs/security/how-to-fix-a-security-issue.md # Human-facing fix guide
-├── docs/security/new-members-onboarding.md      # Human-facing onboarding guide
+├── README.md             # Framework overview + adoption entry point
+├── MISSION.md            # Project-establishment proposal (the why)
+├── AGENTS.md             # Editorial contract: tone, placeholders, linking
+├── CONTRIBUTING.md       # This file
+├── docs/
+│   ├── rfcs/             # Normative RFCs — RFC-AI-0002, 0003, 0004
+│   ├── setup/            # Adoption, sandbox, privacy-LLM docs
+│   ├── security/         # Human-facing security-team docs
+│   ├── issue-management/ # Issue-* skill docs
+│   ├── pr-management/    # PR-* skill docs
+│   ├── mentoring/        # Mentor-skill docs
+│   ├── modes.md          # The A/B/C/D mode model
+│   └── mode-economics.md # Token-cost calibration for each mode
 │
 ├── .claude/
-│   └── skills/                    # Agent workflows (invoked via the Skill tool)
-│       ├── security-issue-import/SKILL.md
-│       ├── security-issue-import-from-pr/SKILL.md
-│       ├── security-issue-sync/SKILL.md
-│       ├── security-cve-allocate/SKILL.md
-│       ├── security-issue-fix/SKILL.md
-│       ├── security-issue-deduplicate/SKILL.md
-│       └── security-issue-invalidate/SKILL.md
+│   └── skills/           # Agent workflows (invoked via the Skill tool)
+│       ├── security-*/   # Security-issue lifecycle (10 skills)
+│       ├── pr-management-*/  # PR triage, review, mentor, stats (4 skills)
+│       ├── issue-*/      # Issue triage, fix, reassess, reproducer, stats (5 skills)
+│       ├── setup-*/      # Adoption, sandbox install/verify/update (7 skills)
+│       ├── contributor-nomination/
+│       ├── write-skill/
+│       └── list-steward-skills/
 │
-├── config/                        # Runtime configuration layer
-│   ├── README.md                  # Configuration tutorial + placeholder rule
-│   ├── active-project.md          # Declares active_project (checked in)
-│   ├── user.md                    # Per-user — gitignored, auto-bootstrapped by prek
-│   ├── user.md.template           # Bootstrap template with TODOs
-│   └── user.md.example            # Filled-in example
+├── projects/
+│   └── _template/        # Scaffold for an adopter's <project-config>/
 │
-├── projects/                      # Templates for adopting projects' configs
-│   └── _template/                 # Scaffold for bootstrapping a new project's
-│                                  # `<project-config>/` (the per-project layer
-│                                  # an adopter ships in their tracker repo).
-│                                  # Files: project.md (manifest), security-model.md,
-│                                  # canned-responses.md, release-trains.md,
-│                                  # milestones.md, scope-labels.md, naming-
-│                                  # conventions.md, title-normalization.md,
-│                                  # fix-workflow.md, README.md — all stubbed
-│                                  # with TODO placeholders.
+├── tools/                # Project-agnostic adapters per external system
+│   ├── github/           # Forge + tracker bridge (read + write)
+│   ├── jira/             # Tracker bridge (read-only Groovy; write path = issue #301)
+│   ├── gmail/            # Mail backend (read + write + drafts)
+│   ├── ponymail/         # Archive viewer (read-only)
+│   ├── mail-source/      # Abstract mail-backend contract; imap/ + mbox/ stubs
+│   ├── vulnogram/        # ASF CVE allocation (Python)
+│   ├── cve-org/          # MITRE CVE Services v2 (publication check)
+│   ├── privacy-llm/      # Redactor + checker (per RFC-AI-0004 §6)
+│   ├── agent-isolation/  # Bubblewrap sandbox + network allowlist
+│   ├── sandbox-lint/     # Lint settings.json for sandbox correctness
+│   ├── skill-validator/  # Validate SKILL.md frontmatter + links + placeholders
+│   ├── skill-evals/      # Behavioral eval harness for skill steps
+│   ├── dashboard-generator/  # HTML dashboard reference impl (Groovy + Python)
+│   ├── pr-management-stats/  # Maintainer dashboard data layer
+│   ├── security-tracker-stats-dashboard/  # Security-side stats
+│   ├── probe-templates/  # Boilerplate for sandbox-probe scripts
+│   └── dev/              # Local checkers (placeholders, agent pre-commit)
 │
-├── tools/                         # Project-agnostic adapters per external system
-│   ├── gmail/
-│   │   ├── tool.md                # Adapter overview
-│   │   ├── operations.md          # MCP call signatures + no-update-no-delete rule
-│   │   ├── threading.md           # Thread attachment and subject-matched fallback
-│   │   ├── search-queries.md      # Canonical reusable query templates
-│   │   ├── ponymail-archive.md
-│   │   └── asf-relay.md
-│   ├── github/
-│   │   ├── tool.md
-│   │   ├── operations.md
-│   │   ├── labels.md
-│   │   ├── issue-template.md
-│   │   └── project-board.md       # GraphQL introspection + column-move recipe
-│   ├── vulnogram/
-│   │   ├── tool.md
-│   │   ├── record.md              # DRAFT / REVIEW / PUBLIC state machine
-│   │   ├── allocation.md
-│   │   └── generate-cve-json/     # Python package (uv-managed CLI)
-│   │       ├── pyproject.toml
-│   │       ├── src/generate_cve_json/
-│   │       ├── tests/
-│   │       ├── SKILL.md
-│   │       └── README.md
-│   └── cve-org/
-│       └── tool.md                # MITRE CVE Services v2 publication check
-│
-├── .pre-commit-config.yaml        # prek hooks: doctoc, EOF, forbid/bootstrap
-│                                  # user.md, ruff/mypy/pytest for generate-cve-json
-└── .github/                       # CI: pre-commit.yml, zizmor.yml, ISSUE_TEMPLATE
+├── .pre-commit-config.yaml   # prek hook set (see "Running the dev loop")
+├── pyproject.toml            # Workspace-level Python config
+├── uv.lock                   # Reproducible Python lockfile
+└── .github/                  # CI: pre-commit, zizmor, link-check, ISSUE_TEMPLATE
 ```
+
+The adopter-side `.apache-steward/` snapshot, the per-user
+`user.md`, and the `<project-config>/` directory all live in the
+**adopter's** tracker repo, not here. The framework never carries
+those files.
+
+## Skill families
+
+A skill is a single workflow the agent runs end-to-end with the
+maintainer in the loop. Each skill is a markdown file (`SKILL.md`)
+with YAML frontmatter, often supported by sibling step-detail files
+and bundled scripts. The skill router reads only the frontmatter
+`description` field to decide whether to load the skill; the body
+is loaded only after the decision.
+
+| Family | Skills | Purpose |
+|---|---|---|
+| `security-*` | `security-issue-import`, `security-issue-import-from-md`, `security-issue-import-from-pr`, `security-issue-triage`, `security-issue-sync`, `security-issue-deduplicate`, `security-cve-allocate`, `security-issue-fix`, `security-issue-invalidate` | Full lifecycle of a security report from arrival on `<security-list>` through CVE publication. |
+| `pr-management-*` | `pr-management-triage`, `pr-management-code-review`, `pr-management-mentor`, `pr-management-stats` | Maintainer-side PR queue management — sweep, classify, review, mentor first-time contributors, surface backlog trends. |
+| `issue-*` | `issue-triage`, `issue-fix-workflow`, `issue-reproducer`, `issue-reassess`, `issue-reassess-stats` | Issue-tracker triage, agent-drafted fixes for confirmed bugs, automated reproduction of bug reports, reassessment of EOL backlogs. |
+| `setup-*` | `setup-steward`, `setup-isolated-setup-install`, `setup-isolated-setup-verify`, `setup-isolated-setup-update`, `setup-isolated-setup-doctor`, `setup-override-upstream`, `setup-shared-config-sync` | Framework adoption, sandbox install + verify + update + diagnostic, override-promotion workflow, shared-config sync. |
+| `contributor-nomination` | one skill | Build the evidence brief for a committer or PMC nomination. |
+| Meta-skills | `write-skill`, `list-steward-skills` | Author new skills following framework conventions; print a human-readable skill index. |
+
+Each skill's frontmatter `description` is the agent-router contract.
+Be precise — vague descriptions cause the router to load the wrong
+skill or miss the right one. The
+[`skill-validator`](tools/skill-validator/README.md) catches the
+common shapes of bad description (action-inventory, distinct-from-
+sibling-skill, chain-handoff narrative).
+
+### Skill anatomy
+
+A skill directory typically contains:
+
+- **`SKILL.md`** — the main workflow document. YAML frontmatter
+  (name, description, license) followed by the procedure.
+- **Step-detail files** — one per substantial step (`step-1-…md`,
+  `step-2-…md`, …) for multi-step skills.
+- **Bundled scripts** — `tools/<skill>-helpers/` or inline scripts
+  the skill invokes deterministically (these don't need an LLM).
+- **Fixtures + evals** — under [`tools/skill-evals/evals/<skill>/`](tools/skill-evals/evals/),
+  one fixture directory per step + case combination, each with
+  an `expected.json` the model output must match.
+
+Skills must follow the **proposal → confirm → apply** pattern for
+any mutation: surface the action and the diff, wait for explicit
+maintainer confirmation, then execute. Read-only inspection is fine
+without confirmation; anything that writes to a tracker, posts a
+comment, sends an email, or modifies the filesystem is gated.
+
+## Tool families
+
+Tools are project-agnostic adapters to external systems. Each
+subtree has a `tool.md` or `README.md` documenting the adapter
+surface and what variables the active project's `<project-config>/`
+needs to fill in.
+
+| Family | Tools | What they bridge to |
+|---|---|---|
+| Forge / tracker | `github/`, `jira/` | GitHub Issues + PRs (full); JIRA (read-only Groovy bridge — write path tracked at [#301](https://github.com/apache/airflow-steward/issues/301)) |
+| Mail | `gmail/`, `ponymail/`, `mail-source/imap/`, `mail-source/mbox/` | Gmail (full); PonyMail archive (read-only); IMAP + mbox stubs |
+| CVE workflow | `vulnogram/`, `cve-org/` | ASF Vulnogram (CVE allocation + JSON generation); MITRE CVE Services v2 |
+| Runtime / safety | `agent-isolation/`, `privacy-llm/`, `sandbox-lint/` | Bubblewrap + network-allowlist sandbox; redactor + checker for privacy-LLM gating; settings.json linter |
+| Dev loop | `skill-validator/`, `skill-evals/`, `dev/` | SKILL.md validation; behavioral eval harness; local placeholder + pre-commit checkers |
+| Reporting | `dashboard-generator/`, `pr-management-stats/`, `security-tracker-stats-dashboard/` | HTML dashboards for maintainer + security review |
+| Authoring | `probe-templates/` | Boilerplate scaffold for sandbox probes |
+
+New tool subtrees follow the same pattern: a `tool.md` or
+`README.md`, an adapter-surface declaration with variables the
+adopter fills in, and (for code) a `pyproject.toml` if Python or
+a self-contained `.groovy` if Groovy.
+
+## Cross-cutting concerns
+
+Every change must respect these six principles
+([RFC-AI-0004](docs/rfcs/RFC-AI-0004.md)). They cut across all
+skills and all tools.
+
+1. **Human-in-the-loop on every state change.** Every write,
+   transition, comment, mail send, label flip, or filesystem
+   mutation needs explicit maintainer confirmation. Read-only
+   inspection is fine without confirmation; a skill that auto-
+   applies without confirmation is a bug.
+2. **Secure sandbox by default.** Agent processes run inside a
+   `bubblewrap` sandbox with a network allowlist (see
+   [`tools/agent-isolation/`](tools/agent-isolation/) and the
+   [`setup-isolated-setup-*`](.claude/skills/) skill family).
+   Skills must not assume unrestricted host access; tools that
+   need network access declare the hosts they reach.
+3. **Vendor neutrality.** Skills are markdown-with-YAML, not
+   vendor-specific prompts. Anywhere a project-specific name
+   would go, use the placeholders `<PROJECT>` / `<tracker>` /
+   `<upstream>` / `<security-list>` / `<private-list>` /
+   `<default-branch>` — the `check-placeholders` prek hook
+   catches violations. Per-CLI runtime ports are tracked at
+   issues [#313](https://github.com/apache/airflow-steward/issues/313)–[#322](https://github.com/apache/airflow-steward/issues/322).
+4. **Conversational, correctable.** A maintainer override
+   (`.apache-steward-overrides/<skill>.md` in the adopter repo)
+   modifies skill behaviour without forking the framework. The
+   [`setup-override-upstream`](.claude/skills/setup-override-upstream/SKILL.md)
+   skill promotes useful overrides back into the framework as PRs.
+5. **Write-access discipline.** Outbound messages (PR comments,
+   reporter emails, mailing-list posts) are *always* drafted for
+   review, never sent autonomously. See AGENTS.md for the draft
+   format and threading rules.
+6. **Privacy by design.** Private data goes only to LLMs the
+   adopter's PMC has approved. The
+   [`tools/privacy-llm/`](tools/privacy-llm/) subtree carries the
+   redactor and the per-mailing-list gating contract; reporter PII
+   on `<security-list>` is redacted with a local map, `<private-list>`
+   content never reaches a non-approved LLM. Full design in
+   [`docs/setup/privacy-llm.md`](docs/setup/privacy-llm.md).
+
+The placeholder discipline (3) is enforced mechanically:
+[`tools/dev/check-placeholders.sh`](tools/dev/check-placeholders.sh)
+fails the commit if it finds hardcoded project names like
+`apache/airflow` or `Apache Airflow` inside `.claude/skills/` or
+`tools/`. The others are enforced by reviewer taste + skill-
+validator + eval cases.
+
+## Agent harnesses
+
+The framework's reference runtime today is **Claude Code** — skills
+are loaded from `.claude/skills/<name>/SKILL.md`, MCP servers from
+the user's Claude Code config, and the sandbox from
+`setup-isolated-setup-install`.
+
+RFC-AI-0004 §3 commits the framework to **vendor neutrality across
+LLM backends**. The current state per harness:
+
+| Harness | State | Tracking |
+|---|---|---|
+| Claude Code | Primary, fully supported | — |
+| Codex CLI | Partial — Claude Code plugin delegates rescue + adversarial-review subtasks to Codex | First-class runtime tracked at [#313](https://github.com/apache/airflow-steward/issues/313) |
+| Gemini CLI | Not yet ported | [#314](https://github.com/apache/airflow-steward/issues/314) |
+| Local LLM (Ollama / llama.cpp / vLLM) | Not yet ported | [#315](https://github.com/apache/airflow-steward/issues/315) |
+| Cursor (Composer + Agent CLI) | Not yet ported | [#316](https://github.com/apache/airflow-steward/issues/316) |
+| Aider | Not yet ported | [#317](https://github.com/apache/airflow-steward/issues/317) |
+| GitHub Copilot CLI + Coding Agent | Not yet ported | [#318](https://github.com/apache/airflow-steward/issues/318) |
+| Goose (Block) | Not yet ported | [#319](https://github.com/apache/airflow-steward/issues/319) |
+| Amazon Q Developer CLI | Not yet ported | [#320](https://github.com/apache/airflow-steward/issues/320) |
+| JetBrains Junie | Not yet ported | [#321](https://github.com/apache/airflow-steward/issues/321) |
+| OpenHands | Not yet ported | [#322](https://github.com/apache/airflow-steward/issues/322) |
+
+MCP servers used by the Claude Code runtime today: Slack, Gmail,
+Google Calendar, Google Drive, plus framework-internal ones for
+the ponymail / incubator-mail / incubator-reports surfaces. MCP-
+compatible harnesses (Gemini CLI, Goose, Copilot CLI) should pick
+these up directly once the skill-format adapter lands for that
+harness.
+
+## Code in this repo
+
+The framework is primarily documentation-as-code (skills are
+markdown), but several deterministic operations are implemented as
+executables.
+
+### Python (uv-managed)
+
+All Python lives under `tools/`, each as its own `uv`-managed
+package with `pyproject.toml`. The workspace's `uv.lock` at the
+repo root pins versions across all packages.
+
+| Package | Purpose |
+|---|---|
+| [`tools/vulnogram/generate-cve-json/`](tools/vulnogram/generate-cve-json/) | Emits paste-ready CVE 5.x JSON from a tracker body. Invoked by `security-issue-sync` and `security-cve-allocate`. |
+| [`tools/vulnogram/oauth-api/`](tools/vulnogram/oauth-api/) | OAuth helper for Vulnogram API authentication. |
+| [`tools/gmail/oauth-draft/`](tools/gmail/oauth-draft/) | Gmail OAuth helper for the drafts-only mail-source flow. |
+| [`tools/skill-validator/`](tools/skill-validator/) | Validates `SKILL.md` frontmatter, internal links, and placeholder discipline. |
+| [`tools/skill-evals/`](tools/skill-evals/) | Behavioral eval harness for skill steps. Pure-stdlib runner; no third-party deps. |
+| [`tools/sandbox-lint/`](tools/sandbox-lint/) | Lints `settings.json` for sandbox-correctness regressions. |
+| [`tools/privacy-llm/checker/`](tools/privacy-llm/checker/) | Verifies that data destined for an LLM matches the privacy-LLM policy. |
+| [`tools/privacy-llm/redactor/`](tools/privacy-llm/redactor/) | Redacts reporter PII before content reaches a non-approved LLM. |
+
+Common invocation pattern (run from the package directory):
+
+```bash
+cd tools/vulnogram/generate-cve-json
+uv run pytest                  # unit tests
+uv run ruff check              # lint
+uv run ruff format             # auto-format (check-only in CI)
+uv run mypy                    # type-check
+```
+
+To run a package's CLI from the repo root:
+
+```bash
+uv run --project tools/vulnogram/generate-cve-json generate-cve-json <N> --attach
+```
+
+`skill-evals` is a special case — pure stdlib, no `uv` needed:
+
+```bash
+PYTHONPATH=tools/skill-evals/src python3 -m skill_evals.runner \
+    tools/skill-evals/evals/security-issue-import/
+```
+
+### Groovy
+
+Two Groovy reference implementations live in the tree. Groovy is
+used where a deterministic CLI is needed but Python's startup cost
+or async story is awkward — JVM warmup is a one-time cost per
+invocation, after which HTTP and JSON are fast and stdlib-only.
+
+| File | Purpose |
+|---|---|
+| [`tools/jira/bridge.groovy`](tools/jira/bridge.groovy) | Read-only JIRA REST bridge — `search <JQL>`, `issue <KEY>`, `projects`. Uses `@Grab` for HTTP deps, no separate install step. |
+| [`tools/dashboard-generator/reference.groovy`](tools/dashboard-generator/reference.groovy) | Reference impl of the issue-reassess-stats HTML dashboard. Reads `verdict.json` artefacts from a campaign directory and emits HTML. |
+
+Install Groovy 3.x or newer on `PATH` — `sdk install groovy` via
+[SDKMAN!](https://sdkman.io/) or your package manager. Then:
+
+```bash
+# JIRA bridge — list open issues for a project
+ISSUE_TRACKER_URL=https://issues.apache.org/jira \
+ISSUE_TRACKER_PROJECT=FOO \
+  groovy tools/jira/bridge.groovy \
+    search 'project = FOO AND status = Open AND resolution = Unresolved'
+
+# Dashboard generator
+groovy tools/dashboard-generator/reference.groovy \
+    /path/to/campaign-dir --output dashboard.html
+```
+
+The first invocation downloads `@Grab` dependencies into the
+local Grape cache; subsequent runs are fast.
+
+Both Groovy files have parallel Python reference implementations
+under the same subtree (`reference.py` for the dashboard;
+[#301](https://github.com/apache/airflow-steward/issues/301) tracks
+the Python port of the JIRA bridge alongside the write path).
+**Languages other than Groovy or Python are welcome via PR** — the
+contract that matters is the CLI surface and the JSON output shape.
+
+### Shell + documentation-as-code
+
+- [`tools/agent-isolation/`](tools/agent-isolation/) is a handful
+  of shell scripts (`claude-iso.sh`, sandbox status-line helpers,
+  the placeholder pre-commit script). They run on POSIX bash.
+- [`tools/dev/`](tools/dev/) holds the local pre-commit checkers
+  invoked from `.pre-commit-config.yaml`.
+- Skills (`*/SKILL.md`) are documentation that the agent executes
+  as a procedure. Editing a skill is editing prose; the eval
+  suite under `tools/skill-evals/` is what catches regressions.
 
 ## Getting set up
 
-You need three tools on your machine:
+You need these tools on your machine:
 
-- **`uv`** — the Python runner used for `generate-cve-json`. Install via
+- **`uv`** — the Python runner for every Python package.
   `curl -LsSf https://astral.sh/uv/install.sh | sh` or your package
   manager.
-- **`prek`** — the `pre-commit`-compatible hook runner. Install via
+- **`prek`** — the `pre-commit`-compatible hook runner.
   `uv tool install prek` or `pipx install prek`.
-- **`gh` CLI** — needed to drive tracker reads (and, later, writes) if
-  you plan to run any of the skills end-to-end. `brew install gh` or
-  platform equivalent.
+- **`gh` CLI** — needed to drive tracker reads (and writes) if you
+  run any skill end-to-end. `brew install gh` or equivalent.
+- **`groovy`** — only if you're working on a Groovy tool. SDKMAN!
+  (`sdk install groovy`) or your package manager.
 
 First-time clone:
 
 ```bash
-git clone git@github.com:<tracker>.git
-cd <tracker-repo-name>
+git clone git@github.com:apache/airflow-steward.git
+cd airflow-steward
 prek install                   # wire the hooks into .git/hooks
-prek run --all-files           # runs every hook on every file; does a
-                               # one-time bootstrap of .apache-steward-overrides/user.md
-                               # from the template
+prek run --all-files           # runs every hook on every file
 ```
 
-The `bootstrap-user-config` hook will create
-`.apache-steward-overrides/user.md` on the
-first run. Open it, grep for `TODO`, and fill in the lines that apply
-to your setup. The file is gitignored; a second hook
-(`forbid-user-config`) refuses any commit that stages it, so you
-cannot accidentally publish your local configuration.
+The hooks are described in detail under [Running the dev loop](#running-the-dev-loop).
 
-Read [`.claude/skills/setup-steward/adopt.md`](.claude/skills/setup-steward/adopt.md) for the end-to-end
-configuration tutorial, including the placeholder convention and how
-the skills consume both layers.
+If you intend to actually run framework skills against an adopter
+project (not just edit the framework), follow the
+[`setup-isolated-setup-install`](.claude/skills/setup-isolated-setup-install/SKILL.md)
+skill to install the bubblewrap sandbox and pinned tools, then
+[`setup-isolated-setup-verify`](.claude/skills/setup-isolated-setup-verify/SKILL.md)
+to confirm the install. The full adoption tutorial lives at
+[`docs/setup/install-recipes.md`](docs/setup/install-recipes.md).
 
 ### Lightening the agent context
 
-Most skills in this repository are runtime workflows for adopters
+Many skills in this repository are runtime workflows for adopters
 (security triage, PR management, CVE allocation). They have no use
 while you are *editing the framework itself*, but they still load
-into the agent's context window and crowd out the files you actually
-need to read.
+into the agent's context window and crowd out the files you
+actually need to read.
 
 Opt out per skill by adding a `.claude/settings.local.json` to your
 clone (gitignored) and listing the skills you want disabled:
@@ -234,153 +490,244 @@ editing:
 
 | You want to change … | Edit under … |
 |---|---|
-| A step of the disclosure process that applies to every project | [`README.md`](README.md) |
-| An editorial / confidentiality / style rule | [`AGENTS.md`](AGENTS.md) |
-| Anything project-specific (canned reply, milestone convention, scope label, release-train state) | the adopter's own `<project-config>/` (lives in their tracker repo, not here) |
-| An adapter surface for an external system (a new Gmail search template, a new GraphQL recipe, a new `gh` invocation, a new CVE-tool endpoint) | the matching [`tools/<system>/`](tools/) subtree |
+| The framework's overall purpose, mission, or scope | [`MISSION.md`](MISSION.md) |
+| A normative principle that cuts across the framework | [`docs/rfcs/`](docs/rfcs/) (new RFC) |
+| An editorial / confidentiality / placeholder rule | [`AGENTS.md`](AGENTS.md) |
 | A skill's workflow | [`.claude/skills/<name>/SKILL.md`](.claude/skills/) |
-| Bootstrap scaffolding for a new project | [`projects/_template/`](projects/_template/) |
+| An adapter surface for an external system | the matching [`tools/<system>/`](tools/) subtree |
+| Bootstrap scaffolding for an adopter `<project-config>/` | [`projects/_template/`](projects/_template/) |
+| Sandbox / privacy-LLM / dev-loop infrastructure | [`tools/agent-isolation/`](tools/agent-isolation/), [`tools/privacy-llm/`](tools/privacy-llm/), [`tools/dev/`](tools/dev/) |
+| Anything project-specific (canned reply, milestone convention, scope label) | **not in this repo** — that lives in the adopter's `<project-config>/` |
 
 Rules of thumb for each layer:
 
-- **Root docs and skills are project-agnostic.** Never paste concrete
-  names like `<upstream>` or `<tracker>` into them. Use
-  the placeholders `<PROJECT>`, `<tracker>`, `<upstream>` in backticked
-  labels. URL targets in markdown links can point at concrete paths so
-  the links stay clickable during review — the placeholder lives in
-  the visible label only. The convention is documented in
-  [`AGENTS.md`](AGENTS.md) and enforced by reviewer taste.
-- **Tool adapters are project-agnostic.** If a recipe varies per
-  project (different Gmail domains, different GitHub org, different
-  board node IDs), the adapter declares variables and the active
-  project's [`project.md`](<project-config>/project.md) fills them.
-- **An adopter's `<project-config>/` carries concrete names freely** —
-  it exists for exactly that. The adopter's own per-project files can
-  reference their `<upstream>` repo directly, paste concrete package
-  versions, name release managers, etc. — none of that lives in this
-  framework repo.
-- **Skills never mutate state without user confirmation.** If you add
-  a new action, write the proposal/confirm/apply shape into the skill
-  and the guardrails into `AGENTS.md`. See the existing skills for
-  the pattern.
+- **Root docs, skills, and tool adapters are project-agnostic.**
+  Never paste concrete names into them. Use `<PROJECT>` /
+  `<tracker>` / `<upstream>` / `<security-list>` placeholders.
+  URL targets in markdown links may point at concrete paths so the
+  links stay clickable during review — the placeholder lives in
+  the visible label only. Enforced by the `check-placeholders`
+  prek hook.
+- **Skills never mutate state without user confirmation.** If you
+  add a new action, write the proposal / confirm / apply shape into
+  the skill and the guardrails into AGENTS.md. See the existing
+  skills for the pattern. The skill-evals suite has explicit
+  guardrail cases that catch unconfirmed mutations.
+- **Tool adapters declare their adopter-side variables.** If a
+  recipe varies per project (different Gmail domains, different
+  GitHub org, different board node IDs), the adapter declares the
+  variable and the active project's `<project-config>/project.md`
+  fills it in. The adapter does *not* read `<project-config>/`
+  itself — the calling skill resolves the variable and passes it
+  via environment.
+- **Skill behaviour changes require eval updates.** If you change
+  what a skill should output for a given input, the corresponding
+  eval case under [`tools/skill-evals/evals/<skill>/`](tools/skill-evals/evals/)
+  needs its `expected.json` updated in the same PR. See AGENTS.md
+  *Keeping evals and mode-economics in sync* for the rule.
 
 ## Running the dev loop
 
 Every change should pass `prek run --all-files` locally before you
 open a PR — CI runs the same config. The hook set:
 
-- `doctoc` regenerates TOCs on every `.md` file (except skill `SKILL.md`
-  files, which keep YAML frontmatter at the top);
-- `end-of-file-fixer`, `trailing-whitespace`, `mixed-line-ending`,
-  `check-merge-conflict`, `detect-private-key` — standard hygiene;
-- `forbid-user-config` — refuses any commit that stages
-  `config/user.md`;
-- `bootstrap-user-config` — creates `config/user.md` from the template
-  on first run;
-- `markdownlint-cli2` — flags structurally bad markdown. Config in
-  `.markdownlint.json` enables only the rules that catch real bugs
-  (broken anchors via MD051, dangling link references via MD053);
-  style choices are intentionally left alone;
-- `typos` — fast spell-checker. Allowlist of project-specific terms
-  (`CNA`, `Vulnogram`, `ponymail`, `mis-`, `Nd`, etc.) lives in
-  `.typos.toml`;
-- `check-placeholders` — local script at `tools/dev/check-placeholders.sh`
-  that refuses to commit hardcoded references like `apache/airflow`
-  or `Apache Airflow` inside `.claude/skills/` or `tools/`. The
-  framework convention is the `<PROJECT>` / `<tracker>` / `<upstream>`
-  placeholder set; see
-  [`AGENTS.md` — Placeholder convention](AGENTS.md#placeholder-convention-used-in-skill-files);
-- `ruff check` / `ruff format --check` / `mypy` / `pytest` against the
-  `tools/vulnogram/generate-cve-json/` and `tools/gmail/oauth-draft/`
-  Python packages.
+- **`doctoc`** — regenerates TOCs on every `.md` file (except
+  skill `SKILL.md` files, which keep YAML frontmatter at the top,
+  and skill-evals fixture/README files).
+- **`pre-commit-hooks`** — `end-of-file-fixer`, `trailing-whitespace`,
+  `mixed-line-ending`, `check-merge-conflict`, `detect-private-key`.
+- **`markdownlint-cli2`** — flags structurally bad markdown
+  (broken anchors via MD051, dangling link refs via MD053).
+  Style choices are intentionally left alone.
+- **`typos`** — fast spell-checker. Allowlist of project-specific
+  terms (`CNA`, `Vulnogram`, `ponymail`, etc.) in `.typos.toml`.
+- **`check-placeholders`** — local script at
+  [`tools/dev/check-placeholders.sh`](tools/dev/check-placeholders.sh)
+  that refuses hardcoded references like `apache/airflow` or
+  `Apache Airflow` inside `.claude/skills/` or `tools/`. The
+  framework convention is the `<PROJECT>` / `<tracker>` /
+  `<upstream>` placeholder set.
+- **Per-package Python checks** — `ruff check`, `ruff format --check`,
+  `mypy`, `pytest` against each `tools/*/` Python package, scoped
+  to changes inside that package directory via the hook's `files:`
+  pattern.
 
-A separate GitHub workflow `link-check.yml` runs
-[lychee](https://lychee.cli.rs/) on every PR and on a daily schedule
-to catch broken internal links and dead external URLs. The check is
-**informational only** today (`continue-on-error: true`) because the
-existing tree carries a known set of placeholder / not-yet-created
-file references; once the baseline reaches zero the workflow will
-flip to a hard gate.
+Separate GitHub workflows:
 
-For the Python package directly:
+- **`pre-commit.yml`** — runs `prek run --all-files` in CI.
+- **`zizmor.yml`** — lints GitHub Actions workflows for known-bad
+  patterns; runs on every PR.
+- **`link-check.yml`** — runs [lychee](https://lychee.cli.rs/) on
+  every PR and daily on a schedule. **Informational only** today
+  (`continue-on-error: true`) because the tree carries a known set
+  of placeholder / not-yet-created file references; once the
+  baseline reaches zero the workflow flips to a hard gate.
+
+To run a single Python package's tests directly:
 
 ```bash
-cd tools/vulnogram/generate-cve-json
-uv run pytest                  # unit tests
-uv run ruff check              # lint
-uv run ruff format             # auto-format (check-only in CI)
-uv run mypy                    # type-check
+cd tools/skill-validator
+uv run pytest
 ```
 
-The package is invoked by the [`security-issue-sync`](.claude/skills/security-issue-sync/SKILL.md)
-and [`security-cve-allocate`](.claude/skills/security-cve-allocate/SKILL.md) skills via
-`uv run --project tools/vulnogram/generate-cve-json generate-cve-json
-<N> --attach` from the repo root — that is the canonical invocation
-any new behaviour has to stay compatible with.
+To run a Groovy tool directly:
+
+```bash
+groovy tools/jira/bridge.groovy projects
+```
+
+To run skill-evals for one skill:
+
+```bash
+PYTHONPATH=tools/skill-evals/src python3 -m skill_evals.runner \
+    tools/skill-evals/evals/security-issue-import/
+```
+
+See [`tools/skill-evals/README.md`](tools/skill-evals/README.md)
+for the full eval invocation surface (single step, single case,
+agent self-eval mode).
 
 ## Opening a pull request
 
 - **Base branch:** `main`. Do not open PRs against any other branch
   unless explicitly coordinated.
-- **Scope:** keep one concern per PR. A skill-behaviour change, a
-  tool-adapter addition, and a doc update should land as separate PRs.
-- **Commit message shape:** imperative-present subject, ≤72 chars,
-  plain prose body explaining *why*. Look at
-  [recent merged commits](https://github.com/apache/airflow-steward/commits/main)
-  for the cadence.
-- **PR description:** one `## Summary` section with 1–3 bullets of
-  *what changed and why*, and one `## Test plan` section listing how
-  you verified the change.
-- **CI:** `prek run --all-files` must pass. `zizmor` (GitHub Actions
-  linting) must pass. Both run automatically on every PR.
+- **Scope:** one concern per PR. A skill change, a tool-adapter
+  addition, and a doc update land as separate PRs.
+- **Commit message:** Conventional Commits style — `feat(skills): …`,
+  `fix(tools/github): …`, `docs(rfcs): …`, `chore(deps): …`, etc.
+  Imperative-present subject, ≤72 chars, plain prose body
+  explaining *why*. Pass via HEREDOC to preserve formatting:
+
+  ```bash
+  git commit -m "$(cat <<'EOF'
+  feat(tools/foo): add bar capability
+
+  Why: skills X and Y need a way to do Z; previously they shelled
+  out to a one-off snippet that didn't survive a sandbox change.
+
+  EOF
+  )"
+  ```
+
+- **PR description:** one `## Summary` section (1–3 bullets of
+  *what changed and why*) and one `## Test plan` section (how you
+  verified). The `gh pr create` template in this repo matches.
+- **CI gates:** `prek run --all-files` must pass; `zizmor` must
+  pass. `link-check` is informational. All gates run automatically
+  on every PR.
 - **Reviews:** at least one approval from a repo collaborator. Any
-  change that edits [`AGENTS.md`](AGENTS.md) or the skill files should
-  get an extra set of eyes because those ripple into every future
-  sync.
+  change that edits [`AGENTS.md`](AGENTS.md), an RFC, or a skill
+  file should get an extra set of eyes because those ripple into
+  every future sync.
+- **Rebase + prek before push.** Hooks auto-fix many issues; CI
+  rejects unfixed. Standard incantation:
+
+  ```bash
+  git fetch origin main
+  git rebase origin/main
+  prek run --all-files
+  git push
+  ```
+
+## Your first contribution
+
+Good entry points, in rough order of ramp-up cost:
+
+1. **Pick a [`good first issue`](https://github.com/apache/airflow-steward/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22).**
+   The current backlog has 24+ such issues, including 22 net-new
+   tool / adapter bridges and per-CLI runtime ports tracked at
+   [#301–#322](https://github.com/apache/airflow-steward/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22+sort%3Acreated-desc).
+   Two clusters:
+   - **Tool bridges** ([#301–#312](https://github.com/apache/airflow-steward/issues/301)) — JIRA write path, Bugzilla, IMAP / mbox concrete wiring, GitLab, Mailman 3 / Hyperkitty, Discourse, Zulip, Matrix, Forgejo, OSV.dev, Pagure.
+   - **Agent-CLI runtime adapters** ([#313–#322](https://github.com/apache/airflow-steward/issues/313)) — Codex, Gemini, local-LLM, Cursor, Aider, gh-copilot, Goose, Amazon Q, Junie, OpenHands.
+
+   Each issue is self-contained: tool location, suggested
+   capabilities, why-useful context, references to existing tools
+   to mirror the shape of.
+
+2. **Documentation improvements.** Read a skill or a doc, find a
+   gap or a stale reference, fix it. The `docs/setup/`,
+   `docs/security/`, and `docs/pr-management/` trees are all
+   actively curated and welcome refinement. The `link-check`
+   workflow surfaces broken anchors and dead URLs daily — work
+   from that report is high-value.
+
+3. **Eval fixtures.** [`tools/skill-evals/evals/`](tools/skill-evals/evals/)
+   has 380+ cases across 18 skills, but every skill could use more
+   edge cases. A new fixture is a directory with `input.json` +
+   `expected.json` + a `README.md` describing the scenario.
+   Lower friction than skill code changes — no model behaviour
+   change, just better test coverage. See
+   [`tools/skill-evals/README.md`](tools/skill-evals/README.md)
+   for the fixture format.
+
+4. **A new skill via [`/write-skill`](.claude/skills/write-skill/SKILL.md).**
+   The meta-skill walks you through the framework's skill shape
+   (frontmatter, resources, placeholder convention, prompt-injection
+   defences, privacy-LLM gate-check) and validates via
+   [`skill-validator`](tools/skill-validator/). The scaffold puts
+   you in the right shape from the start.
+
+5. **A tool-bridge implementation** (the hardest of these but the
+   most rewarding for a first contribution if you're comfortable
+   with API design). Pick a `tool/*` stub or a `good first issue`
+   bridge, follow the contract in `tools/<system>/tool.md` (or for
+   mail backends, [`tools/mail-source/contract.md`](tools/mail-source/contract.md)),
+   land a Python or Groovy implementation, document the adapter
+   surface variables, and add eval cases for any new skill steps
+   that depend on it.
+
+If you're not sure which is the right fit, open a draft issue
+describing what you want to try and a maintainer will route you.
 
 ## Confidentiality
 
-This repository is private — only security-team members can read its
-tracker contents. The repo's *contents* (issue bodies, comments,
-labels, rollup entries, severity assessments) must never appear on
-a public surface. The repo's *identifiers* (URLs, `#NNN`) are
-public-safe and may be cross-referenced from public PRs, reporter
-emails, and advisory text — see the
-[Confidentiality of the tracker repository](AGENTS.md#confidentiality-of-the-tracker-repository)
-section of `AGENTS.md` for the three-layer rule. Practical rules:
+This repository (`apache/airflow-steward`) is **public**. The
+confidentiality rules in AGENTS.md primarily apply to **adopters'
+own tracker repositories**, which are private (security tracker
+contents must never appear on a public surface). But contributors
+to this framework repo should still know the rules — most skills
+deal with mail / tracker contents at runtime, and skill prose can
+inadvertently leak information shape.
 
-- A `<tracker>` URL or `#NNN` reference may appear in a public PR
-  description as a cross-reference identifier, **so long as the
-  surrounding text does not characterise the change as a security
-  fix** (no `CVE-`, no *"vulnerability"* / *"security fix"* /
-  *"advisory"* phrasing) before the advisory ships.
-- Never paste tracker comment text, label transitions, or body
-  excerpts into a public surface — those are *contents*, not
-  identifiers.
-- Never put reporter-identifying information into a `<upstream>` PR.
-- When sharing a tracker URL with an external reporter, pair it with
-  a one-line note that the link is an identifier-only reference (the
-  page will 404 for them, and that is expected).
-- Reporter-supplied CVSS scores are informational only. The security
-  team scores independently during CVE allocation. Full rationale in
+Practical rules for *this* repo:
+
+- **Never paste real reporter PII into a fixture, eval case, or
+  doc example.** Use synthetic names and synthetic emails — the
+  existing fixtures all do.
+- **Never paste a real security tracker URL or `#NNN` reference
+  into a skill or doc.** Use `<tracker>#NNN` or a synthetic
+  placeholder.
+- **Never paste real CVE allocation tool URLs that leak
+  pre-publication CVE IDs.** Use `<cve-allocate-url>` or the
+  redacted variant.
+- **Reporter-supplied CVSS scores are informational only** — never
+  treat them as authoritative in skill prose. Full rationale in
   [`AGENTS.md`](AGENTS.md).
-- `config/user.md` stays gitignored. If you need to share a snippet
-  with someone, paste it in chat — do not commit it.
+- **Per-user config (`user.md`)** stays in adopter repos,
+  gitignored. It never lives here.
 
-Anything you are unsure about, stop and ask on `security@apache.org`
-before pushing.
+Anything you're unsure about, ask in the PR description or open a
+draft and tag a maintainer.
 
 ## Authoritative references
 
-When this file and a layer-specific doc disagree, the layer-specific
-doc wins. Re-read it first:
+When this file and a layer-specific doc disagree, the
+layer-specific doc wins. Re-read it first:
 
-- [`README.md`](README.md) — the 16-step disclosure process.
+- [`MISSION.md`](MISSION.md) — establishment proposal; the *why*.
+- [`README.md`](README.md) — framework overview and adoption
+  entry point.
 - [`AGENTS.md`](AGENTS.md) — editorial and confidentiality rules.
-- [`.claude/skills/setup-steward/adopt.md`](.claude/skills/setup-steward/adopt.md) — framework adoption + per-user config scaffold tutorial.
-- [`projects/_template/README.md`](projects/_template/README.md) — current-projects index
-  and the new-project bootstrap path.
-- [`projects/_template/`](projects/_template/) — scaffold to clone when
-  adding a new project.
-- [`.claude/skills/<name>/SKILL.md`](.claude/skills/) — the workflow
-  spec each skill enforces.
+- [`docs/rfcs/RFC-AI-0004.md`](docs/rfcs/RFC-AI-0004.md) — the six
+  principles that govern every change.
+- [`docs/rfcs/`](docs/rfcs/) — full RFC set.
+- [`docs/setup/`](docs/setup/) — adoption, sandbox, privacy-LLM,
+  override workflow.
+- [`.claude/skills/<name>/SKILL.md`](.claude/skills/) — the
+  workflow each skill enforces.
+- [`tools/<name>/`](tools/) — per-tool adapter contracts.
+- [`tools/skill-evals/README.md`](tools/skill-evals/README.md) —
+  the eval harness and fixture format.
+- [`tools/skill-validator/README.md`](tools/skill-validator/README.md) —
+  the SKILL.md validation contract.
