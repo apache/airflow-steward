@@ -3,13 +3,11 @@ name: contributor-activity-sweep
 mode: Triage
 description: |
   Read-only GitHub activity card for a named contributor on <upstream>.
-  Fetches PRs authored, PR reviews given, issues filed, and PR/issue
-  comments over a configurable window. Output is intentionally limited
-  to GitHub-visible activity — mailing list, documentation, user
-  support, mentoring, talks, and release management are invisible to
-  this skill and must be supplied by the nominator separately.
-  No readiness verdict is produced. Use contributor-nomination for
-  a full nomination brief with assessment.
+  Fetches PR authorship, code-review activity, issues, and PR/issue
+  comments over a configurable window. Limited to GitHub-visible
+  activity — the body documents the off-GitHub tracks the nominator
+  must supply separately. No readiness verdict is produced; use
+  contributor-nomination for a full nomination brief.
 when_to_use: |
   Invoke when a maintainer says "show me activity for <handle>",
   "what has <handle> been doing lately", "give me a quick summary
@@ -109,7 +107,7 @@ Proceed? [Y/n]
 
 ---
 
-## Step 1 — Fetch GitHub activity
+## Step 1 — Fetch and classify activity
 
 Four streams. All are scoped to `<upstream>` and date-bounded to
 `created:><since>` or `updated:><since>` as appropriate.
