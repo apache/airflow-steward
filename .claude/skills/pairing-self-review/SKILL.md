@@ -1,7 +1,6 @@
 ---
 name: pairing-self-review
 mode: Pairing
-status: experimental
 description: |
   Run a structured pre-flight self-review on local changes before opening a PR.
   Reads the diff against a configurable base (default: the merge base of HEAD and the
@@ -95,7 +94,7 @@ Read the diff and classify findings across three axes. For each finding record:
 - **severity** — `blocking | advisory`
 - **location** — file path and line range
 - **summary** — one sentence describing the finding
-- **detail** — evidence from the diff (quoted line(s)) and the rule it violates
+- **evidence** — the quoted diff line(s) the finding rests on (the Step 3 report adds the rule citation)
 
 #### Axis definitions
 
@@ -119,6 +118,10 @@ cause a CI gate to fail; otherwise `advisory`.
 
 If the diff contains no finding on an axis, record an explicit `"no findings"` entry
 for that axis so the report is complete.
+
+If the collected diff is empty (the Step 1 guard did not already stop the run — e.g.
+this step is exercised directly), return the empty-diff signal: an empty `findings`
+list, all three axes in `axes_without_findings`, and `"empty_diff": true`.
 
 ---
 

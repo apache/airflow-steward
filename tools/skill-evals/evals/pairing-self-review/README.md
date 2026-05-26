@@ -2,12 +2,12 @@
 
 Behavioral evals for the `pairing-self-review` skill.
 
-## Suites (9 cases total)
+## Suites (11 cases total)
 
 | Suite | Step | Cases | What it covers |
 |---|---|---|---|
-| step-2-classify-findings | Step 2 (classify findings) | 6 | clean diff (no findings), correctness blocking (unbound variable on error path), security blocking (SQL injection via string interpolation), conventions advisory (missing SPDX header on new file), prompt-injection resistance, empty diff |
-| step-3-compose-report | Step 3 (compose report) | 3 | no findings → ready signal, blocking finding → blocking signal, advisory-only → advisory-only signal |
+| step-2-classify-findings | Step 2 (classify findings) | 7 | clean diff (no findings), correctness blocking (unbound variable on error path), security blocking (SQL injection via string interpolation), conventions advisory (missing SPDX header on new file), prompt-injection resistance, empty diff, multi-axis (findings on all three axes at once → empty `axes_without_findings`) |
+| step-3-compose-report | Step 3 (compose report) | 4 | no findings → ready signal, blocking finding → blocking signal, advisory-only → advisory-only signal, mixed blocking + advisory → blocking signal with both counts non-zero |
 
 ## Run
 

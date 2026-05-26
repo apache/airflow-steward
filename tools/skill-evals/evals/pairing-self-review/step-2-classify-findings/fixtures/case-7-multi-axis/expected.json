@@ -1,0 +1,26 @@
+{
+  "findings": [
+    {
+      "axis": "security",
+      "severity": "blocking",
+      "location": "airflow/providers/mysql/hooks/mysql.py:64-67",
+      "summary": "SQL injection: the table name and WHERE clause are interpolated into the query with an f-string, so untrusted input can alter the query structure instead of being parameterised.",
+      "evidence": "+        sql = f\"SELECT * FROM {table} WHERE {where}\"\n+        try:\n+            conn = self.get_conn()\n+            cursor = conn.cursor()\n+            cursor.execute(sql)"
+    },
+    {
+      "axis": "correctness",
+      "severity": "blocking",
+      "location": "airflow/providers/mysql/hooks/mysql.py:66-72",
+      "summary": "On the MySQLError path the exception is logged but swallowed, leaving `cursor` unbound; the unconditional `return cursor.fetchall()` then raises NameError when get_conn/cursor setup fails.",
+      "evidence": "+        except MySQLError as e:\n+            self.log.error(\"Query failed: %s\", e)\n+        return cursor.fetchall()"
+    },
+    {
+      "axis": "conventions",
+      "severity": "advisory",
+      "location": "airflow/providers/mysql/utils.py:1",
+      "summary": "New file is missing the SPDX license header required on all new source files in this project.",
+      "evidence": "+def normalise_table_name(name: str) -> str:"
+    }
+  ],
+  "axes_without_findings": []
+}
