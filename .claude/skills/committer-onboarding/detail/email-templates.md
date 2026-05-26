@@ -13,7 +13,7 @@ confirmation.
 **Bcc:** `private@<podling>.apache.org`
 **Subject:** Welcome to Apache <project> — invitation to become a committer
 
-```
+```text
 Dear <candidate>,
 
 On behalf of the <project> Project Management Committee (PMC)
@@ -105,7 +105,7 @@ On behalf of the <project> PPMC,  [use PMC for TLPs]
 > If unsure, ask the nominator to confirm with
 > secretary@apache.org before sending this email.
 
-```
+```text
 Hi,
 
 Please create an Apache account for a new committer on the
@@ -145,7 +145,7 @@ Thanks,
 > Post this publicly only *after* the account exists and
 > karma has been granted.
 
-```
+```text
 Hi all,
 
 I am pleased to announce that <candidate name> has accepted

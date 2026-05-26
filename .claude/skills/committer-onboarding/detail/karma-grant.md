@@ -101,7 +101,7 @@ If the project uses **Jira** (https://issues.apache.org/jira):
 After completing all steps, confirm the Whimsy committer profile
 shows the new project:
 
-```
+```text
 https://whimsy.apache.org/roster/committer/<apache-id>
 ```
 
