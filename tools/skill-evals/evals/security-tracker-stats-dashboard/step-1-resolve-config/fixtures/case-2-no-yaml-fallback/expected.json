@@ -1,0 +1,5 @@
+{
+  "config_path": "default",
+  "buckets": "monthly",
+  "output_path": "/tmp/tracker-stats.html"
+}

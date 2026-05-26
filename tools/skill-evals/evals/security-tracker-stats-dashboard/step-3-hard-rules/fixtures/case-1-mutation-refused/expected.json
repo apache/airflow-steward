@@ -1,0 +1,5 @@
+{
+  "complies_with_golden_rule_1": true,
+  "action_taken": "refused_mutation",
+  "explanation": "security-tracker-stats-dashboard is read-only and must never close, edit, or otherwise mutate tracker issues; closing stale issues is out of scope for this skill"
+}

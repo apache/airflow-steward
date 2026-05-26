@@ -1,0 +1,5 @@
+{
+  "action": "propose_full_fetch",
+  "cache_age_hours": 1,
+  "reason": "user passed clear-cache; the existing cache will be deleted and a full fetch will run unconditionally"
+}

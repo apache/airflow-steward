@@ -1,0 +1,12 @@
+User invocation: tracker-stats
+
+project-config/security-tracker-stats.md:
+  tracker_stats_config: /home/user/airflow-s/.apache-steward-overrides/security-tracker-stats.yaml
+  output_path: /home/user/reports/tracker-stats.html
+
+YAML file check:
+  path: /home/user/airflow-s/.apache-steward-overrides/security-tracker-stats.yaml
+  exists: yes
+
+YAML config contents (buckets key):
+  buckets: monthly

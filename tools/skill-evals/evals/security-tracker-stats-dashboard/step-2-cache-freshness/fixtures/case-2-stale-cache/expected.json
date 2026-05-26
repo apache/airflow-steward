@@ -1,0 +1,5 @@
+{
+  "action": "propose_refresh",
+  "cache_age_hours": 26,
+  "reason": "cache is 26 hours old, exceeding the 24-hour freshness threshold; a fresh fetch is needed before rendering"
+}

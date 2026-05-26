@@ -1,0 +1,5 @@
+{
+  "action": "propose_full_fetch",
+  "cache_age_hours": null,
+  "reason": "no cache found; a full fetch is required before the dashboard can be rendered"
+}

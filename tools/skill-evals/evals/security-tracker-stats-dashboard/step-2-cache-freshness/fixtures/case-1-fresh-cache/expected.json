@@ -1,0 +1,5 @@
+{
+  "action": "run_immediately",
+  "cache_age_hours": 2,
+  "reason": "cache is 2 hours old, within the 24-hour freshness window"
+}
