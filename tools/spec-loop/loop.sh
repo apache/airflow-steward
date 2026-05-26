@@ -21,6 +21,12 @@
 #     .claude/settings.json `ask` — they are the human's step. The loop
 #     ends at a local commit and the build prompt prints the human-run
 #     push + `gh pr create --web` commands.
+#   * NO REDOING BUILT WORK: because the loop never pushes, a work item it
+#     already built exists only as a LOCAL BRANCH and has no open PR. Each
+#     iteration therefore feeds the agent BOTH the open PRs and the local
+#     work-item branches as in-flight work. Without the local-branch signal
+#     the agent would re-pick the same top-priority plan item every
+#     iteration and rebuild it forever (an endless loop).
 #
 # SECURITY — read before running:
 #   This loop runs the agent with `--dangerously-skip-permissions`, which
@@ -175,6 +181,56 @@ open_pr_context() {
     fi
 }
 
+# Local work-item branches the loop has already built. This is the companion
+# to open_pr_context: the loop never pushes, so a freshly built item has NO
+# open PR and is invisible to the PR check above. Listing it here as in-flight
+# work is what stops the agent re-picking the same top-priority plan item and
+# rebuilding it on a new branch every iteration. Reads refs only, so it is
+# correct regardless of which branch is currently checked out.
+local_branch_context() {
+    echo ""
+    echo "## Local work-item branches"
+    echo ""
+    echo "The runner collected this immediately before the iteration. This loop"
+    echo "never pushes and never opens a PR, so a work item it has already built"
+    echo "exists ONLY as a local branch and will NOT appear in the open-PR"
+    echo "context above. Treat every branch listed here as work that is already"
+    echo "built or in flight: do not add a plan item, and do not pick a build"
+    echo "item, whose slug matches one of these branches or whose change one of"
+    echo "them already carries. Checking these branches (not just open PRs) is"
+    echo "what keeps the loop from rebuilding the same item every iteration."
+    echo ""
+
+    local have_base=false
+    if git rev-parse --verify --quiet "refs/heads/$BASE" >/dev/null 2>&1; then
+        have_base=true
+    fi
+
+    # Every local branch except the integration base and the control branch
+    # (where the tooling lives); those two are never work-item branches.
+    local branches
+    branches="$(git for-each-ref --format='%(refname:short)' refs/heads/ \
+        | grep -vxF "$BASE" \
+        | grep -vxF "$TOOLING_REF")"
+
+    if [ -z "$branches" ]; then
+        echo "- No local work-item branches found."
+        return 0
+    fi
+
+    local b subject ahead
+    while IFS= read -r b; do
+        [ -n "$b" ] || continue
+        subject="$(git log -1 --format='%s' "$b" 2>/dev/null)"
+        if [ "$have_base" = true ]; then
+            ahead="$(git rev-list --count "$BASE..$b" 2>/dev/null)"
+            echo "- ${b} (${ahead:-?} commit(s) ahead of ${BASE}): ${subject}"
+        else
+            echo "- ${b}: ${subject}"
+        fi
+    done <<< "$branches"
+}
+
 while true; do
     if [ "$MAX_ITERATIONS" -gt 0 ] && [ "$ITERATION" -ge "$MAX_ITERATIONS" ]; then
         echo "Reached max iterations: $MAX_ITERATIONS"; break
@@ -228,6 +284,7 @@ while true; do
         rm -f "$PROMPT_WITH_CONTEXT"; break
     fi
     open_pr_context >> "$PROMPT_WITH_CONTEXT"
+    local_branch_context >> "$PROMPT_WITH_CONTEXT"
 
     if [ "$BUILD_ITERATION" = true ]; then
         # The work-item branch forks off BASE (e.g. main), which need not
@@ -259,32 +316,6 @@ while true; do
                     echo "there — they are not on \`$BASE\`. The control branch owns the specs."
                 fi
             } >> "$PROMPT_WITH_CONTEXT"
-        fi
-
-        # Freshness check: refuse to fork off a stale base. Fetch the base's
-        # tracking branch and verify BASE is not behind it. Forking off a stale
-        # local base is how a loop re-does work that's already merged upstream:
-        # the agent sees "no such file" locally, dutifully re-creates it, and
-        # the resulting branch collides with the merged PR's source branch on
-        # the remote.
-        BASE_UPSTREAM="$(git rev-parse --abbrev-ref "${BASE}@{upstream}" 2>/dev/null || true)"
-        if [ -n "$BASE_UPSTREAM" ]; then
-            BASE_REMOTE="${BASE_UPSTREAM%%/*}"
-            if ! git fetch --quiet "$BASE_REMOTE" "$BASE" 2>/dev/null; then
-                echo "⚠ Could not fetch '$BASE_REMOTE' — freshness check skipped (network or auth issue)." >&2
-            else
-                BEHIND_BY="$(git rev-list --count "${BASE}..${BASE_UPSTREAM}" 2>/dev/null || echo 0)"
-                if [ "$BEHIND_BY" -gt 0 ]; then
-                    echo "✗ Base '$BASE' is $BEHIND_BY commit(s) behind '$BASE_UPSTREAM'." >&2
-                    echo "  Fast-forward before re-running:" >&2
-                    echo "    git checkout $BASE && git merge --ff-only $BASE_UPSTREAM" >&2
-                    echo "  Forking off a stale base re-does merged work — the new branch" >&2
-                    echo "  may collide with one already on the remote for the same change." >&2
-                    rm -f "$PROMPT_WITH_CONTEXT"; break
-                fi
-            fi
-        else
-            echo "⚠ Base '$BASE' has no upstream tracking branch — freshness check skipped." >&2
         fi
 
         # Check out the base now — right before the agent runs, not earlier —
@@ -330,24 +361,6 @@ while true; do
         # Report the work-item branch the agent produced, by name, so you know
         # exactly what to push.
         if [ "$CUR_BRANCH" != "$BASE" ] && [ "$CUR_BRANCH" != "$TOOLING_REF" ]; then
-            # Branch-name collision check: a remote branch with the same name
-            # often means the agent just re-did work that already shipped under
-            # this slug (a merged PR's source branch typically lingers on the
-            # remote). Warn loudly — pushing would either be rejected or, worse,
-            # overwrite the merged history. Check every configured remote, not
-            # just origin: a fork-based workflow has the lineage on `upstream`.
-            COLLISION_FOUND=false
-            for remote in $(git remote); do
-                if git ls-remote --heads --exit-code "$remote" "$CUR_BRANCH" >/dev/null 2>&1; then
-                    echo "⚠ Remote '$remote' already has a branch named '$CUR_BRANCH'." >&2
-                    COLLISION_FOUND=true
-                fi
-            done
-            if [ "$COLLISION_FOUND" = true ]; then
-                echo "  Likely the source branch of a PR that already shipped under this slug." >&2
-                echo "  Inspect before pushing — do not push blind:" >&2
-                echo "    git fetch --all && git log --oneline --all -- <changed-file>" >&2
-            fi
             echo "[ new branch ] $CUR_BRANCH  (forked off $BASE)"
             echo "               push it with:  git push -u origin $CUR_BRANCH"
         else
