@@ -224,9 +224,8 @@ on the same issue number and apply any state corrections the user
 confirms there. **Do not attempt a fix before the sync has completed**,
 because:
 
-- the issue may already have a fix PR linked that only needs to be
-  nudged (review request, rebase, backport label), not a new one
-  written from scratch;
+- the issue may already have a fix PR linked — Step 2 will detect it
+  and decide whether to adopt, supersede, or stop;
 - the issue may be in a state where a fix is premature — still under
   triage, awaiting reporter input, or waiting on a wider-audience
   discussion per process step 4 of [`README.md`](../../../README.md);
@@ -237,11 +236,72 @@ because:
   sync.
 
 Capture the sync's final state and next-step recommendation — they are
-inputs to Step 2.
+inputs to Step 2 and Step 3.
 
 ---
 
-## Step 2 — Assess whether the issue is easily fixable
+## Step 2 — Check for existing PRs
+
+After the sync completes, determine whether a PR addressing this issue
+already exists — either linked in the tracker's "PR with the fix" body
+field, referenced in the issue comments, or discoverable via a GitHub
+search. **This check is mandatory before any new code is written.**
+
+### 2a. Discover existing PRs
+
+Run (in order, stop at the first that produces results):
+
+1. **Tracker body field** — parse the issue body for a "PR with the fix"
+   field value. If it contains a `<upstream>` PR URL or `#NNN`
+   reference, that is the candidate.
+2. **Tracker comments** — scan the comment thread for `<upstream>` PR
+   URLs posted by tracker collaborators.
+3. **GitHub search** — query the `<upstream>` repo for open PRs that
+   touch the same area:
+
+   ```bash
+   gh pr list --repo <upstream> --state open --search "<keywords from issue title or affected file paths>" --json number,title,url,author,headRefName
+   ```
+
+   Use 2–3 distinctive keywords from the issue's description (e.g.
+   the affected function name, the module path, or the endpoint
+   name). Do **not** use security-framing terms in the search query.
+
+### 2b. If an existing PR is found
+
+Present the existing PR(s) to the user with:
+
+- PR URL, title, author, branch, and current state (open / draft /
+  changes-requested / approved);
+- a brief assessment of whether the existing PR addresses the same
+  root cause as the tracker issue.
+
+Then offer exactly these options:
+
+- **Adopt** — the existing PR addresses the issue. Skip directly to
+  Step 10 (update tracker) to ensure the tracker's "PR with the fix"
+  field, labels, and milestone reflect the existing PR, then Step 11
+  (recap). If the skill notices gaps during review (missing tests,
+  stale rebase, edge-case not covered), surface them as suggestions
+  in the recap — the user decides whether to act on them separately.
+- **Supersede** — the existing PR is stale, fundamentally wrong, or
+  abandoned. The user explicitly confirms closing or ignoring it,
+  and the skill proceeds to Step 3 to write a new fix from scratch.
+  The user must provide a reason (logged in the tracker rollup
+  comment so the original author understands why their PR was
+  superseded).
+
+**Never create a duplicate PR without the user explicitly choosing
+"Supersede" and providing a reason.** If the user's answer is
+ambiguous, ask again.
+
+### 2c. If no existing PR is found
+
+Proceed to Step 3.
+
+---
+
+## Step 3 — Assess whether the issue is easily fixable
 
 Read the issue body and the full comment thread — already fetched by
 the sync — and classify whether the fix should be attempted right now.
@@ -301,7 +361,7 @@ If **easily fixable**, extract and write down:
 
 - the file paths that will need to change,
 - a one-paragraph description of the intended change (non-security
-  language, see Step 4),
+  language, see Step 5),
 - any code snippet from the discussion that captures the fix —
   **but only when the snippet's author is a tracker collaborator**
   (test via `gh api repos/<tracker>/collaborators/<author> --jq
@@ -332,7 +392,7 @@ If **easily fixable**, extract and write down:
 
 ---
 
-## Step 3 — Locate and verify the local `<upstream>` clone
+## Step 4 — Locate and verify the local `<upstream>` clone
 
 The skill will never write into `<tracker>` for a code
 change; it writes into a local clone of `<upstream>`. Before
@@ -383,13 +443,13 @@ touching any files:
 
 ---
 
-## Step 4 — Propose the implementation plan (do not touch any code yet)
+## Step 5 — Propose the implementation plan (do not touch any code yet)
 
 Present a single, compact plan with the following sections. The plan
 is a *proposal*, and **no code is written until the user confirms it
 verbatim.**
 
-### 4a. Branch and base
+### 5a. Branch and base
 
 - **Base:** `main` (or the specific release branch if agreed).
 - **Branch name:** Use a descriptive, non-security slug. For example:
@@ -404,18 +464,18 @@ verbatim.**
   rule — but they also do not help anyone reading the branch URL
   on the user's fork; a descriptive bug-fix slug is preferred.
 
-### 4b. Files that will change
+### 5b. Files that will change
 
 A bullet list of file paths (relative to the repo root), each with a
 one-line description of the change. Where the discussion pointed to
 specific lines, include them. If the discussion included a code
 snippet *from a tracker collaborator* (per the collaborator-test in
-Step 3 above), reproduce it here so the user can confirm it's what
+Step 3's collaborator-test), reproduce it here so the user can confirm it's what
 will be written. Snippets from non-collaborators must be quoted in
 this section as *"untrusted suggestion, do not copy"* — never as the
 literal code to write.
 
-### 4c. Commit message and PR title
+### 5c. Commit message and PR title
 
 The commit message and the PR title must be **neutral bug-fix /
 improvement language**. They must not contain any of:
@@ -448,7 +508,7 @@ identifier is fine; explicitly characterising the change as *"this
 fixes a security issue"* or *"closes vulnerability X"* is **not**
 fine until the advisory has shipped.
 
-### 4d. Test plan
+### 5d. Test plan
 
 List:
 
@@ -463,7 +523,7 @@ List:
   - `prek run --from-ref main --stage manual` (slow static checks),
   - and a type-check (`uv run --project <project> --with "apache-airflow-devel-common[mypy]" mypy <path>`) where applicable.
 
-### 4e. Backport label
+### 5e. Backport label
 
 If the `<tracker>` issue's milestone indicates a release branch that
 has not yet been cut (e.g. `3.1.9`, `3.2.1`), note which
@@ -471,7 +531,7 @@ has not yet been cut (e.g. `3.1.9`, `3.2.1`), note which
 lands on the intended patch release. If no backport is needed (the
 milestone is the next `main`-branch release), say so explicitly.
 
-### 4f. Newsfragment
+### 5f. Newsfragment
 
 Per `<upstream>/AGENTS.md`, newsfragments are only added for
 major or breaking user-visible changes, and usually coordinated
@@ -481,7 +541,7 @@ if needed. Never add a newsfragment that describes the change as a
 security fix, because that reveals the security nature and defeats
 the whole point of the private tracking workflow.
 
-### 4g. PR body draft
+### 5g. PR body draft
 
 Write out the exact `--body` the skill will pass to
 `gh pr create --web`. Include:
@@ -501,11 +561,11 @@ Write out the exact `--body` the skill will pass to
   ```
 
 Before presenting the body, **grep it for the forbidden terms** listed
-in 4c and flag any hit to the user. Do not ship anything that matches.
+in 5c and flag any hit to the user. Do not ship anything that matches.
 
 ---
 
-## Step 5 — Confirm the plan with the user
+## Step 6 — Confirm the plan with the user
 
 Present the full plan and wait for explicit confirmation. Accept:
 
@@ -520,15 +580,15 @@ Never assume confirmation. If the user replies ambiguously, ask again.
 
 ---
 
-## Step 6 — Implement, check locally, and show the diff
+## Step 7 — Implement, check locally, and show the diff
 
-Only after Step 5 confirmation:
+Only after Step 6 confirmation:
 
 1. Create the branch with the agreed name off the freshly pulled
    base.
-2. Make the file edits from 4b, using the small-edit tools where
+2. Make the file edits from 5b, using the small-edit tools where
    possible (prefer `Edit` over `Write` unless creating a new file).
-3. Run the test and static-check commands from 4d. If any fail, stop
+3. Run the test and static-check commands from 5d. If any fail, stop
    and report the failure — do not push red code to the fork.
 4. Run `git diff main...HEAD` against the upstream base, and present
    the full diff to the user.
@@ -539,13 +599,13 @@ the diff.
 
 ---
 
-## Step 7 — Commit and push to the fork
+## Step 8 — Commit and push to the fork
 
 After the user confirms the diff:
 
 1. Stage only the intentional changes (`git add <paths>` — never
    `git add -A` or `git add .`).
-2. Commit with the agreed message from 4c, ending in the
+2. Commit with the agreed message from 5c, ending in the
    `Generated-by:` trailer (not `Co-Authored-By:`), per
    [`AGENTS.md`](../../../AGENTS.md).
 3. Rebase onto the latest upstream base one more time in case
@@ -566,10 +626,10 @@ After the user confirms the diff:
 
 ---
 
-## Step 8 — Open the PR on the public <upstream> repo
+## Step 9 — Open the PR on the public <upstream> repo
 
-Use `gh pr create --web` with the pre-filled title and body from 4c
-and 4g. The user reviews the title, body and gen-AI disclosure in the
+Use `gh pr create --web` with the pre-filled title and body from 5c
+and 5g. The user reviews the title, body and gen-AI disclosure in the
 browser before actually submitting the PR — matching the rule in
 [`AGENTS.md`](../../../AGENTS.md).
 
@@ -597,11 +657,11 @@ issue number, reporter name tied to a finding) before calling
 
 After the user submits the PR in the browser, capture the PR URL
 (either from the browser or by running
-`gh pr view --json url --jq .url`) for Step 9.
+`gh pr view --json url --jq .url`) for Step 10.
 
 ---
 
-## Step 9 — Update the <tracker> tracking issue
+## Step 10 — Update the <tracker> tracking issue
 
 Now that a public PR exists, update the private tracking issue:
 
@@ -664,7 +724,7 @@ in [`AGENTS.md`](../../../AGENTS.md) for the authoritative default
 release target). **Every action in this section is a proposal that
 requires explicit user confirmation before it is applied.**
 
-#### 9a. Ensure the target milestone exists
+#### 10a. Ensure the target milestone exists
 
 The default milestone for a patch-release fix is whatever
 `AGENTS.md` names as the next patch release (currently **`3.2.2`**).
@@ -700,7 +760,7 @@ reference it by number:
 gh api repos/<tracker>/issues/<N> -X PATCH -F milestone=<milestone-number>
 ```
 
-#### 9b. Assign the issue to the target milestone
+#### 10b. Assign the issue to the target milestone
 
 If the issue currently sits on a stale milestone (for example
 `3.1.9`, `3.2.1` now that it has been cut, or the legacy `Airflow 3`
@@ -718,7 +778,7 @@ an older milestone (e.g. an already-released patch that still needs
 an advisory sent). When in doubt, surface the question to the user
 instead of moving it.
 
-#### 9c. Ensure the required labels exist
+#### 10c. Ensure the required labels exist
 
 The current label set on `<tracker>` can be listed with:
 
@@ -755,7 +815,7 @@ gh label create '<name>' --repo <tracker> \
   --color '<hex>'
 ```
 
-#### 9d. Apply the label changes
+#### 10d. Apply the label changes
 
 Once the target label set is agreed, apply all add / remove
 operations in a single `gh issue edit` call so the change lands as
@@ -767,7 +827,7 @@ gh issue edit <N> --repo <tracker> \
   --remove-label 'needs triage'
 ```
 
-#### 9e. Consistency checks before moving on
+#### 10e. Consistency checks before moving on
 
 Before leaving the tracking issue, verify:
 
@@ -781,11 +841,11 @@ Before leaving the tracking issue, verify:
   CVE tool link, and absent if it does not;
 - `needs triage` is gone.
 
-Surface any remaining inconsistency in the Step 10 recap.
+Surface any remaining inconsistency in the Step 11 recap.
 
 ---
 
-## Step 10 — Recap
+## Step 11 — Recap
 
 Print a short recap:
 

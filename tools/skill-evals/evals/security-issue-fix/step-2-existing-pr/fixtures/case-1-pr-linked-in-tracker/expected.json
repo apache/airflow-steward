@@ -1,0 +1,7 @@
+{
+  "existing_pr_found": true,
+  "pr_url": "https://github.com/apache/airflow/pull/67293",
+  "pr_addresses_issue": true,
+  "recommended_action": "adopt",
+  "reason": "PR #67293 directly addresses the bulk API team-context authz bypass and is already linked in the tracker."
+}

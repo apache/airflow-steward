@@ -1,0 +1,7 @@
+{
+  "existing_pr_found": false,
+  "pr_url": null,
+  "pr_addresses_issue": false,
+  "recommended_action": "proceed",
+  "reason": "No existing PR found in the tracker or via GitHub search — proceed to fixability assessment."
+}

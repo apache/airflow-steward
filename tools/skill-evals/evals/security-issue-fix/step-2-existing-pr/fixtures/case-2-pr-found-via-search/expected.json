@@ -1,0 +1,7 @@
+{
+  "existing_pr_found": true,
+  "pr_url": "https://github.com/apache/airflow/pull/66801",
+  "pr_addresses_issue": true,
+  "recommended_action": "adopt",
+  "reason": "PR #66801 adds the DAG-level permission check to the asset graph API, directly addressing the same root cause."
+}
