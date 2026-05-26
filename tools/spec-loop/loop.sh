@@ -261,6 +261,32 @@ while true; do
             } >> "$PROMPT_WITH_CONTEXT"
         fi
 
+        # Freshness check: refuse to fork off a stale base. Fetch the base's
+        # tracking branch and verify BASE is not behind it. Forking off a stale
+        # local base is how a loop re-does work that's already merged upstream:
+        # the agent sees "no such file" locally, dutifully re-creates it, and
+        # the resulting branch collides with the merged PR's source branch on
+        # the remote.
+        BASE_UPSTREAM="$(git rev-parse --abbrev-ref "${BASE}@{upstream}" 2>/dev/null || true)"
+        if [ -n "$BASE_UPSTREAM" ]; then
+            BASE_REMOTE="${BASE_UPSTREAM%%/*}"
+            if ! git fetch --quiet "$BASE_REMOTE" "$BASE" 2>/dev/null; then
+                echo "⚠ Could not fetch '$BASE_REMOTE' — freshness check skipped (network or auth issue)." >&2
+            else
+                BEHIND_BY="$(git rev-list --count "${BASE}..${BASE_UPSTREAM}" 2>/dev/null || echo 0)"
+                if [ "$BEHIND_BY" -gt 0 ]; then
+                    echo "✗ Base '$BASE' is $BEHIND_BY commit(s) behind '$BASE_UPSTREAM'." >&2
+                    echo "  Fast-forward before re-running:" >&2
+                    echo "    git checkout $BASE && git merge --ff-only $BASE_UPSTREAM" >&2
+                    echo "  Forking off a stale base re-does merged work — the new branch" >&2
+                    echo "  may collide with one already on the remote for the same change." >&2
+                    rm -f "$PROMPT_WITH_CONTEXT"; break
+                fi
+            fi
+        else
+            echo "⚠ Base '$BASE' has no upstream tracking branch — freshness check skipped." >&2
+        fi
+
         # Check out the base now — right before the agent runs, not earlier —
         # so the reads above came from the control branch. The agent then
         # forks its own <slug> branch off this base.
@@ -304,6 +330,24 @@ while true; do
         # Report the work-item branch the agent produced, by name, so you know
         # exactly what to push.
         if [ "$CUR_BRANCH" != "$BASE" ] && [ "$CUR_BRANCH" != "$TOOLING_REF" ]; then
+            # Branch-name collision check: a remote branch with the same name
+            # often means the agent just re-did work that already shipped under
+            # this slug (a merged PR's source branch typically lingers on the
+            # remote). Warn loudly — pushing would either be rejected or, worse,
+            # overwrite the merged history. Check every configured remote, not
+            # just origin: a fork-based workflow has the lineage on `upstream`.
+            COLLISION_FOUND=false
+            for remote in $(git remote); do
+                if git ls-remote --heads --exit-code "$remote" "$CUR_BRANCH" >/dev/null 2>&1; then
+                    echo "⚠ Remote '$remote' already has a branch named '$CUR_BRANCH'." >&2
+                    COLLISION_FOUND=true
+                fi
+            done
+            if [ "$COLLISION_FOUND" = true ]; then
+                echo "  Likely the source branch of a PR that already shipped under this slug." >&2
+                echo "  Inspect before pushing — do not push blind:" >&2
+                echo "    git fetch --all && git log --oneline --all -- <changed-file>" >&2
+            fi
             echo "[ new branch ] $CUR_BRANCH  (forked off $BASE)"
             echo "               push it with:  git push -u origin $CUR_BRANCH"
         else
