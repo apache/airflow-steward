@@ -1,0 +1,1 @@
+{"pattern": "ambiguous", "canonical_dir": null, "error": "both .claude/skills/ and .github/skills/ exist as regular directories with independent content; propose Pattern D consolidation", "injection_flagged": false}
