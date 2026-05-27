@@ -187,6 +187,7 @@ Tools under [`tools/`](../tools/). Tools with two values (separated by
 | [`tools/skill-evals`](../tools/skill-evals/) | `capability:setup` + `capability:stats` | Eval harness for skills; the harness is setup infrastructure, the run output is governance evidence |
 | [`tools/skill-and-tool-validator`](../tools/skill-and-tool-validator/) | `capability:setup` | Skill-frontmatter and convention validator |
 | [`tools/spec-status-index`](../tools/spec-status-index/) | `capability:setup` + `capability:stats` | Index of spec / RFC implementation status — substrate that also doubles as a governance/stats view |
+| [`tools/spec-validator`](../tools/spec-validator/) | `capability:setup` | Spec-frontmatter and body-section validator — counterpart to `skill-and-tool-validator` for `tools/spec-loop/specs/` |
 | [`tools/vulnogram`](../tools/vulnogram/) | `capability:resolve` | ASF Vulnogram CVE-allocation client |
 
 A tool's capabilities are determined by its **use-case lifecycle

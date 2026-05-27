@@ -13,8 +13,10 @@
 
 # spec-validator
 
+**Capability:** capability:setup
+
 Validates spec files in `tools/spec-loop/specs/` — the counterpart to
-`tools/skill-validator/` for the spec side of the framework.
+`tools/skill-and-tool-validator/` for the spec side of the framework.
 
 ## What it checks
 
