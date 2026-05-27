@@ -5,12 +5,21 @@
 - [JIRA bridge](#jira-bridge)
   - [Layout](#layout)
   - [Invocation](#invocation)
-  - [Subcommands](#subcommands)
+  - [Read subcommands](#read-subcommands)
     - [`search <JQL>`](#search-jql)
     - [`issue <KEY>`](#issue-key)
     - [`projects`](#projects)
+  - [Write subcommands](#write-subcommands)
+    - [`comment <KEY> --body-file <path>`](#comment-key---body-file-path)
+    - [`transition <KEY> <transition-name>`](#transition-key-transition-name)
+    - [`label <KEY> --add <name> --remove <name>`](#label-key---add-name---remove-name)
+    - [`assign <KEY> <username>`](#assign-key-username)
+    - [`field <KEY> <field-name> --value <value>`](#field-key-field-name---value-value)
+    - [`attach <KEY> <file>`](#attach-key-file)
   - [Configuration](#configuration)
   - [Output contract](#output-contract)
+  - [Write-path discipline](#write-path-discipline)
+  - [Testing](#testing)
   - [Cross-references](#cross-references)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -22,22 +31,26 @@
 
 **Capability:** capability:setup
 
-Read-only JIRA REST helpers for the `issue-*` skill family.
+JIRA REST helpers for the `issue-*` skill family.
 Adopters with JIRA-based issue trackers wire this in as their
 tracker bridge; adopters using GitHub Issues or other trackers
 contribute a parallel `tools/<tracker>/` directory.
 
-The bridge is **read-only by design**. It does not post comments,
-transition issues, or change fields — those mutations belong to
-the skills' apply phases (which use a separate write-path with
-explicit user confirmation).
+The bridge provides both **read** and **write** subcommands.
+Write operations require `JIRA_API_TOKEN` and follow the same
+write-path discipline as the GitHub bridge: every mutation is
+gated on explicit user confirmation in the calling skill — the
+bridge only executes confirmed actions.
 
 ## Layout
 
 ```text
 tools/jira/
 ├── README.md          (this file)
-└── bridge.groovy      (Groovy reference implementation)
+├── bridge.groovy      (Groovy reference implementation)
+├── pyproject.toml     (Python test harness config)
+├── src/jira_bridge/   (package stub for test harness)
+└── tests/             (pytest test suite)
 ```
 
 Other languages (Python, Bash + curl) are welcome via PR.
@@ -52,7 +65,7 @@ The Groovy implementation uses `@Grab` for HTTP client dependencies
 — no separate install step. Requires Groovy 3.x or newer on
 `PATH`.
 
-## Subcommands
+## Read subcommands
 
 ### `search <JQL>`
 
@@ -100,6 +113,102 @@ the project key is correct.
 groovy tools/jira/bridge.groovy projects
 ```
 
+## Write subcommands
+
+All write subcommands require `JIRA_API_TOKEN` to be set and
+follow the write-path discipline described below.
+
+### `comment <KEY> --body-file <path>`
+
+Post a comment on an issue. The comment body is read from a file
+to avoid shell-quoting issues:
+
+```bash
+groovy tools/jira/bridge.groovy comment FOO-9999 --body-file /tmp/comment.txt
+```
+
+Output:
+
+```json
+{"ok": true, "key": "FOO-9999", "commentId": "12345"}
+```
+
+### `transition <KEY> <transition-name>`
+
+Move an issue to a new workflow state. The transition name is
+resolved case-insensitively against the issue's available
+transitions:
+
+```bash
+groovy tools/jira/bridge.groovy transition FOO-9999 "Resolve Issue"
+```
+
+Output:
+
+```json
+{"ok": true, "key": "FOO-9999", "transition": "Resolve Issue", "transitionId": "21"}
+```
+
+If the transition name does not match any available transition,
+the command exits with an error listing the valid names.
+
+### `label <KEY> --add <name> --remove <name>`
+
+Toggle labels on an issue. Both `--add` and `--remove` can be
+specified multiple times in a single call:
+
+```bash
+groovy tools/jira/bridge.groovy label FOO-9999 --add security --remove needs-triage
+```
+
+Output:
+
+```json
+{"ok": true, "key": "FOO-9999", "labels": ["security", "existing-label"]}
+```
+
+### `assign <KEY> <username>`
+
+Set the assignee on an issue:
+
+```bash
+groovy tools/jira/bridge.groovy assign FOO-9999 jdoe
+```
+
+Output:
+
+```json
+{"ok": true, "key": "FOO-9999", "assignee": "jdoe"}
+```
+
+### `field <KEY> <field-name> --value <value>`
+
+Edit a single field (including custom fields) on an issue:
+
+```bash
+groovy tools/jira/bridge.groovy field FOO-9999 customfield_10100 --value "high"
+```
+
+Output:
+
+```json
+{"ok": true, "key": "FOO-9999", "field": "customfield_10100", "value": "high"}
+```
+
+### `attach <KEY> <file>`
+
+Attach a file to an issue:
+
+```bash
+groovy tools/jira/bridge.groovy attach FOO-9999 /tmp/report.txt
+```
+
+Output:
+
+```json
+{"ok": true, "key": "FOO-9999", "attachments": [{"id": "99", "filename": "report.txt"}]}
+```
+
 ## Configuration
 
 The bridge reads its configuration from the environment:
@@ -108,6 +217,7 @@ The bridge reads its configuration from the environment:
 |---|---|
 | `ISSUE_TRACKER_URL` | required; e.g. `https://issues.apache.org/jira` |
 | `ISSUE_TRACKER_PROJECT` | project key (e.g. `FOO`) |
+| `JIRA_API_TOKEN` | required for write subcommands; base64-encoded `email:token` |
 
 The caller is responsible for exporting these (a skill resolves them
 from [`<project-config>/issue-tracker-config.md`](../../projects/_template/issue-tracker-config.md)
@@ -115,18 +225,44 @@ and passes them in the environment). Direct file-fallback inside the
 bridge is a possible future enhancement — it is **not** implemented
 today; the bridge exits if `ISSUE_TRACKER_URL` is unset.
 
-For anonymous-read trackers, no auth is required. For
-authenticated reads, set `JIRA_API_TOKEN` (basic auth, base64-
-encoded `email:token` per JIRA convention).
+For anonymous-read trackers, no auth is required for read
+subcommands. Write subcommands always require `JIRA_API_TOKEN` and
+exit with an error if it is unset.
 
 ## Output contract
 
 Every subcommand emits JSON to stdout on success, or a non-zero
 exit code with a human-readable error to stderr on failure.
 
+Write subcommands return `{"ok": true, "key": "<KEY>", ...}` with
+operation-specific fields as documented per subcommand above.
+
 The output schema is documented per subcommand above. Skills
 parse the JSON via standard JSON tooling — no special envelope,
 no wrapper.
+
+## Write-path discipline
+
+The bridge executes mutations but does **not** decide whether to
+mutate. Every write operation is gated on **explicit user
+confirmation** in the calling skill — the bridge only executes
+confirmed actions.
+
+This mirrors the GitHub bridge's write-path discipline (see
+[`tools/github/operations.md`](../github/operations.md)): skills
+surface the proposed action to the maintainer, wait for
+confirmation, then call the bridge to execute.
+
+## Testing
+
+The test suite uses a mock HTTP server and requires `groovy` on
+`PATH`. Tests are skipped automatically when Groovy is not
+available.
+
+```bash
+cd tools/jira
+uv run pytest
+```
 
 ## Cross-references
 
@@ -134,5 +270,11 @@ no wrapper.
   primary consumer (selector resolution + per-issue fetch).
 - [`issue-reassess`](../../.claude/skills/issue-reassess/SKILL.md) —
   campaign-level consumer (pool fetch).
+- [`security-issue-sync`](../../.claude/skills/security-issue-sync/SKILL.md) —
+  write-path consumer (label, transition, comment, field updates).
+- [`security-issue-invalidate`](../../.claude/skills/security-issue-invalidate/SKILL.md) —
+  write-path consumer (close with label + comment).
+- [`tools/github/operations.md`](../github/operations.md) —
+  write-path discipline reference.
 - [`<project-config>/issue-tracker-config.md`](../../projects/_template/issue-tracker-config.md) —
   the adopter's tracker URL + project key.

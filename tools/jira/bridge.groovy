@@ -6,24 +6,33 @@ import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 
 /**
- * Read-only JIRA REST bridge for the issue-* skill family.
+ * JIRA REST bridge for the issue-* skill family.
  *
- * Subcommands:
+ * Read subcommands:
  *   search <JQL>          run a JQL query, emit matching issues as JSON
  *   issue <KEY>           fetch a single issue's full state as JSON
  *   projects              list the JIRA projects at the configured tracker URL
+ *
+ * Write subcommands:
+ *   comment <KEY> --body-file <path>            post a comment
+ *   transition <KEY> <transition-name>          move workflow state
+ *   label <KEY> --add <n> [--remove <n>]        toggle labels
+ *   assign <KEY> <username>                     set assignee
+ *   field <KEY> <field-name> --value <value>    edit a custom field
+ *   attach <KEY> <file>                         attach a file
  *
  * Configuration (environment only; the caller — typically a skill —
  * resolves these from <project-config>/issue-tracker-config.md and
  * exports them. The bridge does NOT read that file itself):
  *   ISSUE_TRACKER_URL       e.g. https://issues.apache.org/jira
  *   ISSUE_TRACKER_PROJECT   the project key (e.g. FOO)
- *   JIRA_API_TOKEN          optional; base64-encoded "email:token" for authenticated reads
+ *   JIRA_API_TOKEN          required for write operations; base64-encoded "email:token"
  *
  * Output: JSON to stdout. Errors: non-zero exit + message to stderr.
  *
- * Read-only by design: never performs POST, PATCH, or DELETE requests. Mutations
- * belong to the skill apply phases with explicit user confirmation.
+ * Write-path discipline: the bridge executes mutations but does NOT decide
+ * whether to mutate. Every write is gated on explicit user confirmation in
+ * the calling skill — the bridge only executes confirmed actions.
  */
 
 def ENV = System.getenv()
@@ -53,6 +62,76 @@ def httpGet(String urlStr) {
         System.exit(3)
     }
     return new JsonSlurper().parse(conn.inputStream)
+}
+
+def httpWrite(String urlStr, String method, String jsonBody) {
+    def url = new URL(urlStr)
+    def conn = url.openConnection()
+    conn.requestMethod = method
+    conn.doOutput = true
+    conn.setRequestProperty('Content-Type', 'application/json')
+    conn.setRequestProperty('Accept', 'application/json')
+    if (!API_TOKEN) {
+        System.err.println('error: JIRA_API_TOKEN is required for write operations')
+        System.exit(2)
+    }
+    conn.setRequestProperty('Authorization', "Basic ${API_TOKEN}")
+    conn.connectTimeout = 10000
+    conn.readTimeout    = 30000
+    conn.outputStream.withWriter('UTF-8') { it.write(jsonBody) }
+    def code = conn.responseCode
+    if (code < 200 || code >= 300) {
+        def err = conn.errorStream ? conn.errorStream.text : conn.responseMessage
+        System.err.println("error: HTTP ${code} ${method} ${urlStr}\n${err}")
+        System.exit(3)
+    }
+    if (code == 204) return [:]
+    def text = conn.inputStream?.text
+    return text ? new JsonSlurper().parseText(text) : [:]
+}
+
+def httpMultipart(String urlStr, File file) {
+    def boundary = "----BridgeBoundary${System.currentTimeMillis()}"
+    def url = new URL(urlStr)
+    def conn = url.openConnection()
+    conn.requestMethod = 'POST'
+    conn.doOutput = true
+    conn.setRequestProperty('Content-Type', "multipart/form-data; boundary=${boundary}")
+    conn.setRequestProperty('Accept', 'application/json')
+    conn.setRequestProperty('X-Atlassian-Token', 'no-check')
+    if (!API_TOKEN) {
+        System.err.println('error: JIRA_API_TOKEN is required for write operations')
+        System.exit(2)
+    }
+    conn.setRequestProperty('Authorization', "Basic ${API_TOKEN}")
+    conn.connectTimeout = 10000
+    conn.readTimeout    = 60000
+    def os = conn.outputStream
+    os.write("--${boundary}\r\n".getBytes('UTF-8'))
+    os.write("Content-Disposition: form-data; name=\"file\"; filename=\"${file.name}\"\r\n".getBytes('UTF-8'))
+    os.write("Content-Type: application/octet-stream\r\n\r\n".getBytes('UTF-8'))
+    file.withInputStream { is -> os << is }
+    os.write("\r\n--${boundary}--\r\n".getBytes('UTF-8'))
+    os.flush()
+    def code = conn.responseCode
+    if (code < 200 || code >= 300) {
+        def err = conn.errorStream ? conn.errorStream.text : conn.responseMessage
+        System.err.println("error: HTTP ${code} uploading ${file.name} to ${urlStr}\n${err}")
+        System.exit(3)
+    }
+    def text = conn.inputStream?.text
+    return text ? new JsonSlurper().parseText(text) : [:]
+}
+
+def validateKey(String key) {
+    if (!key) {
+        System.err.println('error: issue key is required (e.g. FOO-9999)')
+        System.exit(2)
+    }
+    if (!(key ==~ /^[A-Z][A-Z0-9_]*-\d+$/)) {
+        System.err.println("error: '${key}' is not a valid tracker key")
+        System.exit(2)
+    }
 }
 
 def emit(Object payload) {
@@ -108,14 +187,7 @@ def cmd_search(List args) {
 
 def cmd_issue(List args) {
     def key = args ? args[0] : null
-    if (!key) {
-        System.err.println('error: issue requires a tracker key (e.g. FOO-9999)')
-        System.exit(2)
-    }
-    if (!(key ==~ /^[A-Z][A-Z0-9_]*-\d+$/)) {
-        System.err.println("error: '${key}' is not a valid tracker key")
-        System.exit(2)
-    }
+    validateKey(key)
     def url = "${TRACKER_URL}/rest/api/2/issue/${key}?fields=*all"
     def result = httpGet(url)
     emit(shape_issue(result))
@@ -130,9 +202,155 @@ def cmd_projects(List args) {
     ])
 }
 
+def cmd_comment(List args) {
+    def key = args ? args[0] : null
+    validateKey(key)
+    String bodyFile = null
+    def i = 1
+    while (i < args.size()) {
+        if (args[i] == '--body-file' && i + 1 < args.size()) {
+            bodyFile = args[i + 1]
+            i += 2
+        } else {
+            i++
+        }
+    }
+    if (!bodyFile) {
+        System.err.println('error: comment requires --body-file <path>')
+        System.exit(2)
+    }
+    def f = new File(bodyFile)
+    if (!f.exists()) {
+        System.err.println("error: body file not found: ${bodyFile}")
+        System.exit(2)
+    }
+    def body = f.text
+    def url = "${TRACKER_URL}/rest/api/2/issue/${key}/comment"
+    def payload = JsonOutput.toJson([body: body])
+    def result = httpWrite(url, 'POST', payload)
+    emit([ok: true, key: key, commentId: result.id])
+}
+
+def cmd_transition(List args) {
+    def key = args ? args[0] : null
+    validateKey(key)
+    def transitionName = args.size() > 1 ? args[1] : null
+    if (!transitionName) {
+        System.err.println('error: transition requires a transition name')
+        System.exit(2)
+    }
+    def url = "${TRACKER_URL}/rest/api/2/issue/${key}/transitions"
+    def available = httpGet(url)
+    def match = available.transitions?.find {
+        it.name.equalsIgnoreCase(transitionName)
+    }
+    if (!match) {
+        def names = available.transitions?.collect { it.name } ?: []
+        System.err.println("error: transition '${transitionName}' not found for ${key}; available: ${names}")
+        System.exit(3)
+    }
+    def payload = JsonOutput.toJson([transition: [id: match.id]])
+    httpWrite(url, 'POST', payload)
+    emit([ok: true, key: key, transition: match.name, transitionId: match.id])
+}
+
+def cmd_label(List args) {
+    def key = args ? args[0] : null
+    validateKey(key)
+    List addLabels = []
+    List removeLabels = []
+    def i = 1
+    while (i < args.size()) {
+        if (args[i] == '--add' && i + 1 < args.size()) {
+            addLabels << args[i + 1]
+            i += 2
+        } else if (args[i] == '--remove' && i + 1 < args.size()) {
+            removeLabels << args[i + 1]
+            i += 2
+        } else {
+            i++
+        }
+    }
+    if (!addLabels && !removeLabels) {
+        System.err.println('error: label requires at least one --add or --remove flag')
+        System.exit(2)
+    }
+    def issueUrl = "${TRACKER_URL}/rest/api/2/issue/${key}?fields=labels"
+    def current = httpGet(issueUrl)
+    def labels = (current.fields?.labels ?: []) as List
+    labels.addAll(addLabels)
+    labels.removeAll(removeLabels)
+    labels = labels.unique()
+    def url = "${TRACKER_URL}/rest/api/2/issue/${key}"
+    def payload = JsonOutput.toJson([fields: [labels: labels]])
+    httpWrite(url, 'PUT', payload)
+    emit([ok: true, key: key, labels: labels])
+}
+
+def cmd_assign(List args) {
+    def key = args ? args[0] : null
+    validateKey(key)
+    def username = args.size() > 1 ? args[1] : null
+    if (!username) {
+        System.err.println('error: assign requires a username')
+        System.exit(2)
+    }
+    def url = "${TRACKER_URL}/rest/api/2/issue/${key}/assignee"
+    def payload = JsonOutput.toJson([name: username])
+    httpWrite(url, 'PUT', payload)
+    emit([ok: true, key: key, assignee: username])
+}
+
+def cmd_field(List args) {
+    def key = args ? args[0] : null
+    validateKey(key)
+    def fieldName = args.size() > 1 ? args[1] : null
+    if (!fieldName) {
+        System.err.println('error: field requires a field name')
+        System.exit(2)
+    }
+    String value = null
+    def i = 2
+    while (i < args.size()) {
+        if (args[i] == '--value' && i + 1 < args.size()) {
+            value = args[i + 1]
+            i += 2
+        } else {
+            i++
+        }
+    }
+    if (value == null) {
+        System.err.println('error: field requires --value <value>')
+        System.exit(2)
+    }
+    def url = "${TRACKER_URL}/rest/api/2/issue/${key}"
+    def payload = JsonOutput.toJson([fields: [(fieldName): value]])
+    httpWrite(url, 'PUT', payload)
+    emit([ok: true, key: key, field: fieldName, value: value])
+}
+
+def cmd_attach(List args) {
+    def key = args ? args[0] : null
+    validateKey(key)
+    def filePath = args.size() > 1 ? args[1] : null
+    if (!filePath) {
+        System.err.println('error: attach requires a file path')
+        System.exit(2)
+    }
+    def f = new File(filePath)
+    if (!f.exists()) {
+        System.err.println("error: file not found: ${filePath}")
+        System.exit(2)
+    }
+    def url = "${TRACKER_URL}/rest/api/2/issue/${key}/attachments"
+    def result = httpMultipart(url, f)
+    def attachments = result instanceof List ? result : [result]
+    emit([ok: true, key: key, attachments: attachments.collect { [id: it.id, filename: it.filename] }])
+}
+
 def args = this.args as List
 if (!args) {
-    System.err.println('usage: groovy bridge.groovy <search|issue|projects> [args]')
+    System.err.println('usage: groovy bridge.groovy <subcommand> [args]')
     System.exit(2)
 }
 
@@ -140,10 +358,16 @@ def subcmd = args[0]
 def rest   = args.size() > 1 ? args[1..-1] : []
 
 switch (subcmd) {
-    case 'search':   cmd_search(rest);   break
-    case 'issue':    cmd_issue(rest);    break
-    case 'projects': cmd_projects(rest); break
+    case 'search':     cmd_search(rest);     break
+    case 'issue':      cmd_issue(rest);      break
+    case 'projects':   cmd_projects(rest);   break
+    case 'comment':    cmd_comment(rest);    break
+    case 'transition': cmd_transition(rest); break
+    case 'label':      cmd_label(rest);      break
+    case 'assign':     cmd_assign(rest);     break
+    case 'field':      cmd_field(rest);      break
+    case 'attach':     cmd_attach(rest);     break
     default:
-        System.err.println("error: unknown subcommand '${subcmd}' (expected: search, issue, projects)")
+        System.err.println("error: unknown subcommand '${subcmd}' (expected: search, issue, projects, comment, transition, label, assign, field, attach)")
         System.exit(2)
 }
