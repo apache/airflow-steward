@@ -21,6 +21,7 @@ when_to_use: |
   already shipped — closing as invalid then is a retraction with
   public consequences and warrants explicit team escalation.
 argument-hint: "[issue-number]"
+capability: capability:resolve
 license: Apache-2.0
 ---
 

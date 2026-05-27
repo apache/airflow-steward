@@ -2,7 +2,7 @@
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
-- [skill-validator](#skill-validator)
+- [skill-and-tool-validator](#skill-and-tool-validator)
   - [What it checks](#what-it-checks)
     - [Hard rules (failure)](#hard-rules-failure)
     - [SOFT advisories (warning, do not fail)](#soft-advisories-warning-do-not-fail)
@@ -14,7 +14,9 @@
 <!-- SPDX-License-Identifier: Apache-2.0
      https://www.apache.org/licenses/LICENSE-2.0 -->
 
-# skill-validator
+# skill-and-tool-validator
+
+**Capability:** capability:setup
 
 Validate framework skill definitions — YAML frontmatter, internal
 link integrity, and placeholder conventions.
@@ -54,13 +56,13 @@ the run. The reviewer has the final say on borderline cases.
 From the repo root:
 
 ```bash
-uv run --project tools/skill-validator --group dev pytest
+uv run --project tools/skill-and-tool-validator --group dev pytest
 ```
 
 Or install and run as CLI:
 
 ```bash
-uv run --project tools/skill-validator --group dev skill-validate
+uv run --project tools/skill-and-tool-validator --group dev skill-and-tool-validate
 ```
 
 CLI flags:

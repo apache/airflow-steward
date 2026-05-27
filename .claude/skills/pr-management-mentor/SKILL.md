@@ -21,6 +21,7 @@ when_to_use: |
   thread is security-sensitive, or when the maintainer has
   *deliberately* not replied yet — ask before invoking.
 argument-hint: "[issue-or-pr-number]"
+capability: capability:review
 license: Apache-2.0
 ---
 <!-- SPDX-License-Identifier: Apache-2.0

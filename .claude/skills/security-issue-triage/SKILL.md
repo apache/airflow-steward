@@ -23,6 +23,7 @@ when_to_use: |
   `/security-cve-allocate` (VALID),
   `/security-issue-invalidate` (INFO-ONLY / INVALID), or
   `/security-issue-deduplicate` (PROBABLE-DUP) directly.
+capability: capability:triage
 license: Apache-2.0
 ---
 

@@ -46,8 +46,8 @@ jobs:
             path: tools/gmail/oauth-draft
           - name: generate-cve-json
             path: tools/vulnogram/generate-cve-json
-          - name: skill-validator
-            path: tools/skill-validator
+          - name: skill-and-tool-validator
+            path: tools/skill-and-tool-validator
           - name: privacy-llm-checker
             path: tools/privacy-llm/checker
           - name: privacy-llm-redactor

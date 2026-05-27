@@ -16,6 +16,7 @@ when_to_use: |
   where the team member wants to reconcile a batch of open issues with the
   current state of the world.
 argument-hint: "[issue-number]"
+capability: capability:intake
 license: Apache-2.0
 ---
 

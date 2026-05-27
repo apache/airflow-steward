@@ -15,6 +15,7 @@ when_to_use: |
   whether their branch is ready before requesting a human maintainer review.
   Skip when a PR is already open — use `pr-management-code-review` for that.
 argument-hint: "[base:<ref>] [staged] [path:<glob>]"
+capability: capability:review
 license: Apache-2.0
 ---
 <!-- SPDX-License-Identifier: Apache-2.0

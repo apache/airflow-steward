@@ -10,6 +10,7 @@
     - [Placeholder convention used in skill files](#placeholder-convention-used-in-skill-files)
   - [Local setup](#local-setup)
   - [Commit and PR conventions](#commit-and-pr-conventions)
+  - [Labeling issues, PRs, tools, and documentation](#labeling-issues-prs-tools-and-documentation)
   - [Confidentiality of the tracker repository](#confidentiality-of-the-tracker-repository)
     - [Sharing a tracker URL with someone who cannot access it](#sharing-a-tracker-url-with-someone-who-cannot-access-it)
     - [What public surfaces still must not contain](#what-public-surfaces-still-must-not-contain)
@@ -494,6 +495,66 @@ there — never leave it in place "because it's already there".
   PRs on the tracker's default branch.
 - Keep the commit message focused on the user-visible change, not the mechanics of how the edit
   was made.
+
+## Labeling issues, PRs, tools, and documentation
+
+This repository uses an orthogonal label taxonomy with two required
+dimensions on every issue and PR:
+
+- **`area:*`** — *what part of the framework does this touch?* (e.g.
+  `area:pr-management`, `area:security`, `area:setup`, `area:issue`,
+  `area:tools`, `area:ci`, `area:docs`).
+- **`capability:*`** — *what does the tool / change actually do?* (e.g.
+  `capability:triage`, `capability:review`, `capability:fix`,
+  `capability:intake`, `capability:reconciliation`,
+  `capability:resolve`, `capability:reassess`, `capability:stats`,
+  `capability:setup`).
+
+The full taxonomy — every label dimension, every capability bucket,
+the skill-to-capability and tool-to-capability maps — lives in
+[`docs/labels-and-capabilities.md`](docs/labels-and-capabilities.md).
+Read that page once; treat it as the source of truth.
+
+**Rules:**
+
+- When opening an **issue** on this repository, apply at least one
+  `area:*` and one `capability:*` label. Apply every capability the
+  issue spans — do not collapse to a single "primary" if the issue
+  genuinely covers multiple lifecycle phases.
+- When opening a **pull request**, same: `area:*` + every applicable
+  `capability:*`. Match the capabilities the change is *implementing*,
+  not the file paths it touches.
+- When adding a new **tool** under `tools/`, declare its capabilities
+  in the first paragraph of the tool's README using
+  `**Capability:** capability:NAME` (or `capability:NAME + capability:NAME`
+  when two apply). A tool is pure substrate by default
+  (`capability:setup`); if it grows to encode a specific lifecycle
+  phase as a first-class feature, add that capability too and explain
+  the dual role in the README.
+- When adding a new **skill** under `.claude/skills/`, declare the
+  capability in the skill's frontmatter — a single string for
+  single-capability skills, a YAML list for multi-capability skills:
+
+  ```yaml
+  capability: capability:triage
+  # or
+  capability:
+    - capability:intake
+    - capability:reconciliation
+  ```
+
+  The [`write-skill`](.claude/skills/write-skill/SKILL.md) skill
+  prompts for this on every new-skill scaffold.
+- When adding a new **doc** under `docs/`, link to
+  [`docs/labels-and-capabilities.md`](docs/labels-and-capabilities.md)
+  and name the capability the doc is about in its first paragraph
+  *if* the doc is capability-specific. Cross-cutting docs
+  (`MISSION.md`, top-level READMEs) need no capability marker.
+
+The taxonomy applies to *this framework repository*. Skills that create
+issues or PRs on an **adopter's tracker** (e.g. `security-issue-import`,
+`security-issue-fix`, `issue-fix-workflow`) use the adopter's own label
+scheme — adopters may mirror this taxonomy but are not required to.
 
 ## Confidentiality of the tracker repository
 

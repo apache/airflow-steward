@@ -16,6 +16,7 @@ when_to_use: |
   appropriate as a periodic cleanup action when a triager spots two
   open trackers describing the same bug from different angles.
 argument-hint: "[kept-issue] [duplicate-issue]"
+capability: capability:resolve
 license: Apache-2.0
 ---
 

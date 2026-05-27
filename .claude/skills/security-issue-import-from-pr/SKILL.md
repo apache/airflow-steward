@@ -20,6 +20,7 @@ when_to_use: |
   does not host a validity discussion. For reports that arrive on
   `<security-list>`, use `security-issue-import`.
 argument-hint: "[pr-number] [repo:owner/name]"
+capability: capability:intake
 license: Apache-2.0
 ---
 

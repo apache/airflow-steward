@@ -132,7 +132,7 @@ updates:
           - "*"
 
   - package-ecosystem: "uv"
-    directory: "/tools/skill-validator"
+    directory: "/tools/skill-and-tool-validator"
     schedule:
       interval: "weekly"
     cooldown:
@@ -141,7 +141,7 @@ updates:
       semver-minor-days: 7
       semver-patch-days: 7
     groups:
-      skill-validator-deps:
+      skill-and-tool-validator-deps:
         patterns:
           - "*"
 

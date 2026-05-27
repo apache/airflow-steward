@@ -17,6 +17,7 @@ when_to_use: |
   audit before releases or after a major version cut. Skip
   when the goal is per-PR triage — that is `pr-management-triage`
   — or when the issues are still in active triage flow.
+capability: capability:reassess
 license: Apache-2.0
 ---
 

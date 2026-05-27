@@ -6,7 +6,7 @@ description: |
   shape (frontmatter, resources, placeholder convention,
   prompt-injection defences, Privacy-LLM gate-check) and
   validates via the framework's existing
-  [`tools/skill-validator`](../../../tools/skill-validator/).
+  [`tools/skill-and-tool-validator`](../../../tools/skill-and-tool-validator/).
   Scaffolds new skills via `init_skill.py`.
 when_to_use: |
   Invoke when the user says "write a skill", "create a new skill",
@@ -14,6 +14,7 @@ when_to_use: |
   variations thereof. Also when refactoring or expanding an
   existing skill that should pick up the framework's current
   conventions (e.g. the prompt-injection-defence patterns).
+capability: capability:setup
 license: Apache-2.0
 ---
 
@@ -67,7 +68,7 @@ will recognise the workflow shape:
   [`docs/setup/install-recipes.md`](../../../docs/setup/install-recipes.md),
   not as zip artefacts. The upstream's `package_skill.py` is not
   included; **validation** is performed by the existing
-  [`tools/skill-validator`](../../../tools/skill-validator/),
+  [`tools/skill-and-tool-validator`](../../../tools/skill-and-tool-validator/),
   which is the framework's superset of the upstream's
   `quick_validate.py`.
 - **New Step 5 (security checklist)** added — a hard
@@ -108,6 +109,12 @@ skill bundles:
 │   │   ├── name (required, kebab-case, must equal directory name)
 │   │   ├── description (required, third-person)
 │   │   ├── when_to_use (required, third-person trigger phrases)
+│   │   ├── capability (required, one OR a YAML list of values from:
+│   │   │   `capability:triage`, `capability:review`, `capability:fix`,
+│   │   │   `capability:intake`, `capability:reconciliation`,
+│   │   │   `capability:resolve`, `capability:reassess`,
+│   │   │   `capability:stats`, `capability:setup` — see
+│   │   │   [`docs/labels-and-capabilities.md`](../../../docs/labels-and-capabilities.md))
 │   │   └── license: Apache-2.0 (required, exact string)
 │   ├── SPDX header comment + placeholder-convention comment
 │   ├── # <skill-name> heading
@@ -301,7 +308,7 @@ no external content / no private content).
 Run the framework's existing skill validator:
 
 ```bash
-uv run --directory tools/skill-validator skill-validator \
+uv run --directory tools/skill-and-tool-validator skill-and-tool-validator \
   .claude/skills/<skill-name>/SKILL.md
 ```
 
@@ -359,6 +366,21 @@ for the override → upstream loop.
   expansion at the wrong layer.
 - **Always set `license: Apache-2.0` in the frontmatter.** The
   validator enforces this; the prek run will fail otherwise.
+- **Always declare a `capability:`** in the frontmatter, picking
+  one or more buckets from
+  [`docs/labels-and-capabilities.md`](../../../docs/labels-and-capabilities.md).
+  Most skills fit a single bucket; when a skill genuinely spans
+  lifecycle phases (e.g. `security-issue-fix` does
+  `capability:fix` + `capability:resolve`,
+  `setup-isolated-setup-doctor` does
+  `capability:setup` + `capability:reassess`), use the YAML list
+  form and list **all** that apply — do not collapse to one to be
+  neat. If the skill doesn't fit any of the nine buckets at all,
+  treat that as a design signal worth pausing for — either the
+  bucket set needs a new entry (raise an issue against
+  [`docs/labels-and-capabilities.md`](../../../docs/labels-and-capabilities.md))
+  or the skill's scope is straddling too many phases and should be
+  split. Do not invent ad-hoc capability values.
 - **Always credit upstream content in `NOTICE`.** When adapting
   third-party skills (as this skill itself was adapted from
   `JuliusBrussee/awesome-claude-skills`), the project root
@@ -376,12 +398,17 @@ for the override → upstream loop.
 - [`AGENTS.md`](../../../AGENTS.md) — the framework's authoring
   conventions, placeholder convention, prompt-injection
   absolute rule.
+- [`docs/labels-and-capabilities.md`](../../../docs/labels-and-capabilities.md)
+  — the label taxonomy: `area:*` + `capability:*` dimensions, the
+  nine capability buckets, the skill / tool → capability map, and
+  the rule that every framework issue / PR / tool / skill / doc
+  declares its capability.
 - [`docs/setup/agentic-overrides.md`](../../../docs/setup/agentic-overrides.md)
   — the `Adopter overrides` contract every skill consults.
 - [`docs/setup/install-recipes.md`](../../../docs/setup/install-recipes.md)
   — the snapshot model that distributes skills (no zip
   packaging — Step 5 of the upstream's flow is dropped).
-- [`tools/skill-validator/`](../../../tools/skill-validator/) —
+- [`tools/skill-and-tool-validator/`](../../../tools/skill-and-tool-validator/) —
   the framework's frontmatter / placeholder / link validator.
 - [`tools/privacy-llm/wiring.md`](../../../tools/privacy-llm/wiring.md)
   — the Privacy-LLM gate-check boilerplate Step 5 references.

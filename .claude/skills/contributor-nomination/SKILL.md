@@ -17,6 +17,7 @@ when_to_use: |
   provided and the user has not indicated they want to assess
   a contributor.
 argument-hint: "<github-handle> [window:Nm] [target:committer|pmc]"
+capability: capability:stats
 license: Apache-2.0
 ---
 

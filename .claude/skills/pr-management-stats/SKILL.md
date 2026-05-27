@@ -12,6 +12,7 @@ when_to_use: |
   health check, before or after a triage sweep, or as an input to a planning
   session.
 argument-hint: "[repo:owner/name] [since:date] [clear-cache]"
+capability: capability:stats
 license: Apache-2.0
 ---
 

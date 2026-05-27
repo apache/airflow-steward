@@ -23,7 +23,7 @@ from pathlib import Path
 
 import pytest
 
-from skill_validator import (
+from skill_and_tool_validator import (
     _MODE_STATUS_BY_NAME,
     _MODE_TAXONOMY,
     _OFF_MODES,
@@ -56,6 +56,7 @@ from skill_validator import (
     resolve_link,
     run_validation,
     slugify,
+    validate_capability_sync,
     validate_frontmatter,
     validate_gh_list_limit,
     validate_injection_guard,
@@ -65,6 +66,7 @@ from skill_validator import (
     validate_principle_compliance,
     validate_privacy_patterns,
     validate_security_patterns,
+    validate_tools,
     validate_trigger_preservation,
 )
 
@@ -75,7 +77,7 @@ from skill_validator import (
 
 class TestParseFrontmatter:
     def test_valid_frontmatter(self) -> None:
-        text = "---\nname: foo\ndescription: bar\nlicense: Apache-2.0\n---\n# heading\n"
+        text = "---\nname: foo\ndescription: bar\ncapability: capability:setup\nlicense: Apache-2.0\n---\n# heading\n"
         fm = parse_frontmatter(text)
         assert fm is not None
         assert fm["name"] == "foo"
@@ -89,7 +91,7 @@ class TestParseFrontmatter:
             "description: |\n"
             "  First line of description.\n"
             "  Second line.\n"
-            "license: Apache-2.0\n"
+            "capability: capability:setup\nlicense: Apache-2.0\n"
             "---\n"
         )
         fm = parse_frontmatter(text)
@@ -112,7 +114,7 @@ class TestParseFrontmatter:
             "  Paragraph one.\n"
             "\n"
             "  Paragraph two, which used to be dropped.\n"
-            "license: Apache-2.0\n"
+            "capability: capability:setup\nlicense: Apache-2.0\n"
             "---\n"
         )
         fm = parse_frontmatter(text)
@@ -136,13 +138,13 @@ class TestParseFrontmatter:
 class TestValidateFrontmatter:
     def test_valid(self, tmp_path: Path) -> None:
         path = tmp_path / "SKILL.md"
-        text = "---\nname: foo\ndescription: bar\nlicense: Apache-2.0\n---\n"
+        text = "---\nname: foo\ndescription: bar\ncapability: capability:setup\nlicense: Apache-2.0\n---\n"
         violations = list(validate_frontmatter(path, text))
         assert violations == []
 
     def test_missing_name(self, tmp_path: Path) -> None:
         path = tmp_path / "SKILL.md"
-        text = "---\ndescription: bar\nlicense: Apache-2.0\n---\n"
+        text = "---\ndescription: bar\ncapability: capability:setup\nlicense: Apache-2.0\n---\n"
         violations = list(validate_frontmatter(path, text))
         assert len(violations) == 1
         assert "name" in violations[0].message
@@ -158,7 +160,7 @@ class TestValidateFrontmatter:
 
     def test_empty_value(self, tmp_path: Path) -> None:
         path = tmp_path / "SKILL.md"
-        text = "---\nname: \ndescription: bar\nlicense: Apache-2.0\n---\n"
+        text = "---\nname: \ndescription: bar\ncapability: capability:setup\nlicense: Apache-2.0\n---\n"
         violations = list(validate_frontmatter(path, text))
         assert any("name' is empty" in v.message for v in violations)
 
@@ -171,20 +173,20 @@ class TestValidateFrontmatter:
     def test_valid_mode(self, tmp_path: Path) -> None:
         path = tmp_path / "SKILL.md"
         for mode in ("Triage", "Mentoring", "Drafting", "Pairing"):
-            text = f"---\nname: foo\ndescription: bar\nlicense: Apache-2.0\nmode: {mode}\n---\n"
+            text = f"---\nname: foo\ndescription: bar\ncapability: capability:setup\nlicense: Apache-2.0\nmode: {mode}\n---\n"
             violations = list(validate_frontmatter(path, text))
             assert violations == [], f"mode '{mode}' should be valid"
 
     def test_invalid_mode(self, tmp_path: Path) -> None:
         path = tmp_path / "SKILL.md"
-        text = "---\nname: foo\ndescription: bar\nlicense: Apache-2.0\nmode: Auto-merge\n---\n"
+        text = "---\nname: foo\ndescription: bar\ncapability: capability:setup\nlicense: Apache-2.0\nmode: Auto-merge\n---\n"
         violations = list(validate_frontmatter(path, text))
         assert any("mode" in v.message and "'Auto-merge'" in v.message for v in violations)
 
     def test_mode_optional(self, tmp_path: Path) -> None:
         # Skills without a mode (e.g. setup-* infrastructure) must not fail.
         path = tmp_path / "SKILL.md"
-        text = "---\nname: foo\ndescription: bar\nlicense: Apache-2.0\n---\n"
+        text = "---\nname: foo\ndescription: bar\ncapability: capability:setup\nlicense: Apache-2.0\n---\n"
         violations = list(validate_frontmatter(path, text))
         assert violations == []
 
@@ -212,7 +214,7 @@ class TestValidateFrontmatter:
         path = tmp_path / "SKILL.md"
         desc = "a" * 800
         wtu = "b" * 700
-        text = f"---\nname: foo\ndescription: {desc}\nwhen_to_use: {wtu}\nlicense: Apache-2.0\n---\n"
+        text = f"---\nname: foo\ndescription: {desc}\nwhen_to_use: {wtu}\ncapability: capability:setup\nlicense: Apache-2.0\n---\n"
         violations = list(validate_frontmatter(path, text))
         assert violations == []
 
@@ -220,7 +222,7 @@ class TestValidateFrontmatter:
         path = tmp_path / "SKILL.md"
         desc = "a" * 1000
         wtu = "b" * (MAX_METADATA_CHARS - 1000 + 1)
-        text = f"---\nname: foo\ndescription: {desc}\nwhen_to_use: {wtu}\nlicense: Apache-2.0\n---\n"
+        text = f"---\nname: foo\ndescription: {desc}\nwhen_to_use: {wtu}\ncapability: capability:setup\nlicense: Apache-2.0\n---\n"
         violations = list(validate_frontmatter(path, text))
         assert any("truncates" in v.message and str(MAX_METADATA_CHARS) in v.message for v in violations)
 
@@ -233,7 +235,7 @@ class TestValidateFrontmatter:
             "---\n"
             "name: foo\n"
             "description: bar\n"
-            "license: Apache-2.0\n"
+            "capability: capability:setup\nlicense: Apache-2.0\n"
             "argument-hint: [--quick|--standard|--deep] <idea>\n"
             "---\n"
         )
@@ -249,7 +251,7 @@ class TestValidateFrontmatter:
             "---\n"
             "name: setup-steward\n"
             "description: bar\n"
-            "license: Apache-2.0\n"
+            "capability: capability:setup\nlicense: Apache-2.0\n"
             "argument-hint: [adopt|upgrade|worktree-init|verify|override skill-name|unadopt]\n"
             "---\n"
         )
@@ -272,7 +274,7 @@ class TestValidateFrontmatter:
             f"name: foo\n"
             f"description: {desc}\n"
             f"when_to_use: {wtu}\n"
-            f"license: Apache-2.0\n"
+            f"capability: capability:setup\nlicense: Apache-2.0\n"
             f"argument-hint: {hint}\n"
             f"---\n"
         )
@@ -280,11 +282,57 @@ class TestValidateFrontmatter:
         assert violations == [], "argument-hint must not count toward description+when_to_use budget"
 
     def test_metadata_block_scalar_indicator_not_counted(self) -> None:
-        text = f"---\nname: foo\ndescription: |\n  {'a' * 100}\nlicense: Apache-2.0\n---\n"
+        text = f"---\nname: foo\ndescription: |\n  {'a' * 100}\ncapability: capability:setup\nlicense: Apache-2.0\n---\n"
         fm = parse_frontmatter(text)
         assert fm is not None
         assert not fm["description"].startswith("|")
         assert len(fm["description"]) == 100
+
+    def test_capability_single_string(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        text = "---\nname: foo\ndescription: bar\ncapability: capability:triage\nlicense: Apache-2.0\n---\n"
+        violations = list(validate_frontmatter(path, text))
+        assert violations == []
+
+    def test_capability_yaml_list(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        text = (
+            "---\nname: foo\ndescription: bar\n"
+            "capability:\n  - capability:intake\n  - capability:setup\n"
+            "license: Apache-2.0\n---\n"
+        )
+        violations = list(validate_frontmatter(path, text))
+        assert violations == []
+
+    def test_capability_missing(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        text = "---\nname: foo\ndescription: bar\nlicense: Apache-2.0\n---\n"
+        violations = list(validate_frontmatter(path, text))
+        assert any("capability" in v.message for v in violations)
+
+    def test_capability_invalid_value(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        text = "---\nname: foo\ndescription: bar\ncapability: capability:bogus\nlicense: Apache-2.0\n---\n"
+        violations = list(validate_frontmatter(path, text))
+        assert any("capability:bogus" in v.message for v in violations)
+
+    def test_capability_list_with_one_invalid_value(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        text = (
+            "---\nname: foo\ndescription: bar\n"
+            "capability:\n  - capability:setup\n  - capability:invented\n"
+            "license: Apache-2.0\n---\n"
+        )
+        violations = list(validate_frontmatter(path, text))
+        # The "subject" of each violation is the first single-quoted token after
+        # the `capability ` word — e.g. "frontmatter capability 'capability:invented' not in [...]".
+        # The valid entry should never be the subject; only the invalid one should be.
+        flagged_subjects = [
+            v.message.split("capability '")[1].split("'")[0]
+            for v in violations
+            if "capability '" in v.message and "not in" in v.message
+        ]
+        assert flagged_subjects == ["capability:invented"]
 
 
 # ---------------------------------------------------------------------------
@@ -500,7 +548,7 @@ class TestFindRepoRoot:
         # Regression: the silent-pass bug fired only when CWD was inside the validator subtree.
         repo = Path(__file__).resolve().parents[3]
         assert (repo / ".claude" / "skills").is_dir(), "test setup precondition"
-        monkeypatch.chdir(repo / "tools" / "skill-validator")
+        monkeypatch.chdir(repo / "tools" / "skill-and-tool-validator")
         assert find_repo_root() == repo
 
     def test_explicit_start_outside_repo(self, tmp_path: Path) -> None:
@@ -522,11 +570,29 @@ class TestFindRepoRoot:
 
 class TestSubDocFiles:
     def _make_skill_dir(self, root: Path, skill_name: str = "setup-foo") -> Path:
-        """Return a skill directory pre-populated with a valid SKILL.md."""
+        """Return a skill directory pre-populated with a valid SKILL.md.
+
+        Also seeds a matching ``docs/labels-and-capabilities.md`` row so the
+        capability-sync check is satisfied — these tests are about sub-doc
+        handling, not the sync check.
+        """
         skill_dir = root / ".claude" / "skills" / skill_name
         skill_dir.mkdir(parents=True)
         (skill_dir / "SKILL.md").write_text(
-            f"---\nname: {skill_name}\ndescription: bar\nlicense: Apache-2.0\n---\n# body\n",
+            f"---\nname: {skill_name}\ndescription: bar\ncapability: capability:setup\nlicense: Apache-2.0\n---\n# body\n",
+            encoding="utf-8",
+        )
+        docs = root / "docs"
+        docs.mkdir(parents=True, exist_ok=True)
+        (docs / "labels-and-capabilities.md").write_text(
+            "# Labels and capabilities\n\n"
+            "## Capability to skill map\n\n"
+            "| Skill | Capability / capabilities |\n"
+            "|---|---|\n"
+            f"| `{skill_name}` | `capability:setup` |\n\n"
+            "## Capability to tool map\n\n"
+            "| Tool | Capability / capabilities | Role |\n"
+            "|---|---|---|\n",
             encoding="utf-8",
         )
         return skill_dir
@@ -621,7 +687,7 @@ class TestRunValidation:
         are excluded — they are advisory and surface as warnings, not
         failures. The main runtime gate is `--strict`.
         """
-        from skill_validator import SOFT_CATEGORIES
+        from skill_and_tool_validator import SOFT_CATEGORIES
 
         violations = [v for v in run_validation() if v.category not in SOFT_CATEGORIES]
         if violations:
@@ -834,7 +900,9 @@ class TestTriggerPreservation:
 # ---------------------------------------------------------------------------
 
 # Minimal valid SKILL.md frontmatter used across injection-guard tests.
-_GUARD_FM = "---\nname: test-skill\ndescription: bar\nlicense: Apache-2.0\n---\n"
+_GUARD_FM = (
+    "---\nname: test-skill\ndescription: bar\ncapability: capability:setup\nlicense: Apache-2.0\n---\n"
+)
 
 # A gh-pr-view signal that unambiguously looks like a workflow fetch step.
 _GH_PR_VIEW_SIGNAL = "2. **Fetch the PR.** `gh pr view <N> --json title,body`\n"
@@ -1212,7 +1280,7 @@ class TestSecurityPatterns:
 
 def _fenced_skill_lf(cmd: str) -> str:
     """Wrap *cmd* in a minimal SKILL.md with a fenced bash block."""
-    return f"---\nname: test\ndescription: test\nlicense: Apache-2.0\n---\n\n```bash\n{cmd}\n```\n"
+    return f"---\nname: test\ndescription: test\ncapability: capability:setup\nlicense: Apache-2.0\n---\n\n```bash\n{cmd}\n```\n"
 
 
 class TestLowercaseFField:
@@ -1282,7 +1350,7 @@ class TestLowercaseFField:
         """Inline backtick prose like ``-f title='...'`` must not fire."""
         path = tmp_path / "SKILL.md"
         text = (
-            "---\nname: test\ndescription: test\nlicense: Apache-2.0\n---\n\n"
+            "---\nname: test\ndescription: test\ncapability: capability:setup\nlicense: Apache-2.0\n---\n\n"
             "Avoid using `-f title='value'` — use `-F title=@file` instead.\n"
         )
         violations = list(validate_lowercase_f_field(path, text))
@@ -1292,7 +1360,7 @@ class TestLowercaseFField:
         """Bare prose outside a fenced block must not fire."""
         path = tmp_path / "SKILL.md"
         text = (
-            "---\nname: test\ndescription: test\nlicense: Apache-2.0\n---\n\n"
+            "---\nname: test\ndescription: test\ncapability: capability:setup\nlicense: Apache-2.0\n---\n\n"
             "Run: gh api milestones -f title='v1'\n"
         )
         violations = list(validate_lowercase_f_field(path, text))
@@ -1309,9 +1377,9 @@ class TestLowercaseFField:
     def test_violation_line_number_correct(self, tmp_path: Path) -> None:
         path = tmp_path / "SKILL.md"
         text = _fenced_skill_lf("gh api repos/<tracker>/milestones -f title='v1.0'")
-        # Layout: 1:--- 2:name 3:description 4:license 5:--- 6:blank 7:```bash 8:command
+        # Layout: 1:--- 2:name 3:description 4:capability 5:license 6:--- 7:blank 8:```bash 9:command
         violations = list(validate_lowercase_f_field(path, text))
-        assert violations[0].line == 8
+        assert violations[0].line == 9
 
     def test_lowercase_f_field_in_soft_categories(self) -> None:
         assert LOWERCASE_F_FIELD_CATEGORY in SOFT_CATEGORIES
@@ -1574,9 +1642,25 @@ class TestPrivacyPatternP6:
 
 
 def _skill_root(tmp_path: Path) -> Path:
-    """Create a minimal repo tree with .claude/skills/ and return the root."""
+    """Create a minimal repo tree with .claude/skills/ and return the root.
+
+    Also seeds an empty ``docs/labels-and-capabilities.md`` so the
+    capability-sync check doesn't fire its "missing doc" violation in
+    tests that don't exercise the sync check directly.
+    """
     skills = tmp_path / ".claude" / "skills"
     skills.mkdir(parents=True)
+    docs = tmp_path / "docs"
+    docs.mkdir(parents=True, exist_ok=True)
+    (docs / "labels-and-capabilities.md").write_text(
+        "# Labels and capabilities\n\n"
+        "## Capability to skill map\n\n"
+        "| Skill | Capability / capabilities |\n"
+        "|---|---|\n\n"
+        "## Capability to tool map\n\n"
+        "| Tool | Capability / capabilities | Role |\n"
+        "|---|---|---|\n"
+    )
     return tmp_path
 
 
@@ -1774,12 +1858,23 @@ class TestCollectDocFiles:
 
 
 def _make_valid_skill(root: Path, name: str) -> Path:
-    """Write a minimal valid SKILL.md under .claude/skills/<name>/."""
+    """Write a minimal valid SKILL.md under .claude/skills/<name>/ and add a
+    matching row to docs/labels-and-capabilities.md so the capability-sync
+    check stays satisfied."""
     skill_dir = root / ".claude" / "skills" / name
     skill_dir.mkdir(parents=True, exist_ok=True)
     (skill_dir / "SKILL.md").write_text(
-        f"---\nname: {name}\ndescription: A test skill.\nlicense: Apache-2.0\n---\n# Body\nSome content.\n"
+        f"---\nname: {name}\ndescription: A test skill.\ncapability: capability:setup\nlicense: Apache-2.0\n---\n# Body\nSome content.\n"
     )
+    # Inject a row into the skill table of the seeded doc.
+    doc = root / "docs" / "labels-and-capabilities.md"
+    if doc.exists():
+        text = doc.read_text()
+        row = f"| `{name}` | `capability:setup` |\n"
+        # Insert right after the skill table's separator row.
+        marker = "## Capability to skill map\n\n| Skill | Capability / capabilities |\n|---|---|\n"
+        if marker in text and row not in text:
+            doc.write_text(text.replace(marker, marker + row, 1))
     return skill_dir
 
 
@@ -1830,15 +1925,241 @@ class TestMain:
             "---\n"
             "name: soft-skill\n"
             "description: A test skill.\n"
-            "license: Apache-2.0\n"
+            "capability: capability:setup\nlicense: Apache-2.0\n"
             "---\n"
             "```bash\n"
             'gh pr comment 1 --body "attacker content"\n'
             "```\n"
         )
+        # Add a matching row to the seeded doc so the capability-sync check stays clean.
+        doc = root / "docs" / "labels-and-capabilities.md"
+        text = doc.read_text()
+        marker = "## Capability to skill map\n\n| Skill | Capability / capabilities |\n|---|---|\n"
+        doc.write_text(text.replace(marker, marker + "| `soft-skill` | `capability:setup` |\n", 1))
         monkeypatch.chdir(root)
 
         rc_normal = main([])
         rc_strict = main(["--strict"])
         assert rc_normal == 0
         assert rc_strict == 1
+
+
+# ---------------------------------------------------------------------------
+# Tool README + capability declaration validation
+# ---------------------------------------------------------------------------
+
+
+def _make_tools_root(tmp_path: Path) -> Path:
+    """Create a minimal repo layout: <tmp>/tools/ + <tmp>/.claude/skills/."""
+    root = tmp_path / "repo"
+    (root / "tools").mkdir(parents=True)
+    (root / ".claude" / "skills").mkdir(parents=True)
+    return root
+
+
+class TestValidateTools:
+    def test_tool_with_valid_readme(self, tmp_path: Path) -> None:
+        root = _make_tools_root(tmp_path)
+        tool = root / "tools" / "foo"
+        tool.mkdir()
+        (tool / "README.md").write_text("# tools/foo\n\n**Capability:** capability:setup\n\nFoo tool.\n")
+        violations = list(validate_tools(root))
+        assert violations == []
+
+    def test_tool_missing_readme(self, tmp_path: Path) -> None:
+        root = _make_tools_root(tmp_path)
+        (root / "tools" / "no-readme").mkdir()
+        violations = list(validate_tools(root))
+        assert len(violations) == 1
+        assert "missing README.md" in violations[0].message
+        assert violations[0].category == "tool-readme"
+
+    def test_tool_readme_without_capability(self, tmp_path: Path) -> None:
+        root = _make_tools_root(tmp_path)
+        tool = root / "tools" / "bare"
+        tool.mkdir()
+        (tool / "README.md").write_text("# bare\n\nDescription only, no capability line.\n")
+        violations = list(validate_tools(root))
+        assert len(violations) == 1
+        assert "missing '**Capability:**" in violations[0].message
+        assert violations[0].category == "tool-capability"
+
+    def test_tool_capability_invalid_value(self, tmp_path: Path) -> None:
+        root = _make_tools_root(tmp_path)
+        tool = root / "tools" / "bad"
+        tool.mkdir()
+        (tool / "README.md").write_text("# bad\n\n**Capability:** capability:bogus\n")
+        violations = list(validate_tools(root))
+        assert any("capability:bogus" in v.message for v in violations)
+
+    def test_tool_capability_multi_value(self, tmp_path: Path) -> None:
+        root = _make_tools_root(tmp_path)
+        tool = root / "tools" / "dual"
+        tool.mkdir()
+        (tool / "README.md").write_text("# dual\n\n**Capability:** capability:setup + capability:intake\n")
+        violations = list(validate_tools(root))
+        assert violations == []
+
+    def test_tool_capability_regex_does_not_slurp_past_line(self, tmp_path: Path) -> None:
+        # Regression guard: an earlier version of the regex matched `[A-Za-z0-9:+\s]+`
+        # which included newlines, so the parser captured prose from the next
+        # paragraph and reported false "invalid capability" errors.
+        root = _make_tools_root(tmp_path)
+        tool = root / "tools" / "with-prose"
+        tool.mkdir()
+        (tool / "README.md").write_text(
+            "# tools/with-prose\n\n"
+            "**Capability:** capability:setup\n\n"
+            "Some prose that follows the capability line and should NOT be parsed as part of it.\n"
+        )
+        violations = list(validate_tools(root))
+        assert violations == []
+
+
+# ---------------------------------------------------------------------------
+# Capability sync check: docs/labels-and-capabilities.md ↔ live source
+# ---------------------------------------------------------------------------
+
+
+def _seed_capability_repo(
+    tmp_path: Path,
+    *,
+    doc_skills: dict[str, str],
+    doc_tools: dict[str, str],
+    live_skills: dict[str, str],
+    live_tools: dict[str, str],
+) -> Path:
+    """Build a tiny repo with a labels-and-capabilities.md doc, skills, and tool READMEs.
+
+    `*_skills` maps skill-name → capability cell text (e.g. ``capability:triage``).
+    `*_tools` maps tool-name → capability cell text (e.g. ``capability:setup + capability:intake``).
+    """
+    root = tmp_path / "repo"
+    (root / "docs").mkdir(parents=True)
+    (root / ".claude" / "skills").mkdir(parents=True)
+    (root / "tools").mkdir(parents=True)
+
+    skill_rows = "\n".join(f"| `{n}` | `{c}` |" for n, c in doc_skills.items())
+    tool_rows = "\n".join(f"| [`tools/{n}`](../tools/{n}/) | `{c}` | role |" for n, c in doc_tools.items())
+    doc_body = (
+        "# Labels and capabilities\n\n"
+        "## Capability to skill map\n\n"
+        "| Skill | Capability / capabilities |\n"
+        "|---|---|\n"
+        f"{skill_rows}\n\n"
+        "## Capability to tool map\n\n"
+        "| Tool | Capability / capabilities | Role |\n"
+        "|---|---|---|\n"
+        f"{tool_rows}\n"
+    )
+    (root / "docs" / "labels-and-capabilities.md").write_text(doc_body)
+
+    for skill, cap in live_skills.items():
+        d = root / ".claude" / "skills" / skill
+        d.mkdir()
+        (d / "SKILL.md").write_text(
+            f"---\nname: {skill}\ndescription: test\ncapability: {cap}\nlicense: Apache-2.0\n---\n"
+        )
+
+    for tool, cap in live_tools.items():
+        d = root / "tools" / tool
+        d.mkdir()
+        (d / "README.md").write_text(f"# {tool}\n\n**Capability:** {cap}\n")
+
+    return root
+
+
+class TestValidateCapabilitySync:
+    def test_aligned_passes(self, tmp_path: Path) -> None:
+        root = _seed_capability_repo(
+            tmp_path,
+            doc_skills={"alpha": "capability:triage"},
+            doc_tools={"omega": "capability:setup"},
+            live_skills={"alpha": "capability:triage"},
+            live_tools={"omega": "capability:setup"},
+        )
+        violations = list(validate_capability_sync(root))
+        assert violations == []
+
+    def test_skill_in_doc_but_not_live(self, tmp_path: Path) -> None:
+        root = _seed_capability_repo(
+            tmp_path,
+            doc_skills={"alpha": "capability:triage", "ghost": "capability:fix"},
+            doc_tools={},
+            live_skills={"alpha": "capability:triage"},
+            live_tools={},
+        )
+        violations = list(validate_capability_sync(root))
+        assert any("'ghost'" in v.message and "no live SKILL.md" in v.message for v in violations)
+
+    def test_live_skill_missing_from_doc(self, tmp_path: Path) -> None:
+        root = _seed_capability_repo(
+            tmp_path,
+            doc_skills={"alpha": "capability:triage"},
+            doc_tools={},
+            live_skills={"alpha": "capability:triage", "extra": "capability:fix"},
+            live_tools={},
+        )
+        violations = list(validate_capability_sync(root))
+        assert any("'extra'" in v.message and "no row in the skill table" in v.message for v in violations)
+
+    def test_skill_capability_mismatch(self, tmp_path: Path) -> None:
+        root = _seed_capability_repo(
+            tmp_path,
+            doc_skills={"alpha": "capability:triage"},
+            doc_tools={},
+            live_skills={"alpha": "capability:fix"},
+            live_tools={},
+        )
+        violations = list(validate_capability_sync(root))
+        assert any("'alpha' capability mismatch" in v.message for v in violations)
+
+    def test_tool_in_doc_but_not_live(self, tmp_path: Path) -> None:
+        root = _seed_capability_repo(
+            tmp_path,
+            doc_skills={},
+            doc_tools={"omega": "capability:setup", "ghost-tool": "capability:setup"},
+            live_skills={},
+            live_tools={"omega": "capability:setup"},
+        )
+        violations = list(validate_capability_sync(root))
+        assert any("'ghost-tool'" in v.message and "no live tools/" in v.message for v in violations)
+
+    def test_live_tool_missing_from_doc(self, tmp_path: Path) -> None:
+        root = _seed_capability_repo(
+            tmp_path,
+            doc_skills={},
+            doc_tools={"omega": "capability:setup"},
+            live_skills={},
+            live_tools={"omega": "capability:setup", "extra-tool": "capability:stats"},
+        )
+        violations = list(validate_capability_sync(root))
+        assert any(
+            "'extra-tool'" in v.message and "no row in the tool table" in v.message for v in violations
+        )
+
+    def test_italic_parens_annotation_is_stripped(self, tmp_path: Path) -> None:
+        # Doc row carries an italic-parenthetical future-state note.
+        # The token inside *( ... )* must NOT count as a declared capability.
+        root = tmp_path / "repo"
+        (root / "docs").mkdir(parents=True)
+        (root / ".claude" / "skills" / "alpha").mkdir(parents=True)
+        doc = (
+            "# Labels and capabilities\n\n"
+            "## Capability to skill map\n\n"
+            "| Skill | Capability / capabilities |\n"
+            "|---|---|\n"
+            "| `alpha` | `capability:intake` *(+ `capability:reconciliation` once [#1](https://x.y/issues/1) lands)* |\n\n"
+            "## Capability to tool map\n\n"
+            "| Tool | Capability / capabilities | Role |\n"
+            "|---|---|---|\n"
+        )
+        (root / "docs" / "labels-and-capabilities.md").write_text(doc)
+        (root / ".claude" / "skills" / "alpha" / "SKILL.md").write_text(
+            "---\nname: alpha\ndescription: test\ncapability: capability:intake\nlicense: Apache-2.0\n---\n"
+        )
+        (root / "tools").mkdir()
+        violations = list(validate_capability_sync(root))
+        # The parenthetical capability:reconciliation must NOT be flagged as a doc-side declared capability;
+        # the row's authoritative capability is just intake, which matches the live skill.
+        assert violations == [], [v.message for v in violations]

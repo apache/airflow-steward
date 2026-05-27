@@ -15,6 +15,8 @@
 
 # Probe templates
 
+**Capability:** capability:setup
+
 Runnable cross-family probe scripts that the
 [`issue-reproducer`](../../.claude/skills/issue-reproducer/SKILL.md)
 skill copies from when its Step 9 (optional cross-family probe)

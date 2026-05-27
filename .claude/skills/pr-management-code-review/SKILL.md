@@ -13,6 +13,7 @@ when_to_use: |
   ready-for-maintainer-review queue". Use after `pr-management-triage` has produced reviewable PRs; skip when triage
   has not yet engaged the PR.
 argument-hint: "[pr:N] [area:LBL] [collab:true|false] [team:NAME] [ready] [dry-run]"
+capability: capability:review
 license: Apache-2.0
 ---
 <!-- SPDX-License-Identifier: Apache-2.0

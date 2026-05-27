@@ -16,6 +16,7 @@ when_to_use: |
   to `issue-triage` for issues classified BUG or
   FEATURE-REQUEST. Skip when the fix is non-trivial enough to
   need design discussion — those go through an RFC first.
+capability: capability:fix
 license: Apache-2.0
 ---
 

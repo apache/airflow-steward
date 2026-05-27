@@ -17,6 +17,8 @@
 
 # Dashboard generator
 
+**Capability:** capability:stats
+
 Deterministic reference implementations of the dashboard that
 [`issue-reassess-stats`](../../.claude/skills/issue-reassess-stats/SKILL.md)
 produces. Adopters who want CI-rendered dashboards (refreshed on

@@ -16,6 +16,8 @@
 
 # `sandbox-lint`
 
+**Capability:** capability:setup
+
 Lints `.claude/settings.json` against the shipped baseline at
 `tools/sandbox-lint/expected.json`, and against the security
 invariants documented in `docs/security/threat-model.md`

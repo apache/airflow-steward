@@ -15,6 +15,7 @@ when_to_use: |
   repository — agents route via the live frontmatter
   `description` field directly and do not need this index to
   choose a skill.
+capability: capability:stats
 license: Apache-2.0
 ---
 

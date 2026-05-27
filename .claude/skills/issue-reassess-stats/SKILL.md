@@ -13,6 +13,7 @@ when_to_use: |
   "which issues still fail across pool runs". Also as a
   pre-release check on whether the EOL pool has dropped, and
   as a periodic health-of-the-backlog view.
+capability: capability:stats
 license: Apache-2.0
 ---
 

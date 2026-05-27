@@ -15,6 +15,7 @@ when_to_use: |
   override locally for a while and deciding the change is
   worth contributing back.
 argument-hint: "[skill-name]"
+capability: capability:setup
 license: Apache-2.0
 ---
 
@@ -276,11 +277,29 @@ In `<framework-clone>`:
 3. **Confirm with the user before posting**. Show the
    exact title + body. Wait for "OK to post" / "yes" /
    "send" / similar before running `gh pr create`.
-4. Write the PR body to a tempfile first, then create the PR:
+4. **Pick the labels.** Every framework PR carries at least one
+   `area:*` and one `capability:*` label per
+   [`docs/labels-and-capabilities.md`](../../../docs/labels-and-capabilities.md).
+   The override is upstreaming a change to skill `<skill>`, so:
+   - `area:*` — follow the skill's family
+     (`area:pr-management` for `pr-management-*`, `area:security`
+     for `security-*`, `area:setup` for `setup-*`, `area:issue`
+     for `issue-*`, etc.).
+   - `capability:*` — the capability the change is *implementing*,
+     not the file paths touched. Look up the skill's capability in
+     the skill-to-capability map at
+     [`docs/labels-and-capabilities.md#capability-to-skill-map`](../../../docs/labels-and-capabilities.md#capability-to-skill-map).
+   - Add `kind:*` and `mode:*` when they apply per the same doc.
+
+   Surface the chosen labels in the confirmation preview alongside
+   the PR title and body, so the user sees them before posting.
+
+5. Write the PR body to a tempfile first, then create the PR:
    ```bash
    # Write tool: file_path: /tmp/override-pr-body.md, content: <PR body>
    gh pr create --repo apache/airflow-steward --base main \
-     --head <user>:<branch> --title "..." --body-file /tmp/override-pr-body.md
+     --head <user>:<branch> --title "..." --body-file /tmp/override-pr-body.md \
+     --label "area:<area>" --label "capability:<capability>"
    ```
 
 ### Step 7 — Post-PR cleanup pointer

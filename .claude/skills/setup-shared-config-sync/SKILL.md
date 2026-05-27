@@ -18,6 +18,9 @@ when_to_use: |
   `setup-isolated-setup-update` surfaces drift on a script the
   user keeps in `~/.claude-config/` and wants propagated to
   other machines.
+capability:
+  - capability:intake
+  - capability:setup
 license: Apache-2.0
 ---
 

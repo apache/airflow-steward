@@ -18,6 +18,9 @@ when_to_use: |
   permission errors). Also a good periodic check after every
   Claude Code upgrade — the sandbox profile evolves and a
   previously-working call may have moved into deny.
+capability:
+  - capability:setup
+  - capability:reassess
 license: Apache-2.0
 ---
 

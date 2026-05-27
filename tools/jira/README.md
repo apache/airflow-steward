@@ -20,6 +20,8 @@
 
 # JIRA bridge
 
+**Capability:** capability:setup
+
 Read-only JIRA REST helpers for the `issue-*` skill family.
 Adopters with JIRA-based issue trackers wire this in as their
 tracker bridge; adopters using GitHub Issues or other trackers

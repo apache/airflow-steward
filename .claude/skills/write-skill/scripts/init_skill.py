@@ -49,7 +49,7 @@ The script creates the skill directory with:
   skill reads private content.
 
 The skill is *not* validated by this script. Run
-``tools/skill-validator/`` separately after editing.
+``tools/skill-and-tool-validator/`` separately after editing.
 """
 
 from __future__ import annotations

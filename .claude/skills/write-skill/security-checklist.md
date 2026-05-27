@@ -231,7 +231,7 @@ backstops:
 1. **`init_skill.py`** scaffolds a SKILL.md skeleton with
    placeholders for the injection-guard callout (Pattern 4) and
    the Privacy-LLM gate-check (Pattern 6).
-2. **`tools/skill-validator`** validates frontmatter shape and
+2. **`tools/skill-and-tool-validator`** validates frontmatter shape and
    placeholder usage — it does not check for the patterns above.
 3. **`prek` hooks** (`check-placeholders`, `markdownlint`,
    `typos`) catch common mistakes but not pattern violations.

@@ -16,6 +16,7 @@ when_to_use: |
   Skip when team consensus has landed — invoke
   `/issue-fix-workflow` for confirmed bugs or the appropriate
   closure flow directly.
+capability: capability:triage
 license: Apache-2.0
 ---
 

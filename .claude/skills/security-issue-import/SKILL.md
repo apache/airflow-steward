@@ -21,6 +21,7 @@ when_to_use: |
   answered-and-closed on-thread. Use `import last 30d` / `import all`
   (= 90d) for a wider backlog sweep when genuinely warranted.
 argument-hint: "[import] [last Nd|all] [skip threadId]"
+capability: capability:intake
 license: Apache-2.0
 ---
 

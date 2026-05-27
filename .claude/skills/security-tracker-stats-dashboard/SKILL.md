@@ -7,6 +7,7 @@ when_to_use: |
   variations. Also when an existing dashboard at the configured output
   path is stale (older than ~24 h) and the user is reviewing tracker
   health. Read-only — the skill never modifies any tracker state.
+capability: capability:stats
 license: Apache-2.0
 ---
 

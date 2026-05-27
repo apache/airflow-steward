@@ -20,6 +20,9 @@ when_to_use: |
   classified as valid vulnerabilities, or changes that require
   the private-PR fallback path.
 argument-hint: "[issue-number]"
+capability:
+  - capability:fix
+  - capability:resolve
 license: Apache-2.0
 ---
 

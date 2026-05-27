@@ -44,9 +44,9 @@ SOFT categories surface as advisory warnings (stderr) without
 failing the run unless ``--strict`` is passed.
 
 Run from repo root:
-    uv run --project tools/skill-validator --group dev pytest
+    uv run --project tools/skill-and-tool-validator --group dev pytest
     # or after install:
-    skill-validate
+    skill-and-tool-validate
 """
 
 from __future__ import annotations
@@ -62,12 +62,52 @@ from pathlib import Path
 # ---------------------------------------------------------------------------
 
 SKILLS_DIR = Path(".claude/skills")
+TOOLS_DIR = Path("tools")
 DOCS_DIR = Path("docs")
 PROJECTS_TEMPLATE_DIR = Path("projects/_template")
 
-REQUIRED_FRONTMATTER_KEYS = {"name", "description", "license"}
+# Categories for the tool-validator block. Both HARD by default — every
+# tool must have a README that declares its capability.
+TOOL_README_CATEGORY = "tool-readme"
+TOOL_CAPABILITY_CATEGORY = "tool-capability"
+
+# Matches `**Capability:** capability:NAME` (and multi-value
+# `capability:NAME + capability:NAME + …`) on a single line.
+TOOL_CAPABILITY_RE = re.compile(r"^\*\*Capability:\*\*[ \t]+(.+)$", re.MULTILINE)
+
+# Capability-sync check: keeps docs/labels-and-capabilities.md tables aligned
+# with live skill frontmatter + tool README declarations.
+DOCS_LABELS_AND_CAPABILITIES = Path("docs/labels-and-capabilities.md")
+CAPABILITY_SYNC_CATEGORY = "capability-sync"
+_SKILL_TABLE_HEADER = "## Capability to skill map"
+_TOOL_TABLE_HEADER = "## Capability to tool map"
+# Tokens like `capability:setup`. Optional backticks around the token.
+_CAPABILITY_TOKEN_RE = re.compile(r"`?(capability:[a-z]+)`?")
+# Italic-parenthetical annotation in the docs tables: `*( … )*` — used for
+# future-state notes (e.g. "*(+ capability:reconciliation once #337 lands)*").
+# Stripped before extracting authoritative capability tokens. The terminator
+# is the literal sequence ``)*`` (close-paren immediately followed by an
+# asterisk), which lets the body span markdown links whose URLs contain
+# parens.
+_ITALIC_PARENS_RE = re.compile(r"\*\(.*?\)\*")
+
+REQUIRED_FRONTMATTER_KEYS = {"name", "description", "license", "capability"}
 OPTIONAL_FRONTMATTER_KEYS = {"when_to_use", "mode"}
 ALLOWED_LICENSES = {"Apache-2.0"}
+
+# Canonical capability taxonomy — docs/labels-and-capabilities.md is authoritative.
+# Skills may declare a single capability (string form) or several (YAML list form).
+ALLOWED_CAPABILITIES = {
+    "capability:triage",
+    "capability:review",
+    "capability:fix",
+    "capability:intake",
+    "capability:reconciliation",
+    "capability:resolve",
+    "capability:reassess",
+    "capability:stats",
+    "capability:setup",
+}
 
 
 def _read_mode_table() -> dict[str, str]:
@@ -453,6 +493,31 @@ def validate_frontmatter(path: Path, text: str) -> Iterable[Violation]:
             1,
             f"frontmatter mode '{fm['mode']}' not in {sorted(ALLOWED_MODES)} (see docs/modes.md)",
         )
+
+    if fm.get("capability"):
+        # The frontmatter parser stores both forms as a single string:
+        #   single — `capability: capability:triage`            → "capability:triage"
+        #   list   — `capability:\n  - capability:intake\n …`   → "- capability:intake\n- capability:setup"
+        # Split on lines, strip `- ` prefix when present.
+        entries: list[str] = []
+        for raw_line in fm["capability"].splitlines():
+            line = raw_line.strip()
+            if not line:
+                continue
+            if line.startswith("- "):
+                entries.append(line[2:].strip())
+            else:
+                entries.append(line)
+        if not entries:
+            yield Violation(path, 1, "frontmatter key 'capability' is empty")
+        for entry in entries:
+            if entry not in ALLOWED_CAPABILITIES:
+                yield Violation(
+                    path,
+                    1,
+                    f"frontmatter capability '{entry}' not in {sorted(ALLOWED_CAPABILITIES)} "
+                    f"(see docs/labels-and-capabilities.md)",
+                )
 
     desc_len = len(fm.get("description", ""))
     wtu_len = len(fm.get("when_to_use", ""))
@@ -1148,6 +1213,267 @@ def collect_files_to_check(root: Path | None = None) -> list[Path]:
     return list(base.rglob("*.md"))
 
 
+def collect_tool_dirs(root: Path | None = None) -> list[Path]:
+    """Return every immediate sub-directory under tools/ that should be checked."""
+    base = (root or find_repo_root()) / TOOLS_DIR
+    if not base.exists():
+        return []
+    return sorted(d for d in base.iterdir() if d.is_dir() and not d.name.startswith("."))
+
+
+def validate_tools(root: Path | None = None) -> Iterable[Violation]:
+    """For each ``tools/<name>/`` directory, require:
+
+    1. A ``README.md`` to exist at the tool root.
+    2. The README to contain a ``**Capability:** capability:NAME`` line,
+       with NAME drawn from ``ALLOWED_CAPABILITIES``. Multi-value form is
+       ``**Capability:** capability:NAME + capability:NAME``.
+
+    Both are HARD checks — every tool must declare its capabilities so
+    the per-tool map in ``docs/labels-and-capabilities.md`` stays
+    authoritative.
+    """
+    for tool_dir in collect_tool_dirs(root):
+        readme = tool_dir / "README.md"
+        if not readme.exists():
+            yield Violation(
+                readme,
+                None,
+                f"tool '{tool_dir.name}' missing README.md — every tools/<name>/ must "
+                f"have a README declaring its capability per "
+                f"docs/labels-and-capabilities.md",
+                category=TOOL_README_CATEGORY,
+            )
+            continue
+
+        try:
+            text = readme.read_text(encoding="utf-8")
+        except OSError as exc:
+            yield Violation(readme, None, f"cannot read README.md: {exc}")
+            continue
+
+        match = TOOL_CAPABILITY_RE.search(text)
+        if match is None:
+            yield Violation(
+                readme,
+                1,
+                f"tool '{tool_dir.name}' README missing '**Capability:** capability:NAME' "
+                f"declaration (see docs/labels-and-capabilities.md)",
+                category=TOOL_CAPABILITY_CATEGORY,
+            )
+            continue
+
+        line_no = text[: match.start()].count("\n") + 1
+        # Split multi-value: `capability:NAME + capability:NAME + …`
+        raw = match.group(1).strip()
+        entries = [e.strip() for e in raw.split("+") if e.strip()]
+        if not entries:
+            yield Violation(
+                readme,
+                line_no,
+                f"tool '{tool_dir.name}' has '**Capability:**' line but no values parsed",
+                category=TOOL_CAPABILITY_CATEGORY,
+            )
+            continue
+        for entry in entries:
+            if entry not in ALLOWED_CAPABILITIES:
+                yield Violation(
+                    readme,
+                    line_no,
+                    f"tool '{tool_dir.name}' capability '{entry}' not in "
+                    f"{sorted(ALLOWED_CAPABILITIES)} (see docs/labels-and-capabilities.md)",
+                    category=TOOL_CAPABILITY_CATEGORY,
+                )
+
+
+def _parse_capability_doc_table(text: str, header: str) -> dict[str, set[str]]:
+    """Parse a markdown table rooted at *header* in labels-and-capabilities.md.
+
+    Returns a {entity-name: {capability:foo, capability:bar}} mapping. The
+    entity name is the first cell's bare identifier (drops the path prefix
+    for tools: ``tools/foo`` → ``foo``). Italic-parenthetical annotations
+    in the capability cell (``*(+ capability:X once #N lands)*``) are
+    stripped before parsing — they are future-state notes, not the
+    authoritative declaration.
+    """
+    if header not in text:
+        return {}
+    section = text.split(header, 1)[1]
+    next_h2 = section.find("\n## ")
+    if next_h2 > 0:
+        section = section[:next_h2]
+
+    out: dict[str, set[str]] = {}
+    for line in section.splitlines():
+        if not line.startswith("|"):
+            continue
+        # Skip the header / separator rows.
+        if line.startswith("|---") or line.startswith("| --- "):
+            continue
+        if "Capability" in line and ("Skill" in line or "Tool" in line or "skill" in line or "tool" in line):
+            continue
+        cells = [c.strip() for c in line.strip("|").split("|")]
+        if len(cells) < 2:
+            continue
+        name_cell, cap_cell = cells[0], cells[1]
+        # Entity name: `name` or [`name`](path) — pull the backtick-quoted token.
+        name_match = re.search(r"`([a-zA-Z0-9/_-]+)`", name_cell)
+        if not name_match:
+            continue
+        raw_name = name_match.group(1)
+        # Tools live under `tools/<name>` in the table; strip prefix.
+        name = raw_name.rsplit("/", 1)[-1]
+        # Strip italic-parenthetical future-state notes before token extraction.
+        cap_cell_clean = _ITALIC_PARENS_RE.sub("", cap_cell)
+        caps = set(_CAPABILITY_TOKEN_RE.findall(cap_cell_clean))
+        if caps:
+            out[name] = caps
+    return out
+
+
+def _live_skill_capabilities(repo_root: Path) -> dict[str, set[str]]:
+    """Read the {skill-name: {capability:foo, …}} mapping from live frontmatter."""
+    out: dict[str, set[str]] = {}
+    skills_dir = repo_root / SKILLS_DIR
+    if not skills_dir.exists():
+        return out
+    for skill_md in skills_dir.glob("*/SKILL.md"):
+        try:
+            text = skill_md.read_text(encoding="utf-8")
+        except OSError:
+            continue
+        fm = parse_frontmatter(text)
+        if fm is None or "capability" not in fm or not fm["capability"]:
+            continue
+        entries: set[str] = set()
+        for raw_line in fm["capability"].splitlines():
+            line = raw_line.strip()
+            if not line:
+                continue
+            if line.startswith("- "):
+                entries.add(line[2:].strip())
+            else:
+                entries.add(line)
+        if entries:
+            out[skill_md.parent.name] = entries
+    return out
+
+
+def _live_tool_capabilities(repo_root: Path) -> dict[str, set[str]]:
+    """Read the {tool-name: {capability:foo, …}} mapping from live tool READMEs."""
+    out: dict[str, set[str]] = {}
+    for tool_dir in collect_tool_dirs(repo_root):
+        readme = tool_dir / "README.md"
+        if not readme.exists():
+            continue
+        try:
+            text = readme.read_text(encoding="utf-8")
+        except OSError:
+            continue
+        match = TOOL_CAPABILITY_RE.search(text)
+        if match is None:
+            continue
+        raw = match.group(1).strip()
+        entries = {e.strip() for e in raw.split("+") if e.strip()}
+        if entries:
+            out[tool_dir.name] = entries
+    return out
+
+
+def validate_capability_sync(root: Path | None = None) -> Iterable[Violation]:
+    """Compare the docs/labels-and-capabilities.md tables against live state.
+
+    Both directions are checked:
+
+    - Every row in either table must correspond to a live skill / tool with
+      the same capability set (modulo italic-parenthetical future-state notes).
+    - Every live skill (with a ``capability:`` frontmatter field) and every
+      live tool (with a ``**Capability:**`` README declaration) must have a
+      matching row in the corresponding doc table.
+
+    Drift in either direction is a HARD ``capability-sync`` violation —
+    the docs are the canonical reference and must stay aligned with the
+    source.
+    """
+    repo_root = root or find_repo_root()
+    doc_path = repo_root / DOCS_LABELS_AND_CAPABILITIES
+    if not doc_path.exists():
+        yield Violation(
+            doc_path,
+            None,
+            "docs/labels-and-capabilities.md missing — cannot run capability-sync check",
+            category=CAPABILITY_SYNC_CATEGORY,
+        )
+        return
+
+    try:
+        doc_text = doc_path.read_text(encoding="utf-8")
+    except OSError as exc:
+        yield Violation(doc_path, None, f"cannot read labels-and-capabilities.md: {exc}")
+        return
+
+    doc_skills = _parse_capability_doc_table(doc_text, _SKILL_TABLE_HEADER)
+    doc_tools = _parse_capability_doc_table(doc_text, _TOOL_TABLE_HEADER)
+    live_skills = _live_skill_capabilities(repo_root)
+    live_tools = _live_tool_capabilities(repo_root)
+
+    # Skills — docs vs live, both directions.
+    for name, doc_caps in sorted(doc_skills.items()):
+        if name not in live_skills:
+            yield Violation(
+                doc_path,
+                None,
+                f"skill table row for '{name}' but no live SKILL.md with a 'capability:' field "
+                f"found under .claude/skills/{name}/",
+                category=CAPABILITY_SYNC_CATEGORY,
+            )
+            continue
+        if doc_caps != live_skills[name]:
+            yield Violation(
+                doc_path,
+                None,
+                f"skill '{name}' capability mismatch — docs={sorted(doc_caps)} live={sorted(live_skills[name])}",
+                category=CAPABILITY_SYNC_CATEGORY,
+            )
+    for name in sorted(live_skills):
+        if name not in doc_skills:
+            yield Violation(
+                doc_path,
+                None,
+                f"live skill '{name}' has 'capability:' frontmatter but no row in the skill table "
+                f"in docs/labels-and-capabilities.md",
+                category=CAPABILITY_SYNC_CATEGORY,
+            )
+
+    # Tools — docs vs live, both directions.
+    for name, doc_caps in sorted(doc_tools.items()):
+        if name not in live_tools:
+            yield Violation(
+                doc_path,
+                None,
+                f"tool table row for '{name}' but no live tools/{name}/README.md with a "
+                f"'**Capability:**' declaration found",
+                category=CAPABILITY_SYNC_CATEGORY,
+            )
+            continue
+        if doc_caps != live_tools[name]:
+            yield Violation(
+                doc_path,
+                None,
+                f"tool '{name}' capability mismatch — docs={sorted(doc_caps)} live={sorted(live_tools[name])}",
+                category=CAPABILITY_SYNC_CATEGORY,
+            )
+    for name in sorted(live_tools):
+        if name not in doc_tools:
+            yield Violation(
+                doc_path,
+                None,
+                f"live tool '{name}' has '**Capability:**' declaration but no row in the tool table "
+                f"in docs/labels-and-capabilities.md",
+                category=CAPABILITY_SYNC_CATEGORY,
+            )
+
+
 # ---------------------------------------------------------------------------
 # Lowercase -f field check (Pattern 2)
 # ---------------------------------------------------------------------------
@@ -1298,6 +1624,12 @@ def run_validation(root: Path | None = None) -> list[Violation]:
         violations.extend(validate_gh_list_limit(path, text))
         violations.extend(validate_lowercase_f_field(path, text))
 
+    # Tool-level checks: every tools/<name>/ has a README that declares its capability.
+    violations.extend(validate_tools(repo_root))
+
+    # Capability-sync check: the doc tables and the source must agree.
+    violations.extend(validate_capability_sync(repo_root))
+
     return violations
 
 
@@ -1330,14 +1662,14 @@ def main(argv: list[str] | None = None) -> int:
         soft = [v for v in filtered if v.category in SOFT_CATEGORIES]
 
     if not filtered:
-        print("skill-validator: OK (no violations)")
+        print("skill-and-tool-validator: OK (no violations)")
         return 0
 
     if soft:
         _print_soft_warnings(soft)
 
     if hard:
-        print(f"skill-validator: {len(hard)} violation(s) found\n")
+        print(f"skill-and-tool-validator: {len(hard)} violation(s) found\n")
         for v in hard:
             print(v)
         return 1
@@ -1383,7 +1715,7 @@ def _print_soft_warnings(soft: list[Violation]) -> None:
         by_file[v.path].append(v)
 
     print(
-        f"skill-validator: {len(soft)} SOFT warning(s) across "
+        f"skill-and-tool-validator: {len(soft)} SOFT warning(s) across "
         f"{len(by_file)} skill(s) — advisory, not blocking\n",
         file=sys.stderr,
     )

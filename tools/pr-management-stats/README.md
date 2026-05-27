@@ -16,6 +16,8 @@
 
 # pr-management-stats reference implementation
 
+**Capability:** capability:stats
+
 Deterministic reference implementation of the data-fetch +
 classification contract that backs the
 [`pr-management-stats`](../../.claude/skills/pr-management-stats/SKILL.md) skill.

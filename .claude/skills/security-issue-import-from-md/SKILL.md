@@ -18,6 +18,7 @@ when_to_use: |
   (`security-issue-import`) or when there is a public PR to
   anchor the import on (`security-issue-import-from-pr`).
 argument-hint: "[path-to-markdown-file]"
+capability: capability:intake
 license: Apache-2.0
 ---
 

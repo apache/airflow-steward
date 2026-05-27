@@ -20,6 +20,7 @@ when_to_use: |
   skill is a no-op when every candidate is already triaged or
   inside its grace window.
 argument-hint: "[pr:N] [label:LBL] [author:LOGIN] [review-for-me] [stale] [repo:owner/name]"
+capability: capability:triage
 license: Apache-2.0
 ---
 <!-- SPDX-License-Identifier: Apache-2.0

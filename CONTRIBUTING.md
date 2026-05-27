@@ -225,7 +225,7 @@ every piece of context it needs from some combination of the four
 │   ├── privacy-llm/      # Redactor + checker (per RFC-AI-0004 §6)
 │   ├── agent-isolation/  # Bubblewrap sandbox + network allowlist
 │   ├── sandbox-lint/     # Lint settings.json for sandbox correctness
-│   ├── skill-validator/  # Validate SKILL.md frontmatter + links + placeholders
+│   ├── skill-and-tool-validator/  # Validate SKILL.md frontmatter + links + placeholders
 │   ├── skill-evals/      # Behavioral eval harness for skill steps
 │   ├── dashboard-generator/  # HTML dashboard reference impl (Groovy + Python)
 │   ├── pr-management-stats/  # Maintainer dashboard data layer
@@ -265,7 +265,7 @@ is loaded only after the decision.
 Each skill's frontmatter `description` is the agent-router contract.
 Be precise — vague descriptions cause the router to load the wrong
 skill or miss the right one. The
-[`skill-validator`](tools/skill-validator/README.md) catches the
+[`skill-and-tool-validator`](tools/skill-and-tool-validator/README.md) catches the
 common shapes of bad description (action-inventory, distinct-from-
 sibling-skill, chain-handoff narrative).
 
@@ -302,7 +302,7 @@ needs to fill in.
 | Mail | `gmail/`, `ponymail/`, `mail-source/imap/`, `mail-source/mbox/` | Gmail (full); PonyMail archive (read-only); IMAP + mbox stubs |
 | CVE workflow | `vulnogram/`, `cve-org/` | ASF Vulnogram (CVE allocation + JSON generation); MITRE CVE Services v2 |
 | Runtime / safety | `agent-isolation/`, `privacy-llm/`, `sandbox-lint/` | Bubblewrap + network-allowlist sandbox; redactor + checker for privacy-LLM gating; settings.json linter |
-| Dev loop | `skill-validator/`, `skill-evals/`, `dev/` | SKILL.md validation; behavioral eval harness; local placeholder + pre-commit checkers |
+| Dev loop | `skill-and-tool-validator/`, `skill-evals/`, `dev/` | SKILL.md validation; behavioral eval harness; local placeholder + pre-commit checkers |
 | Reporting | `dashboard-generator/`, `pr-management-stats/`, `security-tracker-stats-dashboard/` | HTML dashboards for maintainer + security review |
 | Authoring | `probe-templates/` | Boilerplate scaffold for sandbox probes |
 
@@ -413,7 +413,7 @@ repo root pins versions across all packages.
 | [`tools/vulnogram/generate-cve-json/`](tools/vulnogram/generate-cve-json/) | Emits paste-ready CVE 5.x JSON from a tracker body. Invoked by `security-issue-sync` and `security-cve-allocate`. |
 | [`tools/vulnogram/oauth-api/`](tools/vulnogram/oauth-api/) | OAuth helper for Vulnogram API authentication. |
 | [`tools/gmail/oauth-draft/`](tools/gmail/oauth-draft/) | Gmail OAuth helper for the drafts-only mail-source flow. |
-| [`tools/skill-validator/`](tools/skill-validator/) | Validates `SKILL.md` frontmatter, internal links, and placeholder discipline. |
+| [`tools/skill-and-tool-validator/`](tools/skill-and-tool-validator/) | Validates `SKILL.md` frontmatter, internal links, and placeholder discipline. |
 | [`tools/skill-evals/`](tools/skill-evals/) | Behavioral eval harness for skill steps. Pure-stdlib runner; no third-party deps. |
 | [`tools/sandbox-lint/`](tools/sandbox-lint/) | Lints `settings.json` for sandbox-correctness regressions. |
 | [`tools/privacy-llm/checker/`](tools/privacy-llm/checker/) | Verifies that data destined for an LLM matches the privacy-LLM policy. |
@@ -733,7 +733,7 @@ points for the two most common authoring tasks:
   The meta-skill walks you through the framework's skill shape
   (frontmatter, resources, placeholder convention, prompt-injection
   defences, privacy-LLM gate-check), scaffolds the directory, and
-  validates the result via [`skill-validator`](tools/skill-validator/).
+  validates the result via [`skill-and-tool-validator`](tools/skill-and-tool-validator/).
 - **Modify an existing skill** — open the conversation with the
   skill's `SKILL.md` in context. State what behaviour should change
   and why; the agent will propose the diff plus the eval-case
@@ -803,7 +803,7 @@ Separate GitHub workflows:
 To run a single Python package's tests directly:
 
 ```bash
-cd tools/skill-validator
+cd tools/skill-and-tool-validator
 uv run pytest
 ```
 
@@ -902,7 +902,7 @@ Good entry points, in rough order of ramp-up cost:
    The meta-skill walks you through the framework's skill shape
    (frontmatter, resources, placeholder convention, prompt-injection
    defences, privacy-LLM gate-check) and validates via
-   [`skill-validator`](tools/skill-validator/). The scaffold puts
+   [`skill-and-tool-validator`](tools/skill-and-tool-validator/). The scaffold puts
    you in the right shape from the start.
 
 5. **A tool-bridge implementation** (the hardest of these but the
@@ -966,5 +966,5 @@ layer-specific doc wins. Re-read it first:
 - [`tools/<name>/`](tools/) — per-tool adapter contracts.
 - [`tools/skill-evals/README.md`](tools/skill-evals/README.md) —
   the eval harness and fixture format.
-- [`tools/skill-validator/README.md`](tools/skill-validator/README.md) —
+- [`tools/skill-and-tool-validator/README.md`](tools/skill-and-tool-validator/README.md) —
   the SKILL.md validation contract.

@@ -16,6 +16,7 @@ when_to_use: |
   issue in its candidate set. Skip when the issue does not
   carry runnable example code — use `issue-triage` to assess
   instead.
+capability: capability:reassess
 license: Apache-2.0
 ---
 
