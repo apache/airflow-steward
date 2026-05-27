@@ -72,6 +72,7 @@ Action verbs are defined in [`actions.md`](actions.md).
 
 | #  | Precondition (all must hold)                                                                  | Classification             | Action                  | Reason template |
 |----|-----------------------------------------------------------------------------------------------|---------------------------|------------------------|-----------------|
+| 0  | [`first_time_stale_abandoned`](#first_time_stale_abandoned) — first-time contributor PR with a prior viewer triage marker and no commits since the marker, ≥ 30 days old | `first_time_stale_abandoned` | `skip` | First-time contributor's PR was triaged ≥ 30d ago, no push since — let the stale-sweep retire it rather than re-approving CI |
 | 1  | `head_sha` appears in the per-page `action_required` REST index, OR ([`first_time_no_real_ci`](#first_time_no_real_ci))     | `pending_workflow_approval` | `approve-workflow`     | First-time contributor — review the diff and approve CI, or flag suspicious |
 | 2  | [`copilot_review_stale`](#copilot_review_stale)                                               | `stale_copilot_review`     | `draft` (include the specific Copilot thread URL in the violation body) | Unaddressed Copilot review ≥ 7 days old — convert to draft |
 | 3  | Viewer comment containing the triage marker exists, posted after last commit, age < 7 days, sub-state `waiting` | `already_triaged`         | `skip`                 | Already triaged M days ago — still waiting on author |
@@ -429,6 +430,40 @@ sampled PRs is "systemic".
 Count of PRs by the same author seen on the **current page** that
 already matched a `deterministic_flag` row. Per-page only — does
 not persist across sessions.
+
+### `first_time_stale_abandoned`
+
+All of:
+
+- `authorAssociation == FIRST_TIME_CONTRIBUTOR` or
+  `FIRST_TIMER`.
+- A viewer triage marker exists in `comments(last:10)` (i.e.
+  a comment by the viewer containing the literal string
+  `Pull Request quality criteria`).
+- The PR's `commits(last:1).committedDate` is **at or before**
+  the triage marker's `createdAt` — author has not pushed
+  since the maintainer's feedback.
+- `<now> - committedDate >= 30 days`.
+
+Order matters: this precondition is evaluated by **row 0**,
+which fires *before* row 1 (`pending_workflow_approval`).
+Without it, an abandoned first-time PR that has sat for months
+since being triaged keeps surfacing in the
+`approve-workflow` group every sweep, where the maintainer
+either re-approves CI on dead code or has to skip it manually.
+
+A row-0 hit routes to `skip` — the [stale-sweep
+flow](stale-sweeps.md) is the right place to retire the PR
+(via sweep 1b's "untriaged draft >= 14 days" trigger, since
+the row-0 marker test does *not* set the draft state). The
+classifier's job here is just to keep the PR out of the
+workflow-approval group.
+
+The 30-day threshold is intentionally longer than the
+[grace periods](#grace-periods) (24h / 96h) and the F5a
+cooldown (72h). It captures *abandonment*, not slow response —
+a contributor who replies within a week and then stalls for
+another week is not abandoned, just busy.
 
 ### `first_time_no_real_ci`
 
