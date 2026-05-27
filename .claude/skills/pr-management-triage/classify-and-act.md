@@ -379,12 +379,22 @@ with the reply visible.
 ### `copilot_review_stale`
 
 The PR has at least one unresolved review thread whose first
-comment author matches a Copilot bot login (case-insensitive:
-`copilot-pull-request-reviewer[bot]`, `copilot[bot]`,
-`github-copilot[bot]`, or any login matching `copilot*[bot]` /
-`github-copilot*[bot]`) AND that comment's `createdAt` is ≥ 7
-days ago AND no author reply in the same thread or on the PR
-after that timestamp.
+comment author matches a Copilot bot login (case-insensitive
+substring match on the login). The skill matches any of:
+`copilot-pull-request-reviewer`, `copilot`, `github-copilot`,
+or any login containing the substring `copilot` followed
+optionally by `[bot]`. The `[bot]` suffix is matched when
+present but NOT required — GitHub's GraphQL `Actor.login`
+returns the bot username without the `[bot]` suffix for some
+Copilot integrations (e.g. `copilot-pull-request-reviewer`),
+even though the same bot appears as `copilot-pull-request-reviewer[bot]`
+on the REST API. Requiring `[bot]` excludes real Copilot
+threads from this rule and lets them age past the 7-day
+threshold without triggering. The threshold itself is unchanged.
+
+The thread must also satisfy: that comment's `createdAt` is
+≥ 7 days ago AND no author reply in the same thread or on the
+PR after that timestamp.
 
 ### `static_check`
 
