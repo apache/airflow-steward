@@ -36,6 +36,24 @@ do not try to parse tokens from the environment. A maintainer
 running through `gh` also gets the TTY login prompt handled for
 them when the token expires.
 
+### `gist` scope (non-blocking)
+
+[Step 6b](SKILL.md#step-6b--propose-session-history-gist-update)
+(session-history gist persistence) needs the `gist` scope on
+the `gh` token. If the scope is missing, the rest of the skill
+runs unchanged; only Step 6b is skipped with a one-line notice.
+
+To add the scope:
+
+```bash
+gh auth refresh -s gist
+```
+
+`gist` is a non-blocking prerequisite by design — first-time
+adopters can run the skill end-to-end without ever creating a
+history gist, and only opt in once they want the cross-session
+calibration view.
+
 ---
 
 ## 2. Viewer has collaborator access to `<repo>` (blocking for mutations)

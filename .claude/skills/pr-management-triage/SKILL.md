@@ -572,8 +572,45 @@ On exit, print a one-screen summary:
   page)
 - total wall-clock time and PRs-per-minute velocity
 
-The summary is for the maintainer's records — this skill never
-writes a session log to disk beyond the scratch cache.
+The on-screen summary is for the maintainer's quick read at
+session end.
+
+### Step 6b — Propose session-history gist update
+
+After the on-screen summary, the skill proposes appending the
+session to a long-lived **private GitHub gist** so the
+maintainer can review automation calibration across many
+sessions. The proposal step is **always confirm-before-mutate**
+— gist content is published under the maintainer's account.
+
+The gist captures:
+
+- per-action PR counts and the PR numbers (so the maintainer can
+  re-open any individual decision later),
+- per-rule "rule-fired" vs "user-overrode" counts (the input
+  signal for which actions can be safely automated further),
+- per-PR notes when the maintainer overrode the proposed action
+  (the reason matters more than the override itself),
+- stale-sweep counts and any deferrals.
+
+See [`session-history.md`](session-history.md) for the gist
+content schema, the create-vs-update logic, the local
+state-file location, and the maintainer-confirmation flow.
+
+The local state file
+(`.apache-steward.session-state.json` at the adopter repo root,
+gitignored) is the persistence anchor — it stores the gist URL
+across sessions so subsequent runs of the skill update the same
+gist rather than creating a new one each time.
+
+This step is a no-op when:
+
+- `gh auth status` reports a token without `gist` scope (the
+  skill prints a one-line warning pointing at
+  [`prerequisites.md`](prerequisites.md) and continues),
+- the maintainer passes `--no-history` (see
+  [Parameters](#parameters-the-user-may-pass)),
+- or `dry-run` is active.
 
 ---
 
@@ -611,6 +648,7 @@ writes a session log to disk beyond the scratch cache.
 | `dry-run` | classify and propose but refuse to execute any action |
 | `clear-cache` | invalidate the scratch cache before running |
 | `stale` | run stale sweeps only, skip Steps 2–5 for non-stale PRs |
+| `no-history` | skip Step 6b (don't propose the session-history gist update); the on-screen summary still prints. See [`session-history.md`](session-history.md). |
 
 When in doubt about the selector, ask the maintainer
 *before* fetching — a one-line clarification is cheaper than a
