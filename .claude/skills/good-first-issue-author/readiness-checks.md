@@ -23,7 +23,7 @@ checks"). A rule that does not hold is a *failed* check.
 | `R3` | The body names at least one concrete starting location the contributor can open: a file path, module path, or function. A bare feature name in prose does not count. |
 | `R4` | The body has explicit, observable acceptance criteria (a definition of done), not "make it better". |
 | `R5` | The body states an estimated effort. |
-| `R6` | The body links the getting-started docs (contributing guide / setup / how to open a PR) rather than paraphrasing them. |
+| `R6` | The body links real getting-started docs (contributing guide / setup / how to open a PR) rather than paraphrasing them; unresolved placeholders and broken local file / anchor links fail. |
 | `R7` | Every piece of project jargon is either avoided or linked; no unexplained term a newcomer cannot act on. |
 | `R8` | The draft proposes the project's good-first-issue label. |
 | `R9` | The AI-attribution footer is present, verbatim from the adopter config. |

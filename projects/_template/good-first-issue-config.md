@@ -32,14 +32,16 @@ the skill aborts and points back here rather than guessing.
 ## Getting-started links
 
 Links the drafted issue points a newcomer at, by trigger. The skill links
-these rather than paraphrasing them. Replace the example URLs with the
-equivalent docs in your project; drop a row that does not apply.
+these rather than paraphrasing them. The links must resolve before the
+skill drafts an issue; do not leave placeholder URLs in this table.
+Replace the framework defaults below with the equivalent docs in your
+project, or drop a row that does not apply.
 
 | Trigger | Link | One-line label |
 |---|---|---|
-| Contributing guide | `<contributing-doc-url>` | How to contribute |
-| Local setup | `<local-setup-doc-url>` | Set up a local dev environment |
-| Opening a PR | `<pr-opening-doc-url>` | How to open a pull request |
+| Contributing guide | `CONTRIBUTING.md` | How to contribute |
+| Local setup | `CONTRIBUTING.md#getting-set-up` | Set up a local dev environment |
+| Opening a PR | `CONTRIBUTING.md#opening-a-pull-request` | How to open a pull request |
 
 ## Out-of-scope topics
 

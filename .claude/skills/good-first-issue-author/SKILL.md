@@ -103,7 +103,9 @@ reads:
 
 If any required key is missing, the skill aborts with a config-error
 message and points at the template. It does not guess defaults for
-project-specific values.
+project-specific values. A getting-started link that is still a
+placeholder such as `<local-setup-doc-url>`, is empty, or points at a
+local file / anchor that does not exist is treated as missing config.
 
 ## Runtime loop
 
@@ -112,7 +114,13 @@ short on purpose: one candidate in, one issue draft (or one decline)
 out.
 
 1. **Resolve config.** Read `<project-config>/good-first-issue-config.md`.
-   Abort if any required key is missing.
+   Abort if any required key is missing or any configured
+   `getting_started_links` entry is unresolved:
+   - no `<placeholder>` values;
+   - local relative links must point at files that exist, and anchor
+     fragments must match headings in those files;
+   - HTTP(S) links are accepted as adopter-owned docs, but the skill
+     should prefer already-declared project docs over inventing new URLs.
 2. **Resolve the candidate.** Take the supplied gap / task / plan item
    and gather only what describes it: its text, any linked issue, and
    the source files it names. Do not scan the whole tree, and do not
