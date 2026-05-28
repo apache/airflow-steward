@@ -45,7 +45,15 @@
   },
   "permissions": {
     "allow": [
-      "Bash(gh api graphql *)"
+      "Bash(gh api graphql *)",
+      "mcp__claude_ai_Gmail__get_thread",
+      "mcp__claude_ai_Gmail__search_threads",
+      "mcp__ponymail__search_list",
+      "mcp__ponymail__auth_status",
+      "mcp__ponymail__get_thread",
+      "mcp__ponymail__get_email",
+      "mcp__ponymail__list_restrictions",
+      "Bash(zizmor *)"
     ],
     "deny": [
       "Read(~/.aws/**)",
