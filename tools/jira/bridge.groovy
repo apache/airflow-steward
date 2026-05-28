@@ -18,7 +18,8 @@ import groovy.json.JsonSlurper
  *   transition <KEY> <transition-name>          move workflow state
  *   label <KEY> --add <n> [--remove <n>]        toggle labels
  *   assign <KEY> <username>                     set assignee
- *   field <KEY> <field-name> --value <value>    edit a custom field
+ *   field <KEY> <field-name> --value <v>         edit a field (string value)
+ *   field <KEY> <field-name> --value-json <j>   edit a field (structured JSON value)
  *   attach <KEY> <file>                         attach a file
  *
  * Configuration (environment only; the caller — typically a skill —
@@ -26,7 +27,8 @@ import groovy.json.JsonSlurper
  * exports them. The bridge does NOT read that file itself):
  *   ISSUE_TRACKER_URL       e.g. https://issues.apache.org/jira
  *   ISSUE_TRACKER_PROJECT   the project key (e.g. FOO)
- *   JIRA_API_TOKEN          required for write operations; base64-encoded "email:token"
+ *   JIRA_API_TOKEN          required for write operations
+ *   JIRA_AUTH_SCHEME        "Basic" (default) or "Bearer" — ASF JIRA DC PATs use Bearer
  *
  * Output: JSON to stdout. Errors: non-zero exit + message to stderr.
  *
@@ -36,9 +38,10 @@ import groovy.json.JsonSlurper
  */
 
 def ENV = System.getenv()
-def TRACKER_URL = ENV['ISSUE_TRACKER_URL'] ?: ''
-def PROJECT_KEY = ENV['ISSUE_TRACKER_PROJECT'] ?: ''
-def API_TOKEN   = ENV['JIRA_API_TOKEN'] ?: ''
+def TRACKER_URL  = ENV['ISSUE_TRACKER_URL'] ?: ''
+def PROJECT_KEY  = ENV['ISSUE_TRACKER_PROJECT'] ?: ''
+def API_TOKEN    = ENV['JIRA_API_TOKEN'] ?: ''
+def AUTH_SCHEME  = ENV['JIRA_AUTH_SCHEME'] ?: 'Basic'
 
 if (!TRACKER_URL) {
     System.err.println('error: ISSUE_TRACKER_URL not set in the environment (the calling skill resolves it from <project-config>/issue-tracker-config.md and exports it)')
@@ -51,7 +54,7 @@ def httpGet(String urlStr) {
     conn.requestMethod = 'GET'
     conn.setRequestProperty('Accept', 'application/json')
     if (API_TOKEN) {
-        conn.setRequestProperty('Authorization', "Basic ${API_TOKEN}")
+        conn.setRequestProperty('Authorization', "${AUTH_SCHEME} ${API_TOKEN}")
     }
     conn.connectTimeout = 10000
     conn.readTimeout    = 30000
@@ -75,7 +78,7 @@ def httpWrite(String urlStr, String method, String jsonBody) {
         System.err.println('error: JIRA_API_TOKEN is required for write operations')
         System.exit(2)
     }
-    conn.setRequestProperty('Authorization', "Basic ${API_TOKEN}")
+    conn.setRequestProperty('Authorization', "${AUTH_SCHEME} ${API_TOKEN}")
     conn.connectTimeout = 10000
     conn.readTimeout    = 30000
     conn.outputStream.withWriter('UTF-8') { it.write(jsonBody) }
@@ -103,7 +106,7 @@ def httpMultipart(String urlStr, File file) {
         System.err.println('error: JIRA_API_TOKEN is required for write operations')
         System.exit(2)
     }
-    conn.setRequestProperty('Authorization', "Basic ${API_TOKEN}")
+    conn.setRequestProperty('Authorization', "${AUTH_SCHEME} ${API_TOKEN}")
     conn.connectTimeout = 10000
     conn.readTimeout    = 60000
     def os = conn.outputStream
@@ -224,7 +227,7 @@ def cmd_comment(List args) {
         System.err.println("error: body file not found: ${bodyFile}")
         System.exit(2)
     }
-    def body = f.text
+    def body = f.getText('UTF-8')
     def url = "${TRACKER_URL}/rest/api/2/issue/${key}/comment"
     def payload = JsonOutput.toJson([body: body])
     def result = httpWrite(url, 'POST', payload)
@@ -275,16 +278,13 @@ def cmd_label(List args) {
         System.err.println('error: label requires at least one --add or --remove flag')
         System.exit(2)
     }
-    def issueUrl = "${TRACKER_URL}/rest/api/2/issue/${key}?fields=labels"
-    def current = httpGet(issueUrl)
-    def labels = (current.fields?.labels ?: []) as List
-    labels.addAll(addLabels)
-    labels.removeAll(removeLabels)
-    labels = labels.unique()
+    def ops = []
+    addLabels.each { ops << [add: it] }
+    removeLabels.each { ops << [remove: it] }
     def url = "${TRACKER_URL}/rest/api/2/issue/${key}"
-    def payload = JsonOutput.toJson([fields: [labels: labels]])
+    def payload = JsonOutput.toJson([update: [labels: ops]])
     httpWrite(url, 'PUT', payload)
-    emit([ok: true, key: key, labels: labels])
+    emit([ok: true, key: key, added: addLabels, removed: removeLabels])
 }
 
 def cmd_assign(List args) {
@@ -296,6 +296,7 @@ def cmd_assign(List args) {
         System.exit(2)
     }
     def url = "${TRACKER_URL}/rest/api/2/issue/${key}/assignee"
+    // DC payload — Cloud uses accountId
     def payload = JsonOutput.toJson([name: username])
     httpWrite(url, 'PUT', payload)
     emit([ok: true, key: key, assignee: username])
@@ -309,24 +310,34 @@ def cmd_field(List args) {
         System.err.println('error: field requires a field name')
         System.exit(2)
     }
-    String value = null
+    String valueStr = null
+    String valueJson = null
     def i = 2
     while (i < args.size()) {
         if (args[i] == '--value' && i + 1 < args.size()) {
-            value = args[i + 1]
+            valueStr = args[i + 1]
+            i += 2
+        } else if (args[i] == '--value-json' && i + 1 < args.size()) {
+            valueJson = args[i + 1]
             i += 2
         } else {
             i++
         }
     }
-    if (value == null) {
-        System.err.println('error: field requires --value <value>')
+    if (valueStr == null && valueJson == null) {
+        System.err.println('error: field requires --value <string> or --value-json <json>')
         System.exit(2)
     }
+    def fieldValue
+    if (valueJson != null) {
+        fieldValue = new JsonSlurper().parseText(valueJson)
+    } else {
+        fieldValue = valueStr
+    }
     def url = "${TRACKER_URL}/rest/api/2/issue/${key}"
-    def payload = JsonOutput.toJson([fields: [(fieldName): value]])
+    def payload = JsonOutput.toJson([fields: [(fieldName): fieldValue]])
     httpWrite(url, 'PUT', payload)
-    emit([ok: true, key: key, field: fieldName, value: value])
+    emit([ok: true, key: key, field: fieldName, value: fieldValue])
 }
 
 def cmd_attach(List args) {

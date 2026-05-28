@@ -14,7 +14,7 @@
     - [`transition <KEY> <transition-name>`](#transition-key-transition-name)
     - [`label <KEY> --add <name> --remove <name>`](#label-key---add-name---remove-name)
     - [`assign <KEY> <username>`](#assign-key-username)
-    - [`field <KEY> <field-name> --value <value>`](#field-key-field-name---value-value)
+    - [`field <KEY> <field-name> --value <value>` / `--value-json <json>`](#field-key-field-name---value-value----value-json-json)
     - [`attach <KEY> <file>`](#attach-key-file)
   - [Configuration](#configuration)
   - [Output contract](#output-contract)
@@ -62,8 +62,9 @@ groovy tools/jira/bridge.groovy <subcommand> [args]
 ```
 
 The Groovy implementation uses `@Grab` for HTTP client dependencies
-— no separate install step. Requires Groovy 3.x or newer on
-`PATH`.
+— no separate install step. Requires Groovy 4.x or newer on
+`PATH` (the `@Grab` coordinate uses `org.apache.groovy`, which
+is the Groovy 4 group ID).
 
 ## Read subcommands
 
@@ -164,12 +165,15 @@ groovy tools/jira/bridge.groovy label FOO-9999 --add security --remove needs-tri
 Output:
 
 ```json
-{"ok": true, "key": "FOO-9999", "labels": ["security", "existing-label"]}
+{"ok": true, "key": "FOO-9999", "added": ["security"], "removed": ["needs-triage"]}
 ```
+
+Uses JIRA's atomic `update` API — no read-modify-write race.
 
 ### `assign <KEY> <username>`
 
-Set the assignee on an issue:
+Set the assignee on an issue. Data Center only — Cloud uses
+`accountId`, which is not currently supported:
 
 ```bash
 groovy tools/jira/bridge.groovy assign FOO-9999 jdoe
@@ -181,18 +185,28 @@ Output:
 {"ok": true, "key": "FOO-9999", "assignee": "jdoe"}
 ```
 
-### `field <KEY> <field-name> --value <value>`
+### `field <KEY> <field-name> --value <value>` / `--value-json <json>`
 
-Edit a single field (including custom fields) on an issue:
+Edit a single field (including custom fields) on an issue.
+Use `--value` for plain string/number values. Use `--value-json`
+for structured values (priority, version, single-select, user
+picker, etc.):
 
 ```bash
+# String value
 groovy tools/jira/bridge.groovy field FOO-9999 customfield_10100 --value "high"
+
+# Structured value (e.g. priority)
+groovy tools/jira/bridge.groovy field FOO-9999 priority --value-json '{"name":"High"}'
+
+# Array value (e.g. fixVersions)
+groovy tools/jira/bridge.groovy field FOO-9999 fixVersions --value-json '[{"name":"1.2.3"}]'
 ```
 
 Output:
 
 ```json
-{"ok": true, "key": "FOO-9999", "field": "customfield_10100", "value": "high"}
+{"ok": true, "key": "FOO-9999", "field": "priority", "value": {"name": "High"}}
 ```
 
 ### `attach <KEY> <file>`
@@ -217,7 +231,8 @@ The bridge reads its configuration from the environment:
 |---|---|
 | `ISSUE_TRACKER_URL` | required; e.g. `https://issues.apache.org/jira` |
 | `ISSUE_TRACKER_PROJECT` | project key (e.g. `FOO`) |
-| `JIRA_API_TOKEN` | required for write subcommands; base64-encoded `email:token` |
+| `JIRA_API_TOKEN` | required for write subcommands — see auth notes below |
+| `JIRA_AUTH_SCHEME` | `Basic` (default) or `Bearer` — see auth notes below |
 
 The caller is responsible for exporting these (a skill resolves them
 from [`<project-config>/issue-tracker-config.md`](../../projects/_template/issue-tracker-config.md)
@@ -228,6 +243,17 @@ today; the bridge exits if `ISSUE_TRACKER_URL` is unset.
 For anonymous-read trackers, no auth is required for read
 subcommands. Write subcommands always require `JIRA_API_TOKEN` and
 exit with an error if it is unset.
+
+**Authentication:** This bridge targets JIRA Data Center (DC),
+specifically ASF JIRA at `issues.apache.org/jira`. Cloud is not
+currently supported (`assign` uses DC `name`, not Cloud
+`accountId`).
+
+- **Basic auth (default):** set `JIRA_API_TOKEN` to the
+  base64-encoded `username:password` or `username:pat` string.
+- **Bearer auth (ASF PATs):** set `JIRA_AUTH_SCHEME=Bearer` and
+  `JIRA_API_TOKEN` to the raw PAT string. ASF JIRA DC PATs use
+  `Authorization: Bearer <pat>`.
 
 ## Output contract
 

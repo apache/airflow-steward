@@ -243,39 +243,34 @@ class TestTransition:
 
 class TestLabel:
     def test_add_label(self, mock_server: str) -> None:
-        _canned_responses["GET /rest/api/2/issue/FOO-3"] = (
-            200,
-            {"fields": {"labels": ["existing"]}},
-        )
         _canned_responses["PUT /rest/api/2/issue/FOO-3"] = (204, None)
         result = _run(mock_server, ["label", "FOO-3", "--add", "new-label"])
         assert result.returncode == 0
         out = json.loads(result.stdout)
-        assert "existing" in out["labels"]
-        assert "new-label" in out["labels"]
+        assert out["added"] == ["new-label"]
+        assert out["removed"] == []
+        req = _log.requests[-1]
+        assert req["method"] == "PUT"
+        assert req["body"]["update"]["labels"] == [{"add": "new-label"}]
 
     def test_remove_label(self, mock_server: str) -> None:
-        _canned_responses["GET /rest/api/2/issue/FOO-3"] = (
-            200,
-            {"fields": {"labels": ["keep", "drop"]}},
-        )
         _canned_responses["PUT /rest/api/2/issue/FOO-3"] = (204, None)
         result = _run(mock_server, ["label", "FOO-3", "--remove", "drop"])
         assert result.returncode == 0
         out = json.loads(result.stdout)
-        assert "keep" in out["labels"]
-        assert "drop" not in out["labels"]
+        assert out["removed"] == ["drop"]
+        req = _log.requests[-1]
+        assert req["body"]["update"]["labels"] == [{"remove": "drop"}]
 
     def test_add_and_remove(self, mock_server: str) -> None:
-        _canned_responses["GET /rest/api/2/issue/FOO-3"] = (
-            200,
-            {"fields": {"labels": ["a", "b"]}},
-        )
         _canned_responses["PUT /rest/api/2/issue/FOO-3"] = (204, None)
         result = _run(mock_server, ["label", "FOO-3", "--add", "c", "--remove", "a"])
         assert result.returncode == 0
         out = json.loads(result.stdout)
-        assert sorted(out["labels"]) == ["b", "c"]
+        assert out["added"] == ["c"]
+        assert out["removed"] == ["a"]
+        req = _log.requests[-1]
+        assert req["body"]["update"]["labels"] == [{"add": "c"}, {"remove": "a"}]
 
     def test_no_flags(self, mock_server: str) -> None:
         result = _run(mock_server, ["label", "FOO-3"])
@@ -329,6 +324,24 @@ class TestField:
         assert result.returncode != 0
         assert "--value" in result.stderr
 
+    def test_value_json_object(self, mock_server: str) -> None:
+        _canned_responses["PUT /rest/api/2/issue/FOO-5"] = (204, None)
+        result = _run(mock_server, ["field", "FOO-5", "priority", "--value-json", '{"name":"High"}'])
+        assert result.returncode == 0
+        out = json.loads(result.stdout)
+        assert out["value"] == {"name": "High"}
+        req = _log.requests[-1]
+        assert req["body"]["fields"]["priority"] == {"name": "High"}
+
+    def test_value_json_array(self, mock_server: str) -> None:
+        _canned_responses["PUT /rest/api/2/issue/FOO-5"] = (204, None)
+        result = _run(mock_server, ["field", "FOO-5", "fixVersions", "--value-json", '[{"name":"1.2.3"}]'])
+        assert result.returncode == 0
+        out = json.loads(result.stdout)
+        assert out["value"] == [{"name": "1.2.3"}]
+        req = _log.requests[-1]
+        assert req["body"]["fields"]["fixVersions"] == [{"name": "1.2.3"}]
+
 
 # ---------------------------------------------------------------------------
 # attach
@@ -366,7 +379,7 @@ class TestAttach:
 # auth requirement for writes
 # ---------------------------------------------------------------------------
 
-class TestAuthRequired:
+class TestAuth:
     def test_comment_requires_token(self, mock_server: str, tmp_path: Path) -> None:
         body_file = tmp_path / "c.txt"
         body_file.write_text("x")
@@ -378,6 +391,25 @@ class TestAuthRequired:
         result = _run(mock_server, ["assign", "FOO-1", "user"], token="")
         assert result.returncode != 0
         assert "JIRA_API_TOKEN" in result.stderr
+
+    def test_basic_auth_header(self, mock_server: str) -> None:
+        _canned_responses["PUT /rest/api/2/issue/FOO-1/assignee"] = (204, None)
+        result = _run(mock_server, ["assign", "FOO-1", "jdoe"], token="dGVzdDp0b2tlbg==")
+        assert result.returncode == 0
+        req = _log.requests[-1]
+        assert req["headers"]["Authorization"] == "Basic dGVzdDp0b2tlbg=="
+
+    def test_bearer_auth_scheme(self, mock_server: str) -> None:
+        _canned_responses["PUT /rest/api/2/issue/FOO-1/assignee"] = (204, None)
+        result = _run(
+            mock_server,
+            ["assign", "FOO-1", "jdoe"],
+            token="my-pat-token",
+            env_extra={"JIRA_AUTH_SCHEME": "Bearer"},
+        )
+        assert result.returncode == 0
+        req = _log.requests[-1]
+        assert req["headers"]["Authorization"] == "Bearer my-pat-token"
 
 
 # ---------------------------------------------------------------------------
