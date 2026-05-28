@@ -1248,18 +1248,26 @@ this rule is specific to the outbound-reporter-email surface.
 Whenever a reference to a `<tracker>` issue, pull request, comment,
 or discussion appears in text this repository produces — sync / fix
 skill proposals, status comments on the private issue itself, recap
-messages, internal notes, `SKILL.md` files — render it as a
-**clickable markdown link**, not as a bare `#NNN` or
-`<tracker>#NNN`. The URL format is:
+messages, internal notes, `SKILL.md` files — the reference must be
+**one click away** in whatever surface it lands on. Bare `#NNN` or
+`<tracker>#NNN` with no link wrapper of any kind is never
+acceptable.
+
+The URL formats are:
 
 ```text
 https://github.com/<tracker>/issues/<N>
 https://github.com/<tracker>/pull/<N>
 https://github.com/<tracker>/issues/<N>#issuecomment-<C>
+https://github.com/<tracker>/milestone/<N>
 ```
 
-Preferred rendering (with `<tracker>` substituted — for this tree,
-`<tracker>`):
+#### On markdown surfaces
+
+Tracker comments, PR / issue bodies, README files, draft email text
+destined for the `<security-list>` Gmail thread, `SKILL.md` files,
+and any other markdown-rendered destination get the **markdown link
+form**:
 
 > [`<tracker>#221`](https://github.com/<tracker>/issues/221)
 
@@ -1273,25 +1281,71 @@ the per-comment anchor:
 
 > [`<tracker>#216 — issuecomment-4252393493`](https://github.com/<tracker>/issues/216#issuecomment-4252393493)
 
-**Confidentiality applies to *contents*, not to identifiers** — see
-the
+#### On terminal surfaces
+
+CLI proposal previews, drill-in screens, hand-back artefacts, recap
+output, session summaries, and any other terminal-bound output get
+**OSC 8 hyperlink escape sequences** — the visible text stays the
+short form (`<tracker>#NNN` or `#NNN`), the URL is wrapped invisibly
+so modern terminals make the short text clickable:
+
+```text
+\e]8;;https://github.com/<tracker>/issues/221\e\\<tracker>#221\e]8;;\e\\
+```
+
+Terminals that honour OSC 8 today: **iTerm2, Kitty, GNOME Terminal,
+WezTerm, Windows Terminal, Alacritty**, and most other modern
+terminal emulators. When OSC 8 is unsupported (CI logs, `less`
+without `-R`, dumb terminals, plain captures), fall back to printing
+the bare URL on the same line after the number:
+
+```text
+<tracker>#221  https://github.com/<tracker>/issues/221
+```
+
+In Python, the OSC 8 wrapper is one helper away:
+
+```python
+def osc8(text: str, url: str) -> str:
+    return f"\033]8;;{url}\033\\{text}\033]8;;\033\\"
+
+print(osc8("<tracker>#221", "https://github.com/<tracker>/issues/221"))
+```
+
+Equivalent helpers exist in Bash (`printf '\e]8;;%s\e\\%s\e]8;;\e\\' "$url" "$text"`)
+and other languages — embed one wherever the skill prints user-visible
+text.
+
+#### Confidentiality applies to *contents*, not to identifiers
+
+See the
 [Confidentiality of the tracker repository](#confidentiality-of-the-tracker-repository)
-section above. The rendered tracker links are stable identifiers
-that may appear on public surfaces (public `<upstream>` PRs,
-reporter emails, advisory references). What still must not appear
-publicly is the *contents* the link points at — comment quotes,
-labels, body excerpts, severity assessments — and, before the
-advisory ships, the security framing of the change. The scrubbing
-grep the `security-issue-fix` skill runs before pushing anything
-public flags content leaks (CVE IDs, *"vulnerability"*, *"security
-fix"* phrasing, verbatim tracker quotes); a bare tracker URL or
-`#NNN` reference on its own does not trigger the scrub.
+section above. The rendered tracker links — markdown or OSC 8 form
+— are stable identifiers that may appear on public surfaces (public
+`<upstream>` PRs, reporter emails, advisory references). What still
+must not appear publicly is the *contents* the link points at —
+comment quotes, labels, body excerpts, severity assessments — and,
+before the advisory ships, the security framing of the change. The
+scrubbing grep the `security-issue-fix` skill runs before pushing
+anything public flags content leaks (CVE IDs, *"vulnerability"*,
+*"security fix"* phrasing, verbatim tracker quotes); a bare tracker
+URL or `#NNN` reference on its own does not trigger the scrub.
+
+#### Editing rules
 
 When editing an existing document in this repo that contains a bare
-`#NNN` or `<tracker>#NNN`, convert it to the linked form in the same
-edit. Skill-generated output (sync proposals, issue comments, email
-drafts to reporters on the `<security-list>` thread) must emit the
-linked form from the start — bare references are a miss.
+`#NNN` or `<tracker>#NNN`, convert it to the appropriate clickable
+form for that document's surface in the same edit. Skill-generated
+output (sync proposals, issue comments, email drafts to reporters
+on the `<security-list>` thread, terminal previews shown before a
+post, recap output) must emit the linked form from the start —
+bare references are a miss.
+
+**Self-check before emitting**: grep the text for bare `#\d+`
+tokens that aren't already inside a markdown link, a raw
+`https://...` URL, or an OSC 8 wrapper (`\033]8;;`), and convert
+any match to the appropriate clickable form for the target
+surface.
 
 ### Mentioning project maintainers and security-team members
 

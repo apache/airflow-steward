@@ -304,6 +304,44 @@ on one of these PRs is one extra day of queue presence; the cost
 of an auto-action that talks over a maintainer is a contributor
 who reads it as the project being chaotic. Prefer the former.
 
+**Golden rule 10 — every PR / `<upstream>` reference is clickable
+in the surface it lands on.** Whenever this skill emits a
+reference to a PR, comment, workflow run, or issue — group
+screens in the interaction loop, per-PR drill-in headlines, draft
+comment bodies posted on the contributor's PR, `[A]ll` / `[E]ach`
+prompt previews, the Step 6 session summary — the reference must
+be one click away in whatever surface it lands on:
+
+- **On markdown surfaces** (the violations comment, the stale-draft
+  comment, the workflow-approval reply, any draft text the skill
+  posts to `<upstream>`): use the markdown link form per
+  [`AGENTS.md` § *Linking tracker issues and PRs*](../../../AGENTS.md#linking-tracker-issues-and-prs):
+  - **PR**: `[<upstream>#NNN](https://github.com/<upstream>/pull/NNN)`
+    (or `[#NNN](https://github.com/<upstream>/pull/NNN)` when
+    the repository is obvious from context, e.g. in a comment
+    posted *on* that PR's own thread).
+  - **Comment**: link to the `#issuecomment-<C>` anchor.
+  - **Workflow run**: link to
+    `https://github.com/<upstream>/actions/runs/<run-id>` when
+    citing a failing CI run.
+
+- **On terminal surfaces** (the group screen, the per-PR drill-in
+  screen, the Step 6 session summary): wrap the visible short form
+  `<upstream>#NNN` (or `#NNN`) in **OSC 8 hyperlink escape
+  sequences** (`\e]8;;<URL>\e\\<upstream>#NNN\e]8;;\e\\`) so modern
+  terminals (iTerm2, Kitty, GNOME Terminal, WezTerm, Windows
+  Terminal, …) render the number itself as clickable. Where OSC 8
+  is unsupported (CI logs, dumb terminals, plain captures), fall
+  back to printing the bare URL on the same line after the number.
+
+Bare `#NNN` with no link wrapper of any kind is never acceptable —
+not in terminal output, not in posted comments.
+
+**Self-check before posting any contributor-facing comment or
+emitting any user-visible screen**: grep the body for bare `#\d+`
+/ `<upstream>#\d+` tokens that aren't already inside a markdown
+link or an OSC 8 wrapper, and convert any match.
+
 ---
 
 ## Inputs
