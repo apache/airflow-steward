@@ -42,13 +42,28 @@ exists for two reasons:
 ```text
 tools/pr-management-stats/
 ├── README.md     (this file)
-└── reference.py  (Python implementation: fetch + classify + emit intermediates)
+├── reference.py  (Python implementation: fetch + classify + emit intermediates)
+└── dashboard.py  (full HTML render extending reference.py — all 11 panels, self-contained)
 ```
+
+The full HTML dashboard render (per `render.md`) lives in
+[`dashboard.py`](dashboard.py); it imports the fetch + classify
+primitives from `reference.py` and inlines its own SVG / CSS helpers
+so adopters can carry over the whole directory with no external
+dependencies.
 
 ## Invocation
 
 ```bash
+# Reference (fetch + classify + JSON sidecar only)
 python3 tools/pr-management-stats/reference.py \
+    --repo <upstream> \
+    --viewer <maintainer-handle> \
+    --since 2026-04-12 \
+    --out /tmp/dashboard.html
+
+# Full dashboard (all 11 panels rendered as self-contained HTML)
+python3 tools/pr-management-stats/dashboard.py \
     --repo <upstream> \
     --viewer <maintainer-handle> \
     --since 2026-04-12 \
@@ -79,10 +94,11 @@ When the agent invokes the skill, it MUST:
 
 ## Parity implementations
 
-This script is a fetch + classify reference. The full render lives
-in the agent-emitted version per `render.md`. Adopters who want a
-deterministic CI-runnable equivalent should extend this script with
-the aggregation + HTML emission directly; we welcome PRs.
+`reference.py` provides fetch + classify only. `dashboard.py`
+extends it with the aggregation + HTML emission for all 11 panels
+declared in `render.md`, and is the recommended path for CI-rendered
+dashboards. Adopters who want a different language target are
+welcome to add additional parity implementations.
 
 ## Cross-references
 
