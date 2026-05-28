@@ -303,6 +303,36 @@ repos:
         files: ^tools/skill-and-tool-validator/(src|tests|pyproject\.toml)
         pass_filenames: false
 
+  # Project-local checks for the JIRA bridge test harness at
+  # `tools/jira/`. The `files:` pattern also triggers on `bridge.groovy`
+  # changes so test coverage is re-validated when the bridge itself changes.
+  - repo: local
+    hooks:
+      - id: jira-ruff-check
+        name: ruff check (jira)
+        language: system
+        entry: uv run --directory tools/jira ruff check
+        files: ^tools/jira/(src|tests|pyproject\.toml|bridge\.groovy)
+        pass_filenames: false
+      - id: jira-ruff-format
+        name: ruff format (jira)
+        language: system
+        entry: uv run --directory tools/jira ruff format --check
+        files: ^tools/jira/(src|tests|pyproject\.toml|bridge\.groovy)
+        pass_filenames: false
+      - id: jira-mypy
+        name: mypy (jira)
+        language: system
+        entry: uv run --directory tools/jira mypy
+        files: ^tools/jira/(src|tests|pyproject\.toml|bridge\.groovy)
+        pass_filenames: false
+      - id: jira-pytest
+        name: pytest (jira)
+        language: system
+        entry: uv run --directory tools/jira pytest
+        files: ^tools/jira/(src|tests|pyproject\.toml|bridge\.groovy)
+        pass_filenames: false
+
   # Validate `.claude/skills/**`, every `tools/<name>/README.md`, and the
   # `docs/labels-and-capabilities.md` taxonomy via the
   # `skill-and-tool-validate` CLI. Re-fires on validator-source changes so

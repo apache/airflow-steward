@@ -38,14 +38,13 @@ import pytest
 BRIDGE = Path(__file__).parent.parent / "bridge.groovy"
 GROOVY = shutil.which("groovy")
 
-pytestmark = pytest.mark.skipif(
-    GROOVY is None, reason="groovy not found on PATH"
-)
+pytestmark = pytest.mark.skipif(GROOVY is None, reason="groovy not found on PATH")
 
 
 # ---------------------------------------------------------------------------
 # Mock JIRA server
 # ---------------------------------------------------------------------------
+
 
 class _RequestLog:
     def __init__(self) -> None:
@@ -126,6 +125,7 @@ def _clear_state():
 # helpers
 # ---------------------------------------------------------------------------
 
+
 def _run(
     mock_url: str,
     args: list[str],
@@ -143,6 +143,7 @@ def _run(
         env["JIRA_API_TOKEN"] = token
     if env_extra:
         env.update(env_extra)
+    assert GROOVY is not None
     return subprocess.run(
         [GROOVY, str(BRIDGE)] + args,
         env=env,
@@ -156,11 +157,12 @@ def _run(
 # comment
 # ---------------------------------------------------------------------------
 
+
 class TestComment:
     def test_post_comment(self, mock_server: str, tmp_path: Path) -> None:
         body_file = tmp_path / "comment.txt"
         body_file.write_text("This is a test comment.")
-        _canned_responses[f"POST /rest/api/2/issue/FOO-1/comment"] = (
+        _canned_responses["POST /rest/api/2/issue/FOO-1/comment"] = (
             201,
             {"id": "12345", "body": "This is a test comment."},
         )
@@ -187,7 +189,9 @@ class TestComment:
     def test_invalid_key(self, mock_server: str, tmp_path: Path) -> None:
         body_file = tmp_path / "c.txt"
         body_file.write_text("x")
-        result = _run(mock_server, ["comment", "bad-key", "--body-file", str(body_file)])
+        result = _run(
+            mock_server, ["comment", "bad-key", "--body-file", str(body_file)]
+        )
         assert result.returncode != 0
         assert "not a valid" in result.stderr
 
@@ -196,14 +200,17 @@ class TestComment:
 # transition
 # ---------------------------------------------------------------------------
 
+
 class TestTransition:
     def test_transition_by_name(self, mock_server: str) -> None:
         _canned_responses["GET /rest/api/2/issue/FOO-2/transitions"] = (
             200,
-            {"transitions": [
-                {"id": "11", "name": "Start Progress"},
-                {"id": "21", "name": "Resolve Issue"},
-            ]},
+            {
+                "transitions": [
+                    {"id": "11", "name": "Start Progress"},
+                    {"id": "21", "name": "Resolve Issue"},
+                ]
+            },
         )
         _canned_responses["POST /rest/api/2/issue/FOO-2/transitions"] = (204, None)
         result = _run(mock_server, ["transition", "FOO-2", "Resolve Issue"])
@@ -240,6 +247,7 @@ class TestTransition:
 # ---------------------------------------------------------------------------
 # label
 # ---------------------------------------------------------------------------
+
 
 class TestLabel:
     def test_add_label(self, mock_server: str) -> None:
@@ -282,6 +290,7 @@ class TestLabel:
 # assign
 # ---------------------------------------------------------------------------
 
+
 class TestAssign:
     def test_assign_user(self, mock_server: str) -> None:
         _canned_responses["PUT /rest/api/2/issue/FOO-4/assignee"] = (204, None)
@@ -303,10 +312,13 @@ class TestAssign:
 # field
 # ---------------------------------------------------------------------------
 
+
 class TestField:
     def test_set_field(self, mock_server: str) -> None:
         _canned_responses["PUT /rest/api/2/issue/FOO-5"] = (204, None)
-        result = _run(mock_server, ["field", "FOO-5", "customfield_10100", "--value", "high"])
+        result = _run(
+            mock_server, ["field", "FOO-5", "customfield_10100", "--value", "high"]
+        )
         assert result.returncode == 0
         out = json.loads(result.stdout)
         assert out["field"] == "customfield_10100"
@@ -326,7 +338,10 @@ class TestField:
 
     def test_value_json_object(self, mock_server: str) -> None:
         _canned_responses["PUT /rest/api/2/issue/FOO-5"] = (204, None)
-        result = _run(mock_server, ["field", "FOO-5", "priority", "--value-json", '{"name":"High"}'])
+        result = _run(
+            mock_server,
+            ["field", "FOO-5", "priority", "--value-json", '{"name":"High"}'],
+        )
         assert result.returncode == 0
         out = json.loads(result.stdout)
         assert out["value"] == {"name": "High"}
@@ -335,7 +350,10 @@ class TestField:
 
     def test_value_json_array(self, mock_server: str) -> None:
         _canned_responses["PUT /rest/api/2/issue/FOO-5"] = (204, None)
-        result = _run(mock_server, ["field", "FOO-5", "fixVersions", "--value-json", '[{"name":"1.2.3"}]'])
+        result = _run(
+            mock_server,
+            ["field", "FOO-5", "fixVersions", "--value-json", '[{"name":"1.2.3"}]'],
+        )
         assert result.returncode == 0
         out = json.loads(result.stdout)
         assert out["value"] == [{"name": "1.2.3"}]
@@ -346,6 +364,7 @@ class TestField:
 # ---------------------------------------------------------------------------
 # attach
 # ---------------------------------------------------------------------------
+
 
 class TestAttach:
     def test_attach_file(self, mock_server: str, tmp_path: Path) -> None:
@@ -379,11 +398,14 @@ class TestAttach:
 # auth requirement for writes
 # ---------------------------------------------------------------------------
 
+
 class TestAuth:
     def test_comment_requires_token(self, mock_server: str, tmp_path: Path) -> None:
         body_file = tmp_path / "c.txt"
         body_file.write_text("x")
-        result = _run(mock_server, ["comment", "FOO-1", "--body-file", str(body_file)], token="")
+        result = _run(
+            mock_server, ["comment", "FOO-1", "--body-file", str(body_file)], token=""
+        )
         assert result.returncode != 0
         assert "JIRA_API_TOKEN" in result.stderr
 
@@ -394,7 +416,9 @@ class TestAuth:
 
     def test_basic_auth_header(self, mock_server: str) -> None:
         _canned_responses["PUT /rest/api/2/issue/FOO-1/assignee"] = (204, None)
-        result = _run(mock_server, ["assign", "FOO-1", "jdoe"], token="dGVzdDp0b2tlbg==")
+        result = _run(
+            mock_server, ["assign", "FOO-1", "jdoe"], token="dGVzdDp0b2tlbg=="
+        )
         assert result.returncode == 0
         req = _log.requests[-1]
         assert req["headers"]["Authorization"] == "Basic dGVzdDp0b2tlbg=="
@@ -415,6 +439,7 @@ class TestAuth:
 # ---------------------------------------------------------------------------
 # unknown subcommand
 # ---------------------------------------------------------------------------
+
 
 class TestUnknown:
     def test_unknown_subcommand(self, mock_server: str) -> None:
