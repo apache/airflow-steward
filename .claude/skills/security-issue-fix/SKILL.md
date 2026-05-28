@@ -263,7 +263,7 @@ Run (in order, stop at the first that produces results):
    touch the same area:
 
    ```bash
-   gh pr list --repo <upstream> --state open --search "<keywords from issue title or affected file paths>" --json number,title,url,author,headRefName
+   gh pr list --repo <upstream> --state open --search "<keywords from issue title or affected file paths>" --limit 100 --json number,title,url,author,headRefName
    ```
 
    Use 2–3 distinctive keywords from the issue's description (e.g.
