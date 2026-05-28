@@ -98,6 +98,48 @@ confidentiality rule documented in the "Confidentiality of
 `<tracker>`" section of [`AGENTS.md`](../../../AGENTS.md)
 applies in full.
 
+**Golden rule — every `<tracker>` / `<upstream>` reference is
+clickable in the surface it lands on.** Whenever this skill emits
+a reference to a tracker issue, PR, or comment — the proposal
+shown to the user before import, the created tracker issue body
+(observed-state dump, sibling-tracker cross-links, prior-rejection
+cross-links, fix-already-public PR pointers), the receipt-of-
+confirmation draft email reply, the recap output — the reference
+must be one click away in whatever surface it lands on:
+
+- **On markdown surfaces** (the created tracker issue body, the
+  draft email reply destined for the `<security-list>` thread,
+  any markdown-rendered cross-link list): use the markdown link
+  form per
+  [`AGENTS.md` § *Linking tracker issues and PRs*](../../../AGENTS.md#linking-tracker-issues-and-prs):
+  - **Sibling `<tracker>` issue**: `[<tracker>#NNN](https://github.com/<tracker>/issues/NNN)`
+  - **Public `<upstream>` PR** (e.g. fix-already-public match):
+    `[<upstream>#NNN](https://github.com/<upstream>/pull/NNN)`
+  - **Comment**: link to the `#issuecomment-<C>` anchor.
+
+- **On terminal surfaces** (the proposal shown to the user before
+  import, the recap output): wrap the visible short form
+  (`<tracker>#NNN`, `<upstream>#NNN`) in **OSC 8 hyperlink escape
+  sequences** (`\e]8;;<URL>\e\\<short>\e]8;;\e\\`) so modern
+  terminals (iTerm2, Kitty, GNOME Terminal, WezTerm, Windows
+  Terminal, …) render the short text as clickable. Where OSC 8
+  is unsupported (CI logs, dumb terminals), fall back to printing
+  the bare URL on the same line after the number.
+
+Bare `#NNN` with no link wrapper of any kind is never acceptable.
+The created tracker issue is read by the security team who drill
+into the cross-links to assess; the draft email reply lands on
+`<security-list>` where the reporter needs the references to be
+one click away. Both surfaces are private, but `<tracker>` URLs
+themselves are public-safe per the
+[Confidentiality of `<tracker>`](../../../AGENTS.md#confidentiality-of-the-tracker-repository)
+rule — what stays private is the *contents* the link points at.
+
+**Self-check before posting any draft email or creating any
+tracker issue**: grep the body for bare `#\d+` / `<tracker>#\d+`
+tokens that aren't already inside a markdown link or an OSC 8
+wrapper, and convert any match.
+
 ---
 
 ## Adopter overrides

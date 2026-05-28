@@ -46,36 +46,56 @@ not send email, do not create, close, or edit anything without a clear
 "yes" from the user for that specific action. Drafts are always created
 as Gmail **drafts**, never sent directly.
 
-**Golden rule 2 — every `<tracker>` reference is a clickable
-link.** Whenever this skill mentions the tracking issue, any other
-`<tracker>` issue, a `<tracker>` PR, a specific
-issue comment, a milestone, or a label from this repository — in the
-observed-state dump, in the proposal, in the confirmation prompt, in
-the apply-loop output, in the regeneration output, in the recap, in
-status-change comments posted to the issue itself, anywhere — render
-it as a markdown link the user can click, **never** as a bare `#NNN`
-or `<tracker>#NNN` or plain-text number. The link form is
-defined in the "Linking `<tracker>` issues and PRs" section
-of [`AGENTS.md`](../../../AGENTS.md):
+**Golden rule 2 — every `<tracker>` reference is clickable in the
+surface it lands on.** Whenever this skill mentions the tracking
+issue, any other `<tracker>` issue, a `<tracker>` PR, a specific
+issue comment, a milestone, or a label from this repository — in
+the observed-state dump, in the proposal, in the confirmation
+prompt, in the apply-loop output, in the regeneration output, in
+the recap, in status-change comments posted to the issue itself,
+anywhere — the reference must be one click away in whatever
+surface it lands on:
 
-- **Issue**: `[<tracker>#221](https://github.com/<tracker>/issues/221)`
-  (or `[#221](https://github.com/<tracker>/issues/221)` when
-  the repository is already obvious from context, e.g. inside a
-  status-change comment *on* that same issue).
-- **PR**: `[<tracker>#NNN](https://github.com/<tracker>/pull/NNN)`
-  (`.../pull/N`, not `.../issues/N`).
-- **Comment**: link to the `#issuecomment-<C>` anchor, e.g.
-  `[<tracker>#216 — issuecomment-4252393493](https://github.com/<tracker>/issues/216#issuecomment-4252393493)`.
-- **Milestone**: link to `https://github.com/<tracker>/milestone/<number>`
-  (not the title), because milestone titles can change and the number
-  is stable. Example: `[3.2.2](https://github.com/<tracker>/milestone/42)`.
+- **On markdown surfaces** (the proposal body and status-change
+  comments posted to `<tracker>`, the regenerated CVE JSON's
+  reference list, any draft email reply text destined for the
+  `<security-list>` Gmail thread): use the markdown link form
+  per the "Linking `<tracker>` issues and PRs" section of
+  [`AGENTS.md`](../../../AGENTS.md):
+  - **Issue**: `[<tracker>#221](https://github.com/<tracker>/issues/221)`
+    (or `[#221](https://github.com/<tracker>/issues/221)` when
+    the repository is already obvious from context, e.g. inside
+    a status-change comment *on* that same issue).
+  - **PR**: `[<tracker>#NNN](https://github.com/<tracker>/pull/NNN)`
+    (`.../pull/N`, not `.../issues/N`).
+  - **Comment**: link to the `#issuecomment-<C>` anchor, e.g.
+    `[<tracker>#216 — issuecomment-4252393493](https://github.com/<tracker>/issues/216#issuecomment-4252393493)`.
+  - **Milestone**: link to `https://github.com/<tracker>/milestone/<number>`
+    (not the title), because milestone titles can change and the
+    number is stable. Example: `[3.2.2](https://github.com/<tracker>/milestone/42)`.
 
-**Self-check before presenting any user-visible text** (proposal body,
-recap body, status-comment body, apply-loop progress messages): grep
-the text for bare `#\d+` tokens and bare `<tracker>#\d+`
-tokens and convert any match to the link form. If the scrub finds a
-reference the skill does not have the full URL for yet, look it up
-with `gh issue view <N> --repo <tracker> --json url --jq .url`
+- **On terminal surfaces** (the apply-loop progress messages,
+  the confirmation prompt, the recap printed to the user's
+  terminal at the end): wrap the visible short form
+  (`<tracker>#NNN`) in **OSC 8 hyperlink escape sequences**
+  (`\e]8;;<URL>\e\\<tracker>#NNN\e]8;;\e\\`) so modern terminals
+  (iTerm2, Kitty, GNOME Terminal, WezTerm, Windows Terminal, …)
+  render the short text as clickable. Where OSC 8 is unsupported
+  (CI logs, dumb terminals), fall back to printing the bare URL
+  on the same line after the number.
+
+Bare `#NNN` / `<tracker>#NNN` with no link wrapper of any kind
+is never acceptable — not in terminal output, not in posted
+comments.
+
+**Self-check before presenting any user-visible text** (proposal
+body, recap body, status-comment body, apply-loop progress
+messages): grep the text for bare `#\d+` and bare `<tracker>#\d+`
+tokens that aren't already inside a markdown link or an OSC 8
+wrapper, and convert any match to the appropriate clickable
+form for that surface. If the scrub finds a reference the skill
+does not have the full URL for yet, look it up with
+`gh issue view <N> --repo <tracker> --json url --jq .url`
 before emitting. Tracker URLs and `#NNN` identifiers are public-safe
 per the
 [Confidentiality of `<tracker>`](../../../AGENTS.md#confidentiality-of-the-tracker-repository)

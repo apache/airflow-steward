@@ -118,14 +118,29 @@ discussion rather than starting it.
 | `PROBABLE-DUP` | Substantive overlap with an existing tracker or closed advisory (same root cause; sibling attack vector with the same fix shape) | [`/security-issue-deduplicate`](../security-issue-deduplicate/SKILL.md) |
 | `FIX-ALREADY-PUBLIC` | A public PR in `<upstream>` (open or merged) already appears to fix the reported behaviour; the reporter sent `<security-list>` independently of that PR. Per the [no-credit-when-fix-is-already-public policy](../security-issue-import-from-pr/SKILL.md#reporter-credit-policy-for-public-pr-imports), reporter is thanked but not credited; reporter is asked to verify the PR addresses what they reported, and to come back if it does not. | [`/security-issue-invalidate`](../security-issue-invalidate/SKILL.md) after reporter confirms the PR fixes their report (or `--retriage` if the reporter says it does not) |
 
-**Golden rule 5 — every `<tracker>` reference is a clickable
-link**, per Golden rule 2 in
+**Golden rule 5 — every `<tracker>` reference is clickable in the
+surface it lands on**, per Golden rule 2 in
 [`security-issue-sync`](../security-issue-sync/SKILL.md). The
 proposal body, the action-items list, and the recap must all
-follow the link-form convention from
-[`AGENTS.md`](../../../AGENTS.md#linking-tracker-issues-and-prs).
-Bare `#NNN` is **never** acceptable — readers should be able to
-click every reference without manually reconstructing the URL.
+follow the dual-surface convention:
+
+- **On markdown surfaces** (the proposal comment posted to
+  `<tracker>`, any markdown-rendered action-items block): use the
+  markdown link form per
+  [`AGENTS.md` § *Linking tracker issues and PRs*](../../../AGENTS.md#linking-tracker-issues-and-prs)
+  — `[<tracker>#NNN](https://github.com/<tracker>/issues/NNN)`.
+
+- **On terminal surfaces** (the pre-post proposal preview, the
+  recap): wrap the visible short form in **OSC 8 hyperlink escape
+  sequences** so modern terminals (iTerm2, Kitty, GNOME Terminal,
+  WezTerm, Windows Terminal, …) render the short text as
+  clickable. Where OSC 8 is unsupported (CI logs, dumb terminals),
+  fall back to printing the bare URL on the same line after the
+  number.
+
+Bare `#NNN` with no link wrapper of any kind is **never**
+acceptable — readers should be able to click every reference
+without manually reconstructing the URL.
 
 **Golden rule 6 — never auto-escalate from a comment to a
 mutation.** A reply on the tracker like *"agreed, ship the CVE"*
