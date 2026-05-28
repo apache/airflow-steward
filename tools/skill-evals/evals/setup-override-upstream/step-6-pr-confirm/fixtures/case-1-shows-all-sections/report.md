@@ -22,7 +22,7 @@ the gate on upgrade. Adopters who prefer the old behaviour (triage on draft
 PRs) can opt out by setting `skip_draft_prs: false` in their project config.
 
 ## Test plan
-- [ ] Ran `skill-validate` — passes.
+- [ ] Ran `skill-and-tool-validate` — passes.
 - [ ] Manually tested against a draft PR in the adopter repo before opening this PR.
 - [ ] Verified triage runs normally on non-draft PRs after the change.
 
