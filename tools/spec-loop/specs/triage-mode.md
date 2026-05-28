@@ -65,13 +65,13 @@ suggestion the human signs off on.
 ## Acceptance criteria
 
 1. No triage skill performs an unconfirmed state change.
-2. `skill-validate` passes on all triage-family skills.
+2. `skill-and-tool-validate` passes on all triage-family skills.
 3. docs/modes.md Triage table matches the shipped skill set.
 
 ## Validation
 
 ```bash
-uv run --project tools/skill-validator --group dev skill-validate
+uv run --project tools/skill-and-tool-validator --group dev skill-and-tool-validate
 ```
 
 ## Known gaps

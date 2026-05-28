@@ -59,12 +59,12 @@ merges its own work.
 
 1. No drafting skill merges or force-pushes.
 2. Security drafts pass the confidentiality scrub before any public write.
-3. `skill-validate` passes on the drafting-family skills.
+3. `skill-and-tool-validate` passes on the drafting-family skills.
 
 ## Validation
 
 ```bash
-uv run --project tools/skill-validator --group dev skill-validate
+uv run --project tools/skill-and-tool-validator --group dev skill-and-tool-validate
 ```
 
 ## Known gaps

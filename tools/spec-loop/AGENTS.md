@@ -28,7 +28,7 @@ Run the spec's own **Validation** block first. General checks:
 
 ```bash
 # Validate skill definitions (frontmatter, links, placeholders)
-uv run --project tools/skill-validator --group dev skill-validate
+uv run --project tools/skill-and-tool-validator --group dev skill-and-tool-validate
 
 # A skill's behavioural eval suite (every skill must have one)
 uv run --project tools/skill-evals skill-eval tools/skill-evals/evals/<skill-name>/

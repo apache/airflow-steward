@@ -66,7 +66,7 @@ publication, with a human gate and an audit-log entry at every step.
 ## Validation
 
 ```bash
-uv run --project tools/skill-validator --group dev skill-validate
+uv run --project tools/skill-and-tool-validator --group dev skill-and-tool-validate
 uv run --project tools/vulnogram/generate-cve-json --group dev pytest
 ```
 

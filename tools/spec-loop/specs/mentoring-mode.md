@@ -65,7 +65,7 @@ contributor-empowerment lever the wider ecosystem most needs.
 
 ```bash
 test -f docs/mentoring/spec.md
-uv run --project tools/skill-validator --group dev skill-validate
+uv run --project tools/skill-and-tool-validator --group dev skill-and-tool-validate
 ```
 
 ## Known gaps

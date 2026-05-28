@@ -64,7 +64,7 @@ protecting the ASF contribution path (contributor → committer → PMC).
 
 ```bash
 ls .claude/skills/ | grep -q '^pairing-' && echo "pairing skill present" || echo "GAP: no pairing skill"
-uv run --project tools/skill-validator --group dev skill-validate
+uv run --project tools/skill-and-tool-validator --group dev skill-and-tool-validate
 ```
 
 ## Known gaps

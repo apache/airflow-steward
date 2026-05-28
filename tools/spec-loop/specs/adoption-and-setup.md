@@ -68,7 +68,7 @@ gitignored skill symlinks, and committed agent-readable override files.
 
 ```bash
 test -f docs/setup/README.md
-uv run --project tools/skill-validator --group dev skill-validate
+uv run --project tools/skill-and-tool-validator --group dev skill-and-tool-validate
 ```
 
 ## Known gaps
