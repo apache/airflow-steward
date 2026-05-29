@@ -762,6 +762,8 @@ update, label change, or next-step recommendation in Step 2:
 | The *"Affected versions"* body field has a value but it is **not backtick-wrapped** (the raw value, as returned by `gh issue view --json body`, starts with a `>` character or contains a bare `>=` / `<=` / `<` / `>` token outside a `` ` `` … `` ` `` span) | Propose wrapping the value in backticks (e.g. `` `>= 3.0.0, < 3.2.2` ``, `` `< 3.2.2` ``, `` `<= 3.2.1` ``). **Why:** the leading `>` is the markdown blockquote marker — without backticks, GitHub renders the rendered field as a quoted single line, and maintainers editing via the issue-form UI silently lose the `>=` prefix (saving back the visible quoted text), turning a bounded range like `>= 3.0.0, < 3.2.2` into a misleading single-version entry like `3.2.1`. The CVE-JSON generator already strips backticks at parse time (`cleaned = value.strip().strip("\`").strip()`), so wrapping is a pure-cosmetic + edit-resilience fix with no semantic change. Apply this fix on every sync run that surfaces an un-wrapped value, even if no other body update is being proposed for the tracker. After updating, regenerate the CVE JSON attachment so the un-wrapped → wrapped transition is recorded in the next emission. |
 | A tracker is transitioning to `fix released` (per the row below) and *"Affected versions"* still carries the project's pre-release sentinel | Propose replacing the sentinel with the concrete released version per the project's convention; see [`<project-config>/scope-labels.md` — *Affected versions convention by scope*](../../../<project-config>/scope-labels.md#affected-versions-convention-by-scope) for the recipe. After the body update, regenerate the CVE JSON attachment so `versions[]` picks up the bounded `lessThan` shape and the record becomes review-ready. |
 | The *"Short public summary for publish"* body field is populated but does **not** name a concrete upgrade-target version — the rendered text mentions *"upgrade"* / *"upgrading"* but no `<package> <X.Y.Z>` pattern, or ends with a generic phrase like *"the version that contains the fix"* / *"a later version"* / *"the next release"* | Propose tightening the summary to name the upgrade-target version verbatim. Resolve the version from the fix PR's milestone (the canonical signal — set at merge time): for core-scope, ``apache-airflow <X.Y.Z> or later``; for providers-scope, ``apache-airflow-providers-<name> <X.Y.Z> or later``; for chart-scope, ``apache-airflow-helm-chart <X.Y.Z> or later``. **Why:** the *Short public summary for publish* field powers the published CVE description that end users read in the advisory. A summary that lacks the upgrade-target version forces the reader to open another tab to figure out which version to pin — exactly the friction the advisory is supposed to remove. Apply this fix on every sync run that surfaces a generic summary, even when no other body update is being proposed for the tracker. After updating, regenerate the CVE JSON attachment so the published `descriptions[].value` reflects the named version. If the PR has no milestone yet (early `pr created` state), leave the placeholder but flag the gap in Step 2c so the next sync after milestone-set catches it. |
+| The tracker is an **incomplete-fix follow-up to another CVE** — detected by any of: the rollup or body mentions *"incomplete fix for `CVE-YYYY-NNNNN`"* / *"follow-up to `CVE-YYYY-NNNNN`"* / *"sibling tracker"*; the title contains a *"(incomplete fix for `CVE-YYYY-NNNNN`)"* parenthetical; the `affected[]` array names a different `packageName` than the referenced prior CVE; OR the tracker was opened as a split from a closed-`announced` tracker whose CVE is already PUBLISHED — **AND** the *Short public summary for publish* body field does not yet contain BOTH (a) the prior `CVE-YYYY-NNNNN` ID verbatim AND (b) a *"users who already applied [the prior CVE's fix] should also apply this one"* clause naming the current product/package. | Propose expanding the summary to add the cross-CVE + cross-product upgrade ask per the *"Incomplete-fix-to-another-CVE"* paragraph in Step 2b. Concretely, the summary must (1) name the prior CVE explicitly, (2) state that the prior fix did not cover the current product/surface, (3) tell users who already applied the prior fix to **also** apply this one (the two are complementary, not duplicates). **Why:** when a CVE is published as a follow-up to a prior CVE, the reader's default reading is *"I already applied the earlier fix; this is a duplicate."* Without explicit cross-CVE + cross-product framing in the summary, downstream consumers miss that two upgrades are needed. Apply this fix on every sync run that surfaces an incomplete-fix tracker whose summary lacks the cross-CVE clause, even when no other body update is being proposed. After updating, regenerate the CVE JSON attachment so the published `descriptions[].value` reflects the cross-CVE relationship. |
+| The **issue title** contains adopter-specific or internal noise that would otherwise ship to the public CVE record — leading or trailing project-name tokens (e.g. ``Apache Airflow:`` / ``in Apache Airflow`` / ``(Apache Airflow X.Y)``), internal split markers (``(split from #NNN)`` / ``(split for scope clarity from #NNN)``), report-form classifiers (``[ Security Report ]`` / ``[Security Issue]``), external-tracker IDs in parentheses or brackets (``[GHSA-xxxx-xxxx-xxxx]``, ``(ZDRES-NNNNN)``, ``(HUNTR-NNNNN)``, ``(GHSL-NNNN-NNN)``), or version-noise suffixes (``(v3.2.1)``, ``(3.x)``). The check applies on every sync pass, including trackers whose title was previously clean but has drifted since allocation. | Propose updating the title via `gh issue edit <N> --title "<cleaned>"`. **Reuse the [`security-cve-allocate` Step 2 title-strip cascade](../security-cve-allocate/SKILL.md#step-2--compute-the-cve-ready-title)** — both the leading-pattern set (project-name tokens, `Security (Report\|Issue\|Vulnerability\|Bug)` prefixes) and the trailing-pattern set (`in (Apache )?Airflow`, GHSA/ZDRES/HUNTR/GHSL trailing IDs, `(split from #N)` parentheticals). **Why this matters even though `security-cve-allocate` already strips at allocation time:** the GitHub issue title is read **verbatim** by the CVE-JSON generator into `containers.cna.title`, which ships in the published advisory and on `cve.org`. Titles drift between allocation and the final regen (manual edits to add context, sibling-tracker splits, GHSA-relay imports that append the GHSA ID), so the sync skill must re-run the same cleanup on every pass. **Preserve stripped context as audit trail** in the issue body (a `### Related references` section near the bottom) or in the rollup — internal pointers like *"split from [#NNN](...)"* are useful for the security team and must not be silently lost; just move them off the user-facing title. After updating the title, regenerate the CVE JSON attachment so the published `title` field reflects the cleaned value. If the strip would collapse the title to fewer than 3 words, **flag the ambiguity** in the proposal (matching `security-cve-allocate`'s safety) and let the user override — over-stripping is worse than leaving one redundant word. |
 | A release carrying the fix has shipped. Detection is **scope-dependent** — different scope labels on a project can ride different release trains, each with its own *"is it released?"* signal (which artifact registry to consult, what to query, how to map a tracker's milestone to that registry, partial-release edge cases). The per-scope detection recipe lives in [`<project-config>/scope-labels.md` — *Detecting that a fix release has shipped*](../../../<project-config>/scope-labels.md#detecting-that-a-fix-release-has-shipped). The "or an explicit *fix shipped in X.Y.Z* comment" fallback applies across all scopes regardless of the project-specific signal. | **Two-stage gate: every mandatory CVE field must be populated AND the CVE record state in Vulnogram must be `REVIEW`.** Before proposing either the label swap or the assignee swap, run both checks. **Stage 1 — body fields**: check that all six body fields are populated (not empty, not `_No response_`): *CWE*, *Affected versions*, *Severity*, *Reporter credited as*, *Short public summary for publish*, *PR with the fix*. If any is missing, **do NOT propose the hand-off**. Instead, propose posting (or PATCH-updating) the *Remediation-developer fill-fields comment* per the dedicated bullet in Step 2b — issue stays assigned to the remediation developer; no label swap, no assignee swap, no RM hand-off. **Stage 2 — CVE state**: with Stage 1 clear, Step 5b's `vulnogram-api-record-update` push includes `body.CNA_private.state = "REVIEW"` (the new auto-promote behaviour — see Step 5b for details). After the push, verify the record state is now `REVIEW` (via `vulnogram-api-record-fetch` / the equivalent state probe). If the state is still `DRAFT` after the push (push failed, CNA-schema validation rejected the JSON, transient error), **re-fire the fill-fields comment** with the refreshed blocker description, and **do NOT propose the hand-off / label swap / assignee swap on this pass**. The RM never receives a hand-off while the record is in `DRAFT`. **When both stages are clear (state == REVIEW)**: propose swapping `pr merged` → `fix released` (Step 12). This is the release manager's cue to own Steps 13–15 (advisory send → URL capture → Vulnogram PUBLIC → close). **Also propose swapping the assignee from the remediation developer to the release manager** (looked up via the three-source cascade in Step 2c — [`<project-config>/release-trains.md`](../../../<project-config>/release-trains.md) "Release managers for releases currently relevant to the security tracker" → Release Plan wiki → `[RESULT][VOTE]` thread on `dev@`), so the issue list reflects ownership hand-off. See the *Assignee hand-off at the `fix released` transition* paragraph under **Assignees** in Step 2b for the full rule. |
 | GHSA state transition (opened, accepted, published, rejected) in a GHSA-forwarded email | If the GHSA is closed as "not accepted" but the security team accepted the report on `security@`, flag the divergence in the status comment so it is not lost. |
 | Team member saying *"let's also backport to v3-2-test"* / *"please mark X for backport"* | Note the requested backport label on the public PR as an item for Step 9 of the `security-issue-fix` workflow. |
@@ -1378,6 +1380,34 @@ will change and *why*. Group them by category:
   (`announced - emails sent`, `announced`,
   `vendor-advisory`) keep the release manager because the advisory
   lifecycle is theirs. Do **not** shuffle assignees back and forth.
+- **Issue title hygiene** — the GitHub issue title ships verbatim into
+  the CVE record's `containers.cna.title` field (read by the
+  `generate-cve-json` script on every regen) and from there into the
+  published advisory and `cve.org`. **On every sync pass**, run the
+  same title-strip cascade the
+  [`security-cve-allocate` skill applies at allocation time](../security-cve-allocate/SKILL.md#step-2--compute-the-cve-ready-title) —
+  strip leading/trailing project-name tokens (e.g. ``<project>:``,
+  ``in <project>``, ``(<project> X.Y)``), internal
+  split-markers (``(split from #NNN)``), report-form classifiers
+  (``[Security Report]``, ``[Security Issue]``), external-tracker IDs
+  (``[GHSA-...]``, ``(ZDRES-...)``, ``(HUNTR-...)``, ``(GHSL-...)``)
+  and version-noise suffixes (``(v3.2.1)``, ``(3.x)``). When the
+  cascade would change the title, propose the diff as a numbered
+  Step 2b item; on confirmation, ``gh issue edit <N> --title
+  "<cleaned>"`` and then regen + push CVE JSON so the record's
+  `title` field picks up the cleaned value. **Preserve stripped
+  context as audit trail** — split-from references, GHSA IDs,
+  internal report-form classifiers all carry information the
+  security team uses to navigate sibling reports and reviewer
+  threads. Move them into the issue body (a `### Related references`
+  section) or into the rollup as an audit entry; never silently
+  drop them. Titles drift between allocation and the final regen
+  (manual edits, sibling-tracker splits, GHSA-relay imports that
+  append the GHSA ID), so the cascade has to re-run on every sync
+  even when no other body update is being proposed. The Step 1d
+  signal-table row *"The issue title contains adopter-specific or
+  internal noise"* is the detector that surfaces the cleanup
+  proposal on every qualifying pass.
 - **Description fields** — if the issue body is missing any of the fields the
   release manager will eventually need (CWE, product, affected versions, severity,
   CVE ID, credits, links to PRs, short public summary for publish), propose a
@@ -1452,6 +1482,59 @@ will change and *why*. Group them by category:
   populated but does not name a concrete upgrade-target version"*
   is the detector that surfaces the rewrite proposal on every
   qualifying pass.
+
+  **Incomplete-fix-to-another-CVE: the summary must name the prior
+  CVE *and* tell users who already applied that fix to apply this
+  one too.** When the tracker is an *incomplete-fix follow-up* to a
+  previously-published CVE — detected by the rollup, the body, or
+  the issue title mentioning *"incomplete fix for `<CVE-ID>`"*,
+  *"follow-up to `<CVE-ID>`"*, *"split from"* a sibling tracker
+  whose CVE is already PUBLIC, or by the title's prior-CVE token —
+  the summary must additionally:
+
+  1. Name the prior CVE explicitly (``<project> previously
+     released a fix for `<PRIOR-CVE-ID>` that addressed the
+     `<other-package>` side of the same vulnerability class``).
+  2. State that the **previous fix did not cover the current
+     product / surface** (e.g. ``The previous fix covered the
+     `<sibling-package>` package; the `<current-package>` package
+     was not patched at the time``).
+  3. Tell users who already applied the prior CVE's fix to **also
+     apply this one** (``Users who already upgraded
+     `<sibling-package>` per the `<PRIOR-CVE-ID>` advisory should
+     additionally upgrade `<current-package>` to <X.Y.Z> or later
+     — the two fixes are complementary, not duplicates``).
+
+  **Why this matters.** When a CVE is published as a "follow-up"
+  to an earlier CVE, the reader's natural reading is *"I already
+  applied the earlier fix; this one is a duplicate"*. Without
+  explicit cross-CVE + cross-product framing, downstream consumers
+  miss that two upgrades are needed (one per product / package) to
+  close the original vulnerability fully. The advisory has to do
+  the work of explaining the split — the CVE ID alone is not
+  enough signal.
+
+  **Detection signals** (any one triggers the cross-CVE summary
+  shape):
+
+  - The tracker's `Short public summary` already mentions the
+    prior `CVE-YYYY-NNNNN` token but lacks the *"users who
+    applied the prior fix should also..."* clause.
+  - The rollup carries a *"sibling tracker"* / *"split for scope
+    clarity"* / *"follow-up to `<PRIOR-CVE-ID>`"* entry.
+  - The issue title contains an explicit *"incomplete fix for
+    `<PRIOR-CVE-ID>`"* parenthetical (per the title-strip
+    cascade — that token is stripped from the title but the
+    cross-CVE relationship is preserved in body / rollup).
+  - The CVE record's `affected[]` array names a different
+    `packageName` than the prior CVE's record, AND the prior CVE
+    is on the same root-cause class.
+
+  When any signal fires, propose the cross-CVE summary expansion
+  as part of the same Step 2b body-field update set. Do **not**
+  silently emit a summary that omits the cross-CVE / cross-product
+  upgrade ask — that creates the "I already applied the fix"
+  blind spot the rule exists to prevent.
 
   **Special case for the "Security mailing list thread" field — leave
   it alone.** This field holds the internal navigation reference to
