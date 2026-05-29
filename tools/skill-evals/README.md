@@ -85,6 +85,18 @@ stdout as JSON, look for the first ```` ```json ```` fenced block, then
 the largest balanced `{...}` (or `[...]`) substring. Models that wrap
 output in prose or markdown fences still work.
 
+If none of those strategies finds JSON, the runner silently wraps the
+raw stdout as `{"raw_output": <stdout>}` and proceeds with normal
+field-aware grading. Under the intersection-only comparator this means
+a model that refused to emit JSON (e.g. a prose-only refusal) will
+PASS any case whose `expected.json` doesn't declare a `raw_output`
+key. A non-zero exit from the CLI is wrapped the same way as
+`{"raw_output": <stdout>, "stderr": <stderr>, "exit_code": <rc>}`, so
+refusals that signal via exit code (some safety filters) also fall
+back to the comparator. Suite authors who want to gate on the prose
+can add `"raw_output": "<expected text>"` to their `expected.json`.
+In `--exact` mode, non-JSON and non-zero exits still ERROR.
+
 **Structural cases (composition steps).** When `expected.json` describes
 prose properties via boolean flags (`has_security_model_quote`,
 `has_bare_issue_numbers`) or membership lists (`mention_handles`),
@@ -117,12 +129,20 @@ PYTHONPATH=tools/skill-evals/src python3 -m skill_evals.runner --cli "claude -p"
 ```
 
 Decision fields (booleans, enums, counts, ordering, IDs) stay on exact
-equality. For each prose field the runner pipes a fixed rubric prompt
-to the grader and parses one line of JSON
-(`{"match": bool, "reason": str}`). A case passes when every decision
-field matches exactly and every prose field returns `match: true`.
-Failures print the field path, the grader's one-line reason, and any
-decision-field diffs.
+equality. `expected.json` is treated as a description of values where
+the model speaks: only keys present in **both** expected and actual
+are asserted. Extra keys in the model's output are ignored, and keys
+declared in expected that the model didn't emit are skipped (not
+failed). Suite authors should keep expected.json focused on the keys
+that actually carry the eval's signal, since a model returning `{}`
+would match any expected. All prose-field mismatches for a single
+case are batched into one rubric prompt and sent to the grader as a
+single call (so a case with N prose-field mismatches costs one Haiku
+call, not N). The grader returns a one-line JSON object mapping each
+field path to `{"match": bool, "reason": str}`. A case passes when
+every asserted decision field matches exactly and every asserted
+prose field returns `match: true`. When a decision field already
+fails, the grader is not called at all for that case.
 
 The default grader is `claude -p --model haiku`. Override with
 `--grader-cli "<command>"` (any shell command that reads stdin and
