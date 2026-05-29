@@ -276,6 +276,20 @@ repos:
         files: ^(tools/sandbox-lint/(src|tests|pyproject\.toml|expected\.json)|\.claude/settings\.json)
         pass_filenames: false
 
+  # Project-local checks for the pr-management-stats tool at
+  # `tools/pr-management-stats/`. Unlike the other tool projects this is a
+  # pair of directory-portable scripts (reference.py + dashboard.py), not a
+  # src-layout package, so only the pytest gate is wired here; ruff-format /
+  # mypy over the large pre-existing render script are tracked separately.
+  - repo: local
+    hooks:
+      - id: pr-management-stats-pytest
+        name: pytest (pr-management-stats)
+        language: system
+        entry: uv run --directory tools/pr-management-stats pytest
+        files: ^tools/pr-management-stats/(reference\.py|dashboard\.py|tests/|pyproject\.toml)
+        pass_filenames: false
+
   - repo: local
     hooks:
       - id: skill-validator-ruff-check

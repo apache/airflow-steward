@@ -29,23 +29,33 @@ Usage:
 
 Output:
   - <out>            HTML dashboard (all 11 sections per render.md)
-  - <out-stem>.json  Intermediate state (shape-compatible with reference.py)
+  - <out-stem>.json  Intermediate state (superset of reference.py's keys —
+                     identical values on every shared key; see
+                     tests/test_json_parity.py)
 
-Design: reference.py remains untouched. This script reuses its
-fetch + classify by importing top-level functions; the JSON sidecar
-contract is preserved so existing consumers don't break.
+Design: directory-portable, not single-file. This script reuses
+reference.py's fetch + classify primitives by importing them from the
+sibling module, so the whole tools/pr-management-stats/ directory must
+travel together. Run it as a script (`python3 dashboard.py ...`) — the
+directory of the running script is on sys.path[0], so the sibling import
+resolves regardless of the current working directory. It is NOT a package
+(the directory name is not a valid module identifier) and cannot be run
+with `python3 -m`. The JSON sidecar contract is preserved so existing
+reference.py consumers don't break.
 """
 from __future__ import annotations
 
 import argparse
 import html
 import json
-import subprocess
 import sys
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+# Sibling-module import — see the module docstring's "Design" note. Resolves
+# because the running script's directory is sys.path[0]; the directory is not
+# a Python package, so the tool is directory-portable rather than self-contained.
 from reference import (
     CLOSED_PRS_QUERY,
     COLLAB_ASSOCIATIONS,
@@ -60,6 +70,7 @@ from reference import (
     fetch_codeowners,
     fetch_ready_pr_files,
     is_bot,
+    paginated_search,
     parse_iso,
     weeks_buckets,
 )
@@ -327,36 +338,10 @@ details[open] summary {{ margin-bottom: 12px; }}
 """
 
 
-# reference.paginated_search has a cursor-insertion bug that silently
-# stops pagination after page 1 (mangles the -F flag ordering). We
-# override it here without touching reference.py so the JSON sidecar
-# parity contract is preserved.
-def paginated_search(query, search_q, page_size=30, max_pages=40):
-    all_nodes = []
-    cursor = None
-    for page in range(1, max_pages + 1):
-        cmd = ["gh", "api", "graphql",
-               "-F", f"first={page_size}",
-               "-F", f"q={search_q}",
-               "-F", f"query={query}"]
-        if cursor:
-            cmd.extend(["-F", f"after={cursor}"])
-        r = subprocess.run(cmd, capture_output=True, text=True)
-        if r.returncode != 0:
-            sys.stderr.write(f"  page {page}: error {r.stderr[:300]}\n")
-            break
-        d = json.loads(r.stdout)
-        if "errors" in d:
-            sys.stderr.write(f"  page {page}: errors {d['errors'][:1]}\n")
-            break
-        nodes = d["data"]["search"]["nodes"]
-        all_nodes.extend(nodes)
-        pi = d["data"]["search"]["pageInfo"]
-        sys.stderr.write(f"  page {page}: +{len(nodes)} (total {len(all_nodes)})\n")
-        if not pi["hasNextPage"]:
-            break
-        cursor = pi["endCursor"]
-    return all_nodes
+# NOTE: paginated_search is imported from reference.py. The cursor-insertion
+# bug that previously forced a local override here is now fixed at the source
+# (reference.py), so every consumer — not just this script — paginates
+# correctly. See tests/test_pagination.py.
 
 
 # ============================================================
@@ -588,7 +573,9 @@ def compute_recommendations(open_prs, weekly, pressure, hero, ready_trend_growth
                     "title": f"Area \"{area}\" has {v['contribs']} contributor PRs ({v['u4w']} untriaged >4w)",
                     "detail": "One area dominating the untriaged queue — scoped pass clears bulk.",
                     "action": f"/pr-management-triage label:area:{area}",
-                    "count": v["contribs"],
+                    # urgency is driven by the untriaged pile (the rule's
+                    # trigger), not by total contributor PRs in the area.
+                    "count": v["u4w"],
                 }
             )
     # Rule 8 — velocity drop
@@ -1069,7 +1056,7 @@ def compute_table_still_open(open_prs, area_prefix):
 # ============================================================
 
 
-def render_title(ctx, *, lag_warning=False):
+def render_title(ctx, *, lag_warning=False, partial_fetch=False):
     out = []
     out.append(
         f'<h1>📊 {esc(ctx["repo"])} — Maintainer dashboard</h1>'
@@ -1078,6 +1065,12 @@ def render_title(ctx, *, lag_warning=False):
         f'<div class="context">{ctx["now"].strftime("%A, %B %d, %Y · %H:%M UTC")} · '
         f'viewer @{esc(ctx["viewer"])} · 6-week window since {ctx["cutoff"].date()}</div>'
     )
+    if partial_fetch:
+        out.append(
+            '<div class="warn">⚠ INCOMPLETE DATA — one or more PR pages failed '
+            "to fetch (error, rate limit, or page cap reached). Counts and trends "
+            "below undercount the real backlog; re-run before acting on them.</div>"
+        )
     if lag_warning:
         out.append(
             '<div class="warn">⚠ Closed-PR table built from GitHub\'s '
@@ -1630,11 +1623,12 @@ def render_dashboard(
     table_open,
     recent_drafts,
     lag_warning=False,
+    partial_fetch=False,
 ):
     sections = [
         "<!DOCTYPE html><html><head><meta charset=\"utf-8\">"
         f"<title>{esc(ctx['repo'])} — dashboard</title>{CSS}</head><body>",
-        render_title(ctx, lag_warning=lag_warning),
+        render_title(ctx, lag_warning=lag_warning, partial_fetch=partial_fetch),
         render_hero_rows(hero, health),
         render_recommendations(recs),
         render_trends_over_time(
@@ -1707,11 +1701,17 @@ def main():
     )
 
     # ---- Fetch (reuses reference.py primitives) ----
+    # `fetch_status` collects partial-fetch signals from both paginated calls;
+    # if either was cut short (error / rate-limit / max_pages) the dashboard is
+    # flagged incomplete rather than silently published as if it were whole.
+    fetch_status = {"partial": False}
+
     print("Fetching open PRs (full engagement schema) ...", file=sys.stderr)
     open_prs = paginated_search(
         OPEN_PRS_QUERY,
         f"is:pr is:open repo:{args.repo}",
         page_size=args.page_size,
+        status=fetch_status,
     )
     print(f"  -> {len(open_prs)} open PRs", file=sys.stderr)
     for pr in open_prs:
@@ -1723,18 +1723,28 @@ def main():
         f"is:pr is:closed repo:{args.repo} closed:>={cutoff.date()}",
         page_size=50,
         max_pages=20,
+        status=fetch_status,
     )
     print(f"  -> {len(closed_prs)} closed PRs", file=sys.stderr)
 
-    # closed PRs need _is_engaged too for trend coverage — classify with a
-    # minimal shim (no commits / reviewThreads / timelineItems in closed query)
+    # Closed PRs come from the reduced CLOSED_PRS_QUERY (no engagement
+    # collections). classify(partial=True) makes that contract explicit and
+    # reads the heavy signals defensively; isDraft IS selected by the query.
+    if closed_prs:
+        print(
+            f"  classifying {len(closed_prs)} closed PRs from the partial "
+            "(closed-PR) schema — engagement signals limited to comments/labels",
+            file=sys.stderr,
+        )
     for pr in closed_prs:
-        pr.setdefault("isDraft", False)
-        pr.setdefault("commits", {"nodes": []})
-        pr.setdefault("latestReviews", {"nodes": []})
-        pr.setdefault("reviewThreads", {"nodes": []})
-        pr.setdefault("timelineItems", {"nodes": []})
-        classify(pr, ctx)
+        classify(pr, ctx, partial=True)
+
+    if fetch_status["partial"]:
+        print(
+            "WARNING: pagination was cut short — dashboard is INCOMPLETE "
+            "(partial banner added to HTML, partial=true in JSON sidecar).",
+            file=sys.stderr,
+        )
 
     print("Fetching CODEOWNERS + ready PR files ...", file=sys.stderr)
     codeowners = fetch_codeowners(args.repo)
@@ -1806,15 +1816,20 @@ def main():
         table_final=table_final,
         table_open=table_open,
         recent_drafts=recent_drafts,
+        partial_fetch=fetch_status["partial"],
     )
 
     out_path = Path(args.out)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(html_out)
 
-    # ---- JSON sidecar (PARITY with reference.py + extras) ----
+    # ---- JSON sidecar: superset of reference.py's keys ----
+    # Every key reference.py emits is present here with an identically-computed
+    # value; dashboard.py only ADDS keys. tests/test_json_parity.py asserts this
+    # contract against a shared fixture so a refactor on either side can't drift
+    # it unnoticed.
     intermediates = {
-        # Original reference.py keys — preserved bit-for-bit
+        # Keys shared with reference.py — same value on identical input.
         "fetched_at": now.isoformat(),
         "repo": args.repo,
         "viewer": args.viewer,
@@ -1842,6 +1857,7 @@ def main():
             "merged": sum(w["merged"] for w in weekly),
             "closed_not_merged": sum(w["closed_not_merged"] for w in weekly),
         },
+        "partial": fetch_status["partial"],
     }
     side = out_path.with_suffix(".json")
     side.write_text(json.dumps(intermediates, indent=2, default=str))

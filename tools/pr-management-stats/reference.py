@@ -56,6 +56,7 @@ import json
 import re
 import subprocess
 import sys
+import time
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -64,12 +65,22 @@ from pathlib import Path
 # Constants (project-overridable via --config)
 # --------------------------------------------------------------------------
 
+# Example default values for the reference instance these scripts were built
+# against. They are NOT vendor-neutral, and that is fine here: per RFC-AI-0004
+# every project-specific value is a CLI override (the --triage-marker /
+# --ai-footer / --ready-label / --area-prefix flags below), so an adopter for
+# another project supplies their own without editing this file. The framework's
+# placeholder convention governs repo slugs / URLs in prose, not these runtime
+# config defaults.
 DEFAULT_TRIAGE_MARKER = "Pull Request quality criteria"
 DEFAULT_AI_FOOTER = "AI-assisted triage tool"
 DEFAULT_READY_LABEL = "ready for maintainer review"
 DEFAULT_AREA_PREFIX = "area:"
 COLLAB_ASSOCIATIONS = {"OWNER", "MEMBER", "COLLABORATOR"}
 BOT_LOGINS = {"github-actions", "dependabot", "renovate", "copilot-pull-request-reviewer"}
+
+# stderr markers that indicate a transient (retryable) gh/GraphQL failure.
+_TRANSIENT_MARKERS = ("502", "503", "504", "rate limit", "timeout", "timed out", "abuse")
 
 
 def parse_iso(t):
@@ -134,7 +145,7 @@ query($q: String!, $first: Int!, $after: String) {
     pageInfo { hasNextPage endCursor }
     nodes {
       ... on PullRequest {
-        number title createdAt closedAt mergedAt merged state
+        number title isDraft createdAt closedAt mergedAt merged state
         author { login __typename } authorAssociation
         labels(first: 20) { nodes { name } }
         comments(last: 25) {
@@ -152,24 +163,76 @@ def run_gh(*args, **kwargs):
     return subprocess.run(["gh", *args], capture_output=True, text=True, **kwargs)
 
 
-def paginated_search(query, search_q, page_size=30, max_pages=40):
-    """Run a paginated GraphQL search query, return all nodes."""
+def _is_rate_limited(errors):
+    """True if a GraphQL errors[] payload reports RATE_LIMITED."""
+    for e in errors or []:
+        if isinstance(e, dict) and e.get("type") == "RATE_LIMITED":
+            return True
+    return False
+
+
+def _run_graphql_page(cmd, page, max_retries, backoff):
+    """Run one gh GraphQL page, retrying transient (5xx / rate-limit) failures.
+
+    Returns the parsed response dict, or None on a permanent failure (caller
+    should treat None as "pagination cut short"). Backoff uses ``time.sleep``
+    looked up at call time so tests can patch it.
+    """
+    for attempt in range(max_retries + 1):
+        r = subprocess.run(cmd, capture_output=True, text=True)
+        retries_left = attempt < max_retries
+        if r.returncode != 0:
+            transient = any(m in r.stderr.lower() for m in _TRANSIENT_MARKERS)
+            if transient and retries_left:
+                print(f"  page {page}: transient error, retry {attempt + 1}/{max_retries}",
+                      file=sys.stderr)
+                time.sleep(backoff * (attempt + 1))
+                continue
+            print(f"  page {page}: error {r.stderr[:200]}", file=sys.stderr)
+            return None
+        try:
+            d = json.loads(r.stdout)
+        except json.JSONDecodeError:
+            if retries_left:
+                time.sleep(backoff * (attempt + 1))
+                continue
+            print(f"  page {page}: invalid JSON response", file=sys.stderr)
+            return None
+        if "errors" in d:
+            if _is_rate_limited(d["errors"]) and retries_left:
+                print(f"  page {page}: RATE_LIMITED, retry {attempt + 1}/{max_retries}",
+                      file=sys.stderr)
+                time.sleep(backoff * (attempt + 1))
+                continue
+            print(f"  page {page}: errors {d['errors'][:1]}", file=sys.stderr)
+            return None
+        return d
+    return None
+
+
+def paginated_search(query, search_q, page_size=30, max_pages=40, *,
+                     max_retries=1, backoff=2.0, status=None):
+    """Run a paginated GraphQL search query, return all nodes.
+
+    Retries transient (5xx / RATE_LIMITED) failures up to ``max_retries`` times
+    with linear backoff. If ``status`` is a dict, sets ``status["partial"] =
+    True`` when pagination was cut short — an error, or ``max_pages`` reached
+    while more pages remained — so callers can flag incomplete output rather
+    than silently publish a truncated result.
+    """
     all_nodes = []
     cursor = None
+    partial = False
     for page in range(1, max_pages + 1):
         cmd = ["gh", "api", "graphql",
                "-F", f"first={page_size}",
                "-F", f"q={search_q}",
                "-F", f"query={query}"]
         if cursor:
-            cmd.insert(4, "-F"); cmd.insert(5, f"after={cursor}")
-        r = subprocess.run(cmd, capture_output=True, text=True)
-        if r.returncode != 0:
-            print(f"  page {page}: error {r.stderr[:200]}", file=sys.stderr)
-            break
-        d = json.loads(r.stdout)
-        if "errors" in d:
-            print(f"  page {page}: errors {d['errors'][:1]}", file=sys.stderr)
+            cmd.extend(["-F", f"after={cursor}"])
+        d = _run_graphql_page(cmd, page, max_retries, backoff)
+        if d is None:
+            partial = True
             break
         nodes = d["data"]["search"]["nodes"]
         all_nodes.extend(nodes)
@@ -178,6 +241,12 @@ def paginated_search(query, search_q, page_size=30, max_pages=40):
         if not pi["hasNextPage"]:
             break
         cursor = pi["endCursor"]
+    else:
+        # Loop ran the full max_pages without the hasNextPage=False break —
+        # there were (or may have been) more pages we never fetched.
+        partial = True
+    if status is not None:
+        status["partial"] = status.get("partial", False) or partial
     return all_nodes
 
 
@@ -221,7 +290,16 @@ def fetch_codeowners(repo):
 # Classification — see classify.md
 # --------------------------------------------------------------------------
 
-def classify(pr, ctx):
+def classify(pr, ctx, *, partial=False):
+    """Annotate a PR node in place with `_`-prefixed classification fields.
+
+    `partial=True` declares that the PR came from a reduced schema (the
+    closed-PR query, which omits the heavy engagement collections —
+    commits / latestReviews / reviewThreads / timelineItems). Those signals are
+    read defensively below, so an absent collection contributes False to
+    `_is_engaged` rather than raising. `isDraft` IS required from both queries
+    (CLOSED_PRS_QUERY now selects it); it falls back to False only as a guard.
+    """
     author = pr["author"]["login"] if pr["author"] else None
     assoc = pr.get("authorAssociation", "?")
     pr["_author"] = author
@@ -288,7 +366,7 @@ def classify(pr, ctx):
     pr["_is_untriaged"] = (
         not pr["_is_engaged"]
         and pr["_is_contrib"]
-        and not pr["isDraft"]
+        and not pr.get("isDraft", False)
         and not pr["_has_ready"]
     )
 
