@@ -246,9 +246,9 @@ it*, and the *consuming skills* (1-3 most relevant names).
 
 The adapter contracts these blocks reference live under:
 
-- [`../../tools/cve-tool/contract.md`](../../tools/cve-tool/contract.md) — CNA tool interface (ASF default adapter: `tools/vulnogram/`)
-- [`../../tools/mail-archive/contract.md`](../../tools/mail-archive/contract.md) — public-archive interface (ASF default adapter: `tools/ponymail/`)
-- [`../../tools/forwarder-relay/contract.md`](../../tools/forwarder-relay/contract.md) — inbound-relay interface (ASF default adapter: the ASF-security forwarder shape in `tools/gmail/asf-relay.md`)
+- [`../../tools/cve-tool/README.md`](../../tools/cve-tool/README.md) — CNA tool interface (ASF default adapter: `tools/vulnogram/`)
+- [`../../tools/mail-archive/README.md`](../../tools/mail-archive/README.md) — public-archive interface (ASF default adapter: `tools/ponymail/`)
+- [`../../tools/forwarder-relay/README.md`](../../tools/forwarder-relay/README.md) — inbound-relay interface (ASF default adapter: the ASF-security forwarder shape in `tools/gmail/asf-relay.md`)
 
 ### CVE authority
 
@@ -300,7 +300,7 @@ cve_authority:
   # ASF default mapping: Vulnogram's DRAFT -> allocated,
   # REVIEW -> review-ready, READY -> publish-ready, PUBLIC -> public.
   # Override when: the adapter has a different state machine — the
-  # adapter declares its own mapping in its contract.md.
+  # adapter declares its own mapping in its README.md.
   # Consumed by: security-issue-sync, security-cve-allocate,
   # generate-cve-json.
   states: [allocated, review-ready, publish-ready, public]
@@ -443,7 +443,7 @@ security_inbox:
 forwarders:
   # Enabled forwarder/relay adapters. Each name must match an
   # adapter directory under tools/ that conforms to
-  # tools/forwarder-relay/contract.md.
+  # tools/forwarder-relay/README.md.
   # ASF default: [asf-security] — the ASF security team relays
   # reports onto project security@ lists with a known preamble and
   # credit line.
@@ -471,7 +471,7 @@ forwarders:
 
     # Rule the adapter uses to lift the original reporter's credit
     # line out of the relayed body. Adapters define their own
-    # extraction shape; see tools/forwarder-relay/contract.md.
+    # extraction shape; see tools/forwarder-relay/README.md.
     # ASF default: the existing ASF-security credit extraction (the
     # "Reported by: <name> <<email>>" line near the top of the
     # forwarded body).

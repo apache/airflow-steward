@@ -59,8 +59,9 @@ only by asking the broker to relay messages back.
 This matters for three skill behaviours:
 
 1. **Credit extraction.** The `From:` header of a relay message
-   names the broker, not the reporter. Per
-   [`docs/security/reporter-credit-policy.md`](../../docs/security/reporter-credit-policy.md)
+   names the broker, not the reporter. Per the bot/AI credit
+   policy in
+   [`tools/vulnogram/bot-credits-policy.md`](../vulnogram/bot-credits-policy.md)
    the tracker's *Reporter credited as* field must name the
    external reporter, so the skill has to pull the name from the
    message body (the broker's preamble convention) instead of
