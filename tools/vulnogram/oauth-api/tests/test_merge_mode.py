@@ -184,7 +184,15 @@ class TestReferencesMerge:
         assert "https://lists.apache.org/thread/abc" in urls
 
     def test_apply_replaces_references_with_flag(self):
-        merged = apply_merge_mode_guards(_current(), _new(), replace_references=True)
+        # state=REVIEW so this stays scoped to the references-merge
+        # guard; the new state-upgrade-to-PUBLIC guard fires only on
+        # PUBLIC pushes without a vendor-advisory reference and is
+        # covered separately in TestStateUpgradeToPublicGuard.
+        merged = apply_merge_mode_guards(
+            _current(state="REVIEW"),
+            _new(state="REVIEW"),
+            replace_references=True,
+        )
         urls = {ref["url"] for ref in merged["containers"]["cna"]["references"]}
         assert urls == {"https://github.com/apache/foo/pull/1"}
 
@@ -192,14 +200,142 @@ class TestReferencesMerge:
         """When both current and new have no references, the merged
         document should not sprout an empty ``references: []`` field.
         """
-        current = _current(references=[])
-        new = _new(references=[])
+        # state=REVIEW for the same reason as above — keeps this test
+        # scoped to the references-merge guard.
+        current = _current(state="REVIEW", references=[])
+        new = _new(state="REVIEW", references=[])
         del current["body"]["containers"]["cna"]["references"]
         new_copy = copy.deepcopy(new)
         del new_copy["containers"]["cna"]["references"]
         merged = apply_merge_mode_guards(current, new_copy)
         # The new doc has no `references` key — merged should keep it absent.
         assert "references" not in merged["containers"]["cna"]
+
+
+# ---------------------------------------------------------------------------
+# State-upgrade-to-PUBLIC guard
+# ---------------------------------------------------------------------------
+
+
+class TestStateUpgradeToPublicGuard:
+    """The guard refuses ``state=PUBLIC`` pushes when the document
+    (after the references merge) carries no ``vendor-advisory``
+    reference. Per Arnout Engelen's 2026-05-29 review on
+    CVE-2026-40913: PUBLIC is only legitimate after the advisory has
+    shipped and the archived users-list URL has been added to
+    ``references[]``.
+    """
+
+    def test_public_without_vendor_advisory_refused(self):
+        with pytest.raises(MergeModeRefused, match='state = "PUBLIC" push'):
+            apply_merge_mode_guards(
+                _current(state="REVIEW", references=[]),
+                _new(
+                    state="PUBLIC",
+                    references=[
+                        {"url": "https://github.com/apache/foo/pull/1", "tags": ["patch"]},
+                    ],
+                ),
+            )
+
+    def test_public_with_vendor_advisory_allowed(self):
+        merged = apply_merge_mode_guards(
+            _current(state="REVIEW", references=[]),
+            _new(
+                state="PUBLIC",
+                references=[
+                    {"url": "https://github.com/apache/foo/pull/1", "tags": ["patch"]},
+                    {"url": "https://lists.apache.org/thread/abc", "tags": ["vendor-advisory"]},
+                ],
+            ),
+        )
+        assert merged["CNA_private"]["state"] == "PUBLIC"
+
+    def test_public_picks_up_vendor_advisory_from_current_via_merge(self):
+        """When the new doc lacks the vendor-advisory reference but
+        the current doc has it, the references merge restores it
+        before the guard runs — the push succeeds.
+
+        This is the idempotent re-push case: the generator emits a
+        record that omits the advisory URL the operator added by
+        hand on a previous push; the merge restores it; the guard
+        sees the final state has the vendor-advisory ref and passes.
+        """
+        merged = apply_merge_mode_guards(
+            _current(
+                state="PUBLIC",
+                references=[
+                    {"url": "https://github.com/apache/foo/pull/1", "tags": ["patch"]},
+                    {"url": "https://lists.apache.org/thread/abc", "tags": ["vendor-advisory"]},
+                ],
+            ),
+            _new(
+                state="PUBLIC",
+                references=[
+                    {"url": "https://github.com/apache/foo/pull/1", "tags": ["patch"]},
+                ],
+            ),
+        )
+        assert merged["CNA_private"]["state"] == "PUBLIC"
+        urls = {ref["url"] for ref in merged["containers"]["cna"]["references"]}
+        assert "https://lists.apache.org/thread/abc" in urls
+
+    def test_public_with_replace_references_and_no_vendor_advisory_refused(self):
+        """``replace_references=True`` drops the current doc's
+        references — the merge does NOT restore the vendor-advisory
+        ref. State=PUBLIC must still be refused.
+        """
+        with pytest.raises(MergeModeRefused, match='state = "PUBLIC" push'):
+            apply_merge_mode_guards(
+                _current(
+                    state="REVIEW",
+                    references=[
+                        {"url": "https://lists.apache.org/thread/abc", "tags": ["vendor-advisory"]},
+                    ],
+                ),
+                _new(
+                    state="PUBLIC",
+                    references=[
+                        {"url": "https://github.com/apache/foo/pull/1", "tags": ["patch"]},
+                    ],
+                ),
+                replace_references=True,
+            )
+
+    def test_review_to_review_no_vendor_advisory_passes(self):
+        """The guard only fires on PUBLIC pushes — REVIEW pushes
+        without a vendor-advisory ref are normal.
+        """
+        merged = apply_merge_mode_guards(
+            _current(state="REVIEW", references=[]),
+            _new(
+                state="REVIEW",
+                references=[
+                    {"url": "https://github.com/apache/foo/pull/1", "tags": ["patch"]},
+                ],
+            ),
+        )
+        assert merged["CNA_private"]["state"] == "REVIEW"
+
+    def test_error_message_names_record_publish(self):
+        """The error message must point the operator at the sanctioned
+        path (``vulnogram-api-record-publish``) so they don't reach for
+        the ``--allow-state-upgrade`` flag (which intentionally
+        doesn't exist).
+        """
+        with pytest.raises(MergeModeRefused) as exc_info:
+            apply_merge_mode_guards(
+                _current(state="REVIEW", references=[]),
+                _new(
+                    state="PUBLIC",
+                    references=[
+                        {"url": "https://github.com/apache/foo/pull/1", "tags": ["patch"]},
+                    ],
+                ),
+            )
+        msg = str(exc_info.value)
+        assert "vulnogram-api-record-publish" in msg
+        assert "vendor-advisory" in msg
 
 
 # ---------------------------------------------------------------------------

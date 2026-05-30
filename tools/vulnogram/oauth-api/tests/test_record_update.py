@@ -290,14 +290,20 @@ def test_references_merged_by_default(tmp_path, monkeypatch):
 def test_references_wholesale_replace_with_flag(tmp_path, monkeypatch):
     _write_session(tmp_path / "session.json")
     new_body = _new_doc_review_state_with_provider()
-    new_body["CNA_private"]["state"] = "PUBLIC"  # bypass state guard
     body = tmp_path / "body.json"
     body.write_text(json.dumps(new_body))
     monkeypatch.setenv("VULNOGRAM_SESSION", str(tmp_path / "session.json"))
+
+    # Use a current record in REVIEW state so neither the
+    # state-downgrade guard (PUBLIC → REVIEW) nor the new state-
+    # upgrade-to-PUBLIC guard fires. The references-merge guard is
+    # the only behaviour under test here.
+    review_record = _public_record()
+    review_record["body"]["CNA_private"]["state"] = "REVIEW"
     monkeypatch.setattr(
         record_update,
         "_fetch_current_or_none",
-        lambda *a, **kw: _public_record(),
+        lambda *a, **kw: review_record,
     )
     captured = {}
 

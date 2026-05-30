@@ -93,6 +93,26 @@ def _new_references(new_doc: dict[str, Any]) -> list[dict[str, Any]]:
     return list(refs) if isinstance(refs, list) else []
 
 
+def _has_vendor_advisory_reference(refs: list[dict[str, Any]]) -> bool:
+    """Return ``True`` when ``refs`` contains an entry tagged
+    ``vendor-advisory``.
+
+    The ``vendor-advisory`` tag is the structural signal that a public
+    advisory URL has shipped (typically the archived ``users-list``
+    thread on ``lists.apache.org`` or ``security.apache.org``). The
+    state-upgrade-to-PUBLIC guard in :func:`apply_merge_mode_guards`
+    refuses any push that lacks one — per ASF Security policy (Arnout
+    Engelen's 2026-05-29 review on CVE-2026-40913), a record may only
+    reach ``PUBLIC`` *after* the advisory has actually shipped, not
+    while the team is still preparing it.
+    """
+    for ref in refs:
+        tags = ref.get("tags")
+        if isinstance(tags, list) and "vendor-advisory" in tags:
+            return True
+    return False
+
+
 def _current_affected(current_doc: dict[str, Any]) -> list[dict[str, Any]]:
     aff = _path(current_doc, "body", "containers", "cna", "affected")
     return list(aff) if isinstance(aff, list) else []
@@ -251,6 +271,45 @@ def apply_merge_mode_guards(
             containers = merged.setdefault("containers", {})
             cna = containers.setdefault("cna", {})
             cna["references"] = merged_refs
+
+    # State-upgrade-to-PUBLIC guard: refuse pushing state=PUBLIC when
+    # the document about to be pushed (post-references-merge) does not
+    # carry a `vendor-advisory` reference. PUBLIC is only legitimate
+    # after the advisory has shipped to users@ / announce@ and the
+    # archived users-list URL has been added to references[] (which
+    # `classify_reference` tags as `vendor-advisory`). Without that,
+    # the operator is hand-flipping the state ahead of the actual
+    # advisory send — the exact failure mode Arnout Engelen flagged on
+    # CVE-2026-40913 (2026-05-29). The generator's
+    # `compute_cna_private_state` already enforces this on the emit
+    # side; this guard catches the case where the operator hand-edits
+    # the JSON file (or pastes via Vulnogram's `#source` tab and then
+    # re-pushes) before re-running.
+    #
+    # The check runs AFTER the references merge so a record whose
+    # current state already has the vendor-advisory reference (e.g.
+    # an idempotent re-push of an already-PUBLIC record where the new
+    # JSON dropped the advisory ref for some reason) passes — the
+    # merge restores the ref, and that is the intended behaviour. The
+    # guard catches the case where neither side carries the
+    # vendor-advisory reference, which is the only true failure mode.
+    #
+    # There is intentionally no `--allow-state-upgrade` override: the
+    # sanctioned path to PUBLIC is `vulnogram-api-record-publish`,
+    # which fires on the archive-URL signal and inserts the
+    # `vendor-advisory` reference at the same time.
+    if new_state_value == "PUBLIC" and not _has_vendor_advisory_reference(_new_references(merged)):
+        raise MergeModeRefused(
+            'Refusing CNA_private.state = "PUBLIC" push: the JSON '
+            "carries no `vendor-advisory` reference. PUBLIC is only "
+            "legitimate after the advisory has shipped to users@ / "
+            "announce@ and the archived users-list URL has been added "
+            "to references[]. The sanctioned path to PUBLIC is "
+            "`vulnogram-api-record-publish`, which fires on the archive-"
+            "URL signal — invoke that instead of pushing PUBLIC via "
+            "record-update. (See Arnout Engelen's 2026-05-29 review "
+            "comment on CVE-2026-40913 for why this guard exists.)"
+        )
 
     diffs = _diff_affected_products(
         current=_current_affected(current_doc),
