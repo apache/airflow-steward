@@ -27,9 +27,13 @@ page is the two-minute summary.
    The adopting project's community monitors the project's
    `<security-list>` (declared in
    `<project-config>/project.md → Mailing lists`) for inbound
-   reports. Reports from elsewhere (GHSA, HackerOne, the ASF
-   `security@apache.org` relay) are forwarded onto that list so the
-   security team has a single inbox.
+   reports. Reports from elsewhere (GHSA, HackerOne, a foundation-
+   wide security relay declared in
+   `security_inbox.foundation_security_address`, or any other
+   adapter declared in `forwarders.enabled`) are forwarded onto
+   that list so the security team has a single inbox. (For the
+   airflow-s adopter, the foundation-wide relay is
+   `security@apache.org`.)
 
 2. **Triage.**
    A rotating triager imports new reports into the private
@@ -63,17 +67,22 @@ page is the two-minute summary.
    [`<project-config>/canned-responses.md`](<project-config>/canned-responses.md)).
    The draft is never sent — the triager reviews in Gmail before
    sending. The skill hard-stops if a CVE has already been
-   allocated (a Vulnogram REJECT is required first) or if the
+   allocated (a REJECT in the project's CVE tool — the adapter
+   named in `cve_authority.tool` — is required first) or if the
    advisory has shipped (closing as invalid then is a public
    retraction that needs explicit team escalation).
 
 3. **CVE allocation.**
-   A PMC member of the adopting project allocates a CVE through the
-   project's CVE tool (declared in
-   [`<project-config>/project.md → CVE tooling`](<project-config>/project.md#cve-tooling)).
-   The allocation is PMC-gated; non-PMC triagers use the
+   A governance-authorised member of the adopting project (per
+   `governance.cve_allocation_gate` in
+   `<project-config>/project.md`) allocates a CVE through the
+   project's CVE tool (the adapter named in `cve_authority.tool`,
+   with the allocation URL in `cve_authority.allocate_url`).
+   Triagers who do not satisfy the gate use the
    [`security-cve-allocate`](../../.claude/skills/security-cve-allocate/SKILL.md) skill to
-   produce a relay message for a PMC member to click through.
+   produce a relay message for a gate-passing member to click
+   through. (For the airflow-s adopter, the gate is PMC membership
+   and the CVE tool is Vulnogram.)
 
 4. **Remediation.**
    A security-team member writes the fix in the public `<upstream>`
@@ -87,8 +96,11 @@ page is the two-minute summary.
 5. **Release + advisory.**
    The release manager for the cut that carries the fix sends the
    public advisory to the project's users + announce lists, captures
-   the archive URL, and moves the CVE record to `PUBLIC` in the CVE
-   tool.
+   the archive URL (the page declared in
+   `archive_system.advisory_publication_signal_url`), and promotes
+   the CVE record from `publish-ready` to `public` in the project's
+   CVE tool (the adapter named in `cve_authority.tool`; the
+   generic state sequence is declared in `cve_authority.states`).
 
 6. **Continuous improvement.**
    The security team encourages responsible vulnerability disclosure

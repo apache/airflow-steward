@@ -31,13 +31,17 @@ into its section.
 
 # How the team is composed
 
-The security team is a group of people — mostly PMC members and
-committers of the adopting project, but we also have security
-researchers and people who are not yet committers but aspire to be,
-and who are already active and known in the community. We also have
-members of the security teams of stakeholders who deal with the
-project's security outside of the community project itself — for
-example, when they provide the project as a service.
+The security team is a group of people — mostly members of the
+project's governance body and committers of the adopting project
+(for the ASF/Airflow named example: PMC members and committers of
+`apache/airflow`), but we also have security researchers and people
+who are not yet committers but aspire to be, and who are already
+active and known in the community. The exact governance body the
+team draws from is declared in
+`<project-config>/project.md → governance.cve_allocation_gate`. We
+also have members of the security teams of stakeholders who deal
+with the project's security outside of the community project itself
+— for example, when they provide the project as a service.
 
 The team works on a voluntary basis. We understand that people have
 other commitments and lives, and we do not expect them to be available
@@ -49,7 +53,9 @@ Being a member of the security team is not a permanent assignment; we
 rotate the team periodically (so far we have only rotated members once,
 after about 8 months, but we expect shorter rotation periods in the
 future). We are also open to new members joining the team at any
-time — especially when PMC members wish to join.
+time — especially when people who satisfy the project's
+`governance.cve_allocation_gate` wish to join (for the ASF/Airflow
+named example: PMC members of `apache/airflow`).
 
 We will likely re-evaluate the team composition and process in a few
 months, taking into account the involvement of people and their
@@ -121,8 +127,11 @@ week. A good starting routine:
    the agent skills. Copy
    `.apache-steward-overrides/user.md` (scaffolded automatically when
    the project adopts steward) and fill in your GitHub handle, email,
-   PMC status, and (for remediation-developer work) the path to your
-   local `<upstream>` clone. You can skip this step on day one;
+   governance-gate status (whatever
+   `<project-config>/project.md → governance.cve_allocation_gate`
+   declares — for the ASF/Airflow named example: PMC membership),
+   and (for remediation-developer work) the path to your local
+   `<upstream>` clone. You can skip this step on day one;
    skills fall back to runtime prompts when
    `.apache-steward-overrides/user.md` is missing.
 
@@ -150,8 +159,10 @@ perspective:
 - **Release manager** is usually inherited rather than volunteered for:
   when you cut a release that contains a security fix,
   `security-issue-sync` hands those trackers to you with
-  `fix released` and you own them through the advisory + Vulnogram
-  steps.
+  `fix released` and you own them through the advisory + `<cve-tool>`
+  steps (for the ASF/Airflow named example: the Vulnogram instance at
+  `cveprocess.apache.org`, declared in
+  `<project-config>/project.md → cve_authority.record_url_template`).
 
 You can volunteer to provide a fix for a specific issue even before
 formally taking on the remediation-developer role — just comment on
@@ -229,7 +240,9 @@ shape the team are small enough to read in one sitting:
 - [`README.md`](../../README.md) — the end-to-end handling process.
 - [`<project-config>/canned-responses.md`](<project-config>/canned-responses.md) — reply templates.
 - [`AGENTS.md`](../../AGENTS.md) — agent-facing conventions and confidentiality rules.
-- `.apache-steward-overrides/user.md` — per-user configuration (PMC status,
+- `.apache-steward-overrides/user.md` — per-user configuration
+  (governance-gate status per
+  `<project-config>/project.md → governance.cve_allocation_gate`,
   local clone paths, optional tool backends) scaffolded during adoption.
 - [`<project-config>/`](<project-config>/) — project-specific content
   (roster, release trains, security model, scope labels, milestones,

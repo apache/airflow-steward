@@ -26,6 +26,9 @@ license: Apache-2.0
                        (example: airflow-s/airflow-s for the Apache Airflow security team)
      <upstream>       → value of `upstream_repo:` in <project-config>/project.md
                        (example: apache/airflow)
+     <cve-tool>       → CVE-tool adapter directory under `tools/` named by
+                       `cve_authority.tool` in <project-config>/project.md
+                       (example: cve-tool-vulnogram for the ASF default).
      Before running any bash command below, substitute these with the
      concrete values from the adopting project's <project-config>/project.md. -->
 
@@ -53,14 +56,19 @@ command, and shows all of them to the user. Nothing is applied
 until the user confirms. There is no fast-path.
 
 **Golden rule — never merge across scopes.** Two trackers with
-different **scope labels** (`airflow` vs. `providers`, `airflow`
-vs. `chart`, etc.) must not be merged. If an external reporter
-rediscovers the same bug in two different products' surfaces, that
-is a multi-scope report and the resolution is a
-**scope split** handled by the `security-issue-sync` skill, not a
-dedupe. This skill refuses to operate when the two candidate
-trackers have different scope labels, and the proposal says so
-explicitly.
+different **scope labels** must not be merged. The set of scope
+labels the project recognises comes from `scope_detection.labels`
+in [`<project-config>/project.md`](../../../<project-config>/project.md#scope-detection)
+(cross-referenced from [`<project-config>/scope-labels.md`](../../../<project-config>/scope-labels.md)).
+In the airflow-s adopter's case the scope labels are `airflow`,
+`providers`, and `chart`, so `airflow` vs. `providers` or
+`airflow` vs. `chart` are the typical mismatches; other adopters
+declare their own. If an external reporter rediscovers the same
+bug in two different products' surfaces, that is a multi-scope
+report and the resolution is a **scope split** handled by the
+`security-issue-sync` skill, not a dedupe. This skill refuses to
+operate when the two candidate trackers have different scope
+labels, and the proposal says so explicitly.
 
 **Golden rule — every `<tracker>` / `<upstream>` reference is
 clickable in the surface it lands on.** Whenever this skill emits
@@ -172,6 +180,18 @@ does **not** auto-pick. Practical guidance to offer when asked:
   CVSS scoring, PoC code), merge *into* the one with the CVE but
   keep all the rich content via the "Second independent report"
   section described in Step 3 below.
+- If **both** trackers carry an allocated CVE ID, prefer the one
+  whose record is further along the state machine — keep the
+  tracker whose record sits at `publish-ready` over one at
+  `review-ready`, and `review-ready` over `allocated`. Once the
+  kept side is chosen, the duplicate's CVE record is retracted
+  via `<cve-tool>`'s `retract(cve_id, reason)` per
+  [`tools/cve-tool/README.md`](../../../tools/cve-tool/README.md#retractcve_id-reason-to-ok)
+  as part of the Step 5 apply loop. **Refuse the merge** if
+  either CVE record is already `public` — once an advisory has
+  shipped, retroactively folding it into another tracker is an
+  errata announcement (Step 16 of the handling process), not a
+  dedupe.
 
 ---
 
@@ -228,10 +248,13 @@ Verify:
 - Both trackers are in state `open` (merging into or out of a closed
   tracker is almost always a mistake; surface as a blocker if
   either side is already closed and ask the user to confirm).
-- Both have the **same scope label** — `airflow` vs. `airflow`,
-  or `providers` vs. `providers`, or `chart` vs. `chart`. If the
-  scope labels differ, refuse the merge and tell the user this is
-  a multi-scope report to be handled by `security-issue-sync`'s
+- Both have the **same scope label** — the recognised scope
+  labels come from `scope_detection.labels` in
+  [`<project-config>/project.md`](../../../<project-config>/project.md#scope-detection).
+  In the airflow-s adopter that means matching one of `airflow`,
+  `providers`, or `chart` against itself. If the scope labels
+  differ, refuse the merge and tell the user this is a
+  multi-scope report to be handled by `security-issue-sync`'s
   scope-split flow instead.
 - Neither tracker is already labelled `duplicate` (that would
   indicate a partial-merge already happened and someone left it
@@ -262,8 +285,11 @@ Also capture:
 
 - Each tracker's **labels** (scope, `cve allocated`, `pr *`,
   `announced - emails sent`, etc.).
-- Each tracker's **milestone** (Airflow version / Providers wave /
-  Chart version).
+- Each tracker's **milestone** — per-scope milestone naming
+  conventions live in
+  [`<project-config>/milestones.md`](../../../<project-config>/milestones.md)
+  (the airflow-s adopter uses Airflow-version / Providers-wave /
+  Chart-version shapes, one per `scope_detection.labels` entry).
 - Each tracker's **assignees**.
 - Whether each tracker has a **CVE JSON attachment** comment (from
   `generate-cve-json --attach`) — only the kept side's attachment
@@ -339,8 +365,8 @@ original report, earliest first)
 confirmed, or the placeholder form when unconfirmed; the merge
 does not silently re-synthesize credits)
 
-**Apply the [bot/AI credit policy](../../../tools/vulnogram/bot-credits-policy.md)
-when consolidating.** If either tracker carries a credit line on
+**Apply the [bot/AI credit policy](../../../tools/cve-tool-vulnogram/bot-credits-policy.md)
+(at `tools/<cve-tool>/bot-credits-policy.md`) when consolidating.** If either tracker carries a credit line on
 the **finder side** (*Reporter credited as*) that matches the bot
 detection rule (`*[bot]` suffix, known-bot list,
 `*-bot`/`*-ai`/`*-agent`/`*-gpt` / `*scanner*` / `*automat*`
@@ -440,7 +466,7 @@ before `</details>`.
 - Body: <keep.reporter>'s original report preserved; <drop.reporter>'s report appended as *"Second independent report"*.
 - Credits: **<keep credit>** + **<drop credit>**.
 - Mailing threads: both listed.
-- CVE: [<CVE-N>-<M>](https://cveprocess.apache.org/cve5/<CVE-N>-<M>) stays allocated here; [<tracker>#<drop>](...) being closed as duplicate.
+- CVE: [<CVE-N>-<M>](<cve-record-url>) stays allocated here; [<tracker>#<drop>](...) being closed as duplicate. The `<cve-record-url>` form is assembled from `cve_authority.record_url_template` in [`<project-config>/project.md`](../../../<project-config>/project.md#cve-authority) (the airflow-s adopter resolves to `https://cveprocess.apache.org/cve5/<CVE-ID>`).
 
 **Next:** <one-line next step — e.g. credit-preference confirmation for both, or Step 6 CVE refinement>.
 
@@ -528,12 +554,36 @@ After confirmation, apply **sequentially** (never in parallel):
    (GitHub's `duplicate` close-reason is not exposed by `gh` on
    all versions; `not planned` combined with the `duplicate` label
    carries the same signal)
-6. `uv run --project <framework>/tools/vulnogram/generate-cve-json generate-cve-json <keep> --attach`
+6. `uv run --project <framework>/tools/<cve-tool>/generate-cve-json generate-cve-json <keep> --attach`
    — the *Remediation developer* body field is the source of truth
    for remediation-developer credits (populated by the
    `security-issue-sync` skill from the linked PR's author); no CLI
-   flag needed
-7. For each legacy bot comment folded in steps 2 / 3, delete the
+   flag needed. The regen output is the canonical JSON record for
+   the kept tracker; when the kept tracker already carries an
+   allocated CVE ID, the regenerated record is then fed into
+   `<cve-tool>`'s `push_update(cve_id, fields)` per the contract in
+   [`tools/cve-tool/README.md`](../../../tools/cve-tool/README.md#push_updatecve_id-fields-state_transitionnone-to-diff)
+   so the merged credits + references land on the CVE record itself
+   — the adapter does the storage (for the Vulnogram adapter that's
+   the OAuth-authenticated write to the `#source` tab URL —
+   `cve_authority.source_tab_url_template`). No state transition is
+   passed: dedup never moves the record across state verbs, it only
+   updates fields at whatever state the record is already in
+   (`allocated` / `review-ready` / `publish-ready`). If the kept
+   tracker has no CVE ID, the `push_update` step is skipped and
+   only the tracker-side JSON attachment is regenerated.
+7. **Only when both trackers carried an allocated CVE ID** —
+   retract the dropped side's CVE record via `<cve-tool>`'s
+   `retract(cve_id, reason)` per
+   [`tools/cve-tool/README.md`](../../../tools/cve-tool/README.md#retractcve_id-reason-to-ok),
+   with `reason` set to a short string of the form *"merged into
+   <kept-CVE-ID> per <tracker>#<keep> on <YYYY-MM-DD>"*. This call
+   is governance-gated (the same `governance.cve_allocation_gate`
+   role that gated allocation); the skill surfaces the gate before
+   firing. The contract refuses retraction of any record already
+   at the `public` state — the Step 0 / Inputs pre-check above
+   should already have blocked the merge in that case.
+8. For each legacy bot comment folded in steps 2 / 3, delete the
    original with `gh api -X DELETE
    repos/<tracker>/issues/comments/<id>` — only after the
    matching rollup PATCH succeeded.
@@ -615,6 +665,15 @@ recap before presenting.
 - [`security-issue-sync`](../security-issue-sync/SKILL.md) — runs
   on the kept tracker after the merge to reconcile labels /
   milestone / credit-preference drafts for both reporters.
-- [`generate-cve-json`](../../../tools/vulnogram/generate-cve-json/SKILL.md) —
+- [`generate-cve-json`](../../../tools/cve-tool-vulnogram/generate-cve-json/SKILL.md)
+  (at `tools/<cve-tool>/generate-cve-json/`) —
   regenerates the kept tracker's CVE JSON attachment so both
-  finders land in `credits[]`.
+  finders land in `credits[]`. The regenerated record is fed
+  into `<cve-tool>`'s `push_update` so the merged credits also
+  land on the CVE record itself.
+- [`tools/cve-tool/README.md`](../../../tools/cve-tool/README.md) —
+  the CVE-tool adapter contract that defines the
+  `push_update` and `retract` methods this skill invokes on the
+  kept and dropped sides respectively, plus the generic state
+  verbs (`allocated` / `review-ready` / `publish-ready` /
+  `public`) the skill speaks in.

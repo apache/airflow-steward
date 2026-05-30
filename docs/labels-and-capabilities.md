@@ -142,6 +142,7 @@ Capabilities for every skill currently in
 | `security-issue-import` | `capability:intake` |
 | `security-issue-import-from-md` | `capability:intake` |
 | `security-issue-import-from-pr` | `capability:intake` |
+| `security-issue-import-via-forwarder` | `capability:intake` |
 | `security-issue-sync` | `capability:intake` *(+ `capability:reconciliation` once [#337](https://github.com/apache/airflow-steward/issues/337) lands the ASF-dashboard step)* |
 | `setup-shared-config-sync` | `capability:intake` + `capability:setup` *(reconciles user-scope config to a sync repo; the act is intake, the subject is setup)* |
 | `security-cve-allocate` | `capability:resolve` |
@@ -171,11 +172,15 @@ Tools under [`tools/`](../tools/). Tools with two values (separated by
 |---|---|---|
 | [`tools/agent-isolation`](../tools/agent-isolation/) | `capability:setup` | Secure-agent sandbox helpers |
 | [`tools/cve-org`](../tools/cve-org/) | `capability:resolve` + `capability:intake` | Publishes to CVE.org *(resolve)* and records the resulting CVE state back into the tracker *(intake)* |
+| [`tools/cve-tool`](../tools/cve-tool/) | `capability:setup` | Adapter contract for CNA backends (Vulnogram, MITRE form, CVE.org direct, GHSA). Pure interface spec; no executable code — adapters under sibling `tools/cve-tool-*/` directories implement it. |
+| [`tools/cve-tool-vulnogram`](../tools/cve-tool-vulnogram/) | `capability:resolve` | ASF Vulnogram CVE-allocation adapter. Implements the `tools/cve-tool/` contract. Previously named `tools/vulnogram/`. |
 | [`tools/dashboard-generator`](../tools/dashboard-generator/) | `capability:stats` | Self-contained HTML dashboard generator |
 | [`tools/dev`](../tools/dev/) | `capability:setup` | Framework dev-loop helpers |
+| [`tools/forwarder-relay`](../tools/forwarder-relay/) | `capability:setup` | Adapter contract for inbound-relay backends (ASF Security relay, huntr.com, HackerOne triagers). Pure interface spec; adapters declare detection + credit-extraction + reporter-addressing rules. |
 | [`tools/github`](../tools/github/) | `capability:setup` | GitHub REST / GraphQL substrate (called by every lifecycle phase — pure substrate, no single phase) |
 | [`tools/gmail`](../tools/gmail/) | `capability:setup` | Gmail API substrate |
 | [`tools/jira`](../tools/jira/) | `capability:setup` | JIRA REST substrate (read-only today; write subcommands tracked in [#301](https://github.com/apache/airflow-steward/issues/301)) |
+| [`tools/mail-archive`](../tools/mail-archive/) | `capability:setup` | Adapter contract for public mail-archive backends (PonyMail, Hyperkitty, Discourse, Google Groups, GitHub Discussions). Pure interface spec. |
 | [`tools/mail-source`](../tools/mail-source/) | `capability:setup` + `capability:intake` | Mail-source backend abstraction (mbox / IMAP / Mailman 3); the abstraction is setup, every concrete read is part of the intake pipeline |
 | [`tools/ponymail`](../tools/ponymail/) | `capability:setup` + `capability:intake` | PonyMail archive substrate; same dual role as `mail-source` — substrate plus an intake-pipeline component |
 | [`tools/pr-management-stats`](../tools/pr-management-stats/) | `capability:stats` | PR-backlog analytics engine |
@@ -188,7 +193,6 @@ Tools under [`tools/`](../tools/). Tools with two values (separated by
 | [`tools/skill-and-tool-validator`](../tools/skill-and-tool-validator/) | `capability:setup` | Skill-frontmatter and convention validator |
 | [`tools/spec-status-index`](../tools/spec-status-index/) | `capability:setup` + `capability:stats` | Index of spec / RFC implementation status — substrate that also doubles as a governance/stats view |
 | [`tools/spec-validator`](../tools/spec-validator/) | `capability:setup` | Spec-frontmatter and body-section validator — counterpart to `skill-and-tool-validator` for `tools/spec-loop/specs/` |
-| [`tools/vulnogram`](../tools/vulnogram/) | `capability:resolve` | ASF Vulnogram CVE-allocation client |
 
 A tool's capabilities are determined by its **use-case lifecycle
 phases**, not by which skills happen to consume it. `tools/github` is

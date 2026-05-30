@@ -31,6 +31,11 @@ license: Apache-2.0
                        (example: airflow-s/airflow-s for the Apache Airflow security team)
      <upstream>       → value of `upstream_repo:` in <project-config>/project.md
                        (example: apache/airflow)
+     <cve-tool>       → adapter directory under `tools/` named by
+                       `cve_authority.tool:` in <project-config>/project.md
+                       (example: cve-tool-vulnogram when `tool: vulnogram`,
+                       i.e. the ASF default that resolves to
+                       `tools/cve-tool-vulnogram/`).
      Before running any bash command below, substitute these with the
      concrete values from the adopting project's <project-config>/project.md. -->
 
@@ -211,13 +216,36 @@ Before any work, verify:
 
    | Detected state | Stop reason |
    |---|---|
-   | `cve allocated` label set, or *CVE tool link* body field populated with a CVE-ID URL | Closing as invalid requires the CVE record to be marked **REJECTED** in Vulnogram first. That is a separate flow (PMC-gated, similar to allocation). Stop and surface the URL of the *CVE tool link* alongside a one-line ask: *"This tracker has CVE `<CVE-ID>` allocated. Reject the CVE in Vulnogram first, then re-invoke this skill."* |
+   | `cve allocated` label set, or *CVE tool link* body field — `cve_authority.record_url_template` substituted with the CVE ID — populated with a CVE-ID URL, **and** `<cve-tool>`'s `fetch_current_state(cve_id)` (per [`tools/cve-tool/README.md`](../../../tools/cve-tool/README.md#fetch_current_statecve_id-to-state-fields)) returns a state of `allocated` or `review-ready` | Closing as invalid requires the CVE record to be **retracted** at the CVE-tool first. That is a separate flow (governance-gated per `governance.cve_allocation_gate`, similar to allocation). Stop and surface the URL of the *CVE tool link* alongside a one-line ask: *"This tracker has CVE `<CVE-ID>` allocated (current state: `<state>`). Retract the CVE record at the CVE-tool first, then re-invoke this skill."* (For the Vulnogram adapter, that's the State dropdown moving from `DRAFT` or `REVIEW` to `REJECTED` — see [`tools/cve-tool-vulnogram/README.md`](../../../tools/cve-tool-vulnogram/README.md).) |
    | `fix released`, `announced - emails sent`, or `announced` label set | The advisory has already shipped (or is mid-flight). Closing as invalid retroactively is a retraction with public consequences. Stop and surface a one-line ask: *"This tracker is past `pr merged` (label: `<label>`). Closing as invalid here would retract a published advisory; escalate to the team before re-invoking."* |
    | Tracker is already `closed` | No-op; surface the existing close reason and stop. |
 
    Both hard stops are deliberate — the skill must not paper over
    a CVE-allocation or a published-advisory state by silently
    labelling and closing.
+
+   The CVE-state probe is generic — it speaks in the four
+   pre-public verbs (`allocated`, `review-ready`, `publish-ready`,
+   `public`) defined in
+   [`tools/cve-tool/README.md` § *Generic state verbs*](../../../tools/cve-tool/README.md#generic-state-verbs).
+   The adapter named in `cve_authority.tool` is responsible for
+   mapping its tool-native state vocabulary onto these verbs.
+   Skill behaviour by returned state:
+
+   - `allocated` or `review-ready` — hard-stop per the table
+     above; the CVE record can still be retracted cleanly, and
+     it MUST be retracted before the tracker is closed as
+     invalid.
+   - `publish-ready` or `public` — escalate to
+     `governance.escalation_contact`; the advisory is mid-flight
+     or already shipped and an invalid close here would be a
+     post-publication retraction with public consequences.
+   - `retracted` — proceed with the invalidate flow; the CVE
+     record is already in its terminal failure state.
+   - `unknown` (returned by the `none` adapter, or when the
+     adapter cannot reach the tool) — fall back to the label /
+     body-field check alone; if either signal is present, surface
+     the gap and ask the user to confirm before proceeding.
 4. **Privacy-LLM contract.** This skill drafts a closing reply
    on the inbound `<security-list>` Gmail thread, so it reads
    the original report's body to mine the team's reasoning
@@ -516,10 +544,67 @@ informational, not a blocker).
 ### 5d — Email draft (security@-imported only)
 
 Skip this entire substep when the import path detected in Step 2
-is *PR-imported*.
+is *PR-imported*. Two additional skip cases — both **must be
+named explicitly** in the Step 5e rollup terminal entry:
 
-For `security@`-imported trackers, the invalidation reply is one
-of the five [forwarder-routing-policy milestones](../../../docs/security/forwarder-routing-policy.md#milestones--do-relay)
+- **Internal-audit-finding imports.** The tracker was
+  imported from a project-internal markdown audit
+  (`airflow-core-findings.md` or equivalent) with no inbound
+  `security@` thread. No reporter to notify. The rollup
+  terminal entry MUST state: *"No reporter notification owed
+  — internal audit finding, no inbound `security@` thread."*
+- **GHSA-relay-only reports — operator with GHSA write
+  access.** The only inbound channel is a GHSA advisory and
+  the tracker carries no Gmail thread. The operator running
+  the skill IS a maintainer with write access to the
+  `<upstream>` repo's GHSA (verify via
+  `gh api repos/<upstream>/security-advisories/<GHSA-ID>`
+  returning a non-403). In that case the GHSA advisory
+  itself IS the closure communication: post a closing
+  comment on the GHSA, mark the advisory as withdrawn or
+  closed informational, and record in the rollup terminal
+  entry: *"GHSA-relay-only reporter channel
+  (GHSA-XXXX-XXXX-XXXX) — closure communicated as GHSA
+  comment `<URL>` / advisory state set to
+  `<withdrawn|informational>`; no Gmail reply needed."*
+- **GHSA-relay-only reports — operator without GHSA write
+  access.** Same intake (GHSA-only, no Gmail thread) but the
+  operator cannot comment on / modify the GHSA — the API
+  call above returns 403, or the operator is running from a
+  triager account that does not hold GHSA-write membership.
+  In that case the GHSA channel is **not** self-sufficient;
+  the closure must be relayed via a forwarder with the
+  required GHSA-write permissions so they can post the
+  closure comment / state-change on our behalf. If the
+  parent tracker was imported via a forwarder adapter (per
+  the optional
+  [`security-issue-import-via-forwarder`](../security-issue-import-via-forwarder/SKILL.md)
+  sub-skill — i.e. when `forwarders.enabled` is non-empty in
+  `<project-config>/project.md` and a registered adapter
+  applies), route the drafted message through that adapter's
+  `contact_handle` and use the adapter's
+  `reporter_addressing_block` convention. See
+  [`tools/forwarder-relay/README.md`](../../../tools/forwarder-relay/README.md)
+  for the contract. The drafted body includes the clickable
+  GHSA URL on its own line + a paste-ready block in the
+  reporter's voice with the invalid-disposition rationale +
+  canonical CVE-ID (when `duplicate`) for the forwarder to
+  post on the GHSA. Worked example: for an `airflow-s`
+  adopter with the `asf-security` forwarder enabled, the
+  adapter resolves the contact to `engelen@apache.org` (or
+  the named `@apache.org` forwarder who relayed the original
+  GHSA report) and the paste-ready block follows the
+  [`tools/gmail/asf-relay.md`](../../../tools/gmail/asf-relay.md)
+  shape. Record in the rollup terminal entry: *"GHSA-relay-only
+  reporter channel (GHSA-XXXX-XXXX-XXXX); operator lacks
+  GHSA-write access on `<upstream>`. Forwarder-relay draft
+  `<draftId>` queued to `<forwarder-contact>` requesting they
+  post the closure comment on the GHSA on our behalf —
+  awaiting user review."*
+
+For every other `security@`-imported tracker, the invalidation
+reply is one of the five
+[forwarder-routing-policy milestones](../../../docs/security/forwarder-routing-policy.md#milestones--do-relay)
 (*Report assessed as invalid*) — so the draft fires in both
 direct-reporter and via-forwarder modes; the policy only changes
 the **recipient** and the **body shape**.
@@ -529,16 +614,26 @@ the **recipient** and the **body shape**.
      `tracker.reporterEmail` (the `From:` of the inbound root
      message). The reply lands on the inbound thread via thread
      attachment.
-   - **Via-forwarder mode** (ASF-security relay or any other case
-     in the [policy's detection list](../../../docs/security/forwarder-routing-policy.md#when-does-via-forwarder-mode-apply)):
-     `toRecipients` is the **forwarder contact** (the
-     `@apache.org` forwarder address from the inbound `From:` for
-     ASF-relay, or the named contact from the explicit
-     no-direct-contact marker comment). The body follows the
+   - **Via-forwarder mode** (the parent tracker was imported via
+     a forwarder adapter — see the optional
+     [`security-issue-import-via-forwarder`](../security-issue-import-via-forwarder/SKILL.md)
+     sub-skill and the
+     [policy's detection list](../../../docs/security/forwarder-routing-policy.md#when-does-via-forwarder-mode-apply)):
+     `toRecipients` is the **forwarder contact** resolved via the
+     matching adapter's `contact_handle` per
+     [`tools/forwarder-relay/README.md`](../../../tools/forwarder-relay/README.md)
+     (or the named contact from an explicit no-direct-contact
+     marker comment on the tracker). The body follows the
+     adapter's `reporter_addressing_block` convention and the
      *Report assessed as invalid* milestone-body shape in the
-     policy doc — short, references the external identifier (GHSA
-     ID, HackerOne URL) rather than restating the technical
-     detail.
+     policy doc — short, references the external identifier
+     (GHSA ID, HackerOne URL) rather than restating the
+     technical detail. Worked example: for an `airflow-s` adopter
+     with the `asf-security` forwarder enabled, the adapter
+     resolves the contact to the `@apache.org` forwarder address
+     from the inbound `From:` and the paste-ready reporter block
+     follows the [`tools/gmail/asf-relay.md`](../../../tools/gmail/asf-relay.md)
+     shape.
    - `ccRecipients`: always includes `<security-list>`
      (`<security-list>` for the adopting project) —
      value comes from
@@ -561,6 +656,20 @@ the **recipient** and the **body shape**.
      private; the reporter has no access; references would
      leak. Cite the public Security Model and any public CVEs
      instead.
+   - **Canonical CVE-ID for `duplicate` dispositions.** When
+     the close is a `duplicate` of an existing CVE record, the
+     body MUST name the canonical `CVE-YYYY-NNNNN` ID
+     verbatim — e.g. *"This is the same root cause as
+     `CVE-2026-XXXXX` which we already track and ship the fix
+     for in `apache-airflow` X.Y.Z."* This lets a forwarder's
+     dedup workflow group the two threads (worked example: the
+     ASF Security team's dedup workflow groups by canonical
+     CVE-ID, per Arnout Engelen's 2026-05-29 ASF-Security ask
+     in the Kyuubi SSRF context). For via-forwarder mode this
+     additionally goes inside the adapter's paste-ready
+     reporter-voice block per the matching adapter's
+     `reporter_addressing_block` convention — see
+     [`tools/forwarder-relay/README.md`](../../../tools/forwarder-relay/README.md).
    - **Polite-but-firm.** Per
      [`AGENTS.md`](../../../AGENTS.md#tone-polite-but-firm--no-room-to-wiggle), state
      the team's position once, clearly, with reasoning. Do not
@@ -601,10 +710,21 @@ upsert recipe). Shape:
 
 **Canned response selected:** *<canned section name>* in [`canned-responses.md`](https://github.com/<tracker>/blob/<tracker-default-branch>/<project-config>/canned-responses.md#<anchor>).
 
-**Reporter notification:** <one of:>
-- **`security@`-imported:** Gmail draft `<draftId>` created on thread `<threadId>` — awaiting user review.
+**Reporter notification:** <one of — required line, never omit:>
+- **`security@`-imported, direct-reporter mode:** Gmail draft `<draftId>` created on thread `<threadId>` anchored at message `<messageId>` — awaiting user review.
+- **`security@`-imported, via-forwarder mode:** Forwarder-relay draft `<draftId>` to `<forwarder-contact>` on thread `<threadId>` per the matching adapter's `reporter_addressing_block` convention (clickable URL + paste-ready reporter-voice block) — awaiting user review. For an `airflow-s` adopter with the `asf-security` forwarder enabled, the contact resolves to an `@apache.org` forwarder and the block follows the [`tools/gmail/asf-relay.md`](https://github.com/apache/airflow-steward/blob/main/tools/gmail/asf-relay.md) shape.
+- **`security@`-imported, `duplicate` disposition:** *(same as direct or via-forwarder above; the draft body MUST name the canonical CVE-ID per Step 5d).*
+- **No notification owed — internal audit finding:** Tracker imported from project-internal markdown audit (`<source-markdown>`), no inbound `security@` thread, no reporter to notify.
+- **No Gmail draft owed — GHSA-relay-only, operator has GHSA-write access:** GHSA-relay-only reporter channel (`GHSA-XXXX-XXXX-XXXX`); closure communicated as GHSA comment `<URL>` / advisory state set to `<withdrawn|informational>`. No Gmail reply needed.
+- **Forwarder-relay draft owed — GHSA-relay-only, operator lacks GHSA-write access:** GHSA-relay-only channel (`GHSA-XXXX-XXXX-XXXX`); operator's account does not have GHSA-write on `<upstream>`. Forwarder-relay draft `<draftId>` queued to `<forwarder-contact>` requesting they post the closure comment on the GHSA on our behalf — awaiting user review.
 - **PR-imported:** none (no reporter; per [Reporter credit policy](https://github.com/<tracker>/blob/<tracker-default-branch>/.claude/skills/security-issue-import-from-pr/SKILL.md#reporter-credit-policy-for-public-pr-imports)).
 - **Indeterminate import path:** none (flag from Step 2 surfaced; user explicitly chose silent close).
+
+**The Reporter-notification line is required on every invalidate
+rollup entry.** Exactly one of the cases above must apply. If
+none does (the channel is genuinely ambiguous), surface as a
+blocker to the user before closing — do NOT post the rollup
+entry without the line.
 
 **Project board:** archived (item `<item-id>`).
 
@@ -829,7 +949,7 @@ Tracker `<tracker>#244` (*DAG author RCE on webserver via
 unrestricted import_string() in BaseSerialization.deserialize()*),
 import path: `security@`-imported. Step 3 mines five comments
 arguing the dag author is already trusted (with quotes from
-@potiuk and @ephraimbuddy). Canned: *When someone claims Dag
+two security-team members). Canned: *When someone claims Dag
 author-provided "user input" is dangerous*. Email draft created
 on thread `<threadId>` with the canned spine + augmentation
 quoting the team's specific reasoning. Tracker closed as

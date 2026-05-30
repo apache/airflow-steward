@@ -26,6 +26,11 @@ license: Apache-2.0
                        (example: airflow-s/airflow-s for the Apache Airflow security team)
      <upstream>       → value of `upstream_repo:` in <project-config>/project.md
                        (example: apache/airflow)
+     <cve-tool>       → adapter directory under `tools/` named by
+                       `cve_authority.tool:` in <project-config>/project.md
+                       (example: cve-tool-vulnogram when `tool: vulnogram`,
+                       i.e. the ASF default that resolves to
+                       `tools/cve-tool-vulnogram/`).
      Before running any bash command below, substitute these with the
      concrete values from the adopting project's <project-config>/project.md. -->
 
@@ -266,62 +271,66 @@ concurrently, which is exactly what the sync needs.
      change tracker state but do not alter the published CVE
      record.
 
-4. **Walk CVE-affecting trackers individually; bundle the rest.**
-   The two buckets are presented to the user differently:
+4. **Present both buckets as merged bulk proposals; the
+   CVE-affecting bucket gets a richer per-item view.** The
+   two buckets are presented to the user differently:
 
    - **Non-CVE-affecting bucket** — fold into one combined
-     proposal, same shape as before this change. The user
+     proposal, same shape as the legacy bulk mode. The user
      confirms once with `all`, `NN:all`, `NN:1,3`, or per-issue
      subsets, and the orchestrator applies them sequentially.
      This bucket is bundled because the actions are reversible,
      low-blast-radius, and do not leak into public CVE surfaces.
-   - **CVE-affecting bucket** — walk **one tracker at a time**,
-     even when many trackers are in the bulk run. For each
-     CVE-affecting tracker the orchestrator:
-     1. Presents a self-contained per-tracker proposal —
-        CVE ID, gate-failure summary, every proposed body-field
-        update with old / new value side by side, the planned
-        regen+push action, any deferral conditions. The proposal
-        is the only context the user needs to read to confirm.
-     2. Waits for explicit user confirmation (`OK`, item subset,
-        free-form edits, or `skip`). A confirmed bundle from the
-        previous tracker does **not** carry to the next.
-     3. Applies the confirmed items + Step 5/5b regen+push for
-        that one tracker, then moves to the next.
+   - **CVE-affecting bucket** — present **all proposed
+     CVE-record-affecting changes from all trackers as ONE
+     merged bulk proposal**, with per-tracker sections so the
+     user can review every body-field rewrite, every regen+push
+     target, every deferral condition at a glance. For each
+     tracker section the proposal shows: CVE ID, gate-failure
+     summary, every body-field update with old / new value
+     side by side, the planned regen+push action, any deferral
+     conditions. The user reviews the **whole bulk pack at
+     once** and signals which items to apply / skip / modify
+     using the same syntax as the non-CVE-affecting bucket
+     (`all`, `NN:all`, `NN:1,3`, `NN:skip`, `NN:edit <item>:
+     <new value>`). On confirmation the orchestrator applies
+     the confirmed items across all trackers sequentially.
 
-   **Why the per-tracker walk for CVE-affecting changes.** A
-   bundled confirmation across N CVE-affecting trackers
-   compresses N independent CVE records into one yes/no, which
-   makes it too easy to nod through a body-field rewrite that
-   ships to `cve.org` (where it stays — `cve.org` records are
-   public-by-default and edits land as new revisions, not silent
-   overwrites). The five pre-push hygiene gates in
-   [Step 5b 1b](#decision-flow) catch *mechanical* drift (bare
-   CWE, missing upgrade target, etc.) but they cannot catch
-   *judgment* drift — whether the team agrees the summary's
-   threat model is right, whether the credit line names the
-   right person, whether the CWE choice fits the patch's
-   nature. Those decisions belong with the user, one record at
-   a time. The non-CVE-affecting bucket does not share this
-   property (a wrong label is reverted with a single `gh issue
-   edit`; a wrong public CVE summary requires a record
-   revision that downstream feeds re-pick-up).
+   **Why bulk-review (and not per-tracker walk).** Per-tracker
+   walk through N CVE-affecting trackers serialises the
+   confirmation cost into N round-trips and forces context
+   re-loading for each one — the operator can't compare
+   proposed summaries across trackers, can't notice that two
+   trackers should converge on the same CWE long-form, can't
+   see at a glance that three are blocked on the same missing
+   field. A single merged proposal puts everything on one
+   page: the operator sees the full bulk shape, edits whichever
+   items they want, and the orchestrator applies the
+   confirmed set in one pass. The hygiene gates in
+   [Step 5b 1b](#decision-flow) still catch *mechanical* drift
+   (bare CWE, missing upgrade target, etc.) on every JSON
+   regen; the bulk-review surface is for the operator to make
+   *judgment* calls (threat-model framing, credit-line shape,
+   CWE choice) before the push fires.
 
-   **No `--bundled` override.** This is the default and only
-   mode for the CVE-affecting bucket. The user can still
-   `skip` a tracker, or interrupt mid-walk and ask the
-   orchestrator to abort the rest; what they cannot do is
-   collapse multiple CVE pushes into one confirmation. The
-   round-trip cost (one extra confirmation prompt per CVE) is
-   the point: it forces a re-read of the per-tracker proposal
-   right before the push lands on `cve.org`.
+   **Confirmation syntax** for the merged proposal:
 
-   **Walk order.** Within the CVE-affecting bucket, walk
-   trackers in **ascending tracker-number order** unless the
-   user names a different order at confirmation. Deterministic
-   order makes the walk predictable across reruns and lets the
-   user say *"do #232 last, I want to think about it"* without
-   the orchestrator inventing a heuristic.
+   - `all` — apply every proposed change across all trackers.
+   - `<N>:all` — apply every change on tracker `<N>`; skip the
+     others.
+   - `<N>:1,3,5` — apply only the listed items on tracker
+     `<N>`.
+   - `<N>:skip` — skip tracker `<N>` entirely.
+   - `<N>:edit <item-number>: <new value>` — replace the
+     proposed item with a free-form override before applying.
+   - `cancel` / `none` — apply nothing.
+
+   **Proposal order in the merged pack.** Trackers appear in
+   **ascending tracker-number order** so the operator can
+   navigate predictably across reruns. The operator can name a
+   different order at confirmation (*"apply #438 first; I want
+   to think about #232 last"*) and the orchestrator honours
+   it.
 
 5. **Apply sequentially, not in parallel.** Even though
    assessment ran in parallel, the apply phase must be
@@ -731,7 +740,7 @@ Process for finding the real reporter and the original thread:
    string ends up in the CVE record's `credits[]` and in the eventual
    public advisory.
 
-   **Apply the [bot/AI credit policy](../../../tools/vulnogram/bot-credits-policy.md)
+   **Apply the [bot/AI credit policy](../../../tools/cve-tool-vulnogram/bot-credits-policy.md)
    to the extracted credit string** before proposing the update. If the
    credit handle matches the bot detection rule (`*[bot]` suffix,
    known-bot list, `*-bot`/`*-ai`/`*-agent`/`*-gpt` suffix patterns),
@@ -822,15 +831,15 @@ update, label change, or next-step recommendation in Step 2:
 | Reporter reply with a confirmed credit line (*"please credit me as …"*, *"use handle X"*, *"anonymous is fine"*) | Replace the `Reporter credited as` placeholder with the confirmed form; mark the credit question as resolved so the next status-update draft does not re-ask it. |
 | Reporter explicit opt-out of credit (*"do not credit me"*, *"anonymous"*) | Set the field to `anonymous` and flag the advisory to use that form. |
 | Release manager's `[RESULT][VOTE] Release Airflow <version>` on `<dev-list>` for a version that carries the fix | Record the release manager in the "Known release managers" subsection of [`AGENTS.md`](../../../AGENTS.md) if not already there; flag Step 13 (advisory) as assigned to that person. |
-| Open `[VOTE] Release <project> <version>` thread on `dev@<project>.apache.org` for a version that matches the tracker's fix-PR milestone, *and* the project has opted into release-vote gating ([`[workflow].release_vote_gating` in `cve-json-config.toml`](../../../tools/vulnogram/generate-cve-json/SKILL.md)) | Propose adding the configured `rc voting` label (default name; see [Step 1h](#1h-detect-active-release-vote-threads-opt-in-asf-projects)). The label feeds back into the CVE-JSON generator on the next regen: `CNA_private.state` flips from `DRAFT` to `REVIEW`, signalling the release manager's *"about to publish"* moment. Detection logic, dev-list resolution, and the `pr merged` window gate live in Step 1h. |
-| Advisory archived on `<users-list>` (the announcement message is now visible in `lists.apache.org/list.html?<users-list>` — scan the archive with the CVE ID when `fix released` is set and the *"Public advisory URL"* body field is empty) | This is the **post-advisory lifecycle close-out trigger**. Propose, in a single combined apply: (1) populate the *"Public advisory URL"* body field with the archive URL; (2) **extract the public-facing short summary from the advisory email body** (the prose between the CVE header and the *Affected version range* block of the archived message) and write it back to the *"Short public summary for publish"* body field, so the tracker's summary matches what actually shipped; (3) flip the tracker labels — add `announced - emails sent` and `announced`, remove `fix released`; (4) regenerate the CVE JSON attachment (the generator picks up the new short summary as `descriptions[].value` and the URL as a `vendor-advisory` reference); (5) re-push the regenerated JSON to the Vulnogram record over the OAuth API; (6) **move the Vulnogram record `REVIEW → PUBLIC`** via the OAuth API — this is the CNA-feed dispatch to `cve.org`, formerly gated on a manual UI click but now driven by sync on the archive-URL signal (the URL is the real-world signal that the advisory has actually shipped); (7) move the project-board column to `Announced`; (8) close the tracker as `completed`; (9) **archive the tracker from the `Announced` column** on the board via the `archiveProjectV2Item` GraphQL mutation; (10) — **if every sibling on the tracker's milestone is also closed at that moment** — close the milestone too via the milestone-PATCH recipe in [Step 4](#step-4--apply-confirmed-changes); (11) post a **purely informational** wrap-up comment tagging the release manager as a timeline-event marker that the lifecycle is complete — **no manual asks**, since (9) and (10) are already sync-driven and the RM has no remaining actions post-Send-Email. The OAuth API push + `REVIEW → PUBLIC` step degrade to a paste fallback in the [`release-manager-handoff-comment.md`](../../../tools/vulnogram/release-manager-handoff-comment.md) variant when the OAuth session is not available. |
+| Open `[VOTE] Release <project> <version>` thread on `dev@<project>.apache.org` for a version that matches the tracker's fix-PR milestone, *and* the project has opted into release-vote gating ([`[workflow].release_vote_gating` in `cve-json-config.toml`](../../../tools/cve-tool-vulnogram/generate-cve-json/SKILL.md)) | Propose adding the configured `rc voting` label (default name; see [Step 1h](#1h-detect-active-release-vote-threads-opt-in-asf-projects)). The label feeds back into the CVE-JSON generator on the next regen: `CNA_private.state` flips from `DRAFT` to `REVIEW`, signalling the release manager's *"about to publish"* moment. Detection logic, dev-list resolution, and the `pr merged` window gate live in Step 1h. |
+| Advisory archived on `<users-list>` (the announcement message is now visible in `lists.apache.org/list.html?<users-list>` — scan the archive with the CVE ID when `fix released` is set and the *"Public advisory URL"* body field is empty) | This is the **post-advisory lifecycle close-out trigger**. Propose, in a single combined apply: (1) populate the *"Public advisory URL"* body field with the archive URL; (2) **extract the public-facing short summary from the advisory email body** (the prose between the CVE header and the *Affected version range* block of the archived message) and write it back to the *"Short public summary for publish"* body field, so the tracker's summary matches what actually shipped; (3) flip the tracker labels — add `announced - emails sent` and `announced`, remove `fix released`; (4) regenerate the CVE JSON attachment (the generator picks up the new short summary as `descriptions[].value` and the URL as a `vendor-advisory` reference); (5) re-push the regenerated JSON to the Vulnogram record over the OAuth API; (6) **move the Vulnogram record `REVIEW → PUBLIC`** via the OAuth API — this is the CNA-feed dispatch to `cve.org`, formerly gated on a manual UI click but now driven by sync on the archive-URL signal (the URL is the real-world signal that the advisory has actually shipped); (7) move the project-board column to `Announced`; (8) close the tracker as `completed`; (9) **archive the tracker from the `Announced` column** on the board via the `archiveProjectV2Item` GraphQL mutation; (10) — **if every sibling on the tracker's milestone is also closed at that moment** — close the milestone too via the milestone-PATCH recipe in [Step 4](#step-4--apply-confirmed-changes); (11) post a **purely informational** wrap-up comment tagging the release manager as a timeline-event marker that the lifecycle is complete — **no manual asks**, since (9) and (10) are already sync-driven and the RM has no remaining actions post-Send-Email. The OAuth API push + `REVIEW → PUBLIC` step degrade to a paste fallback in the [`release-manager-handoff-comment.md`](../../../tools/cve-tool-vulnogram/release-manager-handoff-comment.md) variant when the OAuth session is not available. |
 | Advisory message sent to `announce@apache.org` / `<users-list>` but archive URL not yet visible | No-op transition; **do not** flip the `fix released → announced` labels here. The label flip is part of the combined "archive URL captured" apply above and only fires when the archive URL is confirmed live on `lists.apache.org` (this is the load-bearing real-world signal that the advisory actually shipped — a `[VOTE]/[ANNOUNCE]` mail thread in flight without an archived URL is ambiguous). |
 | Project-board column drifted from the issue's label-derived state (e.g. a tracker carries `pr merged` but is still in the `PR created` column on [Project 2](<project-board-url>), or `announced` + *Public advisory URL* body field populated but the column is still `Fix released`) | Propose moving the project item to the correct column per the mapping table in Step 2b. The board is the primary security-team overview surface; a stale column hides ownership handoffs from the team at a glance. |
 | `announced` label set and CVE record on `cveprocess.apache.org` now reports state PUBLISHED (checked via `curl -s https://cveprocess.apache.org/cve5/<CVE-ID>.json` / the ASF CVE tool API, or an explicit release-manager comment on the issue stating the Vulnogram push is done) | Propose closing the issue. Do not update any labels. This is the terminal transition. |
 | CVE record has open **review comments / reviewer proposals** (detected via the Gmail-search path in Step 1e — reviewer-comment notifications from Vulnogram land on `<security-list>` with the CVE ID in the subject line; the `cveprocess.apache.org/cve5/<CVE-ID>.json` endpoint is behind ASF OAuth and is not readable from this skill's context, so Gmail is the load-bearing signal source). | Surface each open review comment in Step 2a with **clickable links** to the Gmail thread and to the CVE record on `cveprocess.apache.org` (the reader can authenticate in-browser to see live state), verbatim-quoted; then for each one that maps cleanly to a tracking-issue body field (CWE, Affected versions, Reporter credited as, Public advisory URL, Short public summary), **propose the matching body-field update** as a numbered item in Step 2b. The body is the source of truth for the CVE JSON — regeneration in Step 5 will pull the update back into the paste-ready attachment, and the release manager's only remaining action is the Vulnogram paste + comment-resolution click. Comments that do not map to a body field (severity/CVSS, out-of-scope challenges, free-form rewrites) are surfaced verbatim and flagged for human decision. See Step 1e for the full Gmail-search recipe, the reviewer-comment-to-field mapping table, and the courtesy-reply pattern. |
 | The referenced `<upstream>` PR has been opened but is still in `open` state | Propose `pr created` label; update the *"PR with the fix"* body field with the PR URL. |
 | The referenced `<upstream>` PR moved to `merged` | Propose swapping `pr created` → `pr merged`; update milestone to the shipping release if now known. **Also**: check whether all six mandatory CVE body fields are populated (*CWE*, *Affected versions*, *Severity*, *Reporter credited as*, *Short public summary for publish*, *PR with the fix*). If any is empty / `_No response_`, propose posting (or PATCH-updating) the *Remediation-developer fill-fields comment* per [the dedicated bullet in Step 2b](#step-2--build-a-proposal-do-not-apply-anything-yet) — the remediation developer is best-positioned to fill these in, and the tracker stays assigned to them until the fields are complete. This is the **first** of two firing points for the fill-fields comment; the second is the `pr merged` → `fix released` row below. |
-| The *"PR with the fix"* body field has at least one PR URL **and** the *"Remediation developer"* body field is missing the PR author's name (or is `_No response_`) | Propose appending the PR author's display name (`gh pr view <N> --repo <upstream> --json author --jq '.author.name // .author.login'`) to the *"Remediation developer"* body field. **Append, never overwrite** — manual edits (co-authors added by the triager, name spelling corrections, "Anonymous" overrides) must survive subsequent syncs. Run once per fresh PR URL added to the field; skip if the resolved name is already present (case-insensitive substring match). **Apply the [bot/AI credit policy](../../../tools/vulnogram/bot-credits-policy.md) to the resolved name + handle before proposing the append** — if the PR author matches the bot detection rule (`*[bot]` suffix, known-bot list, `*-bot`/`*-ai`/`*-agent`/`*-gpt` suffix patterns), do **not** propose the append; surface *"skipped credit: `<handle>` (matches bot policy — `<rule>`)"* in Step 2 instead. The user can override per the policy doc. The CVE JSON generator reads the field on its next regeneration and emits one `type: "remediation developer"` credit per line, so this hand-off keeps the credit attached even if Vulnogram drops the CLI flag. See the *"Auto-resolve --remediation-developer"* note in Step 5 for the historical CLI-flag fallback. |
+| The *"PR with the fix"* body field has at least one PR URL **and** the *"Remediation developer"* body field is missing the PR author's name (or is `_No response_`) | Propose appending the PR author's display name (`gh pr view <N> --repo <upstream> --json author --jq '.author.name // .author.login'`) to the *"Remediation developer"* body field. **Append, never overwrite** — manual edits (co-authors added by the triager, name spelling corrections, "Anonymous" overrides) must survive subsequent syncs. Run once per fresh PR URL added to the field; skip if the resolved name is already present (case-insensitive substring match). **Apply the [bot/AI credit policy](../../../tools/cve-tool-vulnogram/bot-credits-policy.md) to the resolved name + handle before proposing the append** — if the PR author matches the bot detection rule (`*[bot]` suffix, known-bot list, `*-bot`/`*-ai`/`*-agent`/`*-gpt` suffix patterns), do **not** propose the append; surface *"skipped credit: `<handle>` (matches bot policy — `<rule>`)"* in Step 2 instead. The user can override per the policy doc. The CVE JSON generator reads the field on its next regeneration and emits one `type: "remediation developer"` credit per line, so this hand-off keeps the credit attached even if Vulnogram drops the CLI flag. See the *"Auto-resolve --remediation-developer"* note in Step 5 for the historical CLI-flag fallback. |
 | The *"Affected versions"* body field is missing, holds a pre-convention shape, or carries the project's pre-release sentinel, and the tracker is **not** at `fix released` yet | Propose populating / refining *"Affected versions"* per the project's convention. The per-scope shape, the pre-release sentinel (if any), and the lifecycle live in [`<project-config>/scope-labels.md` — *Affected versions convention by scope*](../../../<project-config>/scope-labels.md#affected-versions-convention-by-scope). After updating, regenerate the CVE JSON attachment so the parser picks up the new shape. **Always emit the proposed value wrapped in backticks** (`` `>= X.Y.Z, < A.B.C` `` rather than `>= X.Y.Z, < A.B.C`) — see the dedicated row below for why. |
 | The *"Affected versions"* body field has a value but it is **not backtick-wrapped** (the raw value, as returned by `gh issue view --json body`, starts with a `>` character or contains a bare `>=` / `<=` / `<` / `>` token outside a `` ` `` … `` ` `` span) | Propose wrapping the value in backticks (e.g. `` `>= 3.0.0, < 3.2.2` ``, `` `< 3.2.2` ``, `` `<= 3.2.1` ``). **Why:** the leading `>` is the markdown blockquote marker — without backticks, GitHub renders the rendered field as a quoted single line, and maintainers editing via the issue-form UI silently lose the `>=` prefix (saving back the visible quoted text), turning a bounded range like `>= 3.0.0, < 3.2.2` into a misleading single-version entry like `3.2.1`. The CVE-JSON generator already strips backticks at parse time (`cleaned = value.strip().strip("\`").strip()`), so wrapping is a pure-cosmetic + edit-resilience fix with no semantic change. Apply this fix on every sync run that surfaces an un-wrapped value, even if no other body update is being proposed for the tracker. After updating, regenerate the CVE JSON attachment so the un-wrapped → wrapped transition is recorded in the next emission. |
 | A tracker is transitioning to `fix released` (per the row below) and *"Affected versions"* still carries the project's pre-release sentinel | Propose replacing the sentinel with the concrete released version per the project's convention; see [`<project-config>/scope-labels.md` — *Affected versions convention by scope*](../../../<project-config>/scope-labels.md#affected-versions-convention-by-scope) for the recipe. After the body update, regenerate the CVE JSON attachment so `versions[]` picks up the bounded `lessThan` shape and the record becomes review-ready. |
@@ -981,7 +990,7 @@ Vulnogram's `#source` tab to address the reviewer's comment*. By
 proposing the body update directly, the sync saves the release
 manager from a round trip: they open the record once (to
 acknowledge / resolve the comment after re-writing the JSON via
-[`vulnogram-api-record-update`](../../../tools/vulnogram/oauth-api/README.md)
+[`vulnogram-api-record-update`](../../../tools/cve-tool-vulnogram/oauth-api/README.md)
 or — fallback — the `#source` paste), not twice (once to read
 the comment, once to write after a separate human body edit).
 
@@ -1010,7 +1019,7 @@ Step 5 of the apply loop runs `generate-cve-json --attach`
 automatically, so the attached CVE JSON is regenerated in the
 same sync run — the release manager's next action is just the
 Vulnogram write (default:
-[`vulnogram-api-record-update`](../../../tools/vulnogram/oauth-api/README.md);
+[`vulnogram-api-record-update`](../../../tools/cve-tool-vulnogram/oauth-api/README.md);
 fallback: the `#source` paste).
 
 Also include the standard *"Open the CVE record at
@@ -1164,7 +1173,7 @@ from the closed-bucket sweep.
 **Opt-in.** This sub-step only fires when the project has enabled
 release-vote gating in the CVE-JSON generator's config — i.e. when
 `[workflow].release_vote_gating` is `true` in
-[`<project-config>/tools/vulnogram/cve-json-config.toml`](../../../<project-config>/tools/vulnogram/cve-json-config.toml).
+[`<project-config>/tools/cve-tool-vulnogram/cve-json-config.toml`](../../../<project-config>/tools/cve-tool-vulnogram/cve-json-config.toml).
 Adopters that publish advisories without a separate release-vote
 step leave the flag off; the sync skill skips this sub-step
 entirely for them and the `rc voting` label is never proposed.
@@ -1173,7 +1182,7 @@ entirely for them and the `rc voting` label is never proposed.
 field follows a tri-state machine: `DRAFT` until the CVE is review-
 ready, then `REVIEW` once an RC for the carrier release is being
 voted, then `PUBLIC` after the advisory ships (see
-[`tools/vulnogram/generate-cve-json/SKILL.md`](../../../tools/vulnogram/generate-cve-json/SKILL.md)
+[`tools/cve-tool-vulnogram/generate-cve-json/SKILL.md`](../../../tools/cve-tool-vulnogram/generate-cve-json/SKILL.md)
 for the full state machine). The gating is driven by a tracker label
 (`[workflow].rc_voting_label`, default `"rc voting"`); this sub-step
 is the **only place** the sync skill proposes adding or removing
@@ -2111,7 +2120,7 @@ will change and *why*. Group them by category:
 
   **Body source.** `tools/<cve-tool>/remediation-developer-fill-fields-comment.md`
   (for Vulnogram:
-  [`tools/vulnogram/remediation-developer-fill-fields-comment.md`](../../../tools/vulnogram/remediation-developer-fill-fields-comment.md)).
+  [`tools/cve-tool-vulnogram/remediation-developer-fill-fields-comment.md`](../../../tools/cve-tool-vulnogram/remediation-developer-fill-fields-comment.md)).
   This template carries no OAuth-pushed / manual-paste variants —
   the remediation developer's job is to fill in body fields, and
   the API-push state is invisible to them.
@@ -2211,13 +2220,13 @@ will change and *why*. Group them by category:
   - **OAuth-pushed variant** —
     `tools/<cve-tool>/release-manager-handoff-comment-oauth-pushed.md`
     (for Vulnogram:
-    [`tools/vulnogram/release-manager-handoff-comment-oauth-pushed.md`](../../../tools/vulnogram/release-manager-handoff-comment-oauth-pushed.md)).
+    [`tools/cve-tool-vulnogram/release-manager-handoff-comment-oauth-pushed.md`](../../../tools/cve-tool-vulnogram/release-manager-handoff-comment-oauth-pushed.md)).
     Used when Step 5b's `vulnogram-api-record-update` succeeded
     this sync run.
   - **Manual-paste variant (today's default)** —
     `tools/<cve-tool>/release-manager-handoff-comment.md`
     (for Vulnogram:
-    [`tools/vulnogram/release-manager-handoff-comment.md`](../../../tools/vulnogram/release-manager-handoff-comment.md)).
+    [`tools/cve-tool-vulnogram/release-manager-handoff-comment.md`](../../../tools/cve-tool-vulnogram/release-manager-handoff-comment.md)).
     Used when Step 5b skipped (no credentials, expired session)
     or the push failed.
 
@@ -2242,7 +2251,7 @@ will change and *why*. Group them by category:
     [`<project-config>/project.md`](../../../<project-config>/project.md#mailing-lists).
   - `SOURCE_TAB_URL`, `EMAIL_TAB_URL` — substitute `<CVE-ID>` into
     `cve_tool_record_url_template` (from project.md), append
-    `#source` / `#email` per [`tools/vulnogram/record.md`](../../../tools/vulnogram/record.md#record-urls).
+    `#source` / `#email` per [`tools/cve-tool-vulnogram/record.md`](../../../tools/cve-tool-vulnogram/record.md#record-urls).
   - `JSON_ANCHOR_URL` — the deep link the `generate-cve-json` tool
     prints on every regen (the
     `https://github.com/<tracker>/issues/<N>#cve-json--paste-ready-for-<cve-id-slug>`
@@ -2307,7 +2316,7 @@ will change and *why*. Group them by category:
   comment — the body comes from
   `tools/<cve-tool>/release-manager-publication-comment.md` (for
   Vulnogram:
-  [`tools/vulnogram/release-manager-publication-comment.md`](../../../tools/vulnogram/release-manager-publication-comment.md)).
+  [`tools/cve-tool-vulnogram/release-manager-publication-comment.md`](../../../tools/cve-tool-vulnogram/release-manager-publication-comment.md)).
   Placeholders substituted: `CVE_ID`, `RM_HANDLE`, `ARCHIVE_URL`
   (the just-captured archive URL), `SOURCE_TAB_URL`,
   `JSON_ANCHOR_URL`, `CVE_ORG_URL`
@@ -2331,27 +2340,25 @@ will change and *why*. Group them by category:
   artifact link. See the "Brevity: emails state facts, not context"
   section of [`AGENTS.md`](../../../AGENTS.md).
 
-  **Apply the [forwarder-routing policy](../../../docs/security/forwarder-routing-policy.md)
-  to decide whether to propose the draft at all.** Run the detection
-  rules in the policy doc to determine the tracker's routing mode:
-
-  * **Direct-reporter mode** — proceed as written above; the draft
-    targets the reporter on the inbound thread.
-  * **Via-forwarder mode + event is on the [milestone list](../../../docs/security/forwarder-routing-policy.md#milestones--do-relay)**
-    (report accepted as valid, CVE allocated, advisory sent,
-    invalidation, or a specific *"we need additional information"*
-    question) — propose the draft to the **forwarder contact**, not
-    the reporter, using the short milestone-body shape from the
-    policy doc. Reference the external identifier (GHSA ID,
-    HackerOne URL, internal ticket number) rather than repeating
-    the technical detail of the report.
-  * **Via-forwarder mode + event is NOT on the milestone list**
-    (regular workflow status, credit-form questions, reviewer-
-    comment relays) — **suppress the draft entirely**. Record in
-    the proposal recap *"skipped reporter draft: `<event>` not on
-    the via-forwarder milestone list"* so the user can see why
-    no message was proposed. The forwarder is not pinged with
-    low-signal updates.
+  **Route through the forwarder-relay adapter when one is registered.**
+  If the parent tracker carries a forwarder-adapter marker (set by
+  the optional
+  [`security-issue-import-via-forwarder`](../security-issue-import-via-forwarder/SKILL.md)
+  sub-skill when `forwarders.enabled` is non-empty in
+  [`<project-config>/project.md`](../../../<project-config>/project.md)
+  and the inbound message matched a registered adapter), route any
+  drafted reply through that adapter's `contact_handle` and use the
+  adapter's `reporter_addressing_block` convention. See
+  [`tools/forwarder-relay/README.md`](../../../tools/forwarder-relay/README.md)
+  for the contract — including the per-event do-relay / suppress
+  matrix the adapter applies to decide whether a draft should be
+  proposed at all (e.g. CVE-allocated and advisory-sent events
+  relay; routine credit-form questions and reviewer-comment relays
+  are suppressed). When no adapter is registered (the
+  `forwarders.enabled` list is empty, or the tracker has no
+  forwarder-adapter marker), proceed in direct-reporter mode as
+  written above — the draft targets the reporter on the inbound
+  thread.
 
   **Never send.** Always create a draft. Prefer attaching it to the
   inbound mail thread (the default `claude_ai_mcp` backend resolves
@@ -2592,7 +2599,7 @@ before moving on to the next item. Use:
   URL and pushed to the record"* claim is true at the moment the
   RM reads it.
 - **Wrap-up comment (post-close, informational only):** load
-  [`tools/<cve-tool>/release-manager-wrap-up-comment.md`](../../../tools/vulnogram/release-manager-wrap-up-comment.md)
+  [`tools/<cve-tool>/release-manager-wrap-up-comment.md`](../../../tools/cve-tool-vulnogram/release-manager-wrap-up-comment.md)
   and post it as the **last** action of the *Advisory archived on
   `<users-list>`* combined apply, right after sync has already
   (a) archived the tracker from the project board via
@@ -2652,7 +2659,7 @@ before moving on to the next item. Use:
   for the rollup PATCH and hand-off comment, so the `RM_HANDLE`
   substitution actually notifies the release manager.
 - **Vulnogram state transition (`REVIEW → PUBLIC`):** invoke the
-  [`vulnogram-api-record-publish`](../../../tools/vulnogram/oauth-api/README.md)
+  [`vulnogram-api-record-publish`](../../../tools/cve-tool-vulnogram/oauth-api/README.md)
   CLI to flip the record's `CNA_private.state` over the OAuth API.
   The default refuses the transition unless the current state is
   `REVIEW`; widen with `--allow-state` only when explicitly
@@ -2660,7 +2667,7 @@ before moving on to the next item. Use:
   manually):
 
   ```bash
-  uv run --project <framework>/tools/vulnogram/oauth-api \
+  uv run --project <framework>/tools/cve-tool-vulnogram/oauth-api \
     vulnogram-api-record-publish --cve-id <CVE-YYYY-NNNNN>
   ```
 
@@ -2780,10 +2787,10 @@ After the apply loop finishes — **every time**, not as a proposal — regenera
 CVE artifact via the project's declared CVE tool. For the adopting project (`cve_tool: vulnogram` —
 see [`<project-config>/project.md`](../../../<project-config>/project.md#cve-tooling)) that means
 running the
-[`generate-cve-json`](../../../tools/vulnogram/generate-cve-json/SKILL.md) script with `--attach`
+[`generate-cve-json`](../../../tools/cve-tool-vulnogram/generate-cve-json/SKILL.md) script with `--attach`
 to refresh the CVE JSON attachment on the tracking issue. The Vulnogram-side
 record mechanics (DRAFT / REVIEW / PUBLIC state machine, `#source` paste flow) live
-in [`tools/vulnogram/record.md`](../../../tools/vulnogram/record.md). The attachment
+in [`tools/cve-tool-vulnogram/record.md`](../../../tools/cve-tool-vulnogram/record.md). The attachment
 lives **embedded in the issue body** (at the very end, right after the
 *CVE tool link* field), not as a separate comment — this way it stays
 above every status-change comment in the timeline and reads as part of
@@ -2826,7 +2833,7 @@ In every other case — including already-published CVEs — regenerate.
 The minimum command, from the `<tracker>` clone root:
 
 ```bash
-uv run --project <framework>/tools/vulnogram/generate-cve-json generate-cve-json <N> --attach
+uv run --project <framework>/tools/cve-tool-vulnogram/generate-cve-json generate-cve-json <N> --attach
 ```
 
 That alone is enough. The script reads every template field from the
@@ -2874,7 +2881,7 @@ reason; the same scoping rule applies if you ever need to resolve
 the author by hand.
 
 ```bash
-uv run --project <framework>/tools/vulnogram/generate-cve-json generate-cve-json <N> --attach
+uv run --project <framework>/tools/cve-tool-vulnogram/generate-cve-json generate-cve-json <N> --attach
 ```
 
 If the *"Remediation developer"* field is empty at regeneration time
@@ -2910,54 +2917,67 @@ recap so the user has one-click access to the attached JSON.
 
 ---
 
-## Step 5b — Push the regenerated JSON to Vulnogram via the OAuth API
+## Step 5b — Push the regenerated JSON to the CVE tool via the adapter
 
-The regenerated JSON above is paste-ready for Vulnogram. **When the
-operator's machine has a valid Vulnogram OAuth session configured**
-(the one-time
-`uv run --project <framework>/tools/vulnogram/oauth-api vulnogram-api-setup`
-per machine — see
-[`tools/vulnogram/oauth-api/README.md`](../../../tools/vulnogram/oauth-api/README.md)),
-**sync pushes the JSON to the record directly** instead of leaving the
-paste step to the release manager. The push is mechanical and follows
-from the same JSON the user just approved as part of the body update.
+The regenerated JSON above is paste-ready for the project's CVE
+tool. **When the operator's machine has a valid authenticated session
+configured** for the adapter named in
+`cve_authority.tool` (one-time setup per the
+`tools/<cve-tool>/README.md` adapter doc — for the Vulnogram adapter,
+that is `uv run --project <framework>/tools/cve-tool-vulnogram/oauth-api vulnogram-api-setup`
+backing the contract's authenticated-session probe; see
+[`tools/cve-tool-vulnogram/oauth-api/README.md`](../../../tools/cve-tool-vulnogram/oauth-api/README.md)),
+**sync pushes the JSON to the record directly** through the
+adapter's `push_update(cve_id, fields, state_transition=None)`
+method (per [`tools/cve-tool/README.md`](../../../tools/cve-tool/README.md))
+instead of leaving the paste step to the release manager. The push
+is mechanical and follows from the same JSON the user just approved
+as part of the body update.
 
-**State auto-promote (DRAFT → REVIEW) — driven by the generator,
-not by sync.** The CVE JSON the generator produces already carries
-the correct `CNA_private.state` value based on the readiness of
-the tracker's body fields. The generator's logic (see
+**State auto-promote from `allocated` to `review-ready` — driven by
+the generator, not by sync.** The CVE JSON the generator produces
+already carries the correct `CNA_private.state` value based on the
+readiness of the tracker's body fields. The generator emits the
+adapter-native state token, which the contract maps onto the generic
+state verbs the skills speak in (see the *Generic state verbs* table
+in [`tools/cve-tool/README.md`](../../../tools/cve-tool/README.md)).
+For the Vulnogram adapter the native tokens are `DRAFT` / `REVIEW` /
+`READY` / `PUBLIC`; the generator's logic (see
 `compute_cna_private_state` in
-[`tools/vulnogram/generate-cve-json`](../../../tools/vulnogram/generate-cve-json/src/generate_cve_json/cve_json.py)):
+[`tools/cve-tool-vulnogram/generate-cve-json`](../../../tools/cve-tool-vulnogram/generate-cve-json/src/generate_cve_json/cve_json.py))
+emits:
 
-- `DRAFT` — when any required field is missing (no title, no
-  description, no affected versions, no CWE, no non-Unknown
-  severity, no credit, no reference).
-- `REVIEW` — when every field a release manager needs to send
-  the advisory is present, **but** no public advisory URL has
-  been captured yet.
-- `PUBLIC` — when the CNA is review-ready AND at least one
-  `references[]` entry is tagged `vendor-advisory` (i.e. the
-  *Public advisory URL* body field is populated with the
-  archived users-list URL).
+- `allocated` (Vulnogram: `DRAFT`) — when any required field is
+  missing (no title, no description, no affected versions, no
+  CWE, no non-Unknown severity, no credit, no reference).
+- `review-ready` (Vulnogram: `REVIEW`) — when every field a
+  release manager needs to send the advisory is present, **but**
+  no public advisory URL has been captured yet.
+- `public` (Vulnogram: `PUBLIC`) — when the CNA is review-ready
+  AND at least one `references[]` entry is tagged
+  `vendor-advisory` (i.e. the *Public advisory URL* body field
+  is populated with the archived users-list URL).
 
-Sync's role is therefore **just** to push the generated JSON and
-verify the saved state matches what the generator computed.
-Vulnogram accepts the state field verbatim from the pushed
-document; no separate state-flip call is needed for the
-`DRAFT` → `REVIEW` transition. This is the load-bearing gate for
-the release-manager hand-off (see Step 2b's *Two-stage gate*):
-the RM never receives the hand-off comment while the record is
-still in `DRAFT`.
+Sync's role is therefore **just** to push the generated JSON via
+the adapter's `push_update` and verify, through `fetch_current_state`,
+that the saved state matches what the generator computed. The
+contract guarantees `push_update` writes any embedded state field
+verbatim where the underlying tool supports it; no separate
+state-flip call is needed for the `allocated` → `review-ready`
+transition. This is the load-bearing gate for the release-manager
+hand-off (see Step 2b's *Two-stage gate*): the RM never receives
+the hand-off comment while the record is still in `allocated`.
 
 The remaining transitions stay separate:
 
-- `REVIEW` → `READY` is a **release-manager UI click** in
-  Vulnogram, done as Step 1 of the RM hand-off after any reviewer
-  comments on the record are resolved. (The generator does not
-  emit `READY` — it is intentionally a human decision that
-  reviewer feedback is closed.)
-- `READY` → `PUBLIC` is **sync-driven** via the
-  `vulnogram-api-record-publish` CLI (see Step 4 below), fired
+- `review-ready` → `publish-ready` is a **release-manager UI
+  action** in the CVE tool (for the Vulnogram adapter, the State
+  dropdown going `REVIEW` → `READY`), done as Step 1 of the RM
+  hand-off after any reviewer comments on the record are resolved.
+  The generator does not emit `publish-ready` — it is intentionally
+  a human decision that reviewer feedback is closed.
+- `publish-ready` → `public` is **sync-driven** via the
+  adapter's `publish(cve_id)` method (see Step 4 below), fired
   when the advisory archive URL has been captured on
   `lists.apache.org/list.html?<users-list>` — the CNA-feed
   dispatch trigger has a real-world signal (the archived
@@ -3040,27 +3060,28 @@ Step 6 below describes how to verify the state advance landed
    of the proposed updates). Skipping the push on a gate failure
    forces the next sync iteration to surface the remaining edits.
 
-2. **Probe the session** — `vulnogram-api-check`:
-
-   ```bash
-   uv run --project <framework>/tools/vulnogram/oauth-api vulnogram-api-check
-   ```
-
-   Three outcomes:
+2. **Probe the adapter's authenticated session.** Invoke the
+   adapter's session-probe entrypoint (per
+   `tools/<cve-tool>/README.md`; for the Vulnogram adapter this is
+   `uv run --project <framework>/tools/cve-tool-vulnogram/oauth-api vulnogram-api-check`).
+   The contract requires the probe to return one of three outcomes:
 
    - **`valid`** → proceed to step 3.
    - **`expired`** → skip the push, surface a one-line reminder in
-     the Step 6 recap: *"Vulnogram OAuth session expired — re-run
-     `vulnogram-api-setup` to restore automatic push; using
-     manual-paste hand-off this run."* Fall through to the
+     the Step 6 recap: *"CVE-tool authenticated session expired —
+     re-run the adapter's setup entrypoint (for the Vulnogram
+     adapter, `vulnogram-api-setup`) to restore automatic push;
+     using manual-paste hand-off this run."* Fall through to the
      manual-paste hand-off variant for any 5c comment work below.
    - **`not-configured`** → skip the push silently. Not every
-     operator runs the API path; that is fine, today's manual-paste
-     hand-off still works. Fall through to the manual-paste hand-off
-     variant for any 5c comment work below.
+     operator runs the adapter-backed push path; that is fine,
+     the manual-paste hand-off (via the
+     `cve_authority.source_tab_url_template` link) still works.
+     Fall through to the manual-paste hand-off variant for any 5c
+     comment work below.
 
 3. **Extract the regenerated JSON.** The
-   [`generate-cve-json`](../../../tools/vulnogram/generate-cve-json/SKILL.md)
+   [`generate-cve-json`](../../../tools/cve-tool-vulnogram/generate-cve-json/SKILL.md)
    step in 5a embedded the JSON inside the tracker body between the
    `<!-- generate-cve-json: cve=<CVE> version=v1 -->` /
    `<!-- generate-cve-json:end ... -->` markers. Re-run the
@@ -3070,20 +3091,33 @@ Step 6 below describes how to verify the state advance landed
    deterministic. Conventional path:
    `/tmp/cve-<CVE-ID>-<N>.json`.
 
-4. **Push** — `vulnogram-api-record-update`:
+4. **Push the update through the adapter's `push_update` method.**
+   Invoke `push_update(cve_id, fields, state_transition=None)` per
+   [`tools/cve-tool/README.md`](../../../tools/cve-tool/README.md).
+   For the Vulnogram adapter the wire-level entrypoint backing the
+   method is `vulnogram-api-record-update`:
 
    ```bash
-   uv run --project <framework>/tools/vulnogram/oauth-api vulnogram-api-record-update \
+   uv run --project <framework>/tools/cve-tool-vulnogram/oauth-api vulnogram-api-record-update \
      --cve-id <CVE-ID> --json-file /tmp/cve-<CVE-ID>-<N>.json
    ```
+
+   The `state_transition` argument is omitted here — the JSON
+   already carries the generator-computed state field, and any
+   adapter whose tool embeds state inside the record body (the
+   Vulnogram adapter does) will write it as part of the same
+   `push_update` call. Adapters whose tool requires a separate
+   state-flip API call perform that flip internally; the contract
+   keeps the call atomic from the skill's point of view.
 
    Capture the call's exit code and `stdout` / `stderr`:
 
    - **`exit 0`** → push succeeded. Record the ISO-8601 timestamp
      (`PUSH_TIMESTAMP`); the Step 5c comment work uses the
      **OAuth-pushed variant** of the relevant template; the Step 6
-     recap includes *"CVE record auto-pushed to Vulnogram at
-     `PUSH_TIMESTAMP`."*
+     recap includes *"CVE record auto-pushed to the CVE tool at
+     `PUSH_TIMESTAMP`."* (for the Vulnogram adapter, name it in the
+     recap as *"auto-pushed to Vulnogram"*).
    - **`exit ≠ 0`** → push failed. Surface the error verbatim in
      the Step 6 recap and **fall back** to the manual-paste hand-off
      for the Step 5c comment work. Do **not** retry on the same
@@ -3091,42 +3125,54 @@ Step 6 below describes how to verify the state advance landed
      better surfaced once and re-tried on the next sync (after
      either Gmail-side or body-side state has settled).
 
-5. **Idempotence note.** The Vulnogram upsert endpoint is
-   idempotent: re-posting the same JSON on a subsequent sync is a
-   no-op on Vulnogram's side. The sync skill does not need to
-   short-circuit "already pushed this JSON" — every successful
-   sync run that re-regenerated the JSON should re-push to keep
-   the record byte-identical to the tracker body.
+5. **Idempotence note.** The contract requires `push_update` to be
+   idempotent: re-posting the same `fields` dict on a subsequent
+   sync is a no-op on the underlying tool's side (the Vulnogram
+   adapter's upsert endpoint satisfies this naturally). The sync
+   skill does not need to short-circuit "already pushed this JSON"
+   — every successful sync run that re-regenerated the JSON should
+   re-push to keep the record byte-identical to the tracker body.
 
-6. **Verify the state advance landed (DRAFT → REVIEW gate).** When
-   step 4 above succeeded **and** the JSON pushed included
-   `body.CNA_private.state = "REVIEW"`, immediately fetch the
-   record to confirm the state actually advanced:
+6. **Verify the state advance landed (`allocated` → `review-ready`
+   gate).** When step 4 above succeeded **and** the JSON pushed
+   included a state field set to the adapter-native equivalent of
+   `review-ready` (for the Vulnogram adapter, that is
+   `body.CNA_private.state = "REVIEW"`), immediately call the
+   adapter's `fetch_current_state(cve_id)` method to confirm the
+   state actually advanced. For the Vulnogram adapter the
+   wire-level entrypoint backing the method is
+   `vulnogram-api-record-fetch`:
 
    ```bash
-   uv run --project <framework>/tools/vulnogram/oauth-api vulnogram-api-record-fetch \
+   uv run --project <framework>/tools/cve-tool-vulnogram/oauth-api vulnogram-api-record-fetch \
      --cve-id <CVE-ID> --jq '.body.CNA_private.state'
    ```
 
-   *(If `vulnogram-api-record-fetch` is not yet available on the
-   operator's machine — the CLI was added together with this
-   gate; see [`tools/vulnogram/oauth-api/README.md`](../../../tools/vulnogram/oauth-api/README.md)
-   — fall back to extracting the state from the
-   `record-update` call's response envelope, which already
-   includes the saved `CNA_private.state`.)*
+   *(If the adapter's standalone fetch entrypoint is not yet
+   available on the operator's machine — the Vulnogram adapter's
+   `vulnogram-api-record-fetch` CLI was added together with this
+   gate; see [`tools/cve-tool-vulnogram/oauth-api/README.md`](../../../tools/cve-tool-vulnogram/oauth-api/README.md)
+   — fall back to extracting the state from the `push_update`
+   call's response envelope, which the contract requires to
+   include the saved state.)*
 
-   Three outcomes:
+   The contract specifies that `fetch_current_state` normalises
+   the underlying tool's native state token onto the generic verbs
+   (`allocated`, `review-ready`, `publish-ready`, `public`,
+   `retracted`, `unknown`). Three outcomes:
 
-   - **`"REVIEW"` or any later state (`READY` / `PUBLIC`)** →
-     state-gate clear. Step 5c picks the OAuth-pushed hand-off
-     variant and Step 4 of the *Reconcile* flow posts /
-     PATCH-flips the RM hand-off comment. Step 6 recap notes
-     *"CVE record state auto-promoted to REVIEW at
-     `PUSH_TIMESTAMP`."*
-   - **`"DRAFT"`** → state-gate NOT cleared. Surface the
+   - **`review-ready` or any later state (`publish-ready` /
+     `public`)** → state-gate clear. Step 5c picks the
+     OAuth-pushed hand-off variant and Step 4 of the *Reconcile*
+     flow posts / PATCH-flips the RM hand-off comment. Step 6
+     recap notes *"CVE record state auto-promoted to
+     `review-ready` at `PUSH_TIMESTAMP`."* (for the Vulnogram
+     adapter, named-example aside: *"i.e. `DRAFT` → `REVIEW` in
+     the underlying record"*).
+   - **`allocated`** → state-gate NOT cleared. Surface the
      specific reason: the most common case is one of the body
      fields was empty so the JSON did not include
-     `state = "REVIEW"` in the first place (Stage 1 of the
+     `state = "review-ready"` in the first place (Stage 1 of the
      two-stage gate caught this); the other common case is that
      a body field carried a value the CNA schema rejected
      silently (the upsert saved fields it could parse but did not
@@ -3136,21 +3182,25 @@ Step 6 below describes how to verify the state advance landed
      bullet, and surface the state-gate-not-cleared blocker in
      the Step 6 recap.
    - **Fetch failed (transient HTTP error, session expired
-     between push and fetch)** → conservative fallback: surface
-     the fetch failure as a blocker, post nothing on the
-     RM-hand-off front this run, and retry the verification on
-     the next sync.
+     between push and fetch, or the adapter returned `unknown`)**
+     → conservative fallback: surface the fetch failure as a
+     blocker, post nothing on the RM-hand-off front this run,
+     and retry the verification on the next sync.
 
 ## Step 5c — Reconcile the release-manager hand-off comment
 
 The Step 12 (`pr merged` → `fix released`) **hand-off comment** and
 the Step 14 (advisory archived) **publication-ready notification**
-both come in two variants:
+both come in two variants. The template files live under
+`tools/<cve-tool>/` — the adapter directory named by
+`cve_authority.tool` in `<project-config>/project.md` — so each
+adapter ships variants tuned to its own copy-paste surface and its
+own automated push path:
 
 | Variant | Template | When |
 |---|---|---|
-| Manual-paste (today's default) | [`tools/vulnogram/release-manager-handoff-comment.md`](../../../tools/vulnogram/release-manager-handoff-comment.md), [`tools/vulnogram/release-manager-publication-comment.md`](../../../tools/vulnogram/release-manager-publication-comment.md) | Step 5b skipped (`expired` / `not-configured`) or the push failed |
-| OAuth-pushed | [`tools/vulnogram/release-manager-handoff-comment-oauth-pushed.md`](../../../tools/vulnogram/release-manager-handoff-comment-oauth-pushed.md), [`tools/vulnogram/release-manager-publication-comment-oauth-pushed.md`](../../../tools/vulnogram/release-manager-publication-comment-oauth-pushed.md) | Step 5b's push succeeded this run |
+| Manual-paste (today's default) | `tools/<cve-tool>/release-manager-handoff-comment.md`, `tools/<cve-tool>/release-manager-publication-comment.md` (for the Vulnogram adapter: [`tools/cve-tool-vulnogram/release-manager-handoff-comment.md`](../../../tools/cve-tool-vulnogram/release-manager-handoff-comment.md), [`tools/cve-tool-vulnogram/release-manager-publication-comment.md`](../../../tools/cve-tool-vulnogram/release-manager-publication-comment.md)) | Step 5b skipped (`expired` / `not-configured`) or the push failed |
+| OAuth-pushed | `tools/<cve-tool>/release-manager-handoff-comment-oauth-pushed.md`, `tools/<cve-tool>/release-manager-publication-comment-oauth-pushed.md` (for the Vulnogram adapter: [`tools/cve-tool-vulnogram/release-manager-handoff-comment-oauth-pushed.md`](../../../tools/cve-tool-vulnogram/release-manager-handoff-comment-oauth-pushed.md), [`tools/cve-tool-vulnogram/release-manager-publication-comment-oauth-pushed.md`](../../../tools/cve-tool-vulnogram/release-manager-publication-comment-oauth-pushed.md)) | Step 5b's `push_update` succeeded this run |
 
 Both variants of each comment carry the **same marker** on line 1
 (`<!-- apache-steward: release-manager-handoff v1 -->` for the
@@ -3165,15 +3215,15 @@ rules:
 
 - **First-time hand-off** (no existing comment, label transition
   fires this run) → POST the appropriate variant.
-- **Subsequent sync, OAuth push succeeded this run** → PATCH the
+- **Subsequent sync, `push_update` succeeded this run** → PATCH the
   existing comment to the OAuth-pushed body (refreshing the
   `PUSH_TIMESTAMP` placeholder). If the existing comment is already
   the OAuth-pushed variant, the only material change is the
   timestamp — still PATCH; the timestamp is the audit trail.
-- **Subsequent sync, push failed (or skipped)** → PATCH the existing
-  comment to the manual-paste variant. The RM sees a fresh
-  "please paste" ask the moment the auto-push stops working,
-  which is the right escalation.
+- **Subsequent sync, `push_update` failed (or was skipped)** →
+  PATCH the existing comment to the manual-paste variant. The RM
+  sees a fresh "please paste" ask the moment the auto-push stops
+  working, which is the right escalation.
 - **Subsequent sync, no relevant transition fired and the JSON did
   not change** → no PATCH. Idempotency: marker present, body
   byte-identical, nothing to do.

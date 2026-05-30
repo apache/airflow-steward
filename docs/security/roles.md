@@ -218,8 +218,13 @@ for the full detail.
   proposal.
 - [`security-cve-allocate`](../../.claude/skills/security-cve-allocate/SKILL.md) — *"allocate a CVE
   for <issue-ref>"*.
-- [`generate-cve-json`](../../tools/vulnogram/generate-cve-json/SKILL.md) — to
+- [`generate-cve-json`](../../tools/cve-tool-vulnogram/generate-cve-json/SKILL.md) — to
   refresh the paste-ready JSON embedded in the issue body on demand.
+  (The named example here is the Vulnogram adapter under
+  `tools/cve-tool-vulnogram/`; resolved from `cve_authority.tool` in
+  [`<project-config>/project.md`](../../<project-config>/project.md#cve-authority)
+  — adopters running a different CNA tool point at their own
+  `<cve-tool>/` adapter.)
 - [`security-issue-deduplicate`](../../.claude/skills/security-issue-deduplicate/SKILL.md) —
   when two trackers describe the same root-cause bug discovered
   independently.
@@ -313,12 +318,15 @@ fix will ship in. The tracker then waits for the release train.
 The `pr merged` → `fix released` hand-off is **gated**: every one of the six
 mandatory CVE body fields must be populated (*CWE*, *Affected versions*,
 *Severity*, *Reporter credited as*, *Short public summary for publish*,
-*PR with the fix*) **and** the CVE record must have advanced to `REVIEW`
-state in Vulnogram. If any field is still empty when the PR merges (Step 11)
-or when the release ships (Step 12), sync posts a
-**Remediation-developer fill-fields comment** on the tracker @-mentioning
-you with the specific missing fields. The tracker stays assigned to you and
-the RM hand-off is **not** posted until you fill them in. See
+*PR with the fix*) **and** the CVE record must have been promoted from
+`allocated` to `review-ready` in the project's CVE tool — the adapter
+named in `cve_authority.tool` (for the airflow-s adopter, the Vulnogram
+adapter, where `review-ready` corresponds to the `REVIEW` state). If any
+field is still empty when the PR merges (Step 11) or when the release
+ships (Step 12), sync posts a **Remediation-developer fill-fields
+comment** on the tracker @-mentioning you with the specific missing
+fields. The tracker stays assigned to you and the RM hand-off is **not**
+posted until you fill them in. See
 [Step 11](process.md#step-11--pr-merged) and [Step 12](process.md#step-12--fix-released).
 
 ### Tools you use most
@@ -350,20 +358,27 @@ Watch your `fix released` queue on the board. Until the `pr merged` →
 ### Sending the advisory
 
 By the time the hand-off comment lands, every mandatory body field is
-already populated (Step 12's gate) and the CVE JSON has been pushed to
-Vulnogram in `REVIEW` state. Your three actions are the numbered list in
-the hand-off comment, all single clicks in Vulnogram — **no shell
+already populated (Step 12's gate) and the regenerated CVE JSON has been
+pushed to the project's CVE tool (the adapter named in `cve_authority.tool`)
+in `review-ready` state. Your three actions are the numbered list in the
+hand-off comment, all single clicks in the CVE tool — **no shell
 commands, no JSON paste:**
 
-1. **Address reviewer feedback (if any) and promote `REVIEW → READY`.**
-   Open the record's `#source` tab. If the CVE reviewer has posted
-   comments, work through them on the same thread; when it is clear,
-   change the **State** dropdown from `REVIEW` to `READY` and save. Most
-   CVEs go through `REVIEW` with no reviewer comments and the flip is
-   immediate.
-2. **Preview and send.** Open the `#email` tab — it renders the exact
-   advisory email. Verify recipients (`<users-list>` and
-   `<announce-list>`) and body, then click **Send Email**.
+1. **Address reviewer feedback (if any) and promote the record from
+   `review-ready` to `publish-ready`.** Open the record in the CVE tool —
+   the URL is built from `cve_authority.record_url_template` substituted
+   with the CVE ID; for adapters that expose a raw-state view, sync also
+   includes the `cve_authority.source_tab_url_template` link in the
+   hand-off comment. If the CVE reviewer has posted comments, work
+   through them on the same thread; when it is clear, promote the
+   record to `publish-ready` and save. (For the Vulnogram adapter, that
+   is the State dropdown going `REVIEW → READY` on the `#source` tab.)
+   Most CVEs go through `review-ready` with no reviewer comments and
+   the promotion is immediate.
+2. **Preview and send.** The hand-off comment links the CVE tool's
+   advisory-email preview — for the Vulnogram adapter, the `#email` tab
+   on the record. Verify recipients (`<users-list>` and
+   `<announce-list>`) and body, then click the send action.
 3. **Stop.** Sync drives the rest at the archive-URL trigger
    ([Step 14](process.md#step-14--capture-the-public-advisory-url-and-close-out)).
 
@@ -382,8 +397,11 @@ fires a **single combined apply** that:
   writes it back to the *Short public summary for publish* body field;
 * flips labels `fix released → announced - emails sent + announced`;
 * regenerates and re-pushes the CVE JSON;
-* moves the Vulnogram record `READY → PUBLIC` (the CNA-feed dispatch to
-  [`cve.org`](https://cve.org));
+* promotes the record from `publish-ready` to `public` in the project's
+  CVE tool (the adapter named in `cve_authority.tool`) — the act that
+  dispatches the record onto the public CNA feed at
+  [`cve.org`](https://cve.org). (For the Vulnogram adapter, that is the
+  State dropdown going `READY → PUBLIC` on the record.)
 * moves the project board to the `Announced` column;
 * closes the tracker;
 * archives the tracker from the `Announced` column;
@@ -396,10 +414,10 @@ for the full sequence.
 
 ### Publishing the CVE and closing the issue
 
-**Nothing to do.** Step 14 above already moved the Vulnogram record to
-PUBLIC, closed the tracker, and archived it from the board. You receive
-a purely-informational wrap-up comment as a timeline marker that the
-lifecycle is complete. See
+**Nothing to do.** Step 14 above already promoted the CVE record to
+`public` in the project's CVE tool, closed the tracker, and archived it
+from the board. You receive a purely-informational wrap-up comment as a
+timeline marker that the lifecycle is complete. See
 [Step 15](process.md#step-15--rm-verifies-the-close-out-landed).
 
 A tracker that sits on `announced - emails sent` without `announced` for
@@ -410,8 +428,11 @@ scheduled pass.
 ### Post-release credit corrections
 
 If credits need correction after announcement, respond to the announcement
-emails with the missing credits, update the ASF CVE tool, and ask the ASF
-security team to push the information to `cve.org`. See
+emails with the missing credits, update the record in the project's CVE
+tool (open the URL built from `cve_authority.record_url_template`), and —
+where the adapter requires it — ask the upstream CNA/relay to push the
+information to `cve.org`. (For the airflow-s adopter on Vulnogram, that
+relay is the ASF security team.) See
 [Step 16](process.md#step-16--credit-corrections).
 
 ### Tools you use most
@@ -422,7 +443,9 @@ security team to push the information to `cve.org`. See
   current record state). Subsequent syncs by the security team drive the
   post-advisory close-out automatically when the archive URL appears on
   `<users-list>`.
-- [`generate-cve-json`](../../tools/vulnogram/generate-cve-json/SKILL.md) — to
+- [`generate-cve-json`](../../tools/cve-tool-vulnogram/generate-cve-json/SKILL.md) — to
   regenerate the attachment on demand when a body field changes after the
   URL has been captured (rarely needed — sync regenerates and re-pushes
-  on every relevant body change).
+  on every relevant body change). The link points at the named ASF
+  example; the active generator is the one under `<cve-tool>/` resolved
+  from `cve_authority.tool`.

@@ -22,9 +22,13 @@ reporter** — there is no individual reporter email, GitHub Private
 Reporting access is read-only, or the report arrived through a
 forwarding service — the skills route reporter-facing communication
 through whoever delivered the report to us instead (the *forwarder*
-— typically the Apache Security team relaying via
-`security@apache.org`, or an internal security-team member who
-opened the tracker on someone else's behalf).
+— typically a relay broker addressable at
+`forwarders.<adapter>.contact_handle` per
+[`<project-config>/project.md`](../../projects/_template/project.md),
+or an internal security-team member who opened the tracker on
+someone else's behalf). The ASF-Airflow default has the ASF Security
+team relaying via `<security-list>` (the
+`foundation_security_address` shared inbox).
 
 In that **"via-forwarder" mode**, only **important milestones** are
 relayed. Regular workflow chatter and credit-confirmation
@@ -39,18 +43,21 @@ via-forwarder mode applies and *what* gets relayed.
 
 The mode applies to a tracker when **any** of the following is true:
 
-1. **ASF-security relay.** The inbound report came from
-   `security@apache.org` with the ASF forwarding preamble; the
-   original reporter is not addressable directly on the relayed
-   thread. The personal `@apache.org` address of the forwarding
-   security-team member is the **forwarder contact**. (See
-   [`tools/gmail/asf-relay.md`](../../tools/gmail/asf-relay.md) for
-   the detection mechanics.)
+1. **Forwarder-adapter relay.** The inbound report came from one
+   of the adapters enabled in `forwarders.enabled` with that
+   adapter's preamble; the original reporter is not addressable
+   directly on the relayed thread. The relay broker's personal
+   address (or, where the adapter declares it, the adapter's
+   `contact_handle`) is the **forwarder contact**. The ASF-Airflow
+   default is the `asf-security` adapter at
+   [`tools/forwarder-relay/README.md`](../../tools/forwarder-relay/README.md),
+   with the per-message detection mechanics described in
+   [`tools/gmail/asf-relay.md`](../../tools/gmail/asf-relay.md).
 2. **GitHub Private Reporting we cannot reply on.** A GHSA-style
    private report we have read access to but can't post comments
    on as a security team. Whoever made us aware of the GHSA
-   (typically the same Apache Security team member, or an internal
-   escalation thread) is the forwarder.
+   (typically the same relay broker, or an internal escalation
+   thread) is the forwarder.
 3. **`security-issue-import-from-md`-imported tracker.** The
    tracker came from a markdown file (AI scan / third-party scan
    output) with no inbound reporter at all. There is no reporter to
@@ -93,8 +100,10 @@ on their behalf) would actually want to hear about:
 | **Additional information requested** | Any skill that needs a specific clarification from the reporter (re-reproduction steps, attack-vector clarification, affected-version range) | *"We need additional information to assess the report you forwarded: `<specific question(s)>`. If you can relay this to the original reporter and pass back a reply, that would help us land a decision."* |
 
 The drafts go to the **forwarder contact**, not to the relay list
-address — same rule as the existing ASF-relay flow in
-[`tools/gmail/asf-relay.md`](../../tools/gmail/asf-relay.md). The
+address — same rule as the forwarder-relay adapter contract in
+[`tools/forwarder-relay/README.md`](../../tools/forwarder-relay/README.md)
+(ASF-Airflow default: the `asf-security` adapter detailed in
+[`tools/gmail/asf-relay.md`](../../tools/gmail/asf-relay.md)). The
 body is short, references the external identifier (GHSA ID,
 HackerOne URL, internal ticket number) when one exists, and never
 re-states the technical detail of the report.
@@ -109,16 +118,18 @@ suppression.
 
 * **CVE allocated**
   ([`security-cve-allocate`](../../.claude/skills/security-cve-allocate/SKILL.md)
-  Step 4 #5). Vulnogram typically emits its own allocation
-  notification when the CVE record is created, and even when
-  it doesn't, the team owes the reporter (or their forwarder)
-  a single short notification at this point regardless of
-  routing mode. The notification lands on whatever thread the
-  tracker's *Security mailing list thread* field resolves to;
-  in via-forwarder mode that is the relay thread, so the same
-  draft reaches the forwarder without any policy-specific
-  re-routing. The credit-preference question is still
-  suppressed in via-forwarder mode (per the
+  Step 4 #5). The `<cve-tool>` adapter typically emits its own
+  allocation notification when the CVE record is created
+  (`cve_authority.emits_allocation_email: true` for the
+  ASF-Airflow Vulnogram default), and even when it doesn't, the
+  team owes the reporter (or their forwarder) a single short
+  notification at this point regardless of routing mode. The
+  notification lands on whatever thread the tracker's *Security
+  mailing list thread* field resolves to; in via-forwarder mode
+  that is the relay thread, so the same draft reaches the
+  forwarder without any policy-specific re-routing. The
+  credit-preference question is still suppressed in via-forwarder
+  mode (per the
   [Negative space](#negative-space--do-not-relay) section
   below) but the rest of the CVE-allocated notification still
   fires.
@@ -141,7 +152,7 @@ are **suppressed** in via-forwarder mode:
 * **Credit-acceptance confirmations** — i.e. messages asking the
   reporter to *confirm receipt and acceptance of the credit line
   the team plans to use*. The standalone
-  [bot/AI credit-clarification draft](../../tools/vulnogram/bot-credits-policy.md)
+  [bot/AI credit-clarification draft](../../tools/cve-tool-vulnogram/bot-credits-policy.md)
   belongs to this class (it asks *"is this AI/bot handle the
   intended credit, or should we credit someone else?"* — a
   confirmation prompt on a proposed credit). So do the
@@ -200,19 +211,33 @@ applies one of three behaviours:
 The detection runs once per skill invocation; subsequent dispatch
 through the skill is consistent for that run.
 
+The detection itself is the responsibility of the optional sub-skill
+[`security-issue-import-via-forwarder`](../../.claude/skills/security-issue-import-via-forwarder/SKILL.md),
+which dispatches through whichever adapter from `forwarders.enabled`
+matches the inbound message (per
+[`tools/forwarder-relay/README.md`](../../tools/forwarder-relay/README.md)).
+Skills load the sub-skill only when `forwarders.enabled` is
+non-empty in `<project-config>/project.md`; when the list is empty,
+via-forwarder mode falls back to the marker-comment escape hatch and
+the `security-issue-import-from-md` import case.
+
 ## Worked examples
 
-**ASF-relayed GHSA report, advisory sent.** A report arrives via
-`security@apache.org` carrying a GHSA reference; the import skill
-classifies it as `ASF-security relay`, drafts the Step 7 receipt to
-the forwarder (Arnout / the Apache Security team member who
-relayed it). Weeks later the fix ships and the advisory is
-archived on the users-list; `security-issue-sync` Step 14
-captures the URL and proposes an *Advisory sent* milestone draft
-to the same forwarder contact: *"The advisory for
-`CVE-2026-12345` has been sent and is archived publicly at
-`<URL>`. This completes the lifecycle for the report you
-forwarded; thank you for the relay."* No technical detail is
+**Forwarder-relayed GHSA report, advisory sent.** A report arrives
+via the configured forwarder adapter (ASF-Airflow default:
+`asf-security` carrying the relay preamble) with a GHSA reference;
+the import skill classifies it as a forwarder-relay match, drafts
+the Step 7 receipt to the forwarder contact (the relay broker's
+personal address — for ASF-Airflow, the forwarding ASF Security
+team member, e.g. `@raboof` per
+`forwarders.asf-security.contact_handle`). Weeks later the fix
+ships and the advisory is archived on the project's public users
+list (per `archive_system.advisory_publication_signal_url`);
+`security-issue-sync` Step 14 captures the URL and proposes an
+*Advisory sent* milestone draft to the same forwarder contact:
+*"The advisory for `<CVE-ID>` has been sent and is archived
+publicly at `<URL>`. This completes the lifecycle for the report
+you forwarded; thank you for the relay."* No technical detail is
 restated. (The intermediate *CVE allocated* notification landed
 on the same thread per the
 [Events handled outside this policy](#events-handled-outside-this-policy)
@@ -227,11 +252,13 @@ clarification draft is **suppressed**; the credit field stays at
 line *"if the original reporter has a preferred credit form,
 please pass it back"* is folded in.
 
-**Internal-escalation tracker.** An ASF PMC member forwards a
+**Internal-escalation tracker.** A `governance.cve_allocation_gate`-
+authorised member (ASF-Airflow default: a PMC member) forwards a
 private internal report to the security team verbally; the
 security team opens the tracker by hand and writes the
 `<!-- apache-steward: routing-mode via-forwarder -->` marker
-comment naming the PMC member as the forwarder contact. From that
-point on, every sync skill that would draft to a reporter routes
-to the named PMC member instead, and milestone-only suppression
-applies as if the tracker had come in via ASF-relay.
+comment naming the governance-authorised member as the forwarder
+contact. From that point on, every sync skill that would draft to
+a reporter routes to the named contact instead, and milestone-only
+suppression applies as if the tracker had come in via a
+forwarder-adapter relay.
