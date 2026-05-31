@@ -28,6 +28,7 @@ from skill_and_tool_validator import (
     _MODE_TAXONOMY,
     _OFF_MODES,
     _PRIVACY_EXTERNAL_CONTENT_MODES,
+    ALL_CATEGORIES,
     ALLOWED_MODES,
     FORBIDDEN_PATTERNS,
     GH_LIST_CATEGORY,
@@ -1879,6 +1880,16 @@ def _make_valid_skill(root: Path, name: str) -> Path:
 
 
 class TestMain:
+    def test_list_categories(self, capsys: pytest.CaptureFixture[str]) -> None:
+        rc = main(["--list-categories"])
+        assert rc == 0
+        out = capsys.readouterr().out
+        expected = [
+            f"{c} (advisory)" if c in SOFT_CATEGORIES else c
+            for c in sorted(ALL_CATEGORIES)
+        ]
+        assert out.strip().splitlines() == expected
+
     def test_returns_0_when_no_violations(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         root = _skill_root(tmp_path)
         _make_valid_skill(root, "my-skill")

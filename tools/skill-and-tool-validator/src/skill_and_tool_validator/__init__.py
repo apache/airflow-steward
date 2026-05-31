@@ -245,6 +245,21 @@ SOFT_CATEGORIES: frozenset[str] = frozenset(
         LOWERCASE_F_FIELD_CATEGORY,
     }
 )
+ALL_CATEGORIES: frozenset[str] = frozenset(
+    {
+        TOOL_README_CATEGORY,
+        TOOL_CAPABILITY_CATEGORY,
+        CAPABILITY_SYNC_CATEGORY,
+        PRINCIPLE_CATEGORY,
+        TRIGGER_PRESERVATION_CATEGORY,
+        INJECTION_GUARD_CATEGORY,
+        INJECTION_GUARD_TODO_CATEGORY,
+        GH_LIST_CATEGORY,
+        SECURITY_PATTERN_CATEGORY,
+        PRIVACY_CATEGORY,
+        LOWERCASE_F_FIELD_CATEGORY,
+    }
+)
 
 # ---------------------------------------------------------------------------
 # Injection-guard constants (Pattern 4)
@@ -1648,7 +1663,18 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Promote SOFT categories (advisory) to hard failures.",
     )
+    parser.add_argument(
+        "--list-categories",
+        action="store_true",
+        help="Print every violation category name (SOFT ones marked) and exit.",
+    )
     args = parser.parse_args(argv)
+
+    if args.list_categories:
+        for category in sorted(ALL_CATEGORIES):
+            suffix = " (advisory)" if category in SOFT_CATEGORIES else ""
+            print(f"{category}{suffix}")
+        return 0
 
     skip = {c.strip() for c in args.skip_categories.split(",") if c.strip()}
     violations = run_validation()
