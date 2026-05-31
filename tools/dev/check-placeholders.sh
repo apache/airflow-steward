@@ -82,10 +82,10 @@ ALLOWLIST_PATHS=(
 # Inline markers that signal an intentional explanatory mention
 # of Airflow on the same line. Lines matching any of these are
 # treated as allowlisted.
+# Entries are matched as literal bash substrings, not regex patterns.
 INLINE_ALLOW_MARKERS=(
   "example:"
   "e.g."
-  "e\.g\."
   "for Airflow"
   "the Airflow"
   "legacy"
