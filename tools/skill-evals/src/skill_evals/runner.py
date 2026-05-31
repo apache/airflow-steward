@@ -689,6 +689,15 @@ def find_cases(path: Path) -> list[tuple[Path, Path]]:
     return results
 
 
+def collect_tag_counts(cases: list[tuple[Path, Path]]) -> dict[str, int]:
+    """Return how many discovered cases carry each tag."""
+    counts: dict[str, int] = {}
+    for case_dir, _fixtures_dir in cases:
+        for tag in load_case_tags(case_dir):
+            counts[tag] = counts.get(tag, 0) + 1
+    return counts
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description=(
@@ -776,6 +785,15 @@ def main(argv: list[str] | None = None) -> int:
             "times; a case is included if it has all requested tags."
         ),
     )
+    parser.add_argument(
+        "--list-tags",
+        action="store_true",
+        help=(
+            "Print every distinct tag declared in case-meta.json under path, "
+            "with the number of cases carrying each tag, and exit without "
+            "running prompts."
+        ),
+    )
     args = parser.parse_args(argv)
 
     grader_explicit = args.grader_cli != DEFAULT_GRADER_CLI
@@ -783,6 +801,15 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("--grader-cli and --exact require --cli")
 
     cases = find_cases(args.path)
+    if args.list_tags:
+        tag_counts = collect_tag_counts(cases)
+        if not tag_counts:
+            print("no tags found")
+            return 0
+        for tag in sorted(tag_counts):
+            print(f"{tag} {tag_counts[tag]}")
+        return 0
+
     if args.tag:
         requested_tags = set(args.tag)
         cases = [

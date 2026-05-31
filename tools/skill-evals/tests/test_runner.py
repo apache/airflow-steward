@@ -31,6 +31,7 @@ from skill_evals.runner import (
     build_corpus_text,
     build_roster_text,
     collect_diffs,
+    collect_tag_counts,
     compare_outputs,
     compare_with_grader,
     extract_json_from_output,
@@ -943,6 +944,43 @@ def test_tag_filter_runs_only_matching_cases(tmp_path: Path, capsys: pytest.Capt
     assert rc == 0
     assert "1 passed" in stdout
     assert "case-2-untagged" not in stdout
+
+
+def test_list_tags_prints_counts(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+    """--list-tags prints distinct tags with per-tag case counts."""
+    fixtures_dir = tmp_path / "fixtures"
+    fixtures_dir.mkdir()
+    case1 = _make_case(fixtures_dir, "case-1")
+    case2 = _make_case(fixtures_dir, "case-2")
+    (case1 / "case-meta.json").write_text(json.dumps({"tags": ["llama"]}))
+    (case2 / "case-meta.json").write_text(json.dumps({"tags": ["qwen", "llama"]}))
+
+    rc, stdout, stderr = _run_main(capsys, [str(fixtures_dir), "--list-tags"])
+    assert rc == 0
+    assert stderr == ""
+    assert stdout.strip().splitlines() == ["llama 2", "qwen 1"]
+
+
+def test_list_tags_no_tags_found(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+    """--list-tags exits 0 with an informational line when no tags exist."""
+    fixtures_dir = tmp_path / "fixtures"
+    _make_case(fixtures_dir, "case-1")
+
+    rc, stdout, stderr = _run_main(capsys, [str(fixtures_dir), "--list-tags"])
+    assert rc == 0
+    assert stderr == ""
+    assert stdout.strip() == "no tags found"
+
+
+def test_collect_tag_counts(tmp_path: Path):
+    fixtures_dir = tmp_path / "fixtures"
+    case1 = _make_case(fixtures_dir, "case-1")
+    case2 = _make_case(fixtures_dir, "case-2")
+    (case1 / "case-meta.json").write_text(json.dumps({"tags": ["alpha"]}))
+    (case2 / "case-meta.json").write_text(json.dumps({"tags": ["alpha", "beta"]}))
+
+    counts = collect_tag_counts(find_cases(fixtures_dir))
+    assert counts == {"alpha": 2, "beta": 1}
 
 
 # ---------------------------------------------------------------------------
