@@ -13,6 +13,7 @@
     - [Editorial + reporter-facing](#editorial--reporter-facing)
     - [Issue management](#issue-management)
     - [PR triage and review](#pr-triage-and-review)
+  - [Recommended setup order](#recommended-setup-order)
   - [Checklist after copying](#checklist-after-copying)
   - [Cross-references](#cross-references)
 
@@ -128,6 +129,27 @@ fill them in.
 > for concrete examples (filled in with the Apache Airflow project's
 > values, which new adopters can use as a reference when drafting
 > their own configuration).
+
+## Recommended setup order
+
+After copying the template, fill in the core project files before the
+optional skill-family files:
+
+1. Start with `project.md`, because every skill uses it to resolve
+   project-scoped references.
+2. Fill in `security-model.md` so security-facing workflows have an
+   authoritative source.
+3. Add current release details to `release-trains.md`.
+4. Define tracker organization in `scope-labels.md` and `milestones.md`.
+5. Prepare reporter-facing text in `canned-responses.md`.
+6. Document the fix flow in `fix-workflow.md`.
+7. If your project uses the issue or PR-management skill families, fill
+   in the optional files they read, such as `issue-tracker-config.md`,
+   `runtime-invocation.md`, `pr-management-config.md`, and
+   `pr-management-code-review-criteria.md`.
+
+Run `grep -rn TODO projects/<name>` after copying and again before
+opening a pull request so no template placeholders are left behind.
 
 ## Checklist after copying
 
