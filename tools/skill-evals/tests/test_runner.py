@@ -751,6 +751,51 @@ def test_cli_mode_fail_with_wrong_json(tmp_path: Path, capsys: pytest.CaptureFix
     assert "FAIL" in stdout
     assert "1 failed" in stdout
 
+def test_cli_mode_fail_with_wrong_jsons(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+    """A CLI that returns the wrong JSONS should FAIL with multiple failures and exit non-zero."""
+    fixtures_dir, _ = _make_cli_case(tmp_path, expected={"verdict": "ok"})
+    _make_case(fixtures_dir, "case-2", report="another report", expected={"verdict": "ok"})
+    rc, stdout, _ = _run_main(
+        capsys,
+        ["--cli", 'echo \'{"verdict": "wrong"}\'', str(fixtures_dir)],
+    )
+    assert rc == 1
+    assert "FAIL" in stdout
+    assert "2 failed" in stdout # asserts that behaviour doesn't changes and outputs exactly 2 failures instead of stopping at the first one, which is tested in the next test case
+
+def test_cli_model_with_fail_fast_and_wrong_json(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+    """With --fail-fast, the runner should stop at the first failure and not run further cases."""
+    fixtures_dir, _ = _make_cli_case(tmp_path, expected={"verdict": "ok"})
+    # Add a second case that would FAIL if it ran, but should be skipped due to fail-fast.
+    _make_case(fixtures_dir, "case-2", report="another report", expected={"verdict": "ok"})
+    rc, stdout, _ = _run_main(
+        capsys,
+        ["--cli", 'echo \'{"verdict": "wrong"}\'', "--fail-fast", str(fixtures_dir)],
+    )
+    assert rc == 1
+    assert "FAIL" in stdout
+    assert "1 failed" in stdout
+    assert "CASE: case-2" not in stdout  # second case should not run at all
+
+def test_cli_model_with_fail_fast_and_error_json(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+    """In timeout being negative raise internal error when run_cli is called and --fail-fast is used."""
+    fixtures_dir, _ = _make_cli_case(tmp_path, expected={"verdict": "wrong"})
+    _make_case(fixtures_dir, "case-2", report="another report", expected={"verdict": "ok"})
+    rc, stdout, _ = _run_main(
+        capsys,
+        [
+            "--cli",
+            'echo \'{"verdict": "wrong"}\'',
+            '--timeout',"-1",  # force an error (timeout) instead of a fail, to check that fail-fast also applies to errors
+            "--exact",
+            "--fail-fast",
+            str(fixtures_dir),
+        ],
+    )
+    assert rc == 1
+    assert "ERROR" in stdout
+    assert "1 errored" in stdout
+    assert "CASE: case-2" not in stdout  # second case should not run at all
 
 def test_cli_mode_manual_skips_structural(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
     """Structural expected.json (has_* / mention_*) is reported MANUAL, not auto-compared."""

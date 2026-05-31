@@ -760,6 +760,14 @@ def main(argv: list[str] | None = None) -> int:
         help="In --cli mode, also print the prompts and the model's raw stdout per case.",
     )
     parser.add_argument(
+        "--fail-fast",
+        action="store_true",
+        help=(
+            "Stops on the first failure instead of running all cases."
+            " Only applies in --cli mode; "
+        ),
+    )
+    parser.add_argument(
         "--tag",
         action="append",
         default=[],
@@ -796,6 +804,9 @@ def main(argv: list[str] | None = None) -> int:
     passed = failed = manual = errored = 0
 
     for case_dir, fixtures_dir in cases:
+        if (args.cli is not None) and args.fail_fast and (failed or errored):
+            print("Fail-fast enabled; stopping on first failure or error.")
+            break
         if fixtures_dir not in _step_config_cache:
             _step_config_cache[fixtures_dir] = load_step_config(fixtures_dir)
         system_prompt, user_prompt_template = _step_config_cache[fixtures_dir]
