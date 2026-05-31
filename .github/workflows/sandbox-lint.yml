@@ -56,10 +56,12 @@ jobs:
           enable-cache: true
       # Sync the workspace so `sandbox-lint` (a workspace member's
       # `[project.scripts]` entry) ends up on the shared venv's PATH.
-      # The root `--group dev` flag also pulls in ruff / mypy /
-      # pytest in case any follow-up step needs them.
+      # `--all-packages` is required — without it `uv sync` only
+      # installs the root project's deps, and the root has
+      # `package = false` so no member packages (and no member
+      # script entry-points) get installed.
       - name: Sync workspace
-        run: uv sync --group dev
+        run: uv sync --all-packages --group dev
       # `sandbox-lint` is the workspace member's CLI entry point;
       # after sync it is available directly via `uv run` from the
       # repo root, which is what the linter expects so

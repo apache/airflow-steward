@@ -56,7 +56,11 @@ jobs:
       # sync, the auto-sync uv runs on `uv run` only resolves
       # member runtime deps and the dev tools are missing.
       - name: Sync workspace (installs ruff / mypy / pytest from root dev group)
-        run: uv sync --group dev
+        # `--all-packages` is required — without it `uv sync` only
+        # installs the root project's deps, and the root has
+        # `package = false` so member packages and their
+        # `[project.scripts]` entry points would be skipped.
+        run: uv sync --all-packages --group dev
       # Install prek via uv (rather than via the `j178/prek-action`
       # action) so the `[tool.uv] exclude-newer` cooldown in the
       # root `pyproject.toml` applies to the prek install as well.

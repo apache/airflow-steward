@@ -121,11 +121,11 @@ jobs:
       - name: Sync workspace (installs ruff / mypy / pytest from root dev group)
         # Dev-group deps live in the root pyproject (`[dependency-groups]
         # dev`) and only land in the shared workspace `.venv` when an
-        # explicit `--group dev` sync runs. Without this step, the
-        # `uv run --directory <member>` invocation below cannot find
-        # `pytest` because the auto-sync uv does on `uv run` only
-        # resolves member runtime deps, not the workspace's dev group.
-        run: uv sync --group dev
+        # explicit `--group dev` sync runs. `--all-packages` ensures
+        # every workspace member is installed too (the root has
+        # `package = false`, so without it members and their
+        # `[project.scripts]` entry points would be skipped).
+        run: uv sync --all-packages --group dev
       - name: Run pytest
         # `--directory` (not `--project`) — both move uv's project
         # context, but `--directory` also changes cwd, which pytest
