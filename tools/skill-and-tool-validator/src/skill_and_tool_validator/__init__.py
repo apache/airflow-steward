@@ -245,21 +245,15 @@ SOFT_CATEGORIES: frozenset[str] = frozenset(
         LOWERCASE_F_FIELD_CATEGORY,
     }
 )
-ALL_CATEGORIES: frozenset[str] = frozenset(
+HARD_CATEGORIES: frozenset[str] = frozenset(
     {
         TOOL_README_CATEGORY,
         TOOL_CAPABILITY_CATEGORY,
         CAPABILITY_SYNC_CATEGORY,
-        PRINCIPLE_CATEGORY,
-        TRIGGER_PRESERVATION_CATEGORY,
         INJECTION_GUARD_CATEGORY,
-        INJECTION_GUARD_TODO_CATEGORY,
-        GH_LIST_CATEGORY,
-        SECURITY_PATTERN_CATEGORY,
-        PRIVACY_CATEGORY,
-        LOWERCASE_F_FIELD_CATEGORY,
     }
 )
+ALL_CATEGORIES = HARD_CATEGORIES | SOFT_CATEGORIES
 
 # ---------------------------------------------------------------------------
 # Injection-guard constants (Pattern 4)

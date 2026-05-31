@@ -32,6 +32,7 @@ from skill_and_tool_validator import (
     ALLOWED_MODES,
     FORBIDDEN_PATTERNS,
     GH_LIST_CATEGORY,
+    HARD_CATEGORIES,
     INJECTION_GUARD_CALLOUT_SENTINEL,
     INJECTION_GUARD_CATEGORY,
     INJECTION_GUARD_TODO_CATEGORY,
@@ -1392,6 +1393,10 @@ class TestLowercaseFField:
 
 
 class TestSoftCategories:
+    def test_all_categories_is_union_of_hard_and_soft(self) -> None:
+        assert ALL_CATEGORIES == HARD_CATEGORIES | SOFT_CATEGORIES
+        assert HARD_CATEGORIES.isdisjoint(SOFT_CATEGORIES)
+
     def test_soft_categories_set(self) -> None:
         assert PRINCIPLE_CATEGORY in SOFT_CATEGORIES
         assert TRIGGER_PRESERVATION_CATEGORY in SOFT_CATEGORIES
@@ -1884,10 +1889,7 @@ class TestMain:
         rc = main(["--list-categories"])
         assert rc == 0
         out = capsys.readouterr().out
-        expected = [
-            f"{c} (advisory)" if c in SOFT_CATEGORIES else c
-            for c in sorted(ALL_CATEGORIES)
-        ]
+        expected = [f"{c} (advisory)" if c in SOFT_CATEGORIES else c for c in sorted(ALL_CATEGORIES)]
         assert out.strip().splitlines() == expected
 
     def test_returns_0_when_no_violations(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
