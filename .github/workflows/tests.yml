@@ -118,11 +118,21 @@ jobs:
       - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b  # v8.1.0
         with:
           enable-cache: true
+      - name: Sync workspace (installs ruff / mypy / pytest from root dev group)
+        # Dev-group deps live in the root pyproject (`[dependency-groups]
+        # dev`) and only land in the shared workspace `.venv` when an
+        # explicit `--group dev` sync runs. Without this step, the
+        # `uv run --directory <member>` invocation below cannot find
+        # `pytest` because the auto-sync uv does on `uv run` only
+        # resolves member runtime deps, not the workspace's dev group.
+        run: uv sync --group dev
       - name: Run pytest
         # `--directory` (not `--project`) — both move uv's project
         # context, but `--directory` also changes cwd, which pytest
         # needs because each project's `pyproject.toml` declares
-        # `testpaths = ["tests"]` relative to its own root.
+        # `testpaths = ["tests"]` relative to its own root. No
+        # `--group` flag here because the sync above already
+        # installed the dev tools into the shared workspace venv.
         run: uv run --directory ${{ matrix.project.path }} pytest --color=yes
 
   # Umbrella status check. `.asf.yaml`'s `required_status_checks`

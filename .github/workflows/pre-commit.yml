@@ -47,6 +47,16 @@ jobs:
       - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b  # v8.1.0
         with:
           enable-cache: true
+      # Sync the uv workspace with the dev group so that
+      # `ruff`, `mypy`, and `pytest` (declared at workspace root)
+      # are present in the shared `.venv`. The `workspace-*` hooks
+      # in `.pre-commit-config.yaml` call
+      # `tools/dev/run-workspace-check.sh`, which invokes
+      # `uv run --directory <member> <check>`; without the explicit
+      # sync, the auto-sync uv runs on `uv run` only resolves
+      # member runtime deps and the dev tools are missing.
+      - name: Sync workspace (installs ruff / mypy / pytest from root dev group)
+        run: uv sync --group dev
       # Install prek via uv (rather than via the `j178/prek-action`
       # action) so the `[tool.uv] exclude-newer` cooldown in the
       # root `pyproject.toml` applies to the prek install as well.

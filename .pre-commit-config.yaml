@@ -97,6 +97,22 @@ repos:
         entry: tools/dev/check-placeholders.sh
         files: ^(\.claude/skills/.*|tools/.*)\.(md|sh|py|yaml|yml|toml)$
         pass_filenames: false
+  # Workspace-membership guard. The single source of truth for
+  # which Python projects get pre-commit hooks + the CI pytest
+  # matrix is the `[tool.uv.workspace] members` array in the root
+  # `pyproject.toml`. If a new `tools/<name>/pyproject.toml`
+  # appears without being added to that array, both surfaces
+  # silently skip it — the very drift bug the workspace refactor
+  # was meant to prevent. This hook re-fires whenever any
+  # tools/**/pyproject.toml or the root pyproject changes.
+  - repo: local
+    hooks:
+      - id: check-workspace-members
+        name: check-workspace-members
+        language: system
+        entry: tools/dev/check-workspace-members.py
+        files: ^(tools/[^/]+(/[^/]+)?/pyproject\.toml|pyproject\.toml)$
+        pass_filenames: false
   # Workspace-level static checks. Iterate over every uv-workspace
   # member declared in the root `pyproject.toml`'s
   # `[tool.uv.workspace] members` list via

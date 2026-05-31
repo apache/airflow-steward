@@ -54,9 +54,16 @@ jobs:
       - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b  # v8.1.0
         with:
           enable-cache: true
-      # `--project` (not `--directory`) so the linter runs from the
-      # repository root; the default arguments resolve
+      # Sync the workspace so `sandbox-lint` (a workspace member's
+      # `[project.scripts]` entry) ends up on the shared venv's PATH.
+      # The root `--group dev` flag also pulls in ruff / mypy /
+      # pytest in case any follow-up step needs them.
+      - name: Sync workspace
+        run: uv sync --group dev
+      # `sandbox-lint` is the workspace member's CLI entry point;
+      # after sync it is available directly via `uv run` from the
+      # repo root, which is what the linter expects so
       # `.claude/settings.json` and `tools/sandbox-lint/expected.json`
-      # relative to cwd.
+      # resolve relative to cwd.
       - name: Run sandbox-lint
-        run: uv run --project tools/sandbox-lint --group dev sandbox-lint
+        run: uv run sandbox-lint
