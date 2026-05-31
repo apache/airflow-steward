@@ -378,6 +378,37 @@ repos:
         files: ^tools/github-body-field/(src|tests|pyproject\.toml)
         pass_filenames: false
 
+  # Project-local checks for the permission-audit tool at
+  # `tools/permission-audit/`. Backs `/setup-steward verify --apply-
+  # permission-audit` (check 8d) — atomic audit + edit of
+  # `.claude/settings*.json` permissions.allow[] entries.
+  - repo: local
+    hooks:
+      - id: permission-audit-ruff-check
+        name: ruff check (permission-audit)
+        language: system
+        entry: uv run --directory tools/permission-audit ruff check
+        files: ^tools/permission-audit/(src|tests|pyproject\.toml)
+        pass_filenames: false
+      - id: permission-audit-ruff-format
+        name: ruff format (permission-audit)
+        language: system
+        entry: uv run --directory tools/permission-audit ruff format --check
+        files: ^tools/permission-audit/(src|tests|pyproject\.toml)
+        pass_filenames: false
+      - id: permission-audit-mypy
+        name: mypy (permission-audit)
+        language: system
+        entry: uv run --directory tools/permission-audit mypy
+        files: ^tools/permission-audit/(src|tests|pyproject\.toml)
+        pass_filenames: false
+      - id: permission-audit-pytest
+        name: pytest (permission-audit)
+        language: system
+        entry: uv run --directory tools/permission-audit pytest
+        files: ^tools/permission-audit/(src|tests|pyproject\.toml)
+        pass_filenames: false
+
   # Validate `.claude/skills/**`, every `tools/<name>/README.md`, and the
   # `docs/labels-and-capabilities.md` taxonomy via the
   # `skill-and-tool-validate` CLI. Re-fires on validator-source changes so

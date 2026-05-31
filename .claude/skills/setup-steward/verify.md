@@ -462,28 +462,55 @@ exclusions (`READONLY_COMMANDS`, `GIT_READ_ONLY_COMMANDS`,
 `GH_READ_ONLY_COMMANDS`, etc.) so the framework does not
 redundantly propose entries that never prompt anyway.
 
-**Reporting shape:** group findings by file, then by
-bucket. For each forbidden entry, print the exact JSON-
-pointer-style path (`.permissions.allow[<index>]`) so the
-operator can locate it instantly; for each recommended
-entry missing, print the suggested string verbatim ready
-for paste. **Do not auto-write the files** — the per-
-machine `settings.local.json` is the operator's; surface
-the proposal and let `/setup-steward verify --apply-
-permission-audit` (interactive) or a hand-edit close the
-gap. The interactive apply path uses an atomic JSON read
-→ mutate → write so concurrent
-`/setup-isolated-setup-install` (which also writes to the
-same file) does not silently clobber the diff. When the
-target file lives at a path the agent's sandbox marks as
-`denyWithinAllow` (the per-machine settings files
-typically are), the apply path requires the operator to
-authorise the sandbox bypass for that single write — it
-does not silently skip the file. ⚠ if either file is
+**Implementation.** The classification logic and the atomic
+edit path are factored out into the
+[`tools/permission-audit`](../../../tools/permission-audit/README.md)
+CLI; the canonical forbidden + recommended-by-family lists
+live in
+[`tools/permission-audit/src/permission_audit/audit.py`](../../../tools/permission-audit/src/permission_audit/audit.py).
+The skill invokes the CLI once per settings file:
+
+```bash
+uv run --project <framework>/tools/permission-audit \
+  permission-audit audit <repo>/.claude/settings.local.json \
+  --families <comma-joined families from the lock>
+```
+
+The CLI emits structured JSON the skill folds into the verify
+report. Exit code `1` from the CLI maps to ✗ on this check.
+
+**Reporting shape:** group findings by file, then by bucket.
+For each forbidden entry, print the exact JSON-pointer-style
+path (`.permissions.allow[<index>]`) the CLI returned so the
+operator can locate it instantly; for each recommended entry
+missing, print the suggested string verbatim ready for paste.
+**Do not auto-write the files** — the per-machine
+`settings.local.json` is the operator's; surface the proposal
+and let `/setup-steward verify --apply-permission-audit`
+(interactive) or a hand-edit close the gap. The apply path
+calls
+
+```bash
+uv run --project <framework>/tools/permission-audit \
+  permission-audit apply <repo>/.claude/settings.local.json \
+  --add '<entry>' --remove '<entry>' ...
+```
+
+which holds a POSIX `fcntl.flock` advisory exclusive lock on
+the target file, re-parses under the lock, mutates
+`.permissions.allow[]` in place, writes to a sibling temp
+file, and `os.replace`s into place — so concurrent
+`/setup-isolated-setup-install` (which also writes to the same
+file's `sandbox.filesystem.*` arrays) does not silently
+clobber the diff. When the target file lives at a path the
+agent's sandbox marks as `denyWithinAllow` (the per-machine
+settings files typically are), the apply path requires the
+operator to authorise the sandbox bypass for that single write
+— it does not silently skip the file. ⚠ if either file is
 absent (most adopters will have at least
 `settings.local.json` after the first
-`/setup-isolated-setup-install` pass; absence is a soft
-signal not a hard fault).
+`/setup-isolated-setup-install` pass; absence is a soft signal
+not a hard fault).
 
 **Why we propose, never auto-apply.** The allow-list is
 the operator's *capability surface* for the agent in this
