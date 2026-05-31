@@ -1,0 +1,191 @@
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+"""CLI front-end for the body-field parser.
+
+Operates on GitHub issue bodies via the ``gh`` CLI. The whole point
+of the tool is that the body never crosses the agent boundary on a
+``set`` — the read, parse, replace, and write all happen in this
+subprocess, and the agent only sees the diff summary on stdout.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import subprocess
+import sys
+from collections.abc import Sequence
+from pathlib import Path
+
+from github_body_field.parser import (
+    FieldNotFoundError,
+    extract_field,
+    list_fields,
+    replace_field,
+)
+
+
+def _gh_get_body(issue: str, repo: str | None) -> str:
+    cmd = ["gh", "issue", "view", issue, "--json", "body", "--jq", ".body"]
+    if repo:
+        cmd.extend(["--repo", repo])
+    result = subprocess.run(cmd, capture_output=True, text=True, check=False)
+    if result.returncode != 0:
+        sys.stderr.write(result.stderr)
+        raise SystemExit(result.returncode or 1)
+    # `gh --jq .body` returns the body with a trailing newline appended
+    # by gh's JSON-to-text serialiser; strip exactly one to keep the
+    # round-trip byte-exact.
+    body = result.stdout
+    if body.endswith("\n"):
+        body = body[:-1]
+    return body
+
+
+def _gh_set_body(issue: str, repo: str | None, body: str) -> None:
+    # `gh issue edit --body-file -` reads from stdin and avoids the
+    # tmpfile dance plus any shell-quoting hazards.
+    cmd = ["gh", "issue", "edit", issue, "--body-file", "-"]
+    if repo:
+        cmd.extend(["--repo", repo])
+    result = subprocess.run(cmd, input=body, text=True, capture_output=True, check=False)
+    if result.returncode != 0:
+        sys.stderr.write(result.stderr)
+        raise SystemExit(result.returncode or 1)
+
+
+def _read_value(args: argparse.Namespace) -> str:
+    if args.value is not None and args.value_file is not None:
+        sys.stderr.write("error: pass either --value or --value-file, not both\n")
+        raise SystemExit(2)
+    if args.value is not None:
+        return args.value
+    if args.value_file is not None:
+        if args.value_file == "-":
+            return sys.stdin.read()
+        return Path(args.value_file).read_text(encoding="utf-8")
+    sys.stderr.write("error: one of --value / --value-file is required\n")
+    raise SystemExit(2)
+
+
+def _cmd_get(args: argparse.Namespace) -> int:
+    body = _gh_get_body(args.issue, args.repo)
+    try:
+        value = extract_field(body, args.field)
+    except FieldNotFoundError as exc:
+        sys.stderr.write(f"{exc}\n")
+        return 3
+    sys.stdout.write(value)
+    if not value.endswith("\n"):
+        sys.stdout.write("\n")
+    return 0
+
+
+def _cmd_list(args: argparse.Namespace) -> int:
+    body = _gh_get_body(args.issue, args.repo)
+    names = list_fields(body)
+    if args.json:
+        sys.stdout.write(json.dumps(names, indent=2))
+        sys.stdout.write("\n")
+    else:
+        for name in names:
+            sys.stdout.write(f"{name}\n")
+    return 0
+
+
+def _cmd_set(args: argparse.Namespace) -> int:
+    new_value = _read_value(args)
+    body = _gh_get_body(args.issue, args.repo)
+    try:
+        new_body = replace_field(body, args.field, new_value)
+    except FieldNotFoundError as exc:
+        sys.stderr.write(f"{exc}\n")
+        return 3
+
+    if new_body == body:
+        sys.stderr.write(f"unchanged: {args.field!r} already matches new value\n")
+        return 0
+
+    # Compact diff summary on stderr so an orchestrator can log what
+    # changed without us streaming the body itself.
+    try:
+        old_value = extract_field(body, args.field)
+    except FieldNotFoundError:
+        # Should not happen — we just rewrote this exact field — but
+        # don't crash the apply if the post-rewrite re-parse drifts.
+        old_value = "<unknown>"
+    sys.stderr.write(f"field={args.field!r} old_len={len(old_value)} new_len={len(new_value)}\n")
+
+    if args.dry_run:
+        sys.stderr.write("dry-run: not pushing\n")
+        return 0
+
+    _gh_set_body(args.issue, args.repo, new_body)
+    return 0
+
+
+def _build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="body-field",
+        description=(
+            "Read or rewrite a single `### Field` section of a GitHub "
+            "issue body without bringing the body into agent context."
+        ),
+    )
+    parser.add_argument(
+        "--repo",
+        help="owner/repo. Defaults to the repository of the current working directory.",
+    )
+
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    p_get = sub.add_parser("get", help="print one field's value to stdout")
+    p_get.add_argument("issue", help="issue number")
+    p_get.add_argument("--field", required=True, help="exact heading text (without `### `)")
+    p_get.set_defaults(func=_cmd_get)
+
+    p_set = sub.add_parser("set", help="rewrite one field's value in place")
+    p_set.add_argument("issue", help="issue number")
+    p_set.add_argument("--field", required=True, help="exact heading text (without `### `)")
+    p_set.add_argument("--value", help="new value (use --value-file for multi-line / shell-unsafe text)")
+    p_set.add_argument(
+        "--value-file",
+        help="path to a file containing the new value; pass '-' to read stdin",
+    )
+    p_set.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="print the diff summary to stderr but skip the push",
+    )
+    p_set.set_defaults(func=_cmd_set)
+
+    p_list = sub.add_parser("list", help="print every field heading present in the body")
+    p_list.add_argument("issue", help="issue number")
+    p_list.add_argument("--json", action="store_true", help="emit a JSON array instead of one name per line")
+    p_list.set_defaults(func=_cmd_list)
+
+    return parser
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    parser = _build_parser()
+    args = parser.parse_args(argv)
+    return int(args.func(args))
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

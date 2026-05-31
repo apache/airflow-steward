@@ -179,6 +179,7 @@ Tools under [`tools/`](../tools/). Tools with two values (separated by
 | [`tools/dev`](../tools/dev/) | `capability:setup` | Framework dev-loop helpers |
 | [`tools/forwarder-relay`](../tools/forwarder-relay/) | `capability:setup` | Adapter contract for inbound-relay backends (ASF Security relay, huntr.com, HackerOne triagers). Pure interface spec; adapters declare detection + credit-extraction + reporter-addressing rules. |
 | [`tools/github`](../tools/github/) | `capability:setup` | GitHub REST / GraphQL substrate (called by every lifecycle phase — pure substrate, no single phase) |
+| [`tools/github-body-field`](../tools/github-body-field/) | `capability:setup` | Read or rewrite one `### Field` section of a GitHub issue body without bringing the body into agent context — substrate helper for the security-sync skills |
 | [`tools/gmail`](../tools/gmail/) | `capability:setup` | Gmail API substrate |
 | [`tools/jira`](../tools/jira/) | `capability:setup` | JIRA REST substrate (read-only today; write subcommands tracked in [#301](https://github.com/apache/airflow-steward/issues/301)) |
 | [`tools/mail-archive`](../tools/mail-archive/) | `capability:setup` | Adapter contract for public mail-archive backends (PonyMail, Hyperkitty, Discourse, Google Groups, GitHub Discussions). Pure interface spec. |

@@ -347,6 +347,37 @@ repos:
         files: ^tools/jira/(src|tests|pyproject\.toml|bridge\.groovy)
         pass_filenames: false
 
+  # Project-local checks for the GitHub-body-field tool at
+  # `tools/github-body-field/`. Lets the security-sync skills update
+  # one `### Field` section of an issue body without bringing the
+  # body into agent context.
+  - repo: local
+    hooks:
+      - id: github-body-field-ruff-check
+        name: ruff check (github-body-field)
+        language: system
+        entry: uv run --directory tools/github-body-field ruff check
+        files: ^tools/github-body-field/(src|tests|pyproject\.toml)
+        pass_filenames: false
+      - id: github-body-field-ruff-format
+        name: ruff format (github-body-field)
+        language: system
+        entry: uv run --directory tools/github-body-field ruff format --check
+        files: ^tools/github-body-field/(src|tests|pyproject\.toml)
+        pass_filenames: false
+      - id: github-body-field-mypy
+        name: mypy (github-body-field)
+        language: system
+        entry: uv run --directory tools/github-body-field mypy
+        files: ^tools/github-body-field/(src|tests|pyproject\.toml)
+        pass_filenames: false
+      - id: github-body-field-pytest
+        name: pytest (github-body-field)
+        language: system
+        entry: uv run --directory tools/github-body-field pytest
+        files: ^tools/github-body-field/(src|tests|pyproject\.toml)
+        pass_filenames: false
+
   # Validate `.claude/skills/**`, every `tools/<name>/README.md`, and the
   # `docs/labels-and-capabilities.md` taxonomy via the
   # `skill-and-tool-validate` CLI. Re-fires on validator-source changes so
