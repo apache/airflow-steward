@@ -302,6 +302,79 @@ is layered: `/setup-steward` writes during adopt/upgrade,
 (check 8 there), and this check is the cheap static cross-check
 to surface drift between the two skill families.
 
+### 8c. Stale agent-worktrees under `.claude/worktrees/`
+
+Detect worktrees the agent (or a prior session) created under
+`<repo-root>/.claude/worktrees/` that have been left lying around
+beyond their useful life. **Main-checkout only** — worktrees can
+only be inspected from the checkout that owns them, and the
+`git worktree list` output is the same across the family anyway.
+
+Stale agent-worktrees are a real friction source: they hold
+branches (typically `main`, since `EnterWorktree` defaults to
+branching from `main`), so a subsequent `git checkout main` from
+the main checkout fails with *"main is already used by worktree
+at …"* — silently, in the middle of a longer command pipeline,
+producing confusing downstream failures. A session that ended
+without explicit `ExitWorktree(action: "remove")` leaves the
+worktree on disk; the next session has no way to know it is
+abandoned.
+
+The check:
+
+1. Run `git worktree list --porcelain` and filter to entries
+   whose `worktree` path is under `<repo-root>/.claude/worktrees/`.
+2. For each, compute the **age** — the maximum of:
+   - the worktree directory's `mtime` (file-system signal — how
+     long since anything inside changed); and
+   - `git -C <worktree> log -1 --format=%cI HEAD`'s commit time
+     (git-state signal — how recent the latest commit on the
+     worktree's branch is).
+
+   The max-of-two avoids two failure modes: a worktree whose
+   commits are old but whose files were touched recently (still
+   active) and a worktree whose files are old but whose branch
+   was recently rebased (still in use). Both look fresh to one
+   of the signals alone.
+
+3. Bucket the result against a threshold (default: **7 days**;
+   adopter override via `worktree_stale_days` in
+   `<project-config>/setup-steward.md` — if absent, default
+   stands):
+   - ✓ if age ≤ threshold
+   - ⚠ if age > threshold AND the worktree has zero
+     uncommitted changes (`git -C <worktree> status --porcelain`
+     is empty) — surface the path, age, branch name, and
+     propose `git worktree remove <path>` as the cleanup.
+   - ✗ if age > threshold AND the worktree has uncommitted
+     changes — surface the same info plus an explicit
+     *"uncommitted changes present"* warning, and propose
+     two-step cleanup: first commit-or-stash, then
+     `git worktree remove --force <path>` (or
+     `EnterWorktree(path)` to enter it interactively and
+     decide).
+
+4. The check is **read-only**: it never auto-removes a
+   worktree, never force-anything. The proposal lands in the
+   verify-report and the operator chooses to act.
+
+**Threshold rationale.** Agent-worktrees are designed for
+per-task isolation: open, work, close. A worktree older than
+7 days is overwhelmingly a session that ended without explicit
+cleanup. Lower thresholds (3 days, 1 day) hit false-positive
+on multi-day tasks that legitimately stretch across sessions;
+higher thresholds (14, 30 days) let the bug class persist
+long enough to actually break a `git checkout main` weeks
+later.
+
+**Why this check exists separately from worktree-init.**
+`worktree-init` wires up a newly-created worktree. There is
+no symmetric step for end-of-life: `EnterWorktree(action:
+"remove")` from inside a session removes it cleanly, but
+sessions that crash, get interrupted, or end via context-
+window-exhaustion leak. This check is the periodic cleanup
+sweep that catches the leakage.
+
 ### 9. Project documentation mentions the framework
 
 Two files to check (per
@@ -346,5 +419,17 @@ list, ordered most → least urgent:
 - ✗ on check 4 / SHA-512 mismatch → **investigate first**;
   do not run upgrade until you understand why the
   released zip changed under the same version.
+- ⚠ on check 8c (stale agent-worktree, no uncommitted
+  changes) → `git worktree remove <path>` per the
+  per-worktree proposal in the report. Idempotent; safe to
+  batch across all flagged worktrees in one pass.
+- ✗ on check 8c (stale agent-worktree, **uncommitted
+  changes present**) → operator decision required. The
+  proposal lists each affected worktree with its branch
+  + diff summary; recover via `EnterWorktree(path)` (or
+  `cd <path>` outside the harness) to inspect, then either
+  commit / push or stash, then `git worktree remove --force
+  <path>`. Never propose `--force` without first
+  surfacing the diff.
 - All other ✗ / ⚠ → name the gap, give the one-line
   remediation.
