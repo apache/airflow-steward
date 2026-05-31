@@ -77,7 +77,21 @@ echo "agent-pre-commit: ❌ one or more checks failed (exit $prek_rc)" >&2
 echo "Review the output above, fix the issues, and run this script again." >&2
 
 # Extract which hooks failed for a quick summary.
-failed_hooks=$(echo "$prek_output" | grep -E '\[41mFailed\[49m' | sed 's/.*\[41mFailed\[49m.*/  - FAILED/' | sed 's/^  - FAILED //')
+failed_hooks=$(
+  echo "$prek_output" | awk '
+    {
+      line = $0
+      gsub(/\033\[[0-9;]*m/, "", line)
+      if (line ~ /\.+Failed/) {
+        sub(/\.+Failed.*/, "", line)
+        sub(/[[:space:]]+$/, "", line)
+        if (line != "") {
+          print "  - " line
+        }
+      }
+    }
+  '
+)
 if [[ -n "$failed_hooks" ]]; then
   echo "" >&2
   echo "Failed hooks:" >&2
