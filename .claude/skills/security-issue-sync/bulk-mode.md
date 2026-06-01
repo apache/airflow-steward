@@ -202,6 +202,27 @@ concurrently, which is exactly what the sync needs.
    - Read the issue, its closing-PR references, the fixing PR state
      and milestone, the originating Gmail thread, and mine comments
      and mail for the signals in the table in Step 1d.
+   - **Determine advisory-shipped state from the authoritative
+     source, never the tracker body.** For any tracker carrying
+     `cve allocated`, search the public `<users-list>` archive for
+     the CVE ID (PonyMail `search_list` on the users list, per
+     [`tools/ponymail/`](../../../tools/ponymail/); Gmail fallback)
+     and cross-check the cve.org publication state (per
+     [`tools/cve-org/`](../../../tools/cve-org/)). A `<users-list>`
+     archive hit authored by the release manager **is** the
+     advisory-shipped signal, and its `lists.apache.org/thread/<id>`
+     permalink is the *Public advisory URL*. The tracker body's
+     *Public advisory URL* field and `announced` label are a
+     **lagging mirror**: once populated they confirm shipment, but an
+     empty value is **never** proof the advisory did not ship — those
+     fields are only written on the *next* sync, after the release
+     manager sends the advisory out-of-band. A tracker still at
+     `fix released` with an empty *Public advisory URL* whose CVE is
+     already live on cve.org is a **Step 14→15 close-out**, not a
+     parked tracker; report it as such (see the `advisory_shipped` /
+     `advisory_url` fields below) so the orchestrator buckets it into
+     the close-out batch rather than leaving it stranded open on its
+     milestone.
    - Return a **compact structured report** — not a freeform
      narrative. The exact shape is below.
 
@@ -331,6 +352,9 @@ fix_pr:
   merged_at: <ISO8601 or null>
   milestone: <PR milestone title or null>
 release_shipped: true | false | unknown
+advisory_shipped: true | false | unknown   # from the <users-list> archive search for the CVE ID — NOT derived from the tracker body
+advisory_url: <lists.apache.org/thread/... permalink, or null>   # the archive permalink when advisory_shipped is true
+cve_published: true | false | unknown      # cve.org publication state (MITRE API), independent of the tracker body
 reporter:
   name: <name or null>
   email: <email or null>
@@ -353,7 +377,12 @@ notes: <free-form one-to-three sentences, only if something does not fit above>
 The orchestrator uses the structured fields to produce the merged
 proposal table and relies on `blockers` to flag issues that cannot
 be resolved without user input (for example a missing Gmail thread
-or an ambiguous credit line).
+or an ambiguous credit line). When `advisory_shipped` (or
+`cve_published`) is true while the tracker is still labelled
+`fix released`, the orchestrator buckets the tracker into the Step
+14→15 close-out **regardless** of whether the body's *Public advisory
+URL* field is still empty — the archive/cve.org signal is
+authoritative and the empty body field is just sync lag.
 
 ### Hard rules for bulk mode
 
