@@ -134,6 +134,7 @@ Capabilities for every skill currently in
 | `pr-management-triage` | `capability:triage` |
 | `issue-triage` | `capability:triage` |
 | `security-issue-triage` | `capability:triage` |
+| `pr-management-quick-merge` | `capability:triage` + `capability:review` *(screens the ready-for-review queue for trivial, all-gates-green PRs — triage; submits the maintainer's approve on per-PR confirmation — review)* |
 | `pr-management-code-review` | `capability:review` |
 | `pairing-self-review` | `capability:review` |
 | `pr-management-mentor` | `capability:review` |
