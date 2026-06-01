@@ -87,7 +87,7 @@ surface.
 | `capability:resolve` | Close-out actions: invalidate, dedupe, CVE-allocate, post-announcement housekeeping. |
 | `capability:reassess` | Re-run resolved or end-of-life issues against current code to verify still-fixed / still-broken. |
 | `capability:stats` | Read-only dashboards, metrics, governance evidence, contributor nomination briefs. |
-| `capability:setup` | Framework / agent / substrate infrastructure: install, verify, update, doctor, override-upstream, write-skill, plus new tools under `tools/*`. |
+| `capability:setup` | Framework / agent / substrate infrastructure: install, verify, update, doctor, override-upstream, write-skill, optimize-skill, plus new tools under `tools/*`. |
 
 The `capability:*` dimension is **orthogonal** to `area:*`. A single
 query can answer "how is our triage stack doing across PR + issue +
@@ -164,6 +164,7 @@ Capabilities for every skill currently in
 | `setup-isolated-setup-doctor` | `capability:setup` + `capability:reassess` *(re-checks an installed sandbox against current spec — the phase is reassess on subject setup)* |
 | `setup-override-upstream` | `capability:setup` |
 | `write-skill` | `capability:setup` |
+| `optimize-skill` | `capability:setup` |
 
 ## Capability to tool map
 
