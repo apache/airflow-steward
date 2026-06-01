@@ -47,15 +47,15 @@
 
 These principles regulate what this framework is and how it evolves. Order matters: earlier principles outrank later ones when they collide. Where a single principle admits more than one reading, the stricter reading wins until governance documents otherwise.
 
-A change (PR, skill, tool adapter, release) that violates a principle is wrong even if every test passes. Any committer may block it on principle grounds. The block lifts when the change complies, when a principle-amendment proposal carries through governance with the same weight as a release vote, or, when the author and the blocking committer disagree on whether the change complies, when the dispute resolves through PMC consensus on whether the principle is violated, with a formal PMC vote only as a last resort if consensus cannot be reached. The block holds until one of these resolves it; it is never overridden silently.
+A change (PR, skill, tool adapter, release) that violates a principle is wrong even if every test passes. Any committer may block it on principle grounds, provided they explain in the PR thread how the change violates the principle. A block without that explanation is invalid and has no weight. The block lifts when the change complies, when a principle-amendment proposal carries through governance with the same weight as a code-modification vote, or, when the author and the blocking committer disagree on whether the change complies, when the dispute resolves through PMC consensus on whether the principle is violated, with a formal PMC vote only as a last resort if consensus cannot be reached. The block holds until one of these resolves it; it is never overridden silently.
 
 ## Amending these principles
 
-This document is binding on contributors, committers, and the PMC of the apache-steward project, and on adopter projects to the extent they consume the framework unmodified. Editing it follows the same process as a release vote:
+This document is binding on contributors, committers, and the PMC of the apache-steward project, and on adopter projects to the extent they consume the framework unmodified. Editing it follows the same process as a code-modification vote (consensus approval):
 
 - A principle amendment is proposed as a PR against this file plus a thread on the project's PMC private list (`private@<project>.apache.org`) and a mirrored thread on `dev@<project>.apache.org` for public visibility.
 - The voting window is at least 72 hours from the [VOTE] message.
-- Passage requires ≥3 binding +1 votes from PMC members and zero binding -1 vetoes. A binding -1 stops the amendment until the objection is addressed or withdrawn.
+- Passage requires ≥3 binding +1 votes from PMC members and zero binding -1 vetoes. A binding -1 must include a technical justification; without one it is invalid and has no weight. A valid -1 stops the amendment until the objection is addressed or withdrawn.
 - Lazy consensus does NOT apply to principle changes. Silence is not consent here.
 - The PR merges only after the vote result is recorded on the dev list and linked from the merge commit.
 
@@ -140,7 +140,7 @@ Every comment, label, draft, issue, and PR an agent authors lands in a log a hum
 
 ## 17. Contributions land under Apache License 2.0
 
-Every contribution to the framework (skills, patterns, docs, tool adapters, examples) lands under Apache License 2.0, matching the framework's own license. Adopter overrides and project-specific skills outside this repository are the adopter's to license. Dependencies that cannot be redistributed under Apache-2.0-compatible terms do not enter the framework.
+Every contribution to the framework (skills, patterns, docs, tool adapters, examples) lands under Apache License 2.0, matching the framework's own license. Adopter overrides and project-specific skills outside this repository are the adopter's to license. Dependencies that cannot be redistributed under Apache-2.0-compatible terms do not enter the framework. Contributions authored with generative AI tooling include a `Generated-by: <tool>` token in the commit message, per ASF Generative Tooling Guidance.
 
 ## 18. Maintainer education ships with the platform
 
