@@ -19,6 +19,7 @@ when_to_use: |
   when findings are too ambiguous to fix without design
   discussion.
 argument-hint: "[--tool <name>] [--report <path>] [--finding <id>]"
+capability: capability:fix
 license: Apache-2.0
 ---
 
