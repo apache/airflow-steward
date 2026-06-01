@@ -95,6 +95,7 @@ package = false
 [tool.uv.workspace]
 members = [
   "tools/agent-isolation",
+  "tools/egress-gateway",
   "tools/cve-tool-vulnogram/generate-cve-json",
   "tools/cve-tool-vulnogram/oauth-api",
   "tools/github-body-field",

@@ -179,6 +179,7 @@ Tools under [`tools/`](../tools/). Tools with two values (separated by
 | [`tools/cve-tool-vulnogram`](../tools/cve-tool-vulnogram/) | `capability:resolve` | ASF Vulnogram CVE-allocation adapter. Implements the `tools/cve-tool/` contract. Previously named `tools/vulnogram/`. |
 | [`tools/dashboard-generator`](../tools/dashboard-generator/) | `capability:stats` | Self-contained HTML dashboard generator |
 | [`tools/dev`](../tools/dev/) | `capability:setup` | Framework dev-loop helpers |
+| [`tools/egress-gateway`](../tools/egress-gateway/) | `capability:setup` | Egress-allowlist forward proxy (proxy.py plugin); host-level egress chokepoint — defence-in-depth for RFC-AI-0003 §4.4 |
 | [`tools/forwarder-relay`](../tools/forwarder-relay/) | `capability:setup` | Adapter contract for inbound-relay backends (ASF Security relay, huntr.com, HackerOne triagers). Pure interface spec; adapters declare detection + credit-extraction + reporter-addressing rules. |
 | [`tools/github`](../tools/github/) | `capability:setup` | GitHub REST / GraphQL substrate (called by every lifecycle phase — pure substrate, no single phase) |
 | [`tools/github-body-field`](../tools/github-body-field/) | `capability:setup` | Read or rewrite one `### Field` section of a GitHub issue body without bringing the body into agent context — substrate helper for the security-sync skills |

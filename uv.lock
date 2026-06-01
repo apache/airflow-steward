@@ -15,6 +15,7 @@ members = [
     "agent-isolation",
     "apache-steward",
     "checker",
+    "egress-gateway",
     "generate-cve-json",
     "github-body-field",
     "github-rollup",
@@ -342,6 +343,31 @@ wheels = [
 ]
 
 [[package]]
+name = "egress-gateway"
+version = "0.1.0"
+source = { editable = "tools/egress-gateway" }
+dependencies = [
+    { name = "proxy-py" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "mypy" },
+    { name = "pytest" },
+    { name = "ruff" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "proxy-py", specifier = ">=2.4,<3" }]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "mypy", specifier = ">=1.11" },
+    { name = "pytest", specifier = ">=8.0" },
+    { name = "ruff", specifier = ">=0.6" },
+]
+
+[[package]]
 name = "generate-cve-json"
 version = "0.1.0"
 source = { editable = "tools/cve-tool-vulnogram/generate-cve-json" }
@@ -622,6 +648,15 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/14/c7/760969d6bfc77e3eba04f6c3801c81076e96a908a6c277c142a4b0f31f4e/prek-0.4.1-py3-none-win32.whl", hash = "sha256:7c515492ef3585e6bcd7b83f1bb1cb131038abc88ed2c843de1e4c3ceb865b19", size = 5208995, upload-time = "2026-05-20T04:27:38.331Z" },
     { url = "https://files.pythonhosted.org/packages/89/12/d43daf290a73dbc3e1a3eabb9077e45df661923949bee045de67cbe82524/prek-0.4.1-py3-none-win_amd64.whl", hash = "sha256:8fa707971465d8ad021c907e43691aad7bb98942943e61e294ece5f95d9fbc78", size = 5591734, upload-time = "2026-05-20T04:27:12.744Z" },
     { url = "https://files.pythonhosted.org/packages/ab/36/2ab7647fe1e84bba2baae7f04de241197eed62683fb3085e164de266d111/prek-0.4.1-py3-none-win_arm64.whl", hash = "sha256:5b4a348537924b20e208cbd87ef58e96ec37d691c5bec2969209c40de0ecf72e", size = 5423147, upload-time = "2026-05-20T04:27:17.023Z" },
+]
+
+[[package]]
+name = "proxy-py"
+version = "2.4.10"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/60/c3/157c302e82abf8e1edf9dae55665b9480c0a6bd63b42cbbeb925a37f1e1f/proxy_py-2.4.10.tar.gz", hash = "sha256:41b9e9d3aae6f80e2304d3726e8e9c583a510d8de224eada53d115f48a63a9ce", size = 326541, upload-time = "2025-02-18T16:36:38.02Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c1/38/e2546d82f769550a54cca9b1ae81f229871c9bb8b9eca55d766c74a83b03/proxy.py-2.4.10-py3-none-any.whl", hash = "sha256:ef3a31f6ef3be6ff78559c0e68198523bfe2fb1e820bb16686750c1bb5baf9e8", size = 227130, upload-time = "2025-02-18T16:36:35.394Z" },
 ]
 
 [[package]]

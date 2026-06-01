@@ -13,11 +13,13 @@
     - [4.1 The two mechanisms at a glance](#41-the-two-mechanisms-at-a-glance)
     - [4.2 Mechanism 1 — PII redactor](#42-mechanism-1--pii-redactor)
     - [4.3 Mechanism 2 — approved-LLM gate](#43-mechanism-2--approved-llm-gate)
+    - [4.4 Mechanism 3 (defence-in-depth) — egress-allowlist gateway](#44-mechanism-3-defence-in-depth--egress-allowlist-gateway)
   - [5. Data flow](#5-data-flow)
   - [6. Implementation](#6-implementation)
     - [6.1 The redactor sub-tool — `tools/privacy-llm/redactor/`](#61-the-redactor-sub-tool--toolsprivacy-llmredactor)
     - [6.2 The checker sub-tool — `tools/privacy-llm/checker/` (PR #51)](#62-the-checker-sub-tool--toolsprivacy-llmchecker-pr-51)
     - [6.3 What never reaches any LLM](#63-what-never-reaches-any-llm)
+    - [6.4 The egress gateway — `tools/egress-gateway/`](#64-the-egress-gateway--toolsegress-gateway)
   - [7. Adopter configuration](#7-adopter-configuration)
   - [8. Skill wiring summary](#8-skill-wiring-summary)
   - [9. Trust boundaries and status](#9-trust-boundaries-and-status)
@@ -27,6 +29,7 @@
     - [10.3 MCP-layer hooks](#103-mcp-layer-hooks)
     - [10.4 Mapping-file lifecycle tools](#104-mapping-file-lifecycle-tools)
     - [10.5 Doc-cleanup follow-up](#105-doc-cleanup-follow-up)
+    - [10.6 Egress-gateway wiring](#106-egress-gateway-wiring)
   - [11. References](#11-references)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -73,6 +76,8 @@ This RFC describes — and the linked PRs implement — a **two-mechanism desig
 The reporter's own identity flows through the agent's context as-is, by design — they sent the mail and are operationally known to the security team. Collaborators on the project's `<tracker>` repo are similarly exempt: their identity is already public via collaborator status.
 
 Both mechanisms are now landed: the redactor (PR #48 + PR #50) and the gate-check (PR #51). The full design is shipped, end-to-end, behind explicit Step 0 pre-flight calls in every `<security-list>`-touching skill.
+
+**Complementary network-layer control.** The two mechanisms above operate at the application layer — they decide what a skill deliberately *sends* to an LLM. They do not, by themselves, stop private data from leaving over an arbitrary HTTP call (a buggy tool, or a prompt-injection payload that coaxes the agent into exfiltration). §4.4 adds an optional **egress-allowlist gateway** (`tools/egress-gateway/`) as defence-in-depth: a default-deny host allowlist that funnels all tool egress through a single chokepoint, so private data physically cannot reach a non-sanctioned host even if a higher layer is bypassed. It is layered *under* the two LLM-routing mechanisms, not a replacement for them.
 
 ## 2. Background and motivation
 
@@ -230,6 +235,23 @@ The check is deliberately conservative: any single unapproved entry stops the sk
 
 **Defence-in-depth:** the gate-check is **also required** for `<security-list>`-only skills, even though their body classification permits Claude-Code-default LLMs by construction. Running the check at Step 0 ensures the adopter's config is in a sane state — no half-configured opt-in entries, no LLMs in the active stack the adopter forgot to approve — before any private content flows. The `--reads-private-list` flag controls only the printed banner; the validation logic is the same either way.
 
+### 4.4 Mechanism 3 (defence-in-depth) — egress-allowlist gateway
+
+The PII redactor and approved-LLM gate both operate at the application layer: they constrain what a skill deliberately sends to an LLM. Neither stops an *unintended* outbound flow — a buggy skill, a mis-wired tool, or a prompt-injection payload hidden in an inbound report that coaxes the agent into `curl`-ing private data to an attacker-controlled host. [`docs/setup/secure-agent-setup.md`](https://github.com/apache/airflow-steward/blob/main/docs/setup/secure-agent-setup.md) flags exactly this: network egress via `Bash(curl *)` / `Bash(wget *)` bypasses the sandbox's own proxy.
+
+The egress-allowlist gateway closes that gap at the network layer. It is a local `proxy.py` forward proxy (shipped as [`tools/egress-gateway/`](../../tools/egress-gateway/)) that enforces a **default-deny host allowlist** in its `before_upstream_connection` hook: any CONNECT / request to a host not on the allowlist is rejected with `403` before a socket is opened. Tools point `HTTPS_PROXY` / `HTTP_PROXY` at it; Python `urllib`-based tools (ponymail, whimsy, jira, …) honour that with no code change.
+
+| Property | Value |
+|---|---|
+| Layer | Network egress (host-level), below the application-layer LLM controls |
+| Policy | Default-deny; allowlist mirrors `sandbox.network.allowedDomains` (ASF infra, GitHub, Google APIs, PyPI), suffix-matched; loopback always allowed; adopter extends via `EGRESS_ALLOW_EXTRA` |
+| Granularity | Host only — HTTPS is tunnelled via CONNECT, so no URL-path or payload inspection (no TLS interception) |
+| Relationship | Defence-in-depth. Layered *under* mechanisms 1 + 2, never a replacement: the redactor still strips third-party PII, the gate still bounds which LLM may receive a body, and the gateway additionally bounds which host *any* tool may reach. |
+
+The gateway runs **outside the sandbox** — it must bind a listener and make unrestricted outbound, which is precisely its job as the chokepoint. Sandboxed tools reach it over loopback, which requires `localhost` / `127.0.0.1` in `sandbox.network.allowedDomains` (loopback-only; this does not widen the internet egress surface — that becomes the gateway's responsibility). The gateway's allowlist and `sandbox.network.allowedDomains` encode the same egress policy at two layers and should be kept in sync.
+
+This mechanism is **optional and provisional**: it ships as a tool with a documented contract and unit-tested allowlist policy, but it is not yet wired into a setup skill or the `privacy-llm-check` gate. See §10.6.
+
 ## 5. Data flow
 
 ```text
@@ -343,6 +365,10 @@ The framework treats these surfaces as off-limits to LLM context, even when an "
 - The `--field <type>:<value>` arguments themselves. Every value passed there is exactly what the redactor is replacing.
 - Any draft text *before* `pii-reveal` runs, when the destination is a non-internal surface (e.g. a public PR comment) — the body would still carry identifiers, which leak no PII, but skills should not emit identifier-laden drafts to non-internal destinations by accident. The destination check in the approved-LLM gate is a separate safety net for this.
 
+### 6.4 The egress gateway — `tools/egress-gateway/`
+
+A `proxy.py`-based forward proxy whose only first-party code is the allowlist plugin (`egress_gateway.allowlist.EgressAllowlistPlugin`). The host-matching policy (`host_allowed`) is a pure function, unit-tested in isolation; the proxy.py integration is intentionally not exercised in CI (it needs to bind a port). Unlike the stdlib-only `privacy-llm` sub-tools, this one carries a third-party runtime dependency (`proxy.py`) — which is why it is a separate tool rather than a `privacy-llm` sub-tool. Contract: [`tools/egress-gateway/tool.md`](../../tools/egress-gateway/tool.md); how-to: [`tools/egress-gateway/README.md`](../../tools/egress-gateway/README.md).
+
 ## 7. Adopter configuration
 
 Adopters declare their privacy-LLM posture in a single markdown file at `<project-config>/privacy-llm.md` (template at [`projects/_template/privacy-llm.md`](https://github.com/apache/airflow-steward/blob/main/projects/_template/privacy-llm.md)). The file has four sections:
@@ -416,6 +442,10 @@ The framework currently does not ship a cleanup tool for the mapping file. Manua
 
 A small handful of references in [`docs/setup/privacy-llm.md`](https://github.com/apache/airflow-steward/blob/main/docs/setup/privacy-llm.md) still describe `privacy-llm-check` as "PR-3" pending. Now that PR #51 has merged, those should be cleaned up to drop the "(PR-3)" phrasing — minor doc churn, no contract change. Filed as a follow-up for the next cleanup PR.
 
+### 10.6 Egress-gateway wiring
+
+The egress-allowlist gateway (§4.4, [`tools/egress-gateway/`](../../tools/egress-gateway/)) ships as a tool with a documented contract but is not yet wired into the setup flow. Possible follow-ups: a `setup-isolated-setup-*` step that launches / health-checks the gateway and persists `HTTPS_PROXY` into the adopter's per-machine settings; sourcing the gateway allowlist directly from `sandbox.network.allowedDomains` so the two cannot drift; and a `privacy-llm-check`-style assertion that the gateway is reachable when an adopter has opted into it. None blocking — the tool is usable standalone today.
+
 ## 11. References
 
 - **Source-of-truth contracts**
@@ -428,6 +458,7 @@ A small handful of references in [`docs/setup/privacy-llm.md`](https://github.c
 - **Reference implementation**
   - [`tools/privacy-llm/redactor/`](https://github.com/apache/airflow-steward/tree/main/tools/privacy-llm/redactor) — PII redactor (stdlib-only Python)
   - [`tools/privacy-llm/checker/`](https://github.com/apache/airflow-steward/tree/main/tools/privacy-llm/checker) — approved-LLM gate-check (stdlib-only Python)
+  - [`tools/egress-gateway/`](../../tools/egress-gateway/) — egress-allowlist forward proxy (proxy.py plugin; defence-in-depth, §4.4)
 - **Adopter template**
   - [`projects/_template/privacy-llm.md`](https://github.com/apache/airflow-steward/blob/main/projects/_template/privacy-llm.md)
 - **Related framework rules**
