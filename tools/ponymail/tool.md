@@ -10,6 +10,7 @@
     - [2. Register the MCP with Claude Code](#2-register-the-mcp-with-claude-code)
     - [3. Complete the first login](#3-complete-the-first-login)
     - [4. Spot-check access](#4-spot-check-access)
+  - [Keeping the checkout current](#keeping-the-checkout-current)
   - [Logout / session rotation](#logout--session-rotation)
   - [Confidentiality](#confidentiality)
   - [When to replace this tool with another](#when-to-replace-this-tool-with-another)
@@ -117,16 +118,24 @@ Prerequisites:
 
 The server lives in the [`apache/comdev`](https://github.com/apache/comdev)
 repository under `mcp/ponymail-mcp/`. There is no published binary —
-clone the repo and install dependencies from the subdirectory:
+clone the repo and install dependencies from the subdirectory.
+Install it from the latest `main` (see
+[Keeping the checkout current](#keeping-the-checkout-current) for
+why this MCP tracks `main` rather than a pinned tag):
 
 ```bash
 git clone https://github.com/apache/comdev.git
-cd comdev/mcp/ponymail-mcp
+cd comdev
+git checkout main           # track main — see "Keeping the checkout current"
+cd mcp/ponymail-mcp
 npm install
 ```
 
 The MCP server is invoked as `node <abs-path>/index.js`. Note the
-absolute path to `index.js` — the next step needs it.
+absolute path to `index.js` — the next step needs it. The sibling
+[Apache Projects MCP](../apache-projects/tool.md) lives under
+`mcp/apache-projects-mcp/` in the **same** `comdev` checkout, so a
+single clone serves both servers.
 
 ### 2. Register the MCP with Claude Code
 
@@ -218,6 +227,36 @@ PMC-LDAP-authenticated triager, you should see the project's
 the session has PMC-level LDAP access. If you only see public lists
 (`dev`, `users`, `announce`), the LDAP group membership is not being
 recognised; contact ASF Infra.
+
+## Keeping the checkout current
+
+Unlike the system tools the secure agent setup pins with a 7-day
+cooldown (`bubblewrap`, `socat`, `claude-code` — see
+[`docs/setup/secure-agent-setup.md` → Required tools](../../docs/setup/secure-agent-setup.md#required-tools-pinned-versions)),
+the comdev MCP servers are **intentionally tracked at the latest
+`main`**, not pinned to a tag. `apache/comdev` ships the MCP servers
+as in-repo source with **no tagged releases** — `main` is the only
+stable channel — and the server's private-list restrictions and
+supply-chain hardening land on `main` as they are written, so an
+old checkout can miss a restriction tightening that matters for the
+private `security@` / `private@` archives this tool reads.
+
+So when this MCP is installed locally, install it from — and keep
+it on — the latest `main`:
+
+```bash
+git -C /absolute/path/to/comdev checkout main
+git -C /absolute/path/to/comdev pull --ff-only
+( cd /absolute/path/to/comdev/mcp/ponymail-mcp && npm install )
+```
+
+The [`setup-isolated-setup-update`](../../.claude/skills/setup-isolated-setup-update/SKILL.md)
+skill surfaces a "behind `origin/main`" warning for the comdev
+checkout and prints the `git pull --ff-only` command; the read-only
+[`setup-isolated-setup-verify`](../../.claude/skills/setup-isolated-setup-verify/SKILL.md)
+skill asserts the checkout is on `main` and not behind. Neither
+skill pulls for you — the fetch + fast-forward stays an explicit,
+user-run step.
 
 ## Logout / session rotation
 

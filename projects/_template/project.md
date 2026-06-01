@@ -20,6 +20,7 @@
     - [Forwarders](#forwarders)
     - [Mail provider](#mail-provider)
     - [Archive system](#archive-system)
+    - [Project metadata](#project-metadata)
     - [Tracker](#tracker)
     - [Scope detection](#scope-detection)
     - [Release process](#release-process)
@@ -101,6 +102,7 @@ publicly archived lists may appear in CVE `references[]` as
 | Issue tracking + source control + project board | `github` | [`../../tools/github/`](../../tools/github/) | `tracker_repo`, `upstream_repo`, `github_project_board_*`, `issue_template_fields` |
 | Inbound email / drafts | `<one or more mail-source backends>` | [`../../tools/mail-source/contract.md`](../../tools/mail-source/contract.md) (abstract) + per-backend adapter dirs (`tools/gmail/`, `tools/ponymail/`, `tools/mail-source/imap/`, `tools/mail-source/mbox/`, ...) | See [Mail sources](#mail-sources) below — declare each backend's role (primary / preferred-for-`<op>` / fallback / optional) and `mandatory` flag |
 | CVE allocation + record mgmt | `vulnogram` | [`../../tools/cve-tool-vulnogram/`](../../tools/cve-tool-vulnogram/) | see [CVE tooling](#cve-tooling) below |
+| ASF project metadata (rosters / people / releases) | `apache-projects` | [`../../tools/apache-projects/`](../../tools/apache-projects/) | see [`project_metadata`](#project-metadata) below — ASF default `mandatory: true` |
 | Release voting / announce | TODO: ASF mailing lists — or replace with the project's release-comms backend | — | via `dev_list` / `announce_list` / `users_list` |
 
 To replace a tool (e.g. swap GitHub issues for JIRA), declare an
@@ -179,8 +181,21 @@ remaining backends (and skips ops that no available backend supports).
 | Backend | Role | Mandatory | Notes |
 |---|---|---|---|
 | TODO: `gmail` | TODO: e.g. `primary` | TODO: `yes` / `no` | TODO: e.g. "Triager Gmail account subscribed to `<security-list>` and `<private-list>`" |
-| TODO: `ponymail` | TODO: e.g. `fallback` or `preferred for thread_url` | TODO | TODO: e.g. "Read-only archive backstop; PMC LDAP session required for private-list reads" |
+| TODO: `ponymail` | TODO: e.g. `fallback` or `preferred for thread_url` | TODO: ASF default `yes` | TODO: e.g. "Read-only archive backstop; PMC LDAP session required for private-list reads" |
 | TODO: *(add more rows as needed — `imap`, `mbox`, project-specific adapter)* | | | |
+
+> **ASF default — `ponymail` is `mandatory: yes`.** For ASF
+> projects the PonyMail MCP is a pre-flight prerequisite, not an
+> opt-in backstop: the mail-reading skills that run the Step 0
+> mail-source check (`security-issue-import`, `security-issue-sync`)
+> refuse to run when it is unavailable, even though `gmail` keeps the
+> `primary` role (PonyMail is read-only — drafts stay on Gmail).
+> Skills that only touch a single Gmail thread opportunistically
+> (e.g. `security-cve-allocate`) do not hard-gate on it.
+> Install it from the latest `main` of `apache/comdev` per
+> [`../../tools/ponymail/tool.md`](../../tools/ponymail/tool.md#keeping-the-checkout-current).
+> A non-ASF adopter with no `lists.apache.org` archive sets this row
+> to `mandatory: no` (or drops it).
 
 Reference adapter docs:
 [`tools/gmail/tool.md`](../../tools/gmail/tool.md) (full read+write),
@@ -551,6 +566,45 @@ archive_system:
   # forum.
   # Consumed by: security-issue-sync.
   advisory_publication_signal_url: "https://lists.apache.org/list.html?<users-list>"
+```
+
+### Project metadata
+
+```yaml
+project_metadata:
+  # Backend the skills query for ASF project metadata — committee /
+  # committer rosters, people + Apache IDs, employer affiliations,
+  # release history. Selects the adapter under tools/.
+  # ASF default: apache-projects-mcp (the official comdev MCP at
+  # apache/comdev/mcp/apache-projects-mcp, wrapping
+  # projects.apache.org/json — read-only, unauthenticated).
+  # Override when: non-ASF projects with no projects.apache.org
+  # record — set kind to the adopter's governance metadata source,
+  # or `none` to supply roster / affiliation context by hand.
+  # Consumed by: contributor-nomination, release-vote-tally,
+  # the roster-resolution paths in security-issue-sync /
+  # security-cve-allocate.
+  kind: apache-projects-mcp
+
+  # Whether the metadata backend is a pre-flight prerequisite. When
+  # true, the consuming skills refuse to run on degraded signal (the
+  # mcp__apache-projects__* tools absent / unreachable) rather than
+  # falling back to hand-scraping committer.cgi / committee.html.
+  # ASF default: true — for ASF projects the MCP is mandatory.
+  # Override when: non-ASF — set false (no ASF project record), and
+  # the skills fall back to nominator-supplied roster signal.
+  # Consumed by: contributor-nomination, release-vote-tally.
+  mandatory: true
+
+  # Install source for the local MCP checkout. The comdev MCP
+  # servers ship as in-repo source with no tagged releases, so the
+  # framework intentionally tracks `main` rather than pinning — see
+  # tools/apache-projects/tool.md → "Keeping the checkout current".
+  # ASF default: apache/comdev @ main.
+  # Override when: a fork / mirror — point at it, keeping the
+  # track-main contract.
+  # Consumed by: setup-isolated-setup-verify, setup-isolated-setup-update.
+  install_source: "apache/comdev @ main (mcp/apache-projects-mcp)"
 ```
 
 ### Tracker

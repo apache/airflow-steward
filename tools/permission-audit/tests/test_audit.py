@@ -20,8 +20,8 @@ from permission_audit.audit import audit_settings
 def test_empty_allow_only_misses_recommended():
     result = audit_settings(allow_list=[], families=["security"])
     assert result.forbidden == []
-    # lychee (default family "") + 10 security family = 11
-    assert len(result.missing_recommended) == 11
+    # lychee (default family "") + 15 security family = 16
+    assert len(result.missing_recommended) == 16
 
 
 def test_forbidden_python_wildcard_flagged_with_pointer():

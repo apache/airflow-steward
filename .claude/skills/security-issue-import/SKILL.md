@@ -257,16 +257,22 @@ Before touching any candidate thread, verify:
    `gh api repos/<tracker> --jq .name`; if it errors
    (401, 403, 404), stop and tell the user to log in with
    `gh auth login` or get added to `<tracker>`.
-3. **(Legacy guidance — kept for the reference adopter.)** The
-   reference adopter (`airflow-s`) lists `gmail` as primary
-   `mandatory: yes` and `ponymail` as fallback `mandatory: no`,
-   which produces the behaviour the rest of this skill describes:
-   Gmail handles reads of just-arrived inbound mail and all draft
-   creation, Ponymail handles archive lookups and degrades quietly
-   when unauthenticated. Adopters with different `Mail sources`
-   tables will see the resolution rule pick differently — the
-   step-by-step references to "Gmail" below should be read as
-   "the backend the resolution rule picked for the relevant op".
+3. **(Reference-adopter guidance.)** The reference adopter
+   (`airflow-s`) lists `gmail` as primary `mandatory: yes` and —
+   per the ASF default — `ponymail` as `mandatory: yes` too
+   (`fallback` role for drafts, since PonyMail is read-only). So
+   for the reference flow **both** backends are pre-flight
+   prerequisites: a Gmail-MCP failure stops the run (drafts have no
+   home), and a PonyMail-MCP miss — not registered, or registered
+   but unauthenticated for the private `<security-list>` archive —
+   stops it too, per item 1's `mandatory: yes` rule. Gmail handles
+   reads of just-arrived inbound mail and all draft creation;
+   PonyMail handles archive lookups (and is the primary read path
+   when authenticated). Adopters whose `Mail sources` table sets
+   `ponymail` to `mandatory: no` get the old degrade-quietly
+   behaviour; the step-by-step references to "Gmail" below should
+   be read as "the backend the resolution rule picked for the
+   relevant op".
 4. **Privacy-LLM contract.** This skill reads `<security-list>`
    bodies that may contain third-party PII the reporter
    discloses about other people. Run the gate-check first —

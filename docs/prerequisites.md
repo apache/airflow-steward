@@ -11,6 +11,7 @@
     - [5. Browser (for the human-click steps)](#5-browser-for-the-human-click-steps)
     - [6. Local `<upstream>` clone (only for `security-issue-fix`)](#6-local-upstream-clone-only-for-security-issue-fix)
     - [7. `uv` (for `generate-cve-json`)](#7-uv-for-generate-cve-json)
+    - [8. ASF project-metadata MCP (`apache-projects`)](#8-asf-project-metadata-mcp-apache-projects)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -85,6 +86,22 @@ setup. **Drafts remain Gmail-only** today (PonyMail MCP is
 read-only and has no `create_draft` equivalent), so Gmail MCP is
 still required for the reply path.
 
+**For ASF projects the PonyMail MCP is a mandatory prerequisite,
+not an opt-in backstop.** The reference adopter's manifest declares
+`ponymail` with `mandatory: yes` (see
+[`<project-config>/project.md → Mail sources`](<project-config>/project.md#mail-sources)),
+so the mail-reading skills that run the Step 0 mail-source check
+(`security-issue-import`, `security-issue-sync`) **refuse to start**
+if it is not installed and reachable — Gmail keeps the `primary`
+role for drafts, but PonyMail must also be present. (Skills that
+only read a single Gmail thread opportunistically, such as
+`security-cve-allocate`, do not hard-gate on it.) Install it from the **latest `main`** of `apache/comdev`
+(the MCP servers ship as in-repo source with no tagged releases —
+`main` is the only channel; see
+[`tools/ponymail/tool.md → Keeping the checkout current`](../tools/ponymail/tool.md#keeping-the-checkout-current)).
+A non-ASF adopter with no `lists.apache.org` archive sets that row
+to `mandatory: no`.
+
 **Without this connection:** `security-issue-import` cannot find new
 reports, `security-issue-sync` cannot reconcile status with the mail
 thread, and no skill can draft replies to reporters. The skills will
@@ -149,3 +166,33 @@ The `generate-cve-json` script is a small `uv`-managed Python
 project. Install `uv` once
 (<https://github.com/astral-sh/uv>); the script bootstraps the
 rest.
+
+### 8. ASF project-metadata MCP (`apache-projects`)
+
+The skills that reason about **rosters, people, and release
+history** — `contributor-nomination` (Apache ID verification,
+vendor-neutrality / employer context), the roster-resolution paths
+in `security-issue-sync` / `security-cve-allocate`, and the
+forthcoming `release-*` family — read ASF project metadata through
+the official ASF
+[`apache/comdev` `mcp/apache-projects-mcp/`](https://github.com/apache/comdev/tree/main/mcp/apache-projects-mcp).
+It is **read-only and unauthenticated** — it wraps the public
+`projects.apache.org/json` feeds, so there is no LDAP/OAuth step.
+
+**For ASF projects this MCP is a mandatory prerequisite.** The
+manifest's
+[`project_metadata`](<project-config>/project.md#project-metadata)
+block declares `kind: apache-projects-mcp` with `mandatory: true`
+as the ASF default, and the consuming skills gate on it in their
+Step 0 / Step 1 pre-flight rather than degrading to hand-scraping
+`committer.cgi` / `committee.html`. Install it from the **latest
+`main`** of `apache/comdev` — the same checkout that hosts the
+PonyMail MCP (both live under `mcp/` in that repo) — per
+[`tools/apache-projects/tool.md`](../tools/apache-projects/tool.md).
+
+**Without this connection:** `contributor-nomination` cannot verify
+an Apache ID or cross-check committee affiliation and will stop with
+a clear message asking you to register and reach the MCP first. A
+non-ASF adopter with no `projects.apache.org` record sets
+`project_metadata.mandatory: false` and supplies roster /
+affiliation context by hand.

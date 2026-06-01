@@ -261,10 +261,12 @@ Before reading any tracker state, verify:
    `gh api repos/<tracker> --jq .name` must return
    `<tracker>`. A 401/403/404 means the user needs
    `gh auth login` or collaborator access.
-3. **PonyMail MCP status** (opt-in; primary read path when
-   enabled) — read `.apache-steward-overrides/user.md` → `tools.ponymail`. If
-   `enabled: true`, call `mcp__ponymail__auth_status()` once. Three
-   outcomes:
+3. **PonyMail MCP status.** Whether this is a hard gate depends on
+   the manifest: if `<project-config>/project.md → Mail sources`
+   declares `ponymail` with `mandatory: yes` (the **ASF default**),
+   PonyMail is a pre-flight prerequisite and the outcomes below
+   that "degrade quietly" become **hard stops** instead. Call
+   `mcp__ponymail__auth_status()` once. Four outcomes:
    - **Authenticated session** — record
      `ponymail_enabled: true, ponymail_authenticated: true` in the
      skill's observed-state bag. **Downstream steps use PonyMail
@@ -272,22 +274,31 @@ Before reading any tracker state, verify:
      documented in 1c / 1d / 1e / 2b / 2c; Gmail becomes the
      fallback. This is the normal configuration for PMC-authenticated
      triagers.
-   - **No session / expired session** — record
-     `ponymail_enabled: true, ponymail_authenticated: false`,
-     surface a one-line warning to the user
-     (*"PonyMail MCP is configured but not authenticated — run
-     `mcp__ponymail__login()` if you want this session to use it;
-     otherwise Gmail will serve all reads"*), and proceed with
-     Gmail as the primary read path. Do **not** stop; Gmail alone
-     is sufficient.
+   - **No session / expired session** —
+     - *`mandatory: yes` (ASF default):* **stop**. Surface
+       *"mandatory mail-source backend `ponymail` is registered but
+       not authenticated — run `mcp__ponymail__login()` and
+       re-invoke"*. Private-list reads need the LDAP session, and
+       ASF triagers are PMC-authenticated, so an unauthenticated
+       session is a hard stop, not a Gmail-only fallback.
+     - *`mandatory: no`:* record
+       `ponymail_enabled: true, ponymail_authenticated: false`,
+       warn (*"PonyMail MCP is configured but not authenticated —
+       run `mcp__ponymail__login()` if you want this session to use
+       it; otherwise Gmail will serve all reads"*), and proceed
+       with Gmail as the primary read path.
    - **MCP tools not available** (the `mcp__ponymail__*` tools
-     are absent from the current session's tool list) — record
-     `ponymail_enabled: false`, silently proceed Gmail-only. A
-     user who set `enabled: true` in config but has not
-     registered the MCP in Claude Code's `mcpServers` block gets
-     the Gmail-only path without a noisy error.
-   When `.apache-steward-overrides/user.md` sets `enabled: false` or omits the
-   `ponymail` block entirely, skip this sub-step; Gmail is the
+     are absent from the current session's tool list) —
+     - *`mandatory: yes` (ASF default):* **stop**. Surface
+       *"mandatory mail-source backend `ponymail` unavailable: MCP
+       not registered; run aborted — register it per
+       `tools/ponymail/tool.md` (install from the latest `main` of
+       `apache/comdev`) and re-invoke"*.
+     - *`mandatory: no`:* record `ponymail_enabled: false` and
+       silently proceed Gmail-only.
+   When the manifest declares `ponymail` with `mandatory: no` and
+   `.apache-steward-overrides/user.md` sets `tools.ponymail.enabled:
+   false` (or omits the block), skip this sub-step; Gmail is the
    only read backend. See
    [`tools/ponymail/tool.md`](../../../tools/ponymail/tool.md)
    for the one-time setup instructions.

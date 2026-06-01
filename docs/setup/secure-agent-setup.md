@@ -1612,6 +1612,16 @@ below and report ✓ done / ✗ missing / ⚠ partial, with the evidence
    `[NO SANDBOX]`).
 7. Run `cat ~/.aws/credentials`, `echo $AWS_ACCESS_KEY_ID`, and
    `curl https://example.com` and confirm each is denied.
+8. If a `ponymail` and/or `apache-projects` MCP server is
+   registered in `~/.claude/settings.json` or
+   `.claude/settings.json`, resolve its `apache/comdev` checkout
+   from the `args` path and confirm it is on `main`
+   (`git -C <root> rev-parse --abbrev-ref HEAD`) and not behind
+   the last-fetched `origin/main`
+   (`git -C <root> rev-list --count HEAD..origin/main`). These
+   MCP servers track `main` by design — see
+   `tools/ponymail/tool.md` → "Keeping the checkout current".
+   Report only; do not fetch or pull.
 ```
 
 Re-run either form after every Claude Code upgrade — the sandbox
@@ -1672,7 +1682,22 @@ synchronised is a periodic operation, not a one-time install.
        /path/to/airflow-steward/tools/agent-isolation/claude-iso.sh
    ```
 
-4. **Re-verify.** Re-run [Verification](#verification) above
+4. **comdev MCP checkouts.** If you registered the `ponymail`
+   and/or `apache-projects` MCP servers, refresh their local
+   `apache/comdev` checkout — these track `main`, not a pinned
+   tag (comdev ships them as in-repo source with no releases):
+
+   ```bash
+   git -C /path/to/comdev fetch origin main
+   git -C /path/to/comdev rev-list --count HEAD..origin/main   # behind?
+   git -C /path/to/comdev pull --ff-only                       # if behind
+   ( cd /path/to/comdev/mcp/ponymail-mcp && npm install )
+   ( cd /path/to/comdev/mcp/apache-projects-mcp && npm install )
+   ```
+
+   See [`tools/ponymail/tool.md` → Keeping the checkout current](../../tools/ponymail/tool.md#keeping-the-checkout-current).
+
+5. **Re-verify.** Re-run [Verification](#verification) above
    (either form) to confirm the denials still fire after the
    update.
 
@@ -1698,7 +1723,15 @@ anything — I will decide what to apply:
 3. Diff every user-scope copy under `~/.claude/scripts/` and (if
    present) `~/.claude/agent-isolation/` against the framework
    checkout. Report any drift, file by file.
-4. Re-run `cat ~/.aws/credentials`, `echo $AWS_ACCESS_KEY_ID`,
+4. For any `ponymail` / `apache-projects` MCP server registered in
+   my settings, resolve its `apache/comdev` checkout from the
+   `args` path, `git -C <root> fetch origin main`, and report the
+   behind-count. When behind, print (do not run)
+   `git -C <root> pull --ff-only` + `npm install` in the affected
+   `mcp/<server>/` dir, plus the
+   `github.com/apache/comdev/compare/<sha>...main` link. These
+   servers track `main` by design — no manifest bump, no cooldown.
+5. Re-run `cat ~/.aws/credentials`, `echo $AWS_ACCESS_KEY_ID`,
    `curl https://example.com` and confirm each is still denied.
    Note any newly-allowed call as a regression to investigate.
 ```

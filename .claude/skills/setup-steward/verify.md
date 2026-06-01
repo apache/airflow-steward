@@ -447,7 +447,19 @@ adopter opted into via
   - `mcp__ponymail__get_thread`
   - `mcp__ponymail__get_email`
   - `mcp__ponymail__list_restrictions`
+  - `mcp__apache-projects__project_stats`
+  - `mcp__apache-projects__get_committee`
+  - `mcp__apache-projects__get_group_members`
+  - `mcp__apache-projects__get_person`
+  - `mcp__apache-projects__search_people`
   - `Bash(vulnogram-api-record-fetch *)`
+
+  (The `mcp__apache-projects__*` read tools back the roster /
+  affiliation lookups — also used by `contributor-nomination`,
+  the maintainer-side PMC/committer assessment skill. Both MCP
+  servers are installed from the latest `main` of `apache/comdev`;
+  see [`tools/apache-projects/tool.md`](../../../tools/apache-projects/tool.md)
+  and [`tools/ponymail/tool.md`](../../../tools/ponymail/tool.md).)
 
 - **Any family that ships docs / markdown** (effectively
   every adopter, since the framework itself ships docs) —
@@ -519,6 +531,41 @@ known-dangerous wildcard) is a capability change the
 operator must own, both to know it happened and to keep
 the audit trail human-readable. The framework's job is to
 *surface* the gap — the operator's job is to close it.
+
+### 8e. comdev MCP prerequisites (ASF projects)
+
+**Run this check only for ASF projects** — detect ASF the same way
+as [`adopt.md` Step 9c](adopt.md#step-9c--comdev-mcp-prerequisites-asf-projects):
+`<project-config>/project.md` declares `project_metadata.mandatory:
+true` or `Mail sources` `ponymail` `mandatory: yes`. Skip otherwise
+(the two MCP servers are optional for non-ASF adopters).
+
+For ASF projects, both the
+[PonyMail](../../../tools/ponymail/tool.md) and
+[Apache Projects](../../../tools/apache-projects/tool.md) MCP
+servers are mandatory pre-flight prerequisites, installed from the
+latest `main` of `apache/comdev` (tracked, not pinned). Confirm:
+
+1. **Registered.** `mcp__ponymail__*` and `mcp__apache-projects__*`
+   appear in the session tool list. ✗ on either missing — the
+   mandatory pre-flight gates in `security-issue-import` /
+   `security-issue-sync` (PonyMail) and `contributor-nomination`
+   (Apache Projects) will hard-stop. Remediation:
+   [`adopt.md` Step 9c](adopt.md#step-9c--comdev-mcp-prerequisites-asf-projects).
+2. **PonyMail authenticated.** For ASF projects an authenticated
+   LDAP session is required, not just a registered server — a
+   trivial `mcp__ponymail__auth_status()` should report an
+   authenticated session. ⚠ if registered but unauthenticated
+   (remediation: `mcp__ponymail__login()`).
+3. **Checkout on `main`, current.** Resolve each server's checkout
+   root from its `mcpServers` `args` path and confirm `origin` is
+   `apache/comdev`, the branch is `main`, and it is not behind the
+   last-fetched `origin/main`. This is the read-only, offline form
+   of the freshness assertion; the authoritative live fetch belongs
+   to [`/setup-steward upgrade` Step 6e](upgrade.md#step-6e--refresh-comdev-mcp-checkouts-asf-projects)
+   and [`setup-isolated-setup-update`](../setup-isolated-setup-update/SKILL.md).
+   ✗ off-`main` or non-`apache/comdev` remote; ⚠ behind
+   `origin/main`.
 
 ### 9. Project documentation mentions the framework
 
@@ -592,5 +639,11 @@ list, ordered most → least urgent:
   paste manually. The recommendation is family-scoped, so
   an adopter who skipped the `security` family will not
   see the Gmail / PonyMail entries surfaced as gaps.
+- ✗ on check 8e (ASF project, comdev MCP not registered or
+  off-`main`) → `/setup-steward adopt` Step 9c to (re-)install
+  from latest `apache/comdev` `main`. ⚠ on check 8e (PonyMail
+  unauthenticated, or checkout behind `origin/main`) →
+  `mcp__ponymail__login()` and/or `/setup-steward upgrade`
+  Step 6e (live fetch + `git pull --ff-only`).
 - All other ✗ / ⚠ → name the gap, give the one-line
   remediation.

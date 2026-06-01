@@ -135,10 +135,18 @@ Resolve in order:
    and skip this lookup.
 
    For a `pmc` target, ask the nominator once: *"Do you know
-   this contributor's Apache ID? (Enter to skip)"* If
-   supplied, verify it at
-   `https://people.apache.org/committer.cgi?<apache_id>` —
-   a 404 means the ID is wrong. If not supplied or
+   this contributor's Apache ID? (Enter to skip)"* When the
+   Apache Projects MCP is reachable (recorded
+   `apache_projects_mcp: reachable` in Step 1), verify a supplied
+   ID with `mcp__apache-projects__get_person(<apache_id>)` — an
+   empty / not-found result means the ID is wrong; if the
+   nominator did not supply one, try
+   `mcp__apache-projects__search_people(<real_name>)` and offer
+   any single confident match for confirmation (never auto-adopt
+   a guess). Fall back to
+   `https://people.apache.org/committer.cgi?<apache_id>` (a 404
+   means the ID is wrong) only when the MCP is unreachable on a
+   non-mandatory (non-ASF) configuration. If not supplied or
    unverifiable, set `<apache_id>` to
    `[APACHE ID UNKNOWN — verify before sending]`.
 
@@ -199,6 +207,32 @@ gh repo view <upstream> --json nameWithOwner --jq '.nameWithOwner'
 
 If the repo is not found or inaccessible, stop with a clear
 message — do not proceed on degraded signal.
+
+**ASF project-metadata MCP (mandatory for ASF projects).** When
+`<project-config>/project.md → project_metadata` declares
+`kind: apache-projects-mcp` with `mandatory: true` (the ASF
+default), confirm the
+[Apache Projects MCP](../../../tools/apache-projects/tool.md) is
+registered and reachable with one trivial, side-effect-free call:
+
+```text
+mcp__apache-projects__project_stats()
+```
+
+- **Returns counts** → record `apache_projects_mcp: reachable` in
+  the observed-state bag; Steps 0 and 3 use it as the canonical
+  source for Apache ID verification and committee-affiliation
+  lookups.
+- **Tools absent / call errors** → **stop**. Surface *"mandatory
+  project-metadata backend `apache-projects` unavailable: `<reason>`;
+  run aborted — register the MCP per `tools/apache-projects/tool.md`
+  (install from the latest `main` of `apache/comdev`) and
+  re-invoke"*. Do not fall back to hand-scraping `committer.cgi` /
+  `committee.html` on a mandatory-backend miss.
+
+When `project_metadata.mandatory` is `false` (non-ASF adopter, or
+no `projects.apache.org` record), skip this gate and treat the
+Apache-ID / affiliation lookups below as nominator-supplied.
 
 ---
 
@@ -267,6 +301,21 @@ members work for the same employer as `<login>`?"*
 
 Record the response verbatim. If the nominator does not
 know, note it.
+
+When the Apache Projects MCP is reachable (recorded
+`apache_projects_mcp: reachable` in Step 1), seed this question
+with the live committee roster instead of asking cold: fetch the
+PMC roster with `mcp__apache-projects__get_committee(<project>)`
+(and, for a `pmc` target, `get_group_members(pmc-<project>)`) and
+present the current member list so the nominator can answer
+employer concentration against an accurate roster. Treat the MCP
+result as **context to confirm, not a verdict** — committee
+metadata rarely carries current employer, so vendor-neutrality
+still rests on the nominator's knowledge. Flag any roster the MCP
+returns that disagrees with the checked-in
+[`pmc-roster.md`](../../../<project-config>/pmc-roster.md) mirror,
+since the MCP reflects the authoritative `projects.apache.org`
+record.
 
 This step is not optional. GitHub numbers without community
 context are not meaningful, and contribution volume without

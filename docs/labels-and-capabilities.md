@@ -172,6 +172,7 @@ Tools under [`tools/`](../tools/). Tools with two values (separated by
 | Tool | Capability / capabilities | Role |
 |---|---|---|
 | [`tools/agent-isolation`](../tools/agent-isolation/) | `capability:setup` | Secure-agent sandbox helpers |
+| [`tools/apache-projects`](../tools/apache-projects/) | `capability:stats` + `capability:intake` | ASF project-metadata substrate (`apache/comdev` `apache-projects-mcp`); read-only `projects.apache.org/json` rosters / people / releases. Backs `contributor-nomination` and the security roster-resolution paths; tracked at `main`, not pinned |
 | [`tools/cve-org`](../tools/cve-org/) | `capability:resolve` + `capability:intake` | Publishes to CVE.org *(resolve)* and records the resulting CVE state back into the tracker *(intake)* |
 | [`tools/cve-tool`](../tools/cve-tool/) | `capability:setup` | Adapter contract for CNA backends (Vulnogram, MITRE form, CVE.org direct, GHSA). Pure interface spec; no executable code — adapters under sibling `tools/cve-tool-*/` directories implement it. |
 | [`tools/cve-tool-vulnogram`](../tools/cve-tool-vulnogram/) | `capability:resolve` | ASF Vulnogram CVE-allocation adapter. Implements the `tools/cve-tool/` contract. Previously named `tools/vulnogram/`. |

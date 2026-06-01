@@ -105,6 +105,11 @@ RECOMMENDED_BY_FAMILY: dict[str, frozenset[str]] = {
             "mcp__ponymail__get_thread",
             "mcp__ponymail__get_email",
             "mcp__ponymail__list_restrictions",
+            "mcp__apache-projects__project_stats",
+            "mcp__apache-projects__get_committee",
+            "mcp__apache-projects__get_group_members",
+            "mcp__apache-projects__get_person",
+            "mcp__apache-projects__search_people",
             "Bash(vulnogram-api-record-fetch *)",
         }
     ),
