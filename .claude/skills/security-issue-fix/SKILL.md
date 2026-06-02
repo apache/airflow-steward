@@ -772,9 +772,34 @@ Now that a public PR exists, update the private tracking issue:
    in the [`security-issue-sync`](../security-issue-sync/SKILL.md)
    skill.
 
-3. **Maintain milestones and labels** — see the next section.
+3. **Assign the tracker to the fix owner.** Now that a PR exists,
+   propose setting the tracking issue's assignee so the board
+   reflects who is on it. This applies the **same rule** as
+   `security-issue-sync` — the *Assignees* rule's PR-author and
+   sign-up branches in
+   [`security-issue-sync/signals-to-actions.md`](../security-issue-sync/signals-to-actions.md):
+   - The natural owner is the **remediation developer** — the
+     `<upstream>` PR author driving this fix.
+   - If a security-team member **signed up** to own the issue in the
+     thread, that volunteer is the owner instead (sign-up branch).
+   - **Project-member gate** (mandatory): assign only when the
+     person is on the security-team roster in
+     [`<project-config>/release-trains.md`](../../../<project-config>/release-trains.md)
+     or a `<tracker>` collaborator. A non-member is recorded and
+     surfaced but **not** assigned — they cannot see the private
+     tracker and GitHub silently drops the write.
+   - **Never override** an existing conflicting assignee here; the
+     hand-off to the release manager stays at the `fix released`
+     transition (sync owns it).
 
-4. **Status update to the reporter** — if the <tracker> issue has an
+   Propose; apply on confirmation. (The `security-issue-sync` run
+   this skill invokes also reconciles the assignee, so when sync
+   runs in the same pass this step and sync agree — they read the
+   one rule.)
+
+4. **Maintain milestones and labels** — see the next section.
+
+5. **Status update to the reporter** — if the <tracker> issue has an
    identified external reporter and the reporter has not yet been
    told about the fix PR, delegate to the `security-issue-sync`
    skill's "Status update to the reporter" category by re-running
