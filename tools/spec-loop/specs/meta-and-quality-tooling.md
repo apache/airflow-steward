@@ -10,7 +10,7 @@ source: >
   README.md § Skill families (utilities) and AGENTS.md § Reusable skills.
   Implemented by tools/skill-and-tool-validator/, tools/skill-evals/,
   tools/sandbox-lint/, tools/dashboard-generator/, tools/probe-templates/,
-  and the write-skill / list-steward-skills utility skills.
+  and the write-skill / list-skills utility skills.
 acceptance:
   - Skill definitions are validated (frontmatter keys name/description/
     license, internal link integrity, placeholder conventions).
@@ -45,12 +45,12 @@ trustworthy as it grows.
 - `tools/spec-validator/` — validates spec-loop spec frontmatter
   (required keys, valid `status`/`kind`/`mode` values, body-section
   presence); the spec-side counterpart to `skill-and-tool-validator`.
-- Skills: `write-skill` (author/update a skill), `list-steward-skills`
+- Skills: `write-skill` (author/update a skill), `list-skills`
   (live, generated index of every skill, grouped by family).
 
 ## Behaviour & contract
 
-- **Generated, never cached.** `list-steward-skills` reads the live
+- **Generated, never cached.** `list-skills` reads the live
   `.claude/skills/*/SKILL.md` frontmatter on every run, so the index never
   goes stale.
 - **Deterministic checks.** `skill-and-tool-validator` and `sandbox-lint` are
@@ -67,7 +67,7 @@ trustworthy as it grows.
 ## Acceptance criteria
 
 1. `skill-and-tool-validate` enforces required frontmatter + link integrity.
-2. `list-steward-skills` generates its index from live frontmatter.
+2. `list-skills` generates its index from live frontmatter.
 3. Each meta tool ships with its own tests.
 
 ## Validation

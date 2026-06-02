@@ -42,14 +42,14 @@
 #   https://github.com/apache/airflow-steward/issues/197 .
 #
 # **Not** in this hook: apache-steward symlink reconciliation.
-# `/setup-steward verify --auto-fix-symlinks` is a Claude Code
+# `/magpie-setup verify --auto-fix-symlinks` is a Claude Code
 # slash command, not a shell command, so it cannot be invoked from
 # a `git checkout` hook running in the operator's shell — the
 # previous template version of this hook spelled out the line
 # anyway and printed a spurious "No such file or directory" error
 # on every checkout. Symlink-drift in steward-adopted repos is now
 # reconciled **lazily** — the next time the operator opens Claude
-# Code in the worktree, `/setup-steward verify` detects any drift
+# Code in the worktree, `/magpie-setup verify` detects any drift
 # and offers to fix it.
 #
 # IMPORTANT — `core.hooksPath` shadowing. When `core.hooksPath` is

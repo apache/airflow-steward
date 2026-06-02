@@ -27,12 +27,12 @@ If your project has decided to stop using Magpie,
 or the adoption was experimental and is now over, this
 page walks through the removal. It reverses everything an
 install recipe in [`install-recipes.md`](install-recipes.md)
-and the subsequent `/setup-steward` interactive flow put
+and the subsequent `/magpie-setup` interactive flow put
 into your repo.
 
 > **You may not actually want this.** To **change install
 > method or version**, use
-> [`/setup-steward upgrade`](../../skills/setup-steward/upgrade.md)
+> [`/magpie-setup upgrade`](../../skills/setup/upgrade.md)
 > — it keeps your overrides and re-uses the existing
 > wiring. To **temporarily detach a single skill for
 > debugging**, edit the relevant file under
@@ -44,7 +44,7 @@ If you've already decided and want to act fast — from the
 main checkout of the adopter repo:
 
 ```bash
-/setup-steward unadopt    # surfaces a plan, asks for confirmation, then removes
+/magpie-setup unadopt    # surfaces a plan, asks for confirmation, then removes
 ```
 
 Read on for prerequisites, what the confirmation prompt
@@ -54,9 +54,9 @@ looks like, how to verify, and how to clean up what
 ## Invocation
 
 ```bash
-/setup-steward unadopt              # default: preserves .apache-magpie-overrides/
-/setup-steward unadopt --purge-overrides
-/setup-steward unadopt dry-run      # print the plan; no writes, no confirmation
+/magpie-setup unadopt              # default: preserves .apache-magpie-overrides/
+/magpie-setup unadopt --purge-overrides
+/magpie-setup unadopt dry-run      # print the plan; no writes, no confirmation
 ```
 
 The flow refuses to run inside `apache/airflow-steward`
@@ -75,7 +75,7 @@ The following will be REMOVED:
   Gitignored (no commit needed):
     .apache-magpie/                          (snapshot)
     .apache-magpie.local.lock
-    <skills-dir>/<symlink-1>                  → .apache-magpie/.claude/skills/<skill-1>/
+    <skills-dir>/<symlink-1>                  → .apache-magpie/skills/<skill-1>/
     <skills-dir>/<symlink-2>                  → ...
     .github/skills/<symlink-1>                (Pattern B only — second physical layer)
     .git/hooks/post-checkout                  (if it contains the Magpie recipe)
@@ -86,7 +86,7 @@ The following will be REMOVED:
     README.md                                 (the adoption section, if present)
     AGENTS.md                                 (the Magpie framework section, if present)
     CONTRIBUTING.md                           (the adoption section, if present)
-    <skills-dir>/setup-steward/               (this skill itself — self-destructive)
+    <skills-dir>/magpie-setup/               (this skill itself — self-destructive)
 
 The following will be PRESERVED:
 
@@ -94,7 +94,7 @@ The following will be PRESERVED:
 ```
 
 `<skills-dir>` resolves to your skills directory per the
-[skills-dir convention](../../skills/setup-steward/conventions.md)
+[skills-dir convention](../../skills/setup/conventions.md)
 your repo uses:
 
 - **Pattern A** — `.claude/skills/`.
@@ -123,7 +123,7 @@ ls .apache-magpie 2>/dev/null   # should print nothing — directory gone
 ```
 
 You should see staged deletions for `.apache-magpie.lock`,
-your `setup-steward/` skill directory, and modifications
+your `setup/` skill directory, and modifications
 to `.gitignore` plus any of `README.md` / `AGENTS.md` /
 `CONTRIBUTING.md` that had adoption sections. Pay extra
 attention to the `.gitignore` and doc patches — those are
@@ -134,9 +134,9 @@ committing. On disk, `.apache-magpie/` and
 If anything is missing or unexpected — or if removal failed
 partway through — the canonical per-step plan, including
 failure modes, lives in
-[`.claude/skills/setup-steward/unadopt.md`](../../skills/setup-steward/unadopt.md).
+[`.claude/skills/magpie-setup/unadopt.md`](../../skills/setup/unadopt.md).
 That's the procedure the agent steps through when you
-invoke `/setup-steward unadopt`.
+invoke `/magpie-setup unadopt`.
 
 ## What remains after unadopt — and how to remove it
 
@@ -159,7 +159,7 @@ framework's. Remove with:
 git rm -r .apache-magpie-overrides/
 ```
 
-Or use `/setup-steward unadopt --purge-overrides` to do
+Or use `/magpie-setup unadopt --purge-overrides` to do
 this in one step.
 
 ### Symlinks pointing outside the snapshot
@@ -226,8 +226,8 @@ also retiring Magpie from this machine entirely:
 
 ## Re-adopting later
 
-Because unadoption deletes the `setup-steward` skill
-itself, future `/setup-steward` invocations resolve to
+Because unadoption deletes the `setup` skill
+itself, future `/magpie-setup` invocations resolve to
 nothing. To re-adopt, re-run an install recipe in
 [`install-recipes.md`](install-recipes.md) — the same path
 a first-time adopter takes.

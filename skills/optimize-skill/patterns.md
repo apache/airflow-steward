@@ -25,7 +25,7 @@ note the largest `##` sections as split seams.
 
 **Exemplar.** `refactor(security-issue-sync): extract 4 subdocs to
 slim SKILL.md 3425 → 658 lines` (#410) — "same pattern as
-setup-steward already [uses]. No behavior change — pure file
+setup already [uses]. No behavior change — pure file
 restructure. Validator stays green." It lifted `gather.md`,
 `signals-to-actions.md`, `apply-and-push.md`, and `bulk-mode.md` out
 of the body.

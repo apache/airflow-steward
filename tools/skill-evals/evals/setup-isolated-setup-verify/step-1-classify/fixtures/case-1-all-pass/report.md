@@ -151,4 +151,4 @@ git worktree list --porcelain:
 
 Live probe:
   Read .git/HEAD: OK (content: "ref: refs/heads/main")
-  Write .steward-verify-probe.tmp: OK (removed)
+  Write .magpie-verify-probe.tmp: OK (removed)

@@ -105,8 +105,8 @@ privilege-elevating runs without you saying so.
 ```text
 1. Open Claude Code in your tracker repo (or any directory).
 2. If you consume the framework as a gitignored snapshot managed
-   by `setup-steward` (the canonical adopter pattern), run
-   `/setup-steward verify` to confirm the snapshot at
+   by `setup` (the canonical adopter pattern), run
+   `/magpie-setup verify` to confirm the snapshot at
    `.apache-magpie/`, the committed `.apache-magpie.lock`, and
    the project-config files are wired correctly. Read-only —
    surfaces gaps, never auto-fixes.
@@ -116,7 +116,7 @@ privilege-elevating runs without you saying so.
 4. Run /setup-isolated-setup-verify — confirms ✓/✗/⚠ for every piece
    of the secure-agent setup.
 5. When you want to be on the framework's latest, run
-   `/setup-steward upgrade` — pulls your local airflow-steward
+   `/magpie-setup upgrade` — pulls your local airflow-steward
    checkout to origin/main with --ff-only, refuses to touch a
    dirty working tree, surfaces what arrived. Then run
    /setup-isolated-setup-update to surface user-side drift the
@@ -131,10 +131,10 @@ privilege-elevating runs without you saying so.
 ```
 
 The skills are at
-[`.claude/skills/setup-steward/verify.md`](../../skills/setup-steward/verify.md),
+[`.claude/skills/magpie-setup/verify.md`](../../skills/setup/verify.md),
 [`.claude/skills/setup-isolated-setup-install/`](../../skills/setup-isolated-setup-install/SKILL.md),
 [`.claude/skills/setup-isolated-setup-verify/`](../../skills/setup-isolated-setup-verify/SKILL.md),
-[`.claude/skills/setup-steward/upgrade.md`](../../skills/setup-steward/upgrade.md),
+[`.claude/skills/magpie-setup/upgrade.md`](../../skills/setup/upgrade.md),
 [`.claude/skills/setup-isolated-setup-update/`](../../skills/setup-isolated-setup-update/SKILL.md),
 [`.claude/skills/setup-shared-config-sync/`](../../skills/setup-shared-config-sync/SKILL.md).
 Each skill references back into the canonical sections of this
@@ -536,7 +536,7 @@ auditable:
   invocation of the helper happens in a context where the operator
   is already approving setup actions.
 - **`dangerouslyDisableSandbox: true` from agent sessions.**
-  `/setup-steward adopt`, `upgrade`, and `worktree-init` invoke the
+  `/magpie-setup adopt`, `upgrade`, and `worktree-init` invoke the
   helper with explicit sandbox bypass. Every bypass triggers
   [`sandbox-bypass-warn.sh`](../../tools/agent-isolation/sandbox-bypass-warn.sh)'s
   bold-red banner naming the command, the reason, and the file
@@ -545,7 +545,7 @@ auditable:
 **4. No vector via commits.**
 `<repo>/.claude/settings.local.json` is gitignored — the adopt
 flow adds the line to `.gitignore`, and
-[`/setup-steward verify`](../../skills/setup-steward/verify.md)
+[`/magpie-setup verify`](../../skills/setup/verify.md)
 Check 4 surfaces ✗ if it is missing. The helper itself runs
 `git check-ignore` against the target file before writing and
 *refuses* to write when the file is not ignored (defense in depth
@@ -610,17 +610,17 @@ The helper is invoked from four points in the framework's lifecycle:
 1. **At install** — `setup-isolated-setup-install` runs the
    helper with `--all-worktrees` against the adopter repo the
    operator is sitting in.
-2. **During adoption** — `/setup-steward adopt` Step 12 runs the
+2. **During adoption** — `/magpie-setup adopt` Step 12 runs the
    helper with `--all-worktrees` so a fresh adopter repo with
    pre-existing worktrees has every working-tree path covered
    without an extra round-trip through
    `setup-isolated-setup-install`.
-3. **During upgrade** — `/setup-steward upgrade` Step 6c, after
+3. **During upgrade** — `/magpie-setup upgrade` Step 6c, after
    the per-worktree `worktree-init` chain, runs the helper with
    `--all-worktrees` so any worktree added since adopt has its
    path written into its own settings.local.json.
 4. **Per worktree, on creation** — the `post-checkout` git hook
-   installed by `/setup-steward adopt` runs the helper *without*
+   installed by `/magpie-setup adopt` runs the helper *without*
    `--all-worktrees`, picking up only the new worktree's path.
    `git worktree add` fires `post-checkout` in the new working
    tree, so every worktree added after adoption inherits sandbox
@@ -633,7 +633,7 @@ The verification surface:
   Check 8 — live sandboxed read+write probe of the project root,
   plus the static cross-check that the abs path is in the current
   worktree's `.claude/settings.local.json`.
-- [`/setup-steward verify`](../../skills/setup-steward/verify.md)
+- [`/magpie-setup verify`](../../skills/setup/verify.md)
   Check 8b — static cross-check that the current worktree's
   abs path is in its own `.claude/settings.local.json`.
 
@@ -645,7 +645,7 @@ The operator picks one during install; both are reversible.
 
 | Scope | What it covers | Mechanism | Reversal |
 |---|---|---|---|
-| **Per-project** (default) | The single adopter repo the operator is sitting in when running the install skill. Each subsequent adopter project needs the install skill re-run there. | The helper runs once with `--all-worktrees` against the current repo; nothing global is touched. The per-repo `post-checkout` hook (installed by `/setup-steward adopt` in Magpie-adopted repos) chains into the helper on future `git checkout` operations within that repo. | None needed — per-project scope is inert outside the configured repos. |
+| **Per-project** (default) | The single adopter repo the operator is sitting in when running the install skill. Each subsequent adopter project needs the install skill re-run there. | The helper runs once with `--all-worktrees` against the current repo; nothing global is touched. The per-repo `post-checkout` hook (installed by `/magpie-setup adopt` in Magpie-adopted repos) chains into the helper on future `git checkout` operations within that repo. | None needed — per-project scope is inert outside the configured repos. |
 | **Whole-user** | Every git repo on the operator's host, existing and future. Includes non-Magpie Claude-Code-aware projects (any project with a `.claude/` directory). | Walks the operator's existing checkouts under prompted root dirs and writes each one's `settings.local.json`; sets `git config --global core.hooksPath ~/.claude/git-hooks/` and installs the universal [`git-global-post-checkout.sh`](../../tools/agent-isolation/git-global-post-checkout.sh) there. | `git config --global --unset core.hooksPath` restores per-repo hook lookup. The populated `settings.local.json` files stay (they are harmless if the operator no longer wants them, and gitignored so they cause no commit noise). |
 
 #### Important trade-off — `core.hooksPath` shadows per-repo hooks

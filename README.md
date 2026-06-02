@@ -61,21 +61,21 @@ for the canonical distribution mechanism we will adopt.
 
 The framework uses a **snapshot + agentic-override** adoption
 model. An adopter project commits a single skill —
-[`setup-steward`](skills/setup-steward/SKILL.md) —
+[`setup`](skills/setup/SKILL.md) —
 into their repo. That skill manages everything else:
 
-1. **Snapshot.** `setup-steward` downloads the framework into
+1. **Snapshot.** `setup` downloads the framework into
    a **gitignored** `<adopter>/.apache-magpie/` directory.
    The snapshot is a build artefact, not source — refreshed
-   by `/setup-steward upgrade`, never committed.
-2. **Symlinks.** `setup-steward` symlinks the framework's
+   by `/magpie-setup upgrade`, never committed.
+2. **Symlinks.** `setup` symlinks the framework's
    skills (security, pr-management, the rest of setup) into
    the adopter's existing skill directory, matching whichever
    convention the adopter uses (flat `.claude/skills/`, or the
    double-symlink `.claude/skills/<n>` → `.github/skills/<n>/`
    pattern apache/airflow uses). The symlinks are **also
    gitignored** — they target the gitignored snapshot, so they
-   would dangle on a fresh clone before `/setup-steward` runs.
+   would dangle on a fresh clone before `/magpie-setup` runs.
 3. **Overrides.** Adopter-specific modifications to framework
    workflows live as agent-readable markdown under
    `<adopter>/.apache-magpie-overrides/<skill>.md`,
@@ -91,7 +91,7 @@ a gitignored snapshot, and agent-readable override files.
 
 ## Adopting the framework
 
-Two phases — a **shell bootstrap** that gets `setup-steward`
+Two phases — a **shell bootstrap** that gets `setup`
 into your repo, then the **skill takeover** that wires up the
 rest interactively.
 
@@ -114,7 +114,7 @@ Each recipe is a single shell block that:
    `.apache-magpie/` (gitignored — build artefact, not
    source).
 3. Copies the
-   [`setup-steward`](skills/setup-steward/SKILL.md)
+   [`setup`](skills/setup/SKILL.md)
    skill into your skills directory, matching your existing
    convention (flat `.claude/skills/<n>/` or the
    double-symlinked `.claude/skills/<n>` →
@@ -126,7 +126,7 @@ disk and the bootstrap skill is in your repo.
 ### 2. Skill takeover
 
 Tell your agent: **"adopt apache/airflow-steward in my repo"**
-(or invoke `/setup-steward` directly). The skill walks
+(or invoke `/magpie-setup` directly). The skill walks
 through the rest:
 
 - writes `.apache-magpie.lock` (committed) — the project's
@@ -151,7 +151,7 @@ done. Open a PR.
 ### Subsequent contributors
 
 Future contributors who clone your repo just say "adopt
-Magpie in this repo" (or invoke `/setup-steward`).
+Magpie in this repo" (or invoke `/magpie-setup`).
 The skill reads `.apache-magpie.lock` (already committed)
 and re-installs to the same version your project pinned. No
 need to redo the manual recipe — the committed lock is the
@@ -164,13 +164,13 @@ Every framework skill compares the gitignored
 `.apache-magpie.lock` at the top of its run. If they have
 drifted (project lead bumped the pin, or the local install
 is stale on a `main`-tracking adopter), the skill surfaces
-the gap and proposes `/setup-steward upgrade`. `upgrade`
+the gap and proposes `/magpie-setup upgrade`. `upgrade`
 deletes the gitignored snapshot, re-installs per the
 committed pin, refreshes the gitignored symlinks, and
 reconciles any agentic overrides — see
 [`docs/setup/install-recipes.md`](docs/setup/install-recipes.md)
 and
-[`skills/setup-steward/upgrade.md`](skills/setup-steward/upgrade.md)
+[`skills/setup/upgrade.md`](skills/setup/upgrade.md)
 for the full flow.
 
 ## Skill families
@@ -187,25 +187,25 @@ means and which modes are still proposed vs. shipping today.
 
 | Family | Modes | Purpose | Detail |
 |---|---|---|---|
-| [**setup**](docs/setup/README.md) | (infra) | Isolated agent setup, framework adoption + maintenance, shared-config sync. The prerequisite — at minimum the `setup-steward` skill itself runs out of this family. | 6 skills, [`docs/setup/`](docs/setup/) |
+| [**setup**](docs/setup/README.md) | (infra) | Isolated agent setup, framework adoption + maintenance, shared-config sync. The prerequisite — at minimum the `setup` skill itself runs out of this family. | 6 skills, [`docs/setup/`](docs/setup/) |
 | [**security**](docs/security/README.md) | A, C | 16-step security-issue handling lifecycle — from `security@` import through CVE publication, including state sync. Maintainer-only. | 9 skills, [`docs/security/`](docs/security/) |
 | **pr-management** | A | Maintainer-facing PR-queue management — triage, stats, and deep code review. | 3 skills, [`docs/pr-management/`](docs/pr-management/README.md) |
 | [**release-management**](docs/release-management/README.md) | A, C | 14-step ASF release lifecycle, planning issue, RC cut + sign, `[VOTE]` thread, tally, promote, `[ANNOUNCE]`, archive, audit log. Agent never holds the RM's signing key and never publishes the release. **Proposed**, spec-first, like Mentoring; skill code lands in follow-up PRs. | 10 skills proposed, [`docs/release-management/`](docs/release-management/) |
 | [**mentoring**](docs/mentoring/README.md) | Mentoring | Contributor mentoring — spec and tone guide in place; first skill (`pr-management-mentor`) shipping. **Experimental** — shape may change as adopter pilots and contributor-sentiment evaluation land. | 1 skill, [`docs/mentoring/`](docs/mentoring/README.md) |
 | **issue** | A, Triage | Issue lifecycle management — triage, bug reproduction, fix drafting, and backlog re-assessment against the current branch. | 5 skills |
-| **utilities** | (meta) | Framework meta-skills: author or update skills (`write-skill`); print a live index of all available skills (`list-steward-skills`). | 2 skills |
+| **utilities** | (meta) | Framework meta-skills: author or update skills (`write-skill`); print a live index of all available skills (`list-skills`). | 2 skills |
 
 ## Maintenance
 
 After the initial adoption, the same skill handles ongoing
 maintenance:
 
-- `/setup-steward upgrade` — refresh the snapshot to a newer
+- `/magpie-setup upgrade` — refresh the snapshot to a newer
   framework version + reconcile any overrides against the new
   framework structure.
-- `/setup-steward verify` — read-only health check (snapshot
+- `/magpie-setup verify` — read-only health check (snapshot
   intact, symlinks live, `.gitignore` correct, etc.).
-- `/setup-steward override <framework-skill>` — open or
+- `/magpie-setup override <framework-skill>` — open or
   scaffold an override file for a framework skill.
 
 ## Cross-references

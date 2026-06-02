@@ -113,4 +113,4 @@ cat .claude/settings.local.json:
 
 Live probe:
   Read .git/HEAD: OK (sandbox not enforced — sandbox.enabled=false)
-  Write .steward-verify-probe.tmp: OK (sandbox not enforced)
+  Write .magpie-verify-probe.tmp: OK (sandbox not enforced)

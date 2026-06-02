@@ -4,7 +4,7 @@ Return ONLY valid JSON with this structure:
 
 ```json
 {
-  "actions": ["git-pull" | "setup-steward-upgrade" | "manifest-bump-pr" | "re-cp-scripts" | "merge-settings" | "investigate-regression"],
+  "actions": ["git-pull" | "setup-upgrade" | "manifest-bump-pr" | "re-cp-scripts" | "merge-settings" | "investigate-regression"],
   "summary": "all-in-sync" | "drift-found"
 }
 ```
@@ -13,8 +13,8 @@ Return ONLY valid JSON with this structure:
 the skill names them. Values:
 - `"git-pull"` — the skill tells the user to run `git pull --ff-only`
   because the framework checkout is behind origin.
-- `"setup-steward-upgrade"` — the skill recommends running
-  `/setup-steward upgrade` to refresh the gitignored snapshot.
+- `"setup-upgrade"` — the skill recommends running
+  `/magpie-setup upgrade` to refresh the gitignored snapshot.
 - `"manifest-bump-pr"` — the skill points at the manifest-bump PR
   process for a pinned-tool upgrade candidate past the cooldown.
 - `"re-cp-scripts"` — the skill recommends re-copying one or more

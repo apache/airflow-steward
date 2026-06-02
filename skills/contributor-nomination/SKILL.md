@@ -100,7 +100,7 @@ At the top of every run, this skill compares the gitignored
 `.apache-magpie.local.lock` (per-machine fetch) against the
 committed `.apache-magpie.lock` (the project pin). On mismatch
 the skill surfaces the gap and proposes
-[`/setup-steward upgrade`](../setup-steward/upgrade.md) before
+[`/magpie-setup upgrade`](../setup/upgrade.md) before
 proceeding, so the maintainer is always running the version the
 project pinned.
 

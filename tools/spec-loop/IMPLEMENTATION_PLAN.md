@@ -55,7 +55,7 @@ a plan item for any of them; the build beat must not re-pick them.
 | `eval-setup-isolated-setup-update` | — | Eval suite for setup-isolated-setup-update |
 | `eval-setup-override-upstream` | — | Eval suite for setup-override-upstream |
 | `eval-setup-shared-config-sync` | — | Eval suite for setup-shared-config-sync |
-| `eval-setup-steward` | — | Eval suite for setup-steward |
+| `eval-setup` | — | Eval suite for setup |
 | `spec-validator` | — | `tools/spec-validator/` — spec frontmatter + body-section validator |
 | `spec-loop-preflight-checks` | — | Freshness check + branch-name collision guard for the loop |
 | `injection-guard` | — | Prompt-injection defence hardening |

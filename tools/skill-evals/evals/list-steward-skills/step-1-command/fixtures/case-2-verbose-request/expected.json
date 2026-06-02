@@ -1,4 +1,0 @@
-{
-  "command": "python3 .claude/skills/list-steward-skills/scripts/list_skills.py --verbose",
-  "verbose": true
-}

@@ -68,7 +68,7 @@ gitignored `.apache-magpie.local.lock` (per-machine
 fetch) against the committed `.apache-magpie.lock`
 (the project pin). On mismatch the skill surfaces the
 gap and proposes
-[`/setup-steward upgrade`](../setup-steward/upgrade.md).
+[`/magpie-setup upgrade`](../setup/upgrade.md).
 The proposal is non-blocking — the user may defer if
 they want to run with the local snapshot for now. See
 [`docs/setup/install-recipes.md` § Subsequent runs and drift detection](../../docs/setup/install-recipes.md#subsequent-runs-and-drift-detection)
@@ -205,7 +205,7 @@ If something is out-of-date or has drifted, name the concrete
 follow-up:
 
 - Framework checkout behind → run
-  [`/setup-steward upgrade`](../setup-steward/upgrade.md),
+  [`/magpie-setup upgrade`](../setup/upgrade.md),
   which refreshes the gitignored snapshot per the committed
   `.apache-magpie.lock` after the same pre-flight checks this
   skill recommends and surfaces what arrived in the new

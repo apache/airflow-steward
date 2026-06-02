@@ -244,7 +244,7 @@ threads on their own.
 
 | Skill | Purpose |
 |---|---|
-| [`setup-steward`](../skills/setup-steward/SKILL.md) | Adopt the framework into an adopter repo; manage the snapshot, symlinks, and overrides. |
+| [`setup`](../skills/setup/SKILL.md) | Adopt the framework into an adopter repo; manage the snapshot, symlinks, and overrides. |
 | [`issue-reproducer`](../skills/issue-reproducer/SKILL.md) | Per-issue code extraction + execution; produces structured evidence. Read-only on the tracker. |
 | [`issue-reassess-stats`](../skills/issue-reassess-stats/SKILL.md) | Read-only dashboard over reassessment-campaign verdict.json files. |
 | [`setup-isolated-setup-install`](../skills/setup-isolated-setup-install/SKILL.md) | Install the credential-isolation sandbox harness. |

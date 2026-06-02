@@ -137,4 +137,4 @@ git worktree list --porcelain:
 
 Live probe:
   Read .git/HEAD: FAILED — Operation not permitted (sandbox blocked the read)
-  Write .steward-verify-probe.tmp: FAILED — Operation not permitted
+  Write .magpie-verify-probe.tmp: FAILED — Operation not permitted

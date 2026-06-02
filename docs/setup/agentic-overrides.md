@@ -43,7 +43,7 @@ override files and framework authors of skills that read them.
 <adopter-repo>/.apache-magpie-overrides/
 ├── README.md                            (the dir's own readme,
 │                                          scaffolded by
-│                                          /setup-steward adopt)
+│                                          /magpie-setup adopt)
 ├── <framework-skill-name>.md            (e.g. pr-management-triage.md)
 └── <other-framework-skill-name>.md
 ```
@@ -117,7 +117,7 @@ maintainer (or a future agent on a later run):
 2. **Should this be upstreamed?** If the override is widely
    useful, it belongs in the framework. The override file
    says so explicitly, and the next person running the
-   `/setup-steward override <skill>` flow takes the cue and
+   `/magpie-setup override <skill>` flow takes the cue and
    opens a PR against `apache/airflow-steward`.
 
 ## How a framework skill consults overrides
@@ -139,7 +139,7 @@ invocation with this opening protocol:
 
 A skill that does **not** yet support overrides documents
 that explicitly in its `SKILL.md`. The
-[`setup-steward override`](../../skills/setup-steward/overrides.md)
+[`setup override`](../../skills/setup/overrides.md)
 sub-action surfaces this gap and suggests opening a
 framework-side issue requesting the hook.
 
@@ -151,7 +151,7 @@ A framework agent NEVER:
 - Modifies the snapshot under
   `<adopter-repo>/.apache-magpie/`. The snapshot is a build
   artefact — every modification gets blown away on the next
-  `/setup-steward upgrade`. Local mods go into
+  `/magpie-setup upgrade`. Local mods go into
   `.apache-magpie-overrides/`.
 - Proposes overrides be merged in by editing the framework
   source in the snapshot. Framework changes go via PR to
@@ -165,7 +165,7 @@ A framework agent NEVER:
 
 ## Reconciliation on framework upgrade
 
-When `/setup-steward upgrade` refreshes the snapshot, it
+When `/magpie-setup upgrade` refreshes the snapshot, it
 walks every override file and surfaces:
 
 - Overrides whose target framework skill no longer exists
@@ -189,12 +189,12 @@ adopters), the right move is **a PR against the framework**:
 1. Read the latest `apache/airflow-steward` `main`.
 2. Implement the change in the framework skill's source.
 3. Open the PR.
-4. Once merged, the next `/setup-steward upgrade` in the
+4. Once merged, the next `/magpie-setup upgrade` in the
    adopter pulls the framework change.
 5. The adopter's now-redundant override gets deleted.
 
 The
-[`setup-steward override`](../../skills/setup-steward/overrides.md)
+[`setup override`](../../skills/setup/overrides.md)
 sub-action prompts the user about upstreaming on every
 override scaffold; the
 [`security-issue-fix`](../../skills/security-issue-fix/SKILL.md)
@@ -238,11 +238,11 @@ this by:
 2. Recapping override application *after* skill execution
    for audit.
 3. Keeping override files small and specific (the
-   `/setup-steward override` flow encourages one focused
+   `/magpie-setup override` flow encourages one focused
    override per file, not a sprawling rewrite).
 
 ## Cross-references
 
-- [`setup-steward` skill](../../skills/setup-steward/SKILL.md) — the entry point that manages the snapshot + scaffolds overrides.
-- [`overrides.md` sub-action](../../skills/setup-steward/overrides.md) — interactive override creation.
+- [`setup` skill](../../skills/setup/SKILL.md) — the entry point that manages the snapshot + scaffolds overrides.
+- [`overrides.md` sub-action](../../skills/setup/overrides.md) — interactive override creation.
 - [Top-level README](../../README.md) — adoption flow.

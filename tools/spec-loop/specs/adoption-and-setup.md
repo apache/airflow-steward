@@ -8,10 +8,10 @@ kind: feature
 mode: infra
 source: >
   README.md § How adoption works / Adopting the framework / Maintenance.
-  Implemented by the setup family (setup-steward and siblings) and the
+  Implemented by the setup family (setup and siblings) and the
   snapshot + agentic-override model.
 acceptance:
-  - An adopter commits exactly one skill (setup-steward); everything else
+  - An adopter commits exactly one skill (setup); everything else
     is a gitignored snapshot plus committed override + lock files.
   - The committed lock pins install method + URL + ref so a fresh clone
     re-installs the same framework version.
@@ -30,7 +30,7 @@ gitignored skill symlinks, and committed agent-readable override files.
 
 ## Where it lives
 
-- Skill: `setup-steward` (adopt, verify, upgrade, override).
+- Skill: `setup` (adopt, verify, upgrade, override).
 - Skills: `setup-isolated-setup-install` / `-update` / `-verify`
   (the sandbox harness), `setup-override-upstream` (promote a stabilised
   override into a framework PR), `setup-shared-config-sync`.
@@ -44,10 +44,10 @@ gitignored skill symlinks, and committed agent-readable override files.
 - **One committed skill, no submodules, no vendored framework copies.**
   The snapshot lives in a gitignored `.apache-magpie/`.
 - **Committed lock is the source of truth.** A fresh contributor runs
-  `/setup-steward` and re-installs to the project's pinned version.
+  `/magpie-setup` and re-installs to the project's pinned version.
 - **Drift detection** at the top of every framework skill: if the
   gitignored local lock has drifted from the committed pin, the skill
-  proposes `/setup-steward upgrade`.
+  proposes `/magpie-setup upgrade`.
 - **Overrides are agent-readable Markdown** under
   `.apache-magpie-overrides/`, consulted at runtime and merged before
   default behaviour ([pairing/correctability is the model]).

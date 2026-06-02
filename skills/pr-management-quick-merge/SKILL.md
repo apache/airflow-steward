@@ -107,7 +107,7 @@ framework changes go via PR to `apache/airflow-steward`.
 
 At the top of every run, compare the gitignored `.apache-magpie.local.lock`
 against the committed `.apache-magpie.lock`. On mismatch, surface the gap and
-propose [`/setup-steward upgrade`](../setup-steward/upgrade.md). Non-blocking —
+propose [`/magpie-setup upgrade`](../setup/upgrade.md). Non-blocking —
 the maintainer may defer.
 
 ---

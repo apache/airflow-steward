@@ -144,7 +144,7 @@ their identity, rosters, canned responses, release trains, and
 security model in their own `<project-config>/` directory in their
 adopter tracker repo, alongside a gitignored snapshot of this
 framework managed by the
-[`setup-steward`](skills/setup-steward/SKILL.md) skill.
+[`setup`](skills/setup/SKILL.md) skill.
 None of that adopter-side content lives here.
 
 The framework's normative commitments are codified in
@@ -210,7 +210,7 @@ every piece of context it needs from some combination of the four
 │       ├── setup-*/      # Adoption, sandbox install/verify/update (7 skills)
 │       ├── contributor-nomination/
 │       ├── write-skill/
-│       └── list-steward-skills/
+│       └── list-skills/
 │
 ├── projects/
 │   └── _template/        # Scaffold for an adopter's <project-config>/
@@ -259,9 +259,9 @@ is loaded only after the decision.
 | `security-*` | `security-issue-import`, `security-issue-import-from-md`, `security-issue-import-from-pr`, `security-issue-triage`, `security-issue-sync`, `security-issue-deduplicate`, `security-cve-allocate`, `security-issue-fix`, `security-issue-invalidate` | Full lifecycle of a security report from arrival on `<security-list>` through CVE publication. |
 | `pr-management-*` | `pr-management-triage`, `pr-management-code-review`, `pr-management-mentor`, `pr-management-stats` | Maintainer-side PR queue management — sweep, classify, review, mentor first-time contributors, surface backlog trends. |
 | `issue-*` | `issue-triage`, `issue-fix-workflow`, `issue-reproducer`, `issue-reassess`, `issue-reassess-stats` | Issue-tracker triage, agent-drafted fixes for confirmed bugs, automated reproduction of bug reports, reassessment of EOL backlogs. |
-| `setup-*` | `setup-steward`, `setup-isolated-setup-install`, `setup-isolated-setup-verify`, `setup-isolated-setup-update`, `setup-isolated-setup-doctor`, `setup-override-upstream`, `setup-shared-config-sync` | Framework adoption, sandbox install + verify + update + diagnostic, override-promotion workflow, shared-config sync. |
+| `setup-*` | `setup`, `setup-isolated-setup-install`, `setup-isolated-setup-verify`, `setup-isolated-setup-update`, `setup-isolated-setup-doctor`, `setup-override-upstream`, `setup-shared-config-sync` | Framework adoption, sandbox install + verify + update + diagnostic, override-promotion workflow, shared-config sync. |
 | `contributor-nomination` | one skill | Build the evidence brief for a committer or PMC nomination. |
-| Meta-skills | `write-skill`, `list-steward-skills` | Author new skills following framework conventions; print a human-readable skill index. |
+| Meta-skills | `write-skill`, `list-skills` | Author new skills following framework conventions; print a human-readable skill index. |
 
 Each skill's frontmatter `description` is the agent-router contract.
 Be precise — vague descriptions cause the router to load the wrong
@@ -557,7 +557,7 @@ clone (gitignored) and listing the skills you want disabled:
     "setup-isolated-setup-verify": "off",
     "setup-override-upstream": "off",
     "setup-shared-config-sync": "off",
-    "setup-steward": "off",
+    "setup": "off",
     "write-skill": "on"
   }
 }

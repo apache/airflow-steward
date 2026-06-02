@@ -245,13 +245,13 @@ class TestValidateFrontmatter:
         assert violations == []
 
     def test_argument_hint_pipe_notation_with_spaces_in_option(self, tmp_path: Path) -> None:
-        # setup-steward uses "[adopt|upgrade|worktree-init|verify|override skill-name|unadopt]".
+        # setup uses "[adopt|upgrade|worktree-init|verify|override skill-name|unadopt]".
         # The "override skill-name" option contains a space — the hint must still be accepted
         # and must not be misinterpreted as multiple frontmatter keys.
         path = tmp_path / "SKILL.md"
         text = (
             "---\n"
-            "name: setup-steward\n"
+            "name: setup\n"
             "description: bar\n"
             "capability: capability:setup\nlicense: Apache-2.0\n"
             "argument-hint: [adopt|upgrade|worktree-init|verify|override skill-name|unadopt]\n"
@@ -562,7 +562,7 @@ class TestFindRepoRoot:
 # ---------------------------------------------------------------------------
 #
 # Several setup skills ship supporting .md files alongside their SKILL.md:
-#   setup-steward/ → adopt.md, conventions.md, overrides.md, upgrade.md, …
+#   setup/ → adopt.md, conventions.md, overrides.md, upgrade.md, …
 #
 # The validator must:
 #   • NOT require YAML frontmatter from these files (only SKILL.md gets that).
@@ -646,7 +646,7 @@ class TestSubDocFiles:
     def test_setup_skill_with_multiple_sub_docs_passes_cleanly(self, tmp_path: Path) -> None:
         # A setup skill directory that mirrors the real layout (SKILL.md + several
         # clean sub-docs) must produce no hard violations.
-        skill_dir = self._make_skill_dir(tmp_path, skill_name="setup-steward")
+        skill_dir = self._make_skill_dir(tmp_path, skill_name="setup")
         for name in ("adopt.md", "conventions.md", "overrides.md", "upgrade.md", "verify.md"):
             (skill_dir / name).write_text(
                 f"# {name.removesuffix('.md')}\n\nContent for {name}.\n",

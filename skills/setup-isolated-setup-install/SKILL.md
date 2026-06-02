@@ -63,7 +63,7 @@ gitignored `.apache-magpie.local.lock` (per-machine
 fetch) against the committed `.apache-magpie.lock`
 (the project pin). On mismatch the skill surfaces the
 gap and proposes
-[`/setup-steward upgrade`](../setup-steward/upgrade.md).
+[`/magpie-setup upgrade`](../setup/upgrade.md).
 The proposal is non-blocking — the user may defer if
 they want to run with the local snapshot for now. See
 [`docs/setup/install-recipes.md` § Subsequent runs and drift detection](../../docs/setup/install-recipes.md#subsequent-runs-and-drift-detection)
@@ -331,7 +331,7 @@ Skip if the operator picked per-project scope.
    in
    [`tools/agent-isolation/git-global-post-checkout.sh`](../../tools/agent-isolation/git-global-post-checkout.sh) —
    it calls the sandbox-allowlist helper and (for steward-adopted
-   repos) `setup-steward verify --auto-fix-symlinks`.
+   repos) `setup verify --auto-fix-symlinks`.
 
 2. **Set `core.hooksPath` globally** so every git operation across
    every repo on the host uses the shared hook dir:
@@ -363,10 +363,10 @@ redundant but harmless. The committed project-scope file is
 **never** modified by the helper (machine-specific absolute paths
 have no business in a file shared across contributors).
 
-The helper is also invoked by `/setup-steward adopt`,
-`/setup-steward upgrade`, and `/setup-steward worktree-init` for
+The helper is also invoked by `/magpie-setup adopt`,
+`/magpie-setup upgrade`, and `/magpie-setup worktree-init` for
 the same reason. The `post-checkout` git hook installed by
-`/setup-steward adopt` chains into the helper too, so new
+`/magpie-setup adopt` chains into the helper too, so new
 worktrees added via `git worktree add` after this install pass
 inherit access automatically — no operator action needed.
 

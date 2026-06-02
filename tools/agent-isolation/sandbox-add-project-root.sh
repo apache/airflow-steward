@@ -56,7 +56,7 @@
 #   2. A `setup-isolated-setup-install` first-run flow that the
 #      operator drives outside an agent session.
 #   3. An agent's `Bash` tool call with `dangerouslyDisableSandbox: true`
-#      — `/setup-steward adopt`, `upgrade`, `worktree-init` invoke this
+#      — `/magpie-setup adopt`, `upgrade`, `worktree-init` invoke this
 #      script that way, proposing the bypass to the operator first so
 #      `sandbox-bypass-warn.sh`'s bold-red banner fires as a backstop.
 # If invoked from inside a sandboxed session *without* the bypass, jq's
@@ -75,15 +75,15 @@
 #   `<that-path>/.claude/settings.local.json` so its
 #   `sandbox.filesystem.allowRead` and `allowWrite` arrays contain
 #   the worktree's absolute path. Used by the `post-checkout` git
-#   hook installed by `/setup-steward adopt` — when a new worktree
+#   hook installed by `/magpie-setup adopt` — when a new worktree
 #   is created, the hook fires in the new working tree and the
 #   helper writes that worktree's own settings.local.json.
 # - All-worktrees mode (`--all-worktrees`): enumerates
 #   `git worktree list --porcelain` from the current repo and
 #   invokes the same write pass once per worktree, each against
 #   the worktree's own `.claude/settings.local.json`. Used by
-#   `setup-isolated-setup-install`, `/setup-steward adopt`,
-#   `/setup-steward upgrade`.
+#   `setup-isolated-setup-install`, `/magpie-setup adopt`,
+#   `/magpie-setup upgrade`.
 # - The target file is created from scratch if it does not exist
 #   (only the `sandbox.filesystem` block is written; nothing else
 #   is touched). Existing files: idempotent, atomic (`jq` → tmp →
@@ -92,14 +92,14 @@
 #   - Not inside a git repo  → warn on stderr, exit 0.
 #   - `jq` not on PATH        → warn on stderr, exit 0.
 #   - Invalid existing JSON   → warn on stderr, exit 0.
-#   All exit 0 so callers (post-checkout hook, /setup-steward
+#   All exit 0 so callers (post-checkout hook, /magpie-setup
 #   sub-actions) are not derailed by a half-installed setup.
 #
 # Invoked from:
 # - setup-isolated-setup-install (at install, with --all-worktrees).
-# - /setup-steward adopt + upgrade (with --all-worktrees from the main).
-# - /setup-steward worktree-init (without the flag — current worktree only).
-# - The post-checkout git hook installed by /setup-steward adopt
+# - /magpie-setup adopt + upgrade (with --all-worktrees from the main).
+# - /magpie-setup worktree-init (without the flag — current worktree only).
+# - The post-checkout git hook installed by /magpie-setup adopt
 #   (without the flag — only the new worktree's path).
 
 set -euo pipefail

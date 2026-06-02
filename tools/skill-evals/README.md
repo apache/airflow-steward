@@ -26,7 +26,7 @@ Twenty suites are currently implemented:
 - **pr-management-mentor** — 20 cases across 2 steps (tone-checks, hand-off)
 - **pr-management-stats** — 13 cases across 2 steps (classify, pressure-weight)
 - **pr-management-triage** — 26 cases across 2 steps (pre-filter, decision-table)
-- **list-steward-skills** — 7 cases across 2 steps (step-1-command, step-2-present)
+- **list-skills** — 7 cases across 2 steps (step-1-command, step-2-present)
 - **setup-isolated-setup-verify** — 11 cases across 2 steps (step-1-classify, step-2-recommend)
 - **setup-isolated-setup-update** — 13 cases across 3 steps (step-snapshot-drift, step-tool-freshness, step-after-report)
 - **contributor-activity-sweep** — 12 cases across 3 steps (step-0-resolve-inputs, step-1-classify-reviews, step-2-render)

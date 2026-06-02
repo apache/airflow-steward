@@ -160,8 +160,8 @@ Capabilities for every skill currently in
 | `contributor-nomination` | `capability:stats` |
 | `contributor-activity-sweep` | `capability:stats` |
 | `committer-onboarding` | `capability:stats` |
-| `list-steward-skills` | `capability:stats` |
-| `setup-steward` | `capability:setup` |
+| `list-skills` | `capability:stats` |
+| `setup` | `capability:setup` |
 | `setup-isolated-setup-install` | `capability:setup` |
 | `setup-isolated-setup-verify` | `capability:setup` |
 | `setup-isolated-setup-update` | `capability:setup` |
@@ -194,7 +194,7 @@ Tools under [`tools/`](../tools/). Tools with two values (separated by
 | [`tools/mail-archive`](../tools/mail-archive/) | `capability:setup` | Adapter contract for public mail-archive backends (PonyMail, Hyperkitty, Discourse, Google Groups, GitHub Discussions). Pure interface spec. |
 | [`tools/mail-source`](../tools/mail-source/) | `capability:setup` + `capability:intake` | Mail-source backend abstraction (mbox / IMAP / Mailman 3); the abstraction is setup, every concrete read is part of the intake pipeline |
 | [`tools/ponymail`](../tools/ponymail/) | `capability:setup` + `capability:intake` | PonyMail archive substrate; same dual role as `mail-source` — substrate plus an intake-pipeline component |
-| [`tools/permission-audit`](../tools/permission-audit/) | `capability:setup` | Audit + atomically edit Claude Code `permissions.allow[]` entries; backs `/setup-steward verify --apply-permission-audit` (check 8d) |
+| [`tools/permission-audit`](../tools/permission-audit/) | `capability:setup` | Audit + atomically edit Claude Code `permissions.allow[]` entries; backs `/magpie-setup verify --apply-permission-audit` (check 8d) |
 | [`tools/pr-management-stats`](../tools/pr-management-stats/) | `capability:stats` | PR-backlog analytics engine |
 | [`tools/preflight-audit`](../tools/preflight-audit/) | `capability:stats` | Dry-run the bulk-mode pre-flight classifier; measure skip-rate before / after any rule edit in the security-issue-sync skill |
 | [`tools/privacy-llm`](../tools/privacy-llm/) | `capability:setup` | Privacy-LLM PII-scrubbing gate |

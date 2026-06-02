@@ -71,7 +71,7 @@ It contains skills, tool adapters, generic process documentation,
 and a project-template scaffold — and **no project-specific
 content**. Adopting projects fetch this repository as a gitignored
 **snapshot** at `<adopter-tracker>/.apache-magpie/` (managed by
-the [`setup-steward`](skills/setup-steward/SKILL.md) skill —
+the [`setup`](skills/setup/SKILL.md) skill —
 see [`docs/setup/install-recipes.md`](docs/setup/install-recipes.md))
 and configure their project-specific bits alongside the snapshot
 in their adopter repo. The framework refers to that adopter-side
@@ -244,7 +244,7 @@ up.
 **Project layer — shared, checked in.** Each adopting project keeps
 its project-specific configuration in a `<project-config>/` directory
 in their tracker repository, alongside the gitignored framework
-snapshot at `.apache-magpie/` (which `setup-steward` manages and
+snapshot at `.apache-magpie/` (which `setup` manages and
 which carries no adopter-specific content). The framework refers
 to the project-config directory via the `<project-config>`
 placeholder; the concrete path is the adopter's choice (the
@@ -309,7 +309,7 @@ so per-user fields (apache_id, GitHub handle, PMC status, local
 clone path) stay coherent without symlinks, pre-commit hooks, or
 per-worktree bootstrap. The framework does **not** itself manage
 the file — adopters create / edit it directly. See
-[`setup-steward/adopt.md`](skills/setup-steward/adopt.md)
+[`setup/adopt.md`](skills/setup/adopt.md)
 for the recommended one-time setup.
 
 When this document (or any skill) says *"the tracker repo"*, *"the
@@ -331,7 +331,7 @@ the active configuration before executing any command:
 | Placeholder | Resolves to | Source |
 |---|---|---|
 | `<project-config>` | The adopting project's config directory in its tracker repo (path is adopter's choice; alongside the gitignored `.apache-magpie/` snapshot, not inside it). Bootstrapped from `projects/_template/`. | Filesystem convention. |
-| `<framework>` | The framework's root — i.e. this repository. In adopting projects, `.apache-magpie/` (the gitignored snapshot path managed by `setup-steward`); in framework standalone, `.` (the repository root). Used in `uv run` and other invocations that need to address the framework's `tools/<name>/` subtrees from a path the agent can resolve at the agent's current `cwd`. | Filesystem convention. |
+| `<framework>` | The framework's root — i.e. this repository. In adopting projects, `.apache-magpie/` (the gitignored snapshot path managed by `setup`); in framework standalone, `.` (the repository root). Used in `uv run` and other invocations that need to address the framework's `tools/<name>/` subtrees from a path the agent can resolve at the agent's current `cwd`. | Filesystem convention. |
 | `<tracker>` | The GitHub slug of the (security) tracker repo (example: `airflow-s/airflow-s` for the Apache Airflow security team). | `<project-config>/project.md` → `tracker_repo` |
 | `<upstream>` | The GitHub slug of the upstream codebase the fixes land in (example: `apache/airflow`). | `<project-config>/project.md` → `upstream_repo` |
 | `<security-list>` | The project's security mailing list (example: `security@airflow.apache.org`). | `<project-config>/project.md` → `mailing_lists.security` |
@@ -417,15 +417,15 @@ round-trip and a reviewer's attention on a mechanical fix.
 **Keep the framework snapshot in sync with the project's pin.**
 The framework lives at `<adopter-tracker>/.apache-magpie/` as a
 **gitignored snapshot** that
-[`setup-steward`](skills/setup-steward/SKILL.md) manages
+[`setup`](skills/setup/SKILL.md) manages
 (see [Repository purpose](#repository-purpose) above). The
 project's pinned framework version is recorded in the committed
 `.apache-magpie.lock`; the snapshot itself is fetched on first
-adoption and refreshed by `/setup-steward upgrade`. Every
+adoption and refreshed by `/magpie-setup upgrade`. Every
 framework skill compares the gitignored `.apache-magpie.local.lock`
 (per-machine fetch) against the committed `.apache-magpie.lock`
 (project pin) at the top of its run; on drift, the skill surfaces
-the gap and proposes `/setup-steward upgrade`. There is **no**
+the gap and proposes `/magpie-setup upgrade`. There is **no**
 `git submodule update` step — the snapshot mechanism replaces
 that entirely.
 
