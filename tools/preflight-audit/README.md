@@ -28,7 +28,7 @@ are made against evidence, not guesswork.
 ## Why
 
 The bulk-mode pre-flight classifier
-([`bulk-mode.md` § Pre-flight no-op classifier](../../.claude/skills/security-issue-sync/SKILL.md))
+([`bulk-mode.md` § Pre-flight no-op classifier](../../skills/security-issue-sync/SKILL.md))
 decides whether to dispatch a subagent for each tracker in a
 bulk sync. Its rule table evolves as we learn how real adopter
 trackers behave. Each rule change needs a before / after
@@ -105,7 +105,7 @@ tracker with number, decision, reason, label set).
 The classifier in
 [`src/preflight_audit/classifier.py`](src/preflight_audit/classifier.py)
 is the executable spec of the rule table in
-[`.claude/skills/security-issue-sync/bulk-mode.md`](../../.claude/skills/security-issue-sync/bulk-mode.md).
+[`.claude/skills/security-issue-sync/bulk-mode.md`](../../skills/security-issue-sync/bulk-mode.md).
 The skill instructs the orchestrator how to apply the rules
 prose-by-prose; this tool implements them in code. Both forms
 describe the same rules and **must be edited in lock-step** —

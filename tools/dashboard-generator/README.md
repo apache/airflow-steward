@@ -20,7 +20,7 @@
 **Capability:** capability:stats
 
 Deterministic reference implementations of the dashboard that
-[`issue-reassess-stats`](../../.claude/skills/issue-reassess-stats/SKILL.md)
+[`issue-reassess-stats`](../../skills/issue-reassess-stats/SKILL.md)
 produces. Adopters who want CI-rendered dashboards (refreshed on
 schedule, published as a build artefact) use one of these
 reference scripts instead of invoking the agent.
@@ -47,9 +47,9 @@ groovy tools/dashboard-generator/reference.groovy <campaign-dir> [--output <file
 
 Reads `<campaign-dir>/<KEY>/verdict.json` files, computes the
 dashboard payload per
-[`issue-reassess-stats/aggregate.md`](../../.claude/skills/issue-reassess-stats/aggregate.md),
+[`issue-reassess-stats/aggregate.md`](../../skills/issue-reassess-stats/aggregate.md),
 and emits the HTML per
-[`issue-reassess-stats/render.md`](../../.claude/skills/issue-reassess-stats/render.md).
+[`issue-reassess-stats/render.md`](../../skills/issue-reassess-stats/render.md).
 
 Without `--output`, HTML is written to stdout.
 
@@ -90,9 +90,9 @@ as long as they:
 
 ## Cross-references
 
-- [`issue-reassess-stats`](../../.claude/skills/issue-reassess-stats/SKILL.md) —
+- [`issue-reassess-stats`](../../skills/issue-reassess-stats/SKILL.md) —
   the agent-emitted version of the same dashboard.
-- [`issue-reassess-stats/render.md`](../../.claude/skills/issue-reassess-stats/render.md) —
+- [`issue-reassess-stats/render.md`](../../skills/issue-reassess-stats/render.md) —
   the layout contract the references implement.
 - [`<project-config>/reproducer-conventions.md`](../../projects/_template/reproducer-conventions.md) —
   the campaign directory layout.

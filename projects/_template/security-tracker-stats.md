@@ -17,7 +17,7 @@
 # security-tracker-stats.md (template)
 
 Per-project configuration consumed by the
-[`security-tracker-stats-dashboard`](../../.claude/skills/security-tracker-stats-dashboard/SKILL.md)
+[`security-tracker-stats-dashboard`](../../skills/security-tracker-stats-dashboard/SKILL.md)
 skill. Copy this file into your project's `<project-config>/`
 directory and edit the values below. Everything is optional — the
 skill falls back to

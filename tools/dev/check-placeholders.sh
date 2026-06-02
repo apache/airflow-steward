@@ -104,7 +104,7 @@ INLINE_ALLOW_MARKERS=(
 # are scoped; Python sources under `tools/*/src/` and `tools/*/tests/`
 # may legitimately mention Airflow in fixtures and docstrings.
 SCAN_PATHS=(
-  ".claude/skills"
+  "skills"
   "tools"
 )
 

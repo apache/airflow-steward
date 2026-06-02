@@ -16,7 +16,7 @@
 # TODO: `<Project Name>` — pr-management-triage configuration
 
 This file is the **per-project configuration** for the
-[`pr-management-triage`](../../.claude/skills/pr-management-triage/SKILL.md) skill.
+[`pr-management-triage`](../../skills/pr-management-triage/SKILL.md) skill.
 It holds the concrete values for your adopter project.
 
 Copy this file into your own
@@ -78,5 +78,5 @@ default to use the standard variant.
 
 | Key | Default | Notes |
 |---|---|---|
-| `confirmation_handback_mode` | `reviewer-ping` | `request-author-confirmation` action's "If yes" branch. `reviewer-ping`: the author marks threads resolved and `@`-pings the reviewer for a final look + label. `maintainer-sweep`: the author replies with a short `yes / ready` and the next triage sweep promotes the PR to the maintainer review queue. Pick `maintainer-sweep` if your project runs a regular maintainer triage cadence and prefers a lightweight contributor confirmation over a reviewer-driven hand-back. See [`comment-templates.md#request-author-confirmation`](../../.claude/skills/pr-management-triage/comment-templates.md) for both bodies. |
-| `session_history_gist` | `enabled` | [Step 6b](../../.claude/skills/pr-management-triage/SKILL.md#step-6b--propose-session-history-gist-update) — propose appending each session to a private GitHub gist on the maintainer's account. Set to `disabled` to skip Step 6b unconditionally for this project (overrides the per-invocation `no-history` flag). The local state file at `.apache-steward.session-state.json` is read regardless so an existing gist remains discoverable. See [`session-history.md`](../../.claude/skills/pr-management-triage/session-history.md). |
+| `confirmation_handback_mode` | `reviewer-ping` | `request-author-confirmation` action's "If yes" branch. `reviewer-ping`: the author marks threads resolved and `@`-pings the reviewer for a final look + label. `maintainer-sweep`: the author replies with a short `yes / ready` and the next triage sweep promotes the PR to the maintainer review queue. Pick `maintainer-sweep` if your project runs a regular maintainer triage cadence and prefers a lightweight contributor confirmation over a reviewer-driven hand-back. See [`comment-templates.md#request-author-confirmation`](../../skills/pr-management-triage/comment-templates.md) for both bodies. |
+| `session_history_gist` | `enabled` | [Step 6b](../../skills/pr-management-triage/SKILL.md#step-6b--propose-session-history-gist-update) — propose appending each session to a private GitHub gist on the maintainer's account. Set to `disabled` to skip Step 6b unconditionally for this project (overrides the per-invocation `no-history` flag). The local state file at `.apache-steward.session-state.json` is read regardless so an existing gist remains discoverable. See [`session-history.md`](../../skills/pr-management-triage/session-history.md). |

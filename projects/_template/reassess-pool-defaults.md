@@ -17,7 +17,7 @@
 
 # TODO: `<Project Name>` — reassessment pool defaults
 
-Named issue pools for [`issue-reassess`](../../.claude/skills/issue-reassess/SKILL.md)
+Named issue pools for [`issue-reassess`](../../skills/issue-reassess/SKILL.md)
 sweep campaigns. Each pool is a query against `<issue-tracker>` that
 surfaces a particular kind of candidate.
 
@@ -54,7 +54,7 @@ Issues that were closed and later reopened. Surfaces:
 
 - Persistent wishlists the team keeps resisting (often classified
   `feature-request-disguised-as-bug` per the nature taxonomy in
-  [`issue-reproducer/verdict-composition.md`](../../.claude/skills/issue-reproducer/verdict-composition.md)).
+  [`issue-reproducer/verdict-composition.md`](../../skills/issue-reproducer/verdict-composition.md)).
 - True regressions where a fix was reverted or didn't stick.
 
 ```text

@@ -62,11 +62,11 @@ configured with different trackers.
 
 | Skill | Mode | Purpose |
 |---|---|---|
-| [`issue-triage`](../../.claude/skills/issue-triage/SKILL.md) | Triage | Per-issue classification + disposition proposal |
-| [`issue-reassess`](../../.claude/skills/issue-reassess/SKILL.md) | Triage | Pool-level sweep of resolved / EOL issues for re-assessment |
-| [`issue-reproducer`](../../.claude/skills/issue-reproducer/SKILL.md) | — | Per-issue extraction + execution of code examples |
-| [`issue-fix-workflow`](../../.claude/skills/issue-fix-workflow/SKILL.md) | Drafting | Drafts a fix PR for a triaged issue |
-| [`issue-reassess-stats`](../../.claude/skills/issue-reassess-stats/SKILL.md) | — | Read-only campaign dashboard |
+| [`issue-triage`](../../skills/issue-triage/SKILL.md) | Triage | Per-issue classification + disposition proposal |
+| [`issue-reassess`](../../skills/issue-reassess/SKILL.md) | Triage | Pool-level sweep of resolved / EOL issues for re-assessment |
+| [`issue-reproducer`](../../skills/issue-reproducer/SKILL.md) | — | Per-issue extraction + execution of code examples |
+| [`issue-fix-workflow`](../../skills/issue-fix-workflow/SKILL.md) | Drafting | Drafts a fix PR for a triaged issue |
+| [`issue-reassess-stats`](../../skills/issue-reassess-stats/SKILL.md) | — | Read-only campaign dashboard |
 
 Reproducer and stats sit outside the MISSION mode taxonomy; they
 are mechanical / read-only, not classificatory or mutating.

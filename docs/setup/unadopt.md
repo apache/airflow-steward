@@ -32,7 +32,7 @@ into your repo.
 
 > **You may not actually want this.** To **change install
 > method or version**, use
-> [`/setup-steward upgrade`](../../.claude/skills/setup-steward/upgrade.md)
+> [`/setup-steward upgrade`](../../skills/setup-steward/upgrade.md)
 > — it keeps your overrides and re-uses the existing
 > wiring. To **temporarily detach a single skill for
 > debugging**, edit the relevant file under
@@ -94,7 +94,7 @@ The following will be PRESERVED:
 ```
 
 `<skills-dir>` resolves to your skills directory per the
-[skills-dir convention](../../.claude/skills/setup-steward/conventions.md)
+[skills-dir convention](../../skills/setup-steward/conventions.md)
 your repo uses:
 
 - **Pattern A** — `.claude/skills/`.
@@ -134,7 +134,7 @@ committing. On disk, `.apache-steward/` and
 If anything is missing or unexpected — or if removal failed
 partway through — the canonical per-step plan, including
 failure modes, lives in
-[`.claude/skills/setup-steward/unadopt.md`](../../.claude/skills/setup-steward/unadopt.md).
+[`.claude/skills/setup-steward/unadopt.md`](../../skills/setup-steward/unadopt.md).
 That's the procedure the agent steps through when you
 invoke `/setup-steward unadopt`.
 

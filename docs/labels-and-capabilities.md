@@ -126,7 +126,7 @@ etc.).
 ## Capability to skill map
 
 Capabilities for every skill currently in
-[`.claude/skills/`](../.claude/skills/). Skills with two values
+[`.claude/skills/`](../skills/). Skills with two values
 (separated by `+`) carry both labels.
 
 | Skill | Capability / capabilities |
@@ -270,7 +270,7 @@ capability: capability:NAME
 ---
 ```
 
-The [`write-skill`](../.claude/skills/write-skill/SKILL.md) skill
+The [`write-skill`](../skills/write-skill/SKILL.md) skill
 prompts for this on every new-skill scaffold.
 
 ### A new doc under `docs/`

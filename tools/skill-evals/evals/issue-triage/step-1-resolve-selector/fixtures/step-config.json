@@ -1,4 +1,4 @@
 {
-  "skill_md": ".claude/skills/issue-triage/SKILL.md",
+  "skill_md": "skills/issue-triage/SKILL.md",
   "step_heading": "## Step 1 — Resolve selector to a concrete issue list"
 }

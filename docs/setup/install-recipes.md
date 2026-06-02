@@ -33,7 +33,7 @@ Pick the recipe that matches your distribution preference:
 
 > **Adopter convention** — pick the right `cp` step per your
 > existing skills layout (see
-> [`.claude/skills/setup-steward/conventions.md`](../../.claude/skills/setup-steward/conventions.md)
+> [`.claude/skills/setup-steward/conventions.md`](../../skills/setup-steward/conventions.md)
 > for the full taxonomy):
 >
 > - **A — flat** (`.claude/skills/<n>/SKILL.md` directly): copy
@@ -280,5 +280,5 @@ gap and proposes:
 committed lock, refreshes the gitignored symlinks (adding any
 new framework skills, removing any that were renamed away),
 and updates the local lock. See
-[`setup-steward/upgrade.md`](../../.claude/skills/setup-steward/upgrade.md)
+[`setup-steward/upgrade.md`](../../skills/setup-steward/upgrade.md)
 for the full flow.

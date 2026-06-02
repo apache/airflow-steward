@@ -113,7 +113,7 @@ describes the interface for additional adapters.
 ### Sub-skill consumers
 
 ASF adopters install the optional sub-skill
-[`security-issue-import-via-forwarder`](../../.claude/skills/security-issue-import-via-forwarder/SKILL.md)
+[`security-issue-import-via-forwarder`](../../skills/security-issue-import-via-forwarder/SKILL.md)
 to enable forwarder-aware handling. The sub-skill consumes the
 `forwarders.enabled` config knob from
 [`<project-config>/project.md`](../../projects/_template/project.md)
@@ -283,12 +283,12 @@ Step 4 instead of carrying an `if asf_relay:` check inline.
 
 | Skill | Step | What the skill calls |
 |---|---|---|
-| [`security-issue-import`](../../.claude/skills/security-issue-import/SKILL.md) | Step 3 — classification | `detect()` on every enabled adapter; the first non-null return classifies the candidate as a relay import |
+| [`security-issue-import`](../../skills/security-issue-import/SKILL.md) | Step 3 — classification | `detect()` on every enabled adapter; the first non-null return classifies the candidate as a relay import |
 | `security-issue-import` | Step 4 — field population | `extract_credit()` for the *Reporter credited as* field |
 | `security-issue-import` | Step 7 — receipt-of-confirmation draft | `reporter_addressing_block()` + `via_forwarder_question_mode` to fold the credit-preference question |
-| [`security-issue-sync`](../../.claude/skills/security-issue-sync/SKILL.md) | Step 2b — draft routing | `contact_handle` + `reporter_addressing_block()` for any reporter-facing draft (CVE-allocated, fix-merged, advisory-shipped) on a relay tracker |
-| [`security-issue-invalidate`](../../.claude/skills/security-issue-invalidate/SKILL.md) | Step 5d — ASF-relay branch | `reporter_addressing_block()` for the polite-but-firm invalidation notice routed through the forwarder |
-| [`security-cve-allocate`](../../.claude/skills/security-cve-allocate/SKILL.md) | Step 4 — dual-mode draft | `via_forwarder_question_mode` to decide whether the CVE-allocation draft folds in the credit-preference ask or sends it separately |
+| [`security-issue-sync`](../../skills/security-issue-sync/SKILL.md) | Step 2b — draft routing | `contact_handle` + `reporter_addressing_block()` for any reporter-facing draft (CVE-allocated, fix-merged, advisory-shipped) on a relay tracker |
+| [`security-issue-invalidate`](../../skills/security-issue-invalidate/SKILL.md) | Step 5d — ASF-relay branch | `reporter_addressing_block()` for the polite-but-firm invalidation notice routed through the forwarder |
+| [`security-cve-allocate`](../../skills/security-cve-allocate/SKILL.md) | Step 4 — dual-mode draft | `via_forwarder_question_mode` to decide whether the CVE-allocation draft folds in the credit-preference ask or sends it separately |
 | [`tools/gmail/asf-relay.md`](../gmail/asf-relay.md) | reference doc for the shipping adapter | this whole file is the formal contract that `asf-relay.md` documents prose-style |
 
 ## ASF default — ASF Security forwarder

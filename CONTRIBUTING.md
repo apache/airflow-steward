@@ -80,7 +80,7 @@ where things should go; it was sixty years early on the question
 of what would interpret it.
 
 This repository is built on that observation. The skill files
-under `.claude/skills/<name>/SKILL.md` are **programs**. They are
+under `skills/<name>/SKILL.md` are **programs**. They are
 written in English. They are executed by an agent. They have
 inputs, outputs, control flow, error handling, edge cases, and
 unit tests (the eval suite under [`tools/skill-evals/`](tools/skill-evals/)).
@@ -119,7 +119,7 @@ Three practical consequences:
 
 Read the rest of this guide with that frame in mind. When
 something looks like "just documentation", check whether it
-sits under `.claude/skills/` or `tools/<system>/tool.md`. If it
+sits under `skills/` or `tools/<system>/tool.md`. If it
 does, it's code — and the rules for changing code apply.
 
 ## What this framework is
@@ -144,7 +144,7 @@ their identity, rosters, canned responses, release trains, and
 security model in their own `<project-config>/` directory in their
 adopter tracker repo, alongside a gitignored snapshot of this
 framework managed by the
-[`setup-steward`](.claude/skills/setup-steward/SKILL.md) skill.
+[`setup-steward`](skills/setup-steward/SKILL.md) skill.
 None of that adopter-side content lives here.
 
 The framework's normative commitments are codified in
@@ -170,7 +170,7 @@ every piece of context it needs from some combination of the four
   `<upstream>`, `<security-list>`). [`MISSION.md`](MISSION.md) is
   the establishment proposal that explains why the project exists.
   [`docs/rfcs/`](docs/rfcs/) holds the normative RFCs.
-- **Skills** live under [`.claude/skills/`](.claude/skills/).
+- **Skills** live under [`skills/`](skills/).
   Each is a `SKILL.md` that encodes one workflow. Skills use the
   `<PROJECT>` / `<tracker>` / `<upstream>` placeholders everywhere
   and resolve them at runtime; they must not contain project-
@@ -326,7 +326,7 @@ skills and all tools.
 2. **Secure sandbox by default.** Agent processes run inside a
    `bubblewrap` sandbox with a network allowlist (see
    [`tools/agent-isolation/`](tools/agent-isolation/) and the
-   [`setup-isolated-setup-*`](.claude/skills/) skill family).
+   [`setup-isolated-setup-*`](skills/) skill family).
    Skills must not assume unrestricted host access; tools that
    need network access declare the hosts they reach.
 3. **Vendor neutrality.** Skills are markdown-with-YAML, not
@@ -339,7 +339,7 @@ skills and all tools.
 4. **Conversational, correctable.** A maintainer override
    (`.apache-steward-overrides/<skill>.md` in the adopter repo)
    modifies skill behaviour without forking the framework. The
-   [`setup-override-upstream`](.claude/skills/setup-override-upstream/SKILL.md)
+   [`setup-override-upstream`](skills/setup-override-upstream/SKILL.md)
    skill promotes useful overrides back into the framework as PRs.
 5. **Write-access discipline.** Outbound messages (PR comments,
    reporter emails, mailing-list posts) are *always* drafted for
@@ -356,14 +356,14 @@ skills and all tools.
 The placeholder discipline (3) is enforced mechanically:
 [`tools/dev/check-placeholders.sh`](tools/dev/check-placeholders.sh)
 fails the commit if it finds hardcoded project names like
-`apache/airflow` or `Apache Airflow` inside `.claude/skills/` or
+`apache/airflow` or `Apache Airflow` inside `skills/` or
 `tools/`. The others are enforced by reviewer taste + skill-
 validator + eval cases.
 
 ## Agent harnesses
 
 The framework's reference runtime today is **Claude Code** — skills
-are loaded from `.claude/skills/<name>/SKILL.md`, MCP servers from
+are loaded from `skills/<name>/SKILL.md`, MCP servers from
 the user's Claude Code config, and the sandbox from
 `setup-isolated-setup-install`.
 
@@ -394,7 +394,7 @@ harness.
 ## Code in this repo
 
 The framework's primary programming language is English — skill
-files under `.claude/skills/` and tool contracts under `tools/`
+files under `skills/` and tool contracts under `tools/`
 are programs executed by the agent (see
 [English as code](#english-as-code)). Several deterministic
 operations are also implemented in traditional programming
@@ -519,9 +519,9 @@ The hooks are described in detail under [Running the dev loop](#running-the-dev-
 
 If you intend to actually run framework skills against an adopter
 project (not just edit the framework), follow the
-[`setup-isolated-setup-install`](.claude/skills/setup-isolated-setup-install/SKILL.md)
+[`setup-isolated-setup-install`](skills/setup-isolated-setup-install/SKILL.md)
 skill to install the bubblewrap sandbox and pinned tools, then
-[`setup-isolated-setup-verify`](.claude/skills/setup-isolated-setup-verify/SKILL.md)
+[`setup-isolated-setup-verify`](skills/setup-isolated-setup-verify/SKILL.md)
 to confirm the install. The full adoption tutorial lives at
 [`docs/setup/install-recipes.md`](docs/setup/install-recipes.md).
 
@@ -577,7 +577,7 @@ editing:
 | The framework's overall purpose, mission, or scope | [`MISSION.md`](MISSION.md) |
 | A normative principle that cuts across the framework | [`docs/rfcs/`](docs/rfcs/) (new RFC) |
 | An editorial / confidentiality / placeholder rule | [`AGENTS.md`](AGENTS.md) |
-| A skill's workflow | [`.claude/skills/<name>/SKILL.md`](.claude/skills/) |
+| A skill's workflow | [`skills/<name>/SKILL.md`](skills/) |
 | An adapter surface for an external system | the matching [`tools/<system>/`](tools/) subtree |
 | Bootstrap scaffolding for an adopter `<project-config>/` | [`projects/_template/`](projects/_template/) |
 | Sandbox / privacy-LLM / dev-loop infrastructure | [`tools/agent-isolation/`](tools/agent-isolation/), [`tools/privacy-llm/`](tools/privacy-llm/), [`tools/dev/`](tools/dev/) |
@@ -730,7 +730,7 @@ feedback is faster. When working on a Python bridge:
 **Concrete first moves.** The framework provides agent entry
 points for the two most common authoring tasks:
 
-- **New skill** — invoke [`/write-skill`](.claude/skills/write-skill/SKILL.md).
+- **New skill** — invoke [`/write-skill`](skills/write-skill/SKILL.md).
   The meta-skill walks you through the framework's skill shape
   (frontmatter, resources, placeholder convention, prompt-injection
   defences, privacy-LLM gate-check), scaffolds the directory, and
@@ -782,7 +782,7 @@ open a PR — CI runs the same config. The hook set:
 - **`check-placeholders`** — local script at
   [`tools/dev/check-placeholders.sh`](tools/dev/check-placeholders.sh)
   that refuses hardcoded references like `apache/airflow` or
-  `Apache Airflow` inside `.claude/skills/` or `tools/`. The
+  `Apache Airflow` inside `skills/` or `tools/`. The
   framework convention is the `<PROJECT>` / `<tracker>` /
   `<upstream>` placeholder set.
 - **Per-package Python checks** — `ruff check`, `ruff format --check`,
@@ -904,7 +904,7 @@ Good entry points, in rough order of ramp-up cost:
    [`tools/skill-evals/README.md`](tools/skill-evals/README.md)
    for the fixture format.
 
-4. **A new skill via [`/write-skill`](.claude/skills/write-skill/SKILL.md).**
+4. **A new skill via [`/write-skill`](skills/write-skill/SKILL.md).**
    The meta-skill walks you through the framework's skill shape
    (frontmatter, resources, placeholder convention, prompt-injection
    defences, privacy-LLM gate-check) and validates via
@@ -967,7 +967,7 @@ layer-specific doc wins. Re-read it first:
 - [`docs/rfcs/`](docs/rfcs/) — full RFC set.
 - [`docs/setup/`](docs/setup/) — adoption, sandbox, privacy-LLM,
   override workflow.
-- [`.claude/skills/<name>/SKILL.md`](.claude/skills/) — the
+- [`skills/<name>/SKILL.md`](skills/) — the
   workflow each skill enforces.
 - [`tools/<name>/`](tools/) — per-tool adapter contracts.
 - [`tools/skill-evals/README.md`](tools/skill-evals/README.md) —

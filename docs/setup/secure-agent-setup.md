@@ -131,12 +131,12 @@ privilege-elevating runs without you saying so.
 ```
 
 The skills are at
-[`.claude/skills/setup-steward/verify.md`](../../.claude/skills/setup-steward/verify.md),
-[`.claude/skills/setup-isolated-setup-install/`](../../.claude/skills/setup-isolated-setup-install/SKILL.md),
-[`.claude/skills/setup-isolated-setup-verify/`](../../.claude/skills/setup-isolated-setup-verify/SKILL.md),
-[`.claude/skills/setup-steward/upgrade.md`](../../.claude/skills/setup-steward/upgrade.md),
-[`.claude/skills/setup-isolated-setup-update/`](../../.claude/skills/setup-isolated-setup-update/SKILL.md),
-[`.claude/skills/setup-shared-config-sync/`](../../.claude/skills/setup-shared-config-sync/SKILL.md).
+[`.claude/skills/setup-steward/verify.md`](../../skills/setup-steward/verify.md),
+[`.claude/skills/setup-isolated-setup-install/`](../../skills/setup-isolated-setup-install/SKILL.md),
+[`.claude/skills/setup-isolated-setup-verify/`](../../skills/setup-isolated-setup-verify/SKILL.md),
+[`.claude/skills/setup-steward/upgrade.md`](../../skills/setup-steward/upgrade.md),
+[`.claude/skills/setup-isolated-setup-update/`](../../skills/setup-isolated-setup-update/SKILL.md),
+[`.claude/skills/setup-shared-config-sync/`](../../skills/setup-shared-config-sync/SKILL.md).
 Each skill references back into the canonical sections of this
 document rather than duplicating them, so anything the skill walks
 you through has a longer-form section here you can read for
@@ -545,7 +545,7 @@ auditable:
 **4. No vector via commits.**
 `<repo>/.claude/settings.local.json` is gitignored — the adopt
 flow adds the line to `.gitignore`, and
-[`/setup-steward verify`](../../.claude/skills/setup-steward/verify.md)
+[`/setup-steward verify`](../../skills/setup-steward/verify.md)
 Check 4 surfaces ✗ if it is missing. The helper itself runs
 `git check-ignore` against the target file before writing and
 *refuses* to write when the file is not ignored (defense in depth
@@ -581,7 +581,7 @@ configure it, but it can verify and document it.
 The framework ships
 [`tools/agent-isolation/sandbox-add-project-root.sh`](../../tools/agent-isolation/sandbox-add-project-root.sh)
 to perform this addition idempotently. Installed during
-[`setup-isolated-setup-install`](../../.claude/skills/setup-isolated-setup-install/SKILL.md)
+[`setup-isolated-setup-install`](../../skills/setup-isolated-setup-install/SKILL.md)
 into `~/.claude/scripts/sandbox-add-project-root.sh` (the
 *script file* lives user-scope so a single install covers every
 adopter project on the host; what it *writes* is project-local).
@@ -629,17 +629,17 @@ The helper is invoked from four points in the framework's lifecycle:
 
 The verification surface:
 
-- [`setup-isolated-setup-verify`](../../.claude/skills/setup-isolated-setup-verify/SKILL.md)
+- [`setup-isolated-setup-verify`](../../skills/setup-isolated-setup-verify/SKILL.md)
   Check 8 — live sandboxed read+write probe of the project root,
   plus the static cross-check that the abs path is in the current
   worktree's `.claude/settings.local.json`.
-- [`/setup-steward verify`](../../.claude/skills/setup-steward/verify.md)
+- [`/setup-steward verify`](../../skills/setup-steward/verify.md)
   Check 8b — static cross-check that the current worktree's
   abs path is in its own `.claude/settings.local.json`.
 
 ### Per-project vs whole-user scope
 
-[`setup-isolated-setup-install`](../../.claude/skills/setup-isolated-setup-install/SKILL.md)
+[`setup-isolated-setup-install`](../../skills/setup-isolated-setup-install/SKILL.md)
 offers two scopes for the project-root sandbox-allowlist setup.
 The operator picks one during install; both are reversible.
 
@@ -669,7 +669,7 @@ per-repo hooks.
 The install skill surfaces this trade-off loudly before setting
 `core.hooksPath` and requires explicit operator acknowledgement.
 See
-[`setup-isolated-setup-install` Step P.0a](../../.claude/skills/setup-isolated-setup-install/SKILL.md#step-p0a--loud-disclosure-before-setting-whole-user-scope).
+[`setup-isolated-setup-install` Step P.0a](../../skills/setup-isolated-setup-install/SKILL.md#step-p0a--loud-disclosure-before-setting-whole-user-scope).
 
 #### When to pick which scope
 
@@ -949,7 +949,7 @@ the user) does not have to remember the catalog exists.
 ### Why install it
 
 The catalog (PR #291) and the diagnostic skill
-[`setup-isolated-setup-doctor`](../../.claude/skills/setup-isolated-setup-doctor/SKILL.md)
+[`setup-isolated-setup-doctor`](../../skills/setup-isolated-setup-doctor/SKILL.md)
 (PR #292) cover the same ground but require explicit
 recall — *"my SSH push failed; let me check the catalog"* or
 *"let me run the doctor"*. The hint hook closes the loop by

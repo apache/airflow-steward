@@ -23,7 +23,7 @@ opens a public fix PR on the project's `<upstream>` repository. Only
 the bits that are **specific to this project** live here; the
 generic flow (clone → branch → commit → push → `gh pr create --web`)
 is described in the
-[`security-issue-fix`](../../.claude/skills/security-issue-fix/SKILL.md)
+[`security-issue-fix`](../../skills/security-issue-fix/SKILL.md)
 skill itself.
 
 ## Upstream repository

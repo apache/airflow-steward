@@ -26,7 +26,7 @@ Audit + atomically edit Claude Code's `permissions.allow[]` entries
 in `<repo>/.claude/settings.json` and `<repo>/.claude/settings.local.json`.
 
 Backs the `--apply-permission-audit` flag of
-[`/setup-steward verify`](../../.claude/skills/setup-steward/verify.md#8d-permission-allow-list-hygiene)
+[`/setup-steward verify`](../../skills/setup-steward/verify.md#8d-permission-allow-list-hygiene)
 (check 8d), and is also directly usable as a CLI.
 
 ## Why

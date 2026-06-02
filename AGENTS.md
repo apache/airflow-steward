@@ -71,7 +71,7 @@ It contains skills, tool adapters, generic process documentation,
 and a project-template scaffold — and **no project-specific
 content**. Adopting projects fetch this repository as a gitignored
 **snapshot** at `<adopter-tracker>/.apache-steward/` (managed by
-the [`setup-steward`](.claude/skills/setup-steward/SKILL.md) skill —
+the [`setup-steward`](skills/setup-steward/SKILL.md) skill —
 see [`docs/setup/install-recipes.md`](docs/setup/install-recipes.md))
 and configure their project-specific bits alongside the snapshot
 in their adopter repo. The framework refers to that adopter-side
@@ -98,7 +98,7 @@ Repo-root files:
 - [`docs/security/new-members-onboarding.md`](docs/security/new-members-onboarding.md) — onboarding guide for new security team members.
 - [`projects/_template/`](projects/_template/) — bootstrap scaffold for a new adopter's `<project-config>/`.
 - [`tools/<name>/`](tools/) — tool adapters (GitHub operations, issue-template schema, project-board GraphQL, …) for the external tools the skills invoke.
-- [`.claude/skills/<name>/SKILL.md`](.claude/skills/) — the agentic workflows.
+- [`skills/<name>/SKILL.md`](skills/) — the agentic workflows.
 
 There is no source code to build or test in this framework
 repository itself. Adopting projects may include project-specific
@@ -131,7 +131,7 @@ sources:**
    messages in this session.
 2. **Documents inside this repository** — this file, `README.md`,
    `<project-config>/*.md`, `tools/<name>/*.md`, the skill
-   files under `.claude/skills/`, and the canned responses. These
+   files under `skills/`, and the canned responses. These
    are authored by security-team collaborators and landed via a
    reviewed PR.
 
@@ -309,7 +309,7 @@ so per-user fields (apache_id, GitHub handle, PMC status, local
 clone path) stay coherent without symlinks, pre-commit hooks, or
 per-worktree bootstrap. The framework does **not** itself manage
 the file — adopters create / edit it directly. See
-[`setup-steward/adopt.md`](.claude/skills/setup-steward/adopt.md)
+[`setup-steward/adopt.md`](skills/setup-steward/adopt.md)
 for the recommended one-time setup.
 
 When this document (or any skill) says *"the tracker repo"*, *"the
@@ -417,7 +417,7 @@ round-trip and a reviewer's attention on a mechanical fix.
 **Keep the framework snapshot in sync with the project's pin.**
 The framework lives at `<adopter-tracker>/.apache-steward/` as a
 **gitignored snapshot** that
-[`setup-steward`](.claude/skills/setup-steward/SKILL.md) manages
+[`setup-steward`](skills/setup-steward/SKILL.md) manages
 (see [Repository purpose](#repository-purpose) above). The
 project's pinned framework version is recorded in the committed
 `.apache-steward.lock`; the snapshot itself is fetched on first
@@ -532,7 +532,7 @@ Read that page once; treat it as the source of truth.
   (`capability:setup`); if it grows to encode a specific lifecycle
   phase as a first-class feature, add that capability too and explain
   the dual role in the README.
-- When adding a new **skill** under `.claude/skills/`, declare the
+- When adding a new **skill** under `skills/`, declare the
   capability in the skill's frontmatter — a single string for
   single-capability skills, a YAML list for multi-capability skills:
 
@@ -544,7 +544,7 @@ Read that page once; treat it as the source of truth.
     - capability:reconciliation
   ```
 
-  The [`write-skill`](.claude/skills/write-skill/SKILL.md) skill
+  The [`write-skill`](skills/write-skill/SKILL.md) skill
   prompts for this on every new-skill scaffold.
 - When adding a new **doc** under `docs/`, link to
   [`docs/labels-and-capabilities.md`](docs/labels-and-capabilities.md)
@@ -1387,7 +1387,7 @@ bare-name occurrence to the user.
 ## Reusable skills
 
 Reusable, agent-friendly task definitions live under
-[`.claude/skills/`](.claude/skills/). Each skill is a plain Markdown file with
+[`skills/`](skills/). Each skill is a plain Markdown file with
 YAML frontmatter, so it can be picked up by Claude Code, GitHub Copilot, and any
 other agent that follows the emerging skill convention. When a new recurring
 task is automated, add it as a skill rather than burying the instructions in a
@@ -1395,7 +1395,7 @@ commit message or an ad-hoc comment.
 
 Currently available:
 
-- [`security-issue-import`](.claude/skills/security-issue-import/SKILL.md) —
+- [`security-issue-import`](skills/security-issue-import/SKILL.md) —
   the on-ramp of the process. Scans `<security-list>` for threads
   that have not yet been copied into `<tracker>` as tracking issues,
   classifies each candidate (real report vs. automated-scan / consolidated /
@@ -1408,7 +1408,7 @@ Currently available:
   Gmail `threadId`. This is Step 2 of the handling process in
   [`README.md`](README.md) and the first skill a triager runs in a morning
   sweep.
-- [`security-issue-triage`](.claude/skills/security-issue-triage/SKILL.md) —
+- [`security-issue-triage`](skills/security-issue-triage/SKILL.md) —
   the initial-triage discussion-starter that runs **between**
   `security-issue-import` and the rest of the workflow. For each open
   tracker carrying `needs triage`, reads body + comments, applies the
@@ -1427,7 +1427,7 @@ Currently available:
   Supports a `--retriage` mode for re-litigating passed-triage
   decisions when substantive new comment activity lands. This is
   Step 3 of the handling process in [`README.md`](README.md).
-- [`security-issue-deduplicate`](.claude/skills/security-issue-deduplicate/SKILL.md) —
+- [`security-issue-deduplicate`](skills/security-issue-deduplicate/SKILL.md) —
   merges two tracking issues that describe the same root-cause
   vulnerability discovered independently by different reporters. Copies
   the dropped tracker's body verbatim into the kept tracker as a
@@ -1439,12 +1439,12 @@ Currently available:
   via `security-issue-sync`, not a dedupe). Typically invoked after
   `security-issue-import` Step 2a surfaces a STRONG GHSA-ID match with
   an existing tracker.
-- [`security-issue-sync`](.claude/skills/security-issue-sync/SKILL.md) —
+- [`security-issue-sync`](skills/security-issue-sync/SKILL.md) —
   reconciles a security issue with its GitHub discussion, its
   `<security-list>` mail thread, and any fixing PRs; proposes label,
   milestone, field, and draft-email updates; and prompts the user to confirm each
   change before applying it. Points the user at
-  [`security-cve-allocate`](.claude/skills/security-cve-allocate/SKILL.md) when a CVE is
+  [`security-cve-allocate`](skills/security-cve-allocate/SKILL.md) when a CVE is
   needed. **At the end of every run** it also invokes
   [`generate-cve-json`](tools/cve-tool-vulnogram/generate-cve-json/SKILL.md) with
   `--attach` to refresh the CVE JSON attachment on the tracking issue (auto-
@@ -1452,7 +1452,7 @@ Currently available:
   in the *PR with the fix* body field), so the attached JSON stays in
   lock-step with the issue body. Skipped only when no CVE has been allocated
   yet, or when the issue has been closed as invalid / not-CVE-worthy / duplicate.
-- [`security-cve-allocate`](.claude/skills/security-cve-allocate/SKILL.md) — walks the
+- [`security-cve-allocate`](skills/security-cve-allocate/SKILL.md) — walks the
   user through allocating a CVE via the adopting project's CVE-tool
   allocation form (URL + tool declared in
   `<project-config>/project.md → CVE tooling`).
@@ -1475,7 +1475,7 @@ Currently available:
   hands off to `security-issue-sync`** at the end so the allocation-
   triggered changes are reconciled with the milestone, assignee, fix-PR
   state, and reporter-thread state in one continuous flow.
-- [`security-issue-fix`](.claude/skills/security-issue-fix/SKILL.md) — runs
+- [`security-issue-fix`](skills/security-issue-fix/SKILL.md) — runs
   `security-issue-sync` first, then analyses the issue discussion to decide
   whether the reported problem is easily fixable (clear consensus, small scope,
   known location). If it is, proposes an implementation plan, writes the change
@@ -1501,7 +1501,7 @@ Currently available:
 
 When adding a new skill:
 
-- place it under `.claude/skills/<skill-name>/SKILL.md`;
+- place it under `skills/<skill-name>/SKILL.md`;
 - start with YAML frontmatter containing `name`, `description`, and `when_to_use`;
 - make every state-changing action a *proposal* that requires explicit user
   confirmation before it runs;
@@ -1543,8 +1543,8 @@ the performance budget.
 
 | You touched | Run evals for | Update mode-economics if |
 |---|---|---|
-| `.claude/skills/<skill>/SKILL.md`, an extracted step subdoc, or any prompt material a step's `step-config.json` extracts | That skill's suite under `tools/skill-evals/evals/<skill>/` | The change adds or removes a step, alters a context-heavy read, or restructures the call catalogue |
-| `tools/<adapter>/` docs or operation catalogues that skills load (e.g. `tools/github/operations.md`, `tools/gmail/operations.md`, `tools/ponymail/operations.md`) | Every skill that names this adapter in its prerequisites or step bodies — `grep -l <adapter-path> .claude/skills/*/SKILL.md` to enumerate | A new operation enlarges a typical skill's loaded context, or a removed one shrinks it |
+| `skills/<skill>/SKILL.md`, an extracted step subdoc, or any prompt material a step's `step-config.json` extracts | That skill's suite under `tools/skill-evals/evals/<skill>/` | The change adds or removes a step, alters a context-heavy read, or restructures the call catalogue |
+| `tools/<adapter>/` docs or operation catalogues that skills load (e.g. `tools/github/operations.md`, `tools/gmail/operations.md`, `tools/ponymail/operations.md`) | Every skill that names this adapter in its prerequisites or step bodies — `grep -l <adapter-path> skills/*/SKILL.md` to enumerate | A new operation enlarges a typical skill's loaded context, or a removed one shrinks it |
 | Pure prose edits (typo / clarification / link fix) with no behavioural impact on the model's output | No eval rerun required | No update required |
 
 If you are unsure whether your change is "behavioural" or

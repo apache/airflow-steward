@@ -14,7 +14,7 @@
 # TODO: `<Project Name>` — pr-management-triage CI-check to doc-URL map
 
 This file is the **CI-check categorisation table** for the
-[`pr-management-triage`](../../.claude/skills/pr-management-triage/SKILL.md) skill's
+[`pr-management-triage`](../../skills/pr-management-triage/SKILL.md) skill's
 violations comments. It holds the concrete mapping for your
 adopter project.
 

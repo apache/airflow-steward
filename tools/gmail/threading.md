@@ -81,7 +81,7 @@ more than one thread when:
 
 - a second reporter independently filed the same root-cause bug
   through a different channel and
-  [`security-issue-deduplicate`](../../.claude/skills/security-issue-deduplicate/SKILL.md)
+  [`security-issue-deduplicate`](../../skills/security-issue-deduplicate/SKILL.md)
   merged the two trackers (one line per reporter, per the dedupe
   skill's body-field shape); or
 - an external reporter's report reached the project's security

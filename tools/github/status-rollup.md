@@ -383,8 +383,8 @@ audit the change.
 
 ## Referenced by
 
-- [`.claude/skills/security-issue-import/SKILL.md`](../../.claude/skills/security-issue-import/SKILL.md) — creates the rollup with the first entry.
-- [`.claude/skills/security-issue-sync/SKILL.md`](../../.claude/skills/security-issue-sync/SKILL.md) — appends per-sync entries and runs the fold-legacy sub-step.
-- [`.claude/skills/security-cve-allocate/SKILL.md`](../../.claude/skills/security-cve-allocate/SKILL.md) — appends the CVE-allocation entry.
-- [`.claude/skills/security-issue-deduplicate/SKILL.md`](../../.claude/skills/security-issue-deduplicate/SKILL.md) — appends the merge entry on both trackers.
-- [`.claude/skills/security-issue-fix/SKILL.md`](../../.claude/skills/security-issue-fix/SKILL.md) — appends the fix-PR entry.
+- [`.claude/skills/security-issue-import/SKILL.md`](../../skills/security-issue-import/SKILL.md) — creates the rollup with the first entry.
+- [`.claude/skills/security-issue-sync/SKILL.md`](../../skills/security-issue-sync/SKILL.md) — appends per-sync entries and runs the fold-legacy sub-step.
+- [`.claude/skills/security-cve-allocate/SKILL.md`](../../skills/security-cve-allocate/SKILL.md) — appends the CVE-allocation entry.
+- [`.claude/skills/security-issue-deduplicate/SKILL.md`](../../skills/security-issue-deduplicate/SKILL.md) — appends the merge entry on both trackers.
+- [`.claude/skills/security-issue-fix/SKILL.md`](../../skills/security-issue-fix/SKILL.md) — appends the fix-PR entry.

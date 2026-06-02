@@ -17,7 +17,7 @@
 # TODO: `<Project Name>` — runtime invocation
 
 How to invoke the project's runtime on a single source file. Used
-by [`issue-reproducer`](../../.claude/skills/issue-reproducer/SKILL.md)
+by [`issue-reproducer`](../../skills/issue-reproducer/SKILL.md)
 when running extracted code from issue descriptions.
 
 The `<runtime>` placeholder resolves from the *Run a single file*

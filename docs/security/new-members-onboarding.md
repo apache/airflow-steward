@@ -175,7 +175,7 @@ delegation rules).
 
 A lot of the repetitive work on this team has been automated into
 agent skills that live under
-[`.claude/skills/`](../../.claude/skills/). They are plain `SKILL.md`
+[`.claude/skills/`](../../skills/). They are plain `SKILL.md`
 files with YAML frontmatter, so Claude Code picks them up
 automatically and other agents that follow the emerging skill
 convention can use them too.
@@ -198,7 +198,7 @@ There is also a fourth command for anyone willing to take on a
 remediation-developer turn:
 
 - **`try to fix issue #N`** —
-  [`security-issue-fix`](../../.claude/skills/security-issue-fix/SKILL.md)
+  [`security-issue-fix`](../../skills/security-issue-fix/SKILL.md)
   attempts to land the fix for a triaged tracker in one go. It runs a
   pre-fix sync, reads the discussion on the tracker to build a fix
   plan, shows you the plan, and — only after you confirm — writes the

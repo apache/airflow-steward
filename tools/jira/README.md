@@ -292,13 +292,13 @@ uv run pytest
 
 ## Cross-references
 
-- [`issue-triage`](../../.claude/skills/issue-triage/SKILL.md) —
+- [`issue-triage`](../../skills/issue-triage/SKILL.md) —
   primary consumer (selector resolution + per-issue fetch).
-- [`issue-reassess`](../../.claude/skills/issue-reassess/SKILL.md) —
+- [`issue-reassess`](../../skills/issue-reassess/SKILL.md) —
   campaign-level consumer (pool fetch).
-- [`security-issue-sync`](../../.claude/skills/security-issue-sync/SKILL.md) —
+- [`security-issue-sync`](../../skills/security-issue-sync/SKILL.md) —
   write-path consumer (label, transition, comment, field updates).
-- [`security-issue-invalidate`](../../.claude/skills/security-issue-invalidate/SKILL.md) —
+- [`security-issue-invalidate`](../../skills/security-issue-invalidate/SKILL.md) —
   write-path consumer (close with label + comment).
 - [`tools/github/operations.md`](../github/operations.md) —
   write-path discipline reference.

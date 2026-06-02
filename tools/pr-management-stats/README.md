@@ -22,7 +22,7 @@
 
 Deterministic reference implementation of the data-fetch +
 classification contract that backs the
-[`pr-management-stats`](../../.claude/skills/pr-management-stats/SKILL.md) skill.
+[`pr-management-stats`](../../skills/pr-management-stats/SKILL.md) skill.
 
 The skill's agent-emitted render is the **default** — this script
 exists for two reasons:
@@ -38,7 +38,7 @@ exists for two reasons:
 2. **CI-renderable artefact.** Adopters who want a daily dashboard
    rendered by CI (rather than an interactive agent session) can run
    this script on a schedule, extend it with the full render per
-   [`render.md`](../../.claude/skills/pr-management-stats/render.md),
+   [`render.md`](../../skills/pr-management-stats/render.md),
    and publish the HTML as a build artefact or gist.
 
 ## Layout
@@ -93,7 +93,7 @@ The script:
 3. Fetches `.github/CODEOWNERS` + changed-file paths for each
    currently-ready PR.
 4. Classifies each PR per
-   [`classify.md`](../../.claude/skills/pr-management-stats/classify.md) —
+   [`classify.md`](../../skills/pr-management-stats/classify.md) —
    `is_engaged` requires ANY maintainer touch (issue comment, review,
    review-thread comment, label add, draft conversion).
 5. Writes a JSON sidecar with all the counts that feed the dashboard.
@@ -149,8 +149,8 @@ network access:
 
 When the agent invokes the skill, it MUST:
 
-- Use the GraphQL templates from [`fetch.md`](../../.claude/skills/pr-management-stats/fetch.md) verbatim. **In particular, the open-PRs query MUST include `reviewThreads` and `latestReviews` and `timelineItems`** — without those, the `is_engaged` predicate is undercounted and untriaged numbers blow up artificially. (Earlier iterations of `fetch.md` claimed those fields were not needed for stats; that was a documentation bug and has been corrected.)
-- Implement ALL 11 sections per [`render.md`](../../.claude/skills/pr-management-stats/render.md). Skipping panels (e.g. dropping the line charts, CODEOWNERS table, triager-activity table) is **not** an acceptable simplification.
+- Use the GraphQL templates from [`fetch.md`](../../skills/pr-management-stats/fetch.md) verbatim. **In particular, the open-PRs query MUST include `reviewThreads` and `latestReviews` and `timelineItems`** — without those, the `is_engaged` predicate is undercounted and untriaged numbers blow up artificially. (Earlier iterations of `fetch.md` claimed those fields were not needed for stats; that was a documentation bug and has been corrected.)
+- Implement ALL 11 sections per [`render.md`](../../skills/pr-management-stats/render.md). Skipping panels (e.g. dropping the line charts, CODEOWNERS table, triager-activity table) is **not** an acceptable simplification.
 - If panel data is unavailable, the panel renders a stub with a one-line explanation of WHY the data is missing — never omit a section silently.
 
 ## Parity implementations
@@ -163,9 +163,9 @@ welcome to add additional parity implementations.
 
 ## Cross-references
 
-- [`pr-management-stats/SKILL.md`](../../.claude/skills/pr-management-stats/SKILL.md) — skill entry point.
-- [`pr-management-stats/classify.md`](../../.claude/skills/pr-management-stats/classify.md) — `is_engaged` / `is_triaged` / `is_untriaged` predicates.
-- [`pr-management-stats/fetch.md`](../../.claude/skills/pr-management-stats/fetch.md) — GraphQL templates.
-- [`pr-management-stats/aggregate.md`](../../.claude/skills/pr-management-stats/aggregate.md) — per-panel computations.
-- [`pr-management-stats/render.md`](../../.claude/skills/pr-management-stats/render.md) — dashboard layout, recommendation rules.
+- [`pr-management-stats/SKILL.md`](../../skills/pr-management-stats/SKILL.md) — skill entry point.
+- [`pr-management-stats/classify.md`](../../skills/pr-management-stats/classify.md) — `is_engaged` / `is_triaged` / `is_untriaged` predicates.
+- [`pr-management-stats/fetch.md`](../../skills/pr-management-stats/fetch.md) — GraphQL templates.
+- [`pr-management-stats/aggregate.md`](../../skills/pr-management-stats/aggregate.md) — per-panel computations.
+- [`pr-management-stats/render.md`](../../skills/pr-management-stats/render.md) — dashboard layout, recommendation rules.
 - [`tools/dashboard-generator/`](../dashboard-generator/) — sibling reference implementation for `issue-reassess-stats`.

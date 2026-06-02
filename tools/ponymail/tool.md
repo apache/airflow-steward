@@ -250,10 +250,10 @@ git -C /absolute/path/to/comdev pull --ff-only
 ( cd /absolute/path/to/comdev/mcp/ponymail-mcp && npm install )
 ```
 
-The [`setup-isolated-setup-update`](../../.claude/skills/setup-isolated-setup-update/SKILL.md)
+The [`setup-isolated-setup-update`](../../skills/setup-isolated-setup-update/SKILL.md)
 skill surfaces a "behind `origin/main`" warning for the comdev
 checkout and prints the `git pull --ff-only` command; the read-only
-[`setup-isolated-setup-verify`](../../.claude/skills/setup-isolated-setup-verify/SKILL.md)
+[`setup-isolated-setup-verify`](../../skills/setup-isolated-setup-verify/SKILL.md)
 skill asserts the checkout is on `main` and not behind. Neither
 skill pulls for you — the fetch + fast-forward stays an explicit,
 user-run step.

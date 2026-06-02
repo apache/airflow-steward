@@ -38,7 +38,7 @@ project's Security Model (see
 [`security-model.md`](security-model.md)) rather than paraphrasing
 it.
 
-The [`security-issue-import`](../../.claude/skills/security-issue-import/SKILL.md)
+The [`security-issue-import`](../../skills/security-issue-import/SKILL.md)
 skill sends the *Confirmation of receiving the report* template
 verbatim on every new inbound report — that one is **load-bearing**
 and must exist before the skill is useful. The rest can be filled in

@@ -139,7 +139,7 @@ invocation with this opening protocol:
 
 A skill that does **not** yet support overrides documents
 that explicitly in its `SKILL.md`. The
-[`setup-steward override`](../../.claude/skills/setup-steward/overrides.md)
+[`setup-steward override`](../../skills/setup-steward/overrides.md)
 sub-action surfaces this gap and suggests opening a
 framework-side issue requesting the hook.
 
@@ -194,12 +194,12 @@ adopters), the right move is **a PR against the framework**:
 5. The adopter's now-redundant override gets deleted.
 
 The
-[`setup-steward override`](../../.claude/skills/setup-steward/overrides.md)
+[`setup-steward override`](../../skills/setup-steward/overrides.md)
 sub-action prompts the user about upstreaming on every
 override scaffold; the
-[`security-issue-fix`](../../.claude/skills/security-issue-fix/SKILL.md)
+[`security-issue-fix`](../../skills/security-issue-fix/SKILL.md)
 and
-[`pr-management-code-review`](../../.claude/skills/pr-management-code-review/SKILL.md)
+[`pr-management-code-review`](../../skills/pr-management-code-review/SKILL.md)
 skills know how to open a public PR — point them at the
 framework repo.
 
@@ -243,6 +243,6 @@ this by:
 
 ## Cross-references
 
-- [`setup-steward` skill](../../.claude/skills/setup-steward/SKILL.md) — the entry point that manages the snapshot + scaffolds overrides.
-- [`overrides.md` sub-action](../../.claude/skills/setup-steward/overrides.md) — interactive override creation.
+- [`setup-steward` skill](../../skills/setup-steward/SKILL.md) — the entry point that manages the snapshot + scaffolds overrides.
+- [`overrides.md` sub-action](../../skills/setup-steward/overrides.md) — interactive override creation.
 - [Top-level README](../../README.md) — adoption flow.

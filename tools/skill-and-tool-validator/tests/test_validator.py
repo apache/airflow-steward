@@ -549,7 +549,7 @@ class TestFindRepoRoot:
     def test_locates_root_from_validator_subtree(self, monkeypatch: pytest.MonkeyPatch) -> None:
         # Regression: the silent-pass bug fired only when CWD was inside the validator subtree.
         repo = Path(__file__).resolve().parents[3]
-        assert (repo / ".claude" / "skills").is_dir(), "test setup precondition"
+        assert (repo / "skills").is_dir(), "test setup precondition"
         monkeypatch.chdir(repo / "tools" / "skill-and-tool-validator")
         assert find_repo_root() == repo
 
@@ -578,7 +578,7 @@ class TestSubDocFiles:
         capability-sync check is satisfied — these tests are about sub-doc
         handling, not the sync check.
         """
-        skill_dir = root / ".claude" / "skills" / skill_name
+        skill_dir = root / "skills" / skill_name
         skill_dir.mkdir(parents=True)
         (skill_dir / "SKILL.md").write_text(
             f"---\nname: {skill_name}\ndescription: bar\ncapability: capability:setup\nlicense: Apache-2.0\n---\n# body\n",
@@ -853,7 +853,7 @@ class TestTriggerPreservation:
         except (subprocess.CalledProcessError, FileNotFoundError):
             pytest.skip("git not available")
 
-        skills_dir = tmp_path / ".claude" / "skills"
+        skills_dir = tmp_path / "skills"
         skills_dir.mkdir(parents=True)
         skill = skills_dir / "demo" / "SKILL.md"
         skill.parent.mkdir()
@@ -1648,13 +1648,13 @@ class TestPrivacyPatternP6:
 
 
 def _skill_root(tmp_path: Path) -> Path:
-    """Create a minimal repo tree with .claude/skills/ and return the root.
+    """Create a minimal repo tree with skills/ and return the root.
 
     Also seeds an empty ``docs/labels-and-capabilities.md`` so the
     capability-sync check doesn't fire its "missing doc" violation in
     tests that don't exercise the sync check directly.
     """
-    skills = tmp_path / ".claude" / "skills"
+    skills = tmp_path / "skills"
     skills.mkdir(parents=True)
     docs = tmp_path / "docs"
     docs.mkdir(parents=True, exist_ok=True)
@@ -1731,7 +1731,7 @@ class TestIsPathAllowlisted:
         assert is_path_allowlisted(Path(".github/workflows/ci.yml")) is True
 
     def test_skill_file_is_not_allowlisted(self) -> None:
-        assert is_path_allowlisted(Path(".claude/skills/my-skill/SKILL.md")) is False
+        assert is_path_allowlisted(Path("skills/my-skill/SKILL.md")) is False
 
     def test_arbitrary_doc_file_is_not_allowlisted(self) -> None:
         assert is_path_allowlisted(Path("docs/my-feature.md")) is False
@@ -1745,7 +1745,7 @@ class TestIsPathAllowlisted:
 class TestCollectFilesToCheck:
     def test_returns_md_files_under_skills_dir(self, tmp_path: Path) -> None:
         root = _skill_root(tmp_path)
-        skill = root / ".claude" / "skills" / "my-skill"
+        skill = root / "skills" / "my-skill"
         skill.mkdir()
         (skill / "SKILL.md").write_text("content")
         (skill / "other.md").write_text("content")
@@ -1760,7 +1760,7 @@ class TestCollectFilesToCheck:
 
     def test_does_not_return_non_md_files(self, tmp_path: Path) -> None:
         root = _skill_root(tmp_path)
-        skill = root / ".claude" / "skills" / "my-skill"
+        skill = root / "skills" / "my-skill"
         skill.mkdir()
         (skill / "SKILL.md").write_text("content")
         (skill / "config.toml").write_text("[tool]")
@@ -1770,7 +1770,7 @@ class TestCollectFilesToCheck:
 
     def test_recurses_into_nested_subdirectories(self, tmp_path: Path) -> None:
         root = _skill_root(tmp_path)
-        nested = root / ".claude" / "skills" / "skill-a" / "subdir"
+        nested = root / "skills" / "skill-a" / "subdir"
         nested.mkdir(parents=True)
         (nested / "extra.md").write_text("content")
 
@@ -1787,7 +1787,7 @@ class TestCollectSkillDirs:
     def test_returns_immediate_child_dirs(self, tmp_path: Path) -> None:
         root = _skill_root(tmp_path)
         for name in ("skill-a", "skill-b"):
-            (root / ".claude" / "skills" / name).mkdir()
+            (root / "skills" / name).mkdir()
 
         dirs = collect_skill_dirs(root)
         names = {d.name for d in dirs}
@@ -1799,7 +1799,7 @@ class TestCollectSkillDirs:
 
     def test_does_not_return_files_only_dirs(self, tmp_path: Path) -> None:
         root = _skill_root(tmp_path)
-        base = root / ".claude" / "skills"
+        base = root / "skills"
         (base / "skill-a").mkdir()
         (base / "loose-file.md").write_text("content")
 
@@ -1809,7 +1809,7 @@ class TestCollectSkillDirs:
 
     def test_returns_resolved_absolute_paths(self, tmp_path: Path) -> None:
         root = _skill_root(tmp_path)
-        (root / ".claude" / "skills" / "skill-a").mkdir()
+        (root / "skills" / "skill-a").mkdir()
 
         dirs = collect_skill_dirs(root)
         assert all(d.is_absolute() for d in dirs)
@@ -1864,10 +1864,10 @@ class TestCollectDocFiles:
 
 
 def _make_valid_skill(root: Path, name: str) -> Path:
-    """Write a minimal valid SKILL.md under .claude/skills/<name>/ and add a
+    """Write a minimal valid SKILL.md under skills/<name>/ and add a
     matching row to docs/labels-and-capabilities.md so the capability-sync
     check stays satisfied."""
-    skill_dir = root / ".claude" / "skills" / name
+    skill_dir = root / "skills" / name
     skill_dir.mkdir(parents=True, exist_ok=True)
     (skill_dir / "SKILL.md").write_text(
         f"---\nname: {name}\ndescription: A test skill.\ncapability: capability:setup\nlicense: Apache-2.0\n---\n# Body\nSome content.\n"
@@ -1904,7 +1904,7 @@ class TestMain:
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
     ) -> None:
         root = _skill_root(tmp_path)
-        skill_dir = root / ".claude" / "skills" / "bad-skill"
+        skill_dir = root / "skills" / "bad-skill"
         skill_dir.mkdir(parents=True)
         # Missing required frontmatter keys → hard violation
         (skill_dir / "SKILL.md").write_text("# No frontmatter\n")
@@ -1918,7 +1918,7 @@ class TestMain:
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         root = _skill_root(tmp_path)
-        skill_dir = root / ".claude" / "skills" / "bad-skill"
+        skill_dir = root / "skills" / "bad-skill"
         skill_dir.mkdir(parents=True)
         (skill_dir / "SKILL.md").write_text("# No frontmatter\n")
         monkeypatch.chdir(root)
@@ -1931,7 +1931,7 @@ class TestMain:
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         root = _skill_root(tmp_path)
-        skill_dir = root / ".claude" / "skills" / "soft-skill"
+        skill_dir = root / "skills" / "soft-skill"
         skill_dir.mkdir(parents=True)
         # A --body "..." in a fenced block triggers a SOFT security-pattern-9 warning.
         (skill_dir / "SKILL.md").write_text(
@@ -1963,10 +1963,10 @@ class TestMain:
 
 
 def _make_tools_root(tmp_path: Path) -> Path:
-    """Create a minimal repo layout: <tmp>/tools/ + <tmp>/.claude/skills/."""
+    """Create a minimal repo layout: <tmp>/tools/ + <tmp>/skills/."""
     root = tmp_path / "repo"
     (root / "tools").mkdir(parents=True)
-    (root / ".claude" / "skills").mkdir(parents=True)
+    (root / "skills").mkdir(parents=True)
     return root
 
 
@@ -2049,7 +2049,7 @@ def _seed_capability_repo(
     """
     root = tmp_path / "repo"
     (root / "docs").mkdir(parents=True)
-    (root / ".claude" / "skills").mkdir(parents=True)
+    (root / "skills").mkdir(parents=True)
     (root / "tools").mkdir(parents=True)
 
     skill_rows = "\n".join(f"| `{n}` | `{c}` |" for n, c in doc_skills.items())
@@ -2068,7 +2068,7 @@ def _seed_capability_repo(
     (root / "docs" / "labels-and-capabilities.md").write_text(doc_body)
 
     for skill, cap in live_skills.items():
-        d = root / ".claude" / "skills" / skill
+        d = root / "skills" / skill
         d.mkdir()
         (d / "SKILL.md").write_text(
             f"---\nname: {skill}\ndescription: test\ncapability: {cap}\nlicense: Apache-2.0\n---\n"
@@ -2156,7 +2156,7 @@ class TestValidateCapabilitySync:
         # The token inside *( ... )* must NOT count as a declared capability.
         root = tmp_path / "repo"
         (root / "docs").mkdir(parents=True)
-        (root / ".claude" / "skills" / "alpha").mkdir(parents=True)
+        (root / "skills" / "alpha").mkdir(parents=True)
         doc = (
             "# Labels and capabilities\n\n"
             "## Capability to skill map\n\n"
@@ -2168,7 +2168,7 @@ class TestValidateCapabilitySync:
             "|---|---|---|\n"
         )
         (root / "docs" / "labels-and-capabilities.md").write_text(doc)
-        (root / ".claude" / "skills" / "alpha" / "SKILL.md").write_text(
+        (root / "skills" / "alpha" / "SKILL.md").write_text(
             "---\nname: alpha\ndescription: test\ncapability: capability:intake\nlicense: Apache-2.0\n---\n"
         )
         (root / "tools").mkdir()

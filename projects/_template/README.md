@@ -92,7 +92,7 @@ the rest.
 
 ### Issue management
 
-These files configure the [`issue-*`](../../.claude/skills/) skill
+These files configure the [`issue-*`](../../skills/) skill
 family — per-issue triage, pool-level reassessment, reproducer
 extraction, fix drafting, and read-only stats. Adopters that do not
 use a general-issue tracker (or only run the security skills) can
@@ -108,9 +108,9 @@ delete this group.
 ### PR triage and review
 
 These files configure the
-[`pr-management-triage`](../../.claude/skills/pr-management-triage/SKILL.md),
-[`pr-management-stats`](../../.claude/skills/pr-management-stats/SKILL.md), and
-[`pr-management-code-review`](../../.claude/skills/pr-management-code-review/SKILL.md)
+[`pr-management-triage`](../../skills/pr-management-triage/SKILL.md),
+[`pr-management-stats`](../../skills/pr-management-stats/SKILL.md), and
+[`pr-management-code-review`](../../skills/pr-management-code-review/SKILL.md)
 skills. Adopters who only use the security skills can delete these
 four files; adopters running maintainer-side PR-queue management
 fill them in.

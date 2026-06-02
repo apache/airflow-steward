@@ -40,7 +40,7 @@
 # `pr-management-quick-merge` configuration (template)
 
 Per-project configuration for the
-[`pr-management-quick-merge`](../../.claude/skills/pr-management-quick-merge/SKILL.md)
+[`pr-management-quick-merge`](../../skills/pr-management-quick-merge/SKILL.md)
 skill. This is the **`_template` default**; new adopters copy it into their own
 `<project-config>/pr-management-quick-merge-config.md` and tune the thresholds
 and path globs for their repository layout.
@@ -62,14 +62,14 @@ the skill falls back to the default noted in its row.
 `real_ci_patterns` is **read from the shared
 [`<project-config>/pr-management-config.md`](pr-management-config.md)** — do not
 duplicate it here. The skill uses it for the
-[Real-CI guard](../../.claude/skills/pr-management-triage/classify-and-act.md#real-ci-guard)
+[Real-CI guard](../../skills/pr-management-triage/classify-and-act.md#real-ci-guard)
 in gate G2 so a SUCCESS rollup that comes only from bot checks
 (`Mergeable`/`DCO`/`boring-cyborg`) is not mistaken for green CI.
 
 ## Path globs
 
 Matched against repo-relative POSIX paths. Deny is evaluated first and wins
-(see [`candidate-rules.md` Path matching](../../.claude/skills/pr-management-quick-merge/candidate-rules.md#path-matching)).
+(see [`candidate-rules.md` Path matching](../../skills/pr-management-quick-merge/candidate-rules.md#path-matching)).
 
 ### `tier_a_allow_globs` — documentation / text only (highest confidence)
 
@@ -128,13 +128,13 @@ core/security/build change after only a skim. When unsure, add the path here.
 
 | Key | Default | Meaning |
 |---|---|---|
-| `merge_command_template` | `gh pr merge <N> --squash --repo <repo>` | The **copy-paste command the skill prints** next to each candidate for the maintainer to run *themselves*. The skill never executes it — it is presentation only (see [`SKILL.md` Golden rule 1](../../.claude/skills/pr-management-quick-merge/SKILL.md#golden-rules)). Set the merge method (`--squash` / `--merge` / `--rebase`) to your project's convention. |
+| `merge_command_template` | `gh pr merge <N> --squash --repo <repo>` | The **copy-paste command the skill prints** next to each candidate for the maintainer to run *themselves*. The skill never executes it — it is presentation only (see [`SKILL.md` Golden rule 1](../../skills/pr-management-quick-merge/SKILL.md#golden-rules)). Set the merge method (`--squash` / `--merge` / `--rebase`) to your project's convention. |
 
 ## Approve action
 
 The skill's one permitted mutation is an APPROVE review, submitted only on the
 maintainer's explicit per-PR confirmation (see
-[`SKILL.md` Step 3b](../../.claude/skills/pr-management-quick-merge/SKILL.md#step-3b--optional-approve-action)).
+[`SKILL.md` Step 3b](../../skills/pr-management-quick-merge/SKILL.md#step-3b--optional-approve-action)).
 
 | Key | Default | Meaning |
 |---|---|---|

@@ -16,7 +16,7 @@
 # TODO: `<Project Name>` — good-first-issue authoring configuration
 
 This file configures the
-[`good-first-issue-author`](../../.claude/skills/good-first-issue-author/SKILL.md)
+[`good-first-issue-author`](../../skills/good-first-issue-author/SKILL.md)
 skill (Mentoring, `experimental`). Copy it into your own
 `<project-config>/good-first-issue-config.md` and replace every
 `<placeholder>` with your project's value. If a required key is missing,

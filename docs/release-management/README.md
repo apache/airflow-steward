@@ -116,7 +116,7 @@ Two non-negotiable boundaries cross every Drafting skill above:
   Manager's private signing key.** Steps 3, 4, 10 emit paste-ready
   recipes; the RM runs every signing or `svn commit` operation as
   themselves. This mirrors
-  [`security-cve-allocate`](../../.claude/skills/security-cve-allocate/SKILL.md)
+  [`security-cve-allocate`](../../skills/security-cve-allocate/SKILL.md)
   (Vulnogram URL + paste-ready JSON, human submits) and satisfies
   [RFC-AI-0004 Principle 1](../rfcs/RFC-AI-0004.md#principle-1--human-in-the-loop-on-every-state-change).
 - **The agent never publishes the release.** Steps 10

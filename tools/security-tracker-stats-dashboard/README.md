@@ -38,7 +38,7 @@ issues, comments, labels, or PRs. It only fetches data via `gh` and
 renders an HTML file.
 
 The companion agentic skill at
-[`.claude/skills/security-tracker-stats-dashboard/SKILL.md`](../../.claude/skills/security-tracker-stats-dashboard/SKILL.md)
+[`.claude/skills/security-tracker-stats-dashboard/SKILL.md`](../../skills/security-tracker-stats-dashboard/SKILL.md)
 wraps this tool and surfaces it through Claude Code's slash-command
 interface; both routes (script-only and skill-driven) run the same
 fetch + render pipeline.

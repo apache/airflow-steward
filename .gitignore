@@ -5,6 +5,10 @@ logs
 .build
 .claude/worktrees/
 .claude/settings.local.json
+# Skill source lives in skills/; .claude/skills/ holds only
+# gitignored self-adoption symlinks (a maintainer adopts the
+# framework into itself to make the skills active locally).
+.claude/skills/
 
 # macOS
 .DS_Store

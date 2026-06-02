@@ -89,13 +89,13 @@ GitHub Discussions / none).
 
 The skills that consume this contract today are:
 
-- [`security-issue-import`](../../.claude/skills/security-issue-import/SKILL.md)
+- [`security-issue-import`](../../skills/security-issue-import/SKILL.md)
   — PonyMail URL construction at receipt time (Step 5: per-month
   search URL + per-thread permalink verification).
-- [`security-issue-sync`](../../.claude/skills/security-issue-sync/SKILL.md)
+- [`security-issue-sync`](../../skills/security-issue-sync/SKILL.md)
   — Step 1c / 1e / 1h / 2b — thread lookup and advisory-published
   signal scan.
-- [`security-issue-invalidate`](../../.claude/skills/security-issue-invalidate/SKILL.md)
+- [`security-issue-invalidate`](../../skills/security-issue-invalidate/SKILL.md)
   — relay-thread search for the closing-reply step.
 
 ## Interface

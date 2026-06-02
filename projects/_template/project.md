@@ -36,7 +36,7 @@
 # TODO: `<Project Name>` — project manifest
 
 This is the **project configuration** for `TODO: <project-name>`.
-Every skill under [`../../.claude/skills/`](../../.claude/skills/)
+Every skill under [`../../.claude/skills/`](../../skills/)
 reads the project name from `<project-config>/project.md` and then loads this manifest to resolve project-specific identity,
 repositories, mailing lists, and references to the other files in
 this directory.

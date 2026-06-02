@@ -48,7 +48,7 @@ repos:
         # Skip the PR template — GitHub pre-populates a new PR description
         # with the template verbatim, so a TOC block becomes per-PR noise the
         # contributor has to delete by hand.
-        exclude: ^(\.claude/skills/.*|tools/cve-tool-vulnogram/generate-cve-json/SKILL\.md|tools/skill-evals/.*|tools/spec-loop/.*|\.github/PULL_REQUEST_TEMPLATE\.md)$
+        exclude: ^(skills/.*|tools/cve-tool-vulnogram/generate-cve-json/SKILL\.md|tools/skill-evals/.*|tools/spec-loop/.*|\.github/PULL_REQUEST_TEMPLATE\.md)$
         args:
           - "--maxlevel"
           - "3"
@@ -95,7 +95,7 @@ repos:
         name: check-placeholders
         language: system
         entry: tools/dev/check-placeholders.sh
-        files: ^(\.claude/skills/.*|tools/.*)\.(md|sh|py|yaml|yml|toml)$
+        files: ^(skills/.*|tools/.*)\.(md|sh|py|yaml|yml|toml)$
         pass_filenames: false
   # Workspace-membership guard. The single source of truth for
   # which Python projects get pre-commit hooks + the CI pytest
@@ -151,7 +151,7 @@ repos:
         files: ^(tools/[^/]+(/[^/]+)?/(src|tests|pyproject\.toml)|pyproject\.toml|tools/dev/run-workspace-check\.sh)
         pass_filenames: false
 
-  # Validate `.claude/skills/**`, every `tools/<name>/README.md`, and the
+  # Validate `skills/**`, every `tools/<name>/README.md`, and the
   # `docs/labels-and-capabilities.md` taxonomy via the
   # `skill-and-tool-validate` CLI. Re-fires on validator-source changes so
   # rule updates get re-applied. The doc and tool-README triggers exist so
@@ -163,5 +163,5 @@ repos:
         name: skill-and-tool-validate (skills, tools, capability sync)
         language: system
         entry: uv run --project tools/skill-and-tool-validator skill-and-tool-validate
-        files: ^(\.claude/skills/.*\.md|tools/[^/]+/README\.md|docs/labels-and-capabilities\.md|tools/skill-and-tool-validator/(src|pyproject\.toml))
+        files: ^(skills/.*\.md|tools/[^/]+/README\.md|docs/labels-and-capabilities\.md|tools/skill-and-tool-validator/(src|pyproject\.toml))
         pass_filenames: false

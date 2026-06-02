@@ -61,7 +61,7 @@ for the canonical distribution mechanism we will adopt.
 
 The framework uses a **snapshot + agentic-override** adoption
 model. An adopter project commits a single skill —
-[`setup-steward`](.claude/skills/setup-steward/SKILL.md) —
+[`setup-steward`](skills/setup-steward/SKILL.md) —
 into their repo. That skill manages everything else:
 
 1. **Snapshot.** `setup-steward` downloads the framework into
@@ -114,7 +114,7 @@ Each recipe is a single shell block that:
    `.apache-steward/` (gitignored — build artefact, not
    source).
 3. Copies the
-   [`setup-steward`](.claude/skills/setup-steward/SKILL.md)
+   [`setup-steward`](skills/setup-steward/SKILL.md)
    skill into your skills directory, matching your existing
    convention (flat `.claude/skills/<n>/` or the
    double-symlinked `.claude/skills/<n>` →
@@ -170,7 +170,7 @@ committed pin, refreshes the gitignored symlinks, and
 reconciles any agentic overrides — see
 [`docs/setup/install-recipes.md`](docs/setup/install-recipes.md)
 and
-[`.claude/skills/setup-steward/upgrade.md`](.claude/skills/setup-steward/upgrade.md)
+[`skills/setup-steward/upgrade.md`](skills/setup-steward/upgrade.md)
 for the full flow.
 
 ## Skill families

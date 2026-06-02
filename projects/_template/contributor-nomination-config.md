@@ -18,7 +18,7 @@
 # TODO: `<Project Name>` — contributor-nomination configuration
 
 Per-project configuration for the
-[`contributor-nomination`](../../.claude/skills/contributor-nomination/SKILL.md)
+[`contributor-nomination`](../../skills/contributor-nomination/SKILL.md)
 skill. Copy into your `<project-config>/` directory and replace
 every TODO.
 

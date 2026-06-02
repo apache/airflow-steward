@@ -69,19 +69,19 @@ do not act without human review.
 
 | Skill | Domain | Status |
 |---|---|---|
-| [`pr-management-triage`](../.claude/skills/pr-management-triage/SKILL.md) | Generic PR queue triage. | experimental |
-| [`pr-management-stats`](../.claude/skills/pr-management-stats/SKILL.md) | PR-queue reporting (supports triage decisions). | experimental |
-| [`pr-management-code-review`](../.claude/skills/pr-management-code-review/SKILL.md) | Maintainer-facing deep code review. | experimental |
-| [`issue-triage`](../.claude/skills/issue-triage/SKILL.md) | General-issue-tracker triage (per-issue classification + disposition proposal). | experimental |
-| [`issue-reassess`](../.claude/skills/issue-reassess/SKILL.md) | Pool-level sweep of resolved / EOL issues for re-assessment. | experimental |
-| [`contributor-nomination`](../.claude/skills/contributor-nomination/SKILL.md) | Nomination-readiness brief for a named contributor — activity breadth, consistency, and evidence prose for a committer or PMC thread. | experimental |
-| [`security-issue-import`](../.claude/skills/security-issue-import/SKILL.md) | Inbound security-report classification + initial routing. | stable |
-| [`security-issue-import-from-pr`](../.claude/skills/security-issue-import-from-pr/SKILL.md) | Open a tracker from a security-relevant public PR. | stable |
-| [`security-issue-import-from-md`](../.claude/skills/security-issue-import-from-md/SKILL.md) | Bulk-import findings from a markdown report. | stable |
-| [`security-issue-deduplicate`](../.claude/skills/security-issue-deduplicate/SKILL.md) | Merge two trackers describing the same root-cause vulnerability. | stable |
-| [`security-issue-invalidate`](../.claude/skills/security-issue-invalidate/SKILL.md) | Close a tracker as invalid with a polite-but-firm reporter reply. | stable |
-| [`security-issue-sync`](../.claude/skills/security-issue-sync/SKILL.md) | Reconcile a tracker against its mail thread, fix PR, release train, and archives. | stable |
-| [`security-cve-allocate`](../.claude/skills/security-cve-allocate/SKILL.md) | Allocate a CVE for a tracker (Vulnogram URL + paste-ready JSON). | stable |
+| [`pr-management-triage`](../skills/pr-management-triage/SKILL.md) | Generic PR queue triage. | experimental |
+| [`pr-management-stats`](../skills/pr-management-stats/SKILL.md) | PR-queue reporting (supports triage decisions). | experimental |
+| [`pr-management-code-review`](../skills/pr-management-code-review/SKILL.md) | Maintainer-facing deep code review. | experimental |
+| [`issue-triage`](../skills/issue-triage/SKILL.md) | General-issue-tracker triage (per-issue classification + disposition proposal). | experimental |
+| [`issue-reassess`](../skills/issue-reassess/SKILL.md) | Pool-level sweep of resolved / EOL issues for re-assessment. | experimental |
+| [`contributor-nomination`](../skills/contributor-nomination/SKILL.md) | Nomination-readiness brief for a named contributor — activity breadth, consistency, and evidence prose for a committer or PMC thread. | experimental |
+| [`security-issue-import`](../skills/security-issue-import/SKILL.md) | Inbound security-report classification + initial routing. | stable |
+| [`security-issue-import-from-pr`](../skills/security-issue-import-from-pr/SKILL.md) | Open a tracker from a security-relevant public PR. | stable |
+| [`security-issue-import-from-md`](../skills/security-issue-import-from-md/SKILL.md) | Bulk-import findings from a markdown report. | stable |
+| [`security-issue-deduplicate`](../skills/security-issue-deduplicate/SKILL.md) | Merge two trackers describing the same root-cause vulnerability. | stable |
+| [`security-issue-invalidate`](../skills/security-issue-invalidate/SKILL.md) | Close a tracker as invalid with a polite-but-firm reporter reply. | stable |
+| [`security-issue-sync`](../skills/security-issue-sync/SKILL.md) | Reconcile a tracker against its mail thread, fix PR, release train, and archives. | stable |
+| [`security-cve-allocate`](../skills/security-cve-allocate/SKILL.md) | Allocate a CVE for a tracker (Vulnogram URL + paste-ready JSON). | stable |
 | `release-verify-rc` | Read-only pre-flight on a staged RC: signatures against project KEYS, checksums, license headers (Apache RAT), NOTICE/LICENSE diff, no prohibited binaries, version-string consistency. Doubles as a Pairing-mode skill voters run in their own dev loop. | proposed |
 | `release-vote-tally` | Parse a `[VOTE]` thread, classify each reply (+1 / 0 / -1) binding vs non-binding against the PMC roster, propose `[RESULT] [VOTE]`. Conservative on ambiguous votes, refuses to count. | proposed |
 | `release-archive-sweep` | Scan `dist/release/<project>/`, identify releases past retention, propose the `svn mv` sequence to `archive.apache.org`. | proposed |
@@ -117,8 +117,8 @@ choices were reviewable independently from the runtime behaviour.
 
 | Skill | Purpose | Status |
 |---|---|---|
-| [`pr-management-mentor`](../.claude/skills/pr-management-mentor/SKILL.md) | Draft a teaching-register comment on a single GitHub issue or PR thread; waits for maintainer confirmation before posting. | experimental |
-| [`good-first-issue-author`](../.claude/skills/good-first-issue-author/SKILL.md) | Draft one net-new good first issue from a supplied gap or small task (suitability gate + readiness checklist); waits for maintainer confirmation before filing. | experimental |
+| [`pr-management-mentor`](../skills/pr-management-mentor/SKILL.md) | Draft a teaching-register comment on a single GitHub issue or PR thread; waits for maintainer confirmation before posting. | experimental |
+| [`good-first-issue-author`](../skills/good-first-issue-author/SKILL.md) | Draft one net-new good first issue from a supplied gap or small task (suitability gate + readiness checklist); waits for maintainer confirmation before filing. | experimental |
 
 | Doc | Purpose |
 |---|---|
@@ -130,11 +130,11 @@ The prototype ships flagged `mode: Mentoring` + `experimental`. Shape
 may change as adopter pilots and contributor-sentiment evaluation land.
 The skill is read-only by default and never posts without explicit
 maintainer confirmation — see
-[`pr-management-mentor/SKILL.md`](../.claude/skills/pr-management-mentor/SKILL.md)
+[`pr-management-mentor/SKILL.md`](../skills/pr-management-mentor/SKILL.md)
 for the full contract.
 
 The closest existing surface is
-[`pr-management-triage/comment-templates.md`](../.claude/skills/pr-management-triage/comment-templates.md),
+[`pr-management-triage/comment-templates.md`](../skills/pr-management-triage/comment-templates.md),
 which carries Triage classification responses — informational,
 not pedagogical. It is **not** Mentoring.
 
@@ -148,8 +148,8 @@ the agent never merges its own work.
 
 | Skill | Domain | Status |
 |---|---|---|
-| [`security-issue-fix`](../.claude/skills/security-issue-fix/SKILL.md) | Draft a fix PR in `<upstream>` from a triaged, CVE-allocated tracker. | stable (security-only) |
-| [`issue-fix-workflow`](../.claude/skills/issue-fix-workflow/SKILL.md) | Draft a fix for a triaged general-issue-tracker issue (BUG or FEATURE-REQUEST). | experimental |
+| [`security-issue-fix`](../skills/security-issue-fix/SKILL.md) | Draft a fix PR in `<upstream>` from a triaged, CVE-allocated tracker. | stable (security-only) |
+| [`issue-fix-workflow`](../skills/issue-fix-workflow/SKILL.md) | Draft a fix for a triaged general-issue-tracker issue (BUG or FEATURE-REQUEST). | experimental |
 | `release-prepare` | Planning issue + version-bump / changelog / NOTICE / LICENSE prep PR (Steps 1-2). Also the post-release `-SNAPSHOT` bump (Step 14). | proposed |
 | `release-keys-sync` | Draft the `KEYS` diff for a new Release Manager (Step 3). Agent never holds the private key. | proposed |
 | `release-rc-cut` | Paste-ready command sequence: signed tag, build, detached signatures, checksums, `svn import` to `dist/dev/` (Steps 4-5). Agent never signs and never imports. | proposed |
@@ -206,8 +206,8 @@ write themselves.
 
 | Skill | Domain | Status |
 |---|---|---|
-| [`pairing-self-review`](../.claude/skills/pairing-self-review/SKILL.md) | Pre-flight self-review of local changes before opening a PR. Read-only; returns a structured report. | experimental |
-| [`pairing-multi-agent-review`](../.claude/skills/pairing-multi-agent-review/SKILL.md) | Fan a diff through three independent review passes (correctness, security, conventions) and merge findings. | experimental |
+| [`pairing-self-review`](../skills/pairing-self-review/SKILL.md) | Pre-flight self-review of local changes before opening a PR. Read-only; returns a structured report. | experimental |
+| [`pairing-multi-agent-review`](../skills/pairing-multi-agent-review/SKILL.md) | Fan a diff through three independent review passes (correctness, security, conventions) and merge findings. | experimental |
 
 **Sequencing.** Pairing ships before Auto-merge in the project's
 automation roadmap — full auto-merge of maintainer-driven changes
@@ -244,14 +244,14 @@ threads on their own.
 
 | Skill | Purpose |
 |---|---|
-| [`setup-steward`](../.claude/skills/setup-steward/SKILL.md) | Adopt the framework into an adopter repo; manage the snapshot, symlinks, and overrides. |
-| [`issue-reproducer`](../.claude/skills/issue-reproducer/SKILL.md) | Per-issue code extraction + execution; produces structured evidence. Read-only on the tracker. |
-| [`issue-reassess-stats`](../.claude/skills/issue-reassess-stats/SKILL.md) | Read-only dashboard over reassessment-campaign verdict.json files. |
-| [`setup-isolated-setup-install`](../.claude/skills/setup-isolated-setup-install/SKILL.md) | Install the credential-isolation sandbox harness. |
-| [`setup-isolated-setup-update`](../.claude/skills/setup-isolated-setup-update/SKILL.md) | Update pinned system tools (`bubblewrap`, `socat`, agent CLI) past the cooldown window. |
-| [`setup-isolated-setup-verify`](../.claude/skills/setup-isolated-setup-verify/SKILL.md) | Read-only health check of the sandbox harness. |
-| [`setup-override-upstream`](../.claude/skills/setup-override-upstream/SKILL.md) | Promote an adopter's local override into a framework PR. |
-| [`setup-shared-config-sync`](../.claude/skills/setup-shared-config-sync/SKILL.md) | Sync shared configuration across worktrees. |
+| [`setup-steward`](../skills/setup-steward/SKILL.md) | Adopt the framework into an adopter repo; manage the snapshot, symlinks, and overrides. |
+| [`issue-reproducer`](../skills/issue-reproducer/SKILL.md) | Per-issue code extraction + execution; produces structured evidence. Read-only on the tracker. |
+| [`issue-reassess-stats`](../skills/issue-reassess-stats/SKILL.md) | Read-only dashboard over reassessment-campaign verdict.json files. |
+| [`setup-isolated-setup-install`](../skills/setup-isolated-setup-install/SKILL.md) | Install the credential-isolation sandbox harness. |
+| [`setup-isolated-setup-update`](../skills/setup-isolated-setup-update/SKILL.md) | Update pinned system tools (`bubblewrap`, `socat`, agent CLI) past the cooldown window. |
+| [`setup-isolated-setup-verify`](../skills/setup-isolated-setup-verify/SKILL.md) | Read-only health check of the sandbox harness. |
+| [`setup-override-upstream`](../skills/setup-override-upstream/SKILL.md) | Promote an adopter's local override into a framework PR. |
+| [`setup-shared-config-sync`](../skills/setup-shared-config-sync/SKILL.md) | Sync shared configuration across worktrees. |
 
 These ship as a single **setup family** — see
 [`docs/setup/README.md`](setup/README.md).

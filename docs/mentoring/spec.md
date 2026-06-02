@@ -57,11 +57,11 @@ useful action*. Concretely, in scope:
 Out of scope:
 
 - *Reviewing code*. That is Triage's
-  [`pr-management-code-review`](../../.claude/skills/pr-management-code-review/SKILL.md)
+  [`pr-management-code-review`](../../skills/pr-management-code-review/SKILL.md)
   skill. Mentoring does not approve, request changes, or post inline
   diff comments.
 - *Triage routing*. That is Triage's
-  [`pr-management-triage`](../../.claude/skills/pr-management-triage/SKILL.md)
+  [`pr-management-triage`](../../skills/pr-management-triage/SKILL.md)
   skill. Mentoring does not assign labels, mark draft, or close PRs.
 - *Authoring fixes*. That is Drafting. Mentoring does not open PRs or
   edit code.
@@ -79,7 +79,7 @@ paths:
    warranted, drafts the comment, and waits for the maintainer
    to confirm before posting.
 2. **First-contact filter**. After
-   [`pr-management-triage`](../../.claude/skills/pr-management-triage/SKILL.md)
+   [`pr-management-triage`](../../skills/pr-management-triage/SKILL.md)
    classifies a PR as "first contributor, missing repro" (or
    equivalent triage flag), the maintainer can chain
    `/pr-management-mentor` on that PR. The two skills compose;
@@ -138,7 +138,7 @@ feeling managed.
 
 Every contributor-facing comment ends with the same footer
 convention used by
-[`pr-management-triage/comment-templates.md`](../../.claude/skills/pr-management-triage/comment-templates.md),
+[`pr-management-triage/comment-templates.md`](../../skills/pr-management-triage/comment-templates.md),
 adjusted to name the mentoring step rather than the triage
 step. The expansion lives in the adopter's
 `<project-config>/mentoring-config.md → ai_attribution_footer`.
@@ -210,7 +210,7 @@ built.
   the mode definition + responsible-AI framing.
 - [`docs/modes.md` § Mentoring](../modes.md#mentoring) —
   current implementation status (proposed).
-- [`.claude/skills/pr-management-triage/comment-templates.md`](../../.claude/skills/pr-management-triage/comment-templates.md) —
+- [`.claude/skills/pr-management-triage/comment-templates.md`](../../skills/pr-management-triage/comment-templates.md) —
   closest existing surface; informs the tone-footer convention
   but is not Mentoring.
 - [`AGENTS.md`](../../AGENTS.md) — repository-level rules every

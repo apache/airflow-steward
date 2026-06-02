@@ -21,7 +21,7 @@ should be the **bare description** — no project prefix, no
 redundant version suffix, no reporter-added tag like
 `[ Security Report ]`.
 
-The [`security-cve-allocate`](../../.claude/skills/security-cve-allocate/SKILL.md)
+The [`security-cve-allocate`](../../skills/security-cve-allocate/SKILL.md)
 skill reads this file for the exact strip cascade to apply to the
 tracker title before pasting it into the allocation form.
 

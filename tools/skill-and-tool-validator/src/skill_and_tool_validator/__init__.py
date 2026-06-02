@@ -18,7 +18,7 @@
 """Validate framework skill definitions.
 
 This module validates six aspects of every skill under
-.claude/skills/:
+skills/:
 
 1. YAML frontmatter — every SKILL.md must have a valid frontmatter
    block with required keys (name, description, license).
@@ -61,7 +61,7 @@ from pathlib import Path
 # Constants
 # ---------------------------------------------------------------------------
 
-SKILLS_DIR = Path(".claude/skills")
+SKILLS_DIR = Path("skills")
 TOOLS_DIR = Path("tools")
 DOCS_DIR = Path("docs")
 PROJECTS_TEMPLATE_DIR = Path("projects/_template")
@@ -1201,7 +1201,7 @@ def validate_injection_guard(path: Path, text: str) -> Iterable[Violation]:
 
 
 def find_repo_root(start: Path | None = None) -> Path:
-    """Walk up from *start* (or CWD) until ``.claude/skills/`` is found.
+    """Walk up from *start* (or CWD) until ``skills/`` is found.
 
     Defense in depth: lets the validator work even when the entry point
     runs from inside a subtree (e.g. ``uv run --directory``), which
@@ -1215,7 +1215,7 @@ def find_repo_root(start: Path | None = None) -> Path:
 
 
 def collect_files_to_check(root: Path | None = None) -> list[Path]:
-    """Return every .md file under .claude/skills/ that should be validated."""
+    """Return every .md file under skills/ that should be validated."""
     base = (root or find_repo_root()) / SKILLS_DIR
     if not base.exists():
         return []
@@ -1433,7 +1433,7 @@ def validate_capability_sync(root: Path | None = None) -> Iterable[Violation]:
                 doc_path,
                 None,
                 f"skill table row for '{name}' but no live SKILL.md with a 'capability:' field "
-                f"found under .claude/skills/{name}/",
+                f"found under skills/{name}/",
                 category=CAPABILITY_SYNC_CATEGORY,
             )
             continue
@@ -1546,7 +1546,7 @@ def validate_lowercase_f_field(path: Path, text: str) -> Iterable[Violation]:
 
 
 def collect_skill_dirs(root: Path | None = None) -> set[Path]:
-    """Return the set of skill directories (immediate children of .claude/skills)."""
+    """Return the set of skill directories (immediate children of skills)."""
     base = (root or find_repo_root()) / SKILLS_DIR
     if not base.exists():
         return set()

@@ -18,12 +18,12 @@
 **Capability:** capability:setup
 
 Runnable cross-family probe scripts that the
-[`issue-reproducer`](../../.claude/skills/issue-reproducer/SKILL.md)
+[`issue-reproducer`](../../skills/issue-reproducer/SKILL.md)
 skill copies from when its Step 9 (optional cross-family probe)
 runs against an issue.
 
 The probe pattern, contract, and recording schema are in the
-skill's [`probe-templates.md`](../../.claude/skills/issue-reproducer/probe-templates.md)
+skill's [`probe-templates.md`](../../skills/issue-reproducer/probe-templates.md)
 companion. This directory holds runtime-specific reference
 implementations.
 
@@ -94,9 +94,9 @@ loads templates that exist.
 
 ## Cross-references
 
-- [`issue-reproducer/probe-templates.md`](../../.claude/skills/issue-reproducer/probe-templates.md) —
+- [`issue-reproducer/probe-templates.md`](../../skills/issue-reproducer/probe-templates.md) —
   the skill-side procedural detail.
-- [`issue-reproducer/verdict-composition.md`](../../.claude/skills/issue-reproducer/verdict-composition.md) —
+- [`issue-reproducer/verdict-composition.md`](../../skills/issue-reproducer/verdict-composition.md) —
   schema for the `cross_type_probe` and `operator_variants_probe`
   sub-objects.
 - [`<project-config>/reproducer-conventions.md`](../../projects/_template/reproducer-conventions.md) —

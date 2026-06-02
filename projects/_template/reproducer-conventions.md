@@ -15,9 +15,9 @@
 
 # TODO: `<Project Name>` — reproducer evidence-package layout
 
-Directory layout used by [`issue-reproducer`](../../.claude/skills/issue-reproducer/SKILL.md)
+Directory layout used by [`issue-reproducer`](../../skills/issue-reproducer/SKILL.md)
 when writing per-issue evidence packages, and consumed by
-[`issue-reassess-stats`](../../.claude/skills/issue-reassess-stats/SKILL.md)
+[`issue-reassess-stats`](../../skills/issue-reassess-stats/SKILL.md)
 for campaign-level aggregation.
 
 ## Campaign directory layout
@@ -45,7 +45,7 @@ Substitute:
 
 ## Optional probe files
 
-When a [cross-family probe](../../.claude/skills/issue-reproducer/probe-templates.md)
+When a [cross-family probe](../../skills/issue-reproducer/probe-templates.md)
 was run alongside the reproducer, also persist:
 
 ```text
@@ -77,5 +77,5 @@ introduces moving targets.
   reproducer is executed.
 - [`reassess-pool-defaults.md`](reassess-pool-defaults.md) — named
   pools that surface candidates for evidence packages.
-- [`issue-reproducer/verdict-composition.md`](../../.claude/skills/issue-reproducer/verdict-composition.md) —
+- [`issue-reproducer/verdict-composition.md`](../../skills/issue-reproducer/verdict-composition.md) —
   the `verdict.json` schema.

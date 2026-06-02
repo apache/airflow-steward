@@ -20,7 +20,7 @@
 This file lists the **private scanner products** whose name must
 not appear in any public CVE surface for this project, and
 declares the **finder-anonymisation policy** the
-[`security-issue-sync`](../../.claude/skills/security-issue-sync/SKILL.md)
+[`security-issue-sync`](../../skills/security-issue-sync/SKILL.md)
 skill applies during sync.
 
 The CVE-JSON generator reads three body fields verbatim into
@@ -123,7 +123,7 @@ normal proposal flow.
 ## Related rules
 
 - The anonymise rule is one of **six pre-push hygiene gates**
-  in [Step 5b 1b](../../.claude/skills/security-issue-sync/apply-and-push.md#decision-flow)
+  in [Step 5b 1b](../../skills/security-issue-sync/apply-and-push.md#decision-flow)
   of the `security-issue-sync` skill. The other five are
   title cleanup, upgrade-target version, trigger conditions,
   incomplete-fix cross-CVE clause, and CWE long-form

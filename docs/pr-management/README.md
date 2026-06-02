@@ -44,9 +44,9 @@ wording, CI-check → doc-URL map, review-criteria source files).
 
 | Skill | Purpose |
 |---|---|
-| [`pr-management-triage`](../../.claude/skills/pr-management-triage/SKILL.md) | First-pass triage. Successor to `breeze pr auto-triage`. |
-| [`pr-management-stats`](../../.claude/skills/pr-management-stats/SKILL.md) | Read-only summary tables grouped by area label. |
-| [`pr-management-code-review`](../../.claude/skills/pr-management-code-review/SKILL.md) | Deep code review, one PR at a time. |
+| [`pr-management-triage`](../../skills/pr-management-triage/SKILL.md) | First-pass triage. Successor to `breeze pr auto-triage`. |
+| [`pr-management-stats`](../../skills/pr-management-stats/SKILL.md) | Read-only summary tables grouped by area label. |
+| [`pr-management-code-review`](../../skills/pr-management-code-review/SKILL.md) | Deep code review, one PR at a time. |
 
 ## Adopter contract
 

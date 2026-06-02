@@ -18,7 +18,7 @@
 
 This file is the **navigation map** for your adopter project's
 review criteria — the source files the
-[`pr-management-code-review`](../../.claude/skills/pr-management-code-review/SKILL.md)
+[`pr-management-code-review`](../../skills/pr-management-code-review/SKILL.md)
 skill reads when forming its findings.
 
 Copy this file into your own

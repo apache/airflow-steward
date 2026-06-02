@@ -16,14 +16,14 @@
 # TODO: `<Project Name>` — pr-management-triage comment templates
 
 This file is the **per-project comment-body library** for the
-[`pr-management-triage`](../../.claude/skills/pr-management-triage/SKILL.md) skill.
+[`pr-management-triage`](../../skills/pr-management-triage/SKILL.md) skill.
 It supplies the project-specific values the framework needs to
 render its default template bodies — project URLs, the
 AI-attribution footer wording, and the project display name —
 plus any template body the project intentionally overrides.
 
 The framework's
-[`comment-templates.md`](../../.claude/skills/pr-management-triage/comment-templates.md)
+[`comment-templates.md`](../../skills/pr-management-triage/comment-templates.md)
 ships the default bodies for every triage template; the skill
 reads this file for the URLs / wording and renders the
 framework defaults with them. **Do not duplicate the framework
@@ -94,7 +94,7 @@ table (`<project_display_name>` and
 Leave this section empty unless your project needs a body
 that differs from the framework default for a specific
 template. The framework's
-[`comment-templates.md`](../../.claude/skills/pr-management-triage/comment-templates.md)
+[`comment-templates.md`](../../skills/pr-management-triage/comment-templates.md)
 documents every template with its default body and the
 placeholder-resolution contract — the skill picks the
 default automatically.
