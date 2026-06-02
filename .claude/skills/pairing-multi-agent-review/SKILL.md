@@ -20,6 +20,7 @@ when_to_use: |
   Skip when a quick single-pass review suffices — use `pairing-self-review`
   instead.
 argument-hint: "[base:<ref>] [staged] [path:<glob>]"
+capability: capability:review
 license: Apache-2.0
 ---
 <!-- SPDX-License-Identifier: Apache-2.0
