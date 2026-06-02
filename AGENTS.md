@@ -99,6 +99,7 @@ Repo-root files:
 - [`projects/_template/`](projects/_template/) — bootstrap scaffold for a new adopter's `<project-config>/`.
 - [`tools/<name>/`](tools/) — tool adapters (GitHub operations, issue-template schema, project-board GraphQL, …) for the external tools the skills invoke.
 - [`skills/<name>/SKILL.md`](skills/) — the agentic workflows.
+- [`.claude/skills/setup-steward/`](.claude/skills/setup-steward/) — a **transition migration shim**, deliberately committed (un-ignored) at the legacy path so it ships in the snapshot. It is the only artefact that still carries the `steward` name; its sole job is to migrate a pre-Magpie adopter to the `magpie-` layout (see its [`SKILL.md`](.claude/skills/setup-steward/SKILL.md)). **Do not delete it** until the framework drops pre-Magpie migration support.
 
 There is no source code to build or test in this framework
 repository itself. Adopting projects may include project-specific
@@ -292,8 +293,8 @@ this order, **first match wins**:
 | # | Location | When to use |
 |---|---|---|
 | 1 | Path in `$APACHE_STEWARD_USER_CONFIG` (env var) | Power-user / CI / isolated test setups that need to point at a specific config without touching disk conventions. Wins over both defaults below. |
-| 2 | `~/.config/apache-steward/user.md` | **Recommended default for new adopters.** Per-user, OS-conventional. One file shared across every worktree of every adopter project on the machine — so the operator has one identity-and-tool-picks config, not one per tracker repo and not one per worktree. |
-| 3 | `<project-config>/user.md` | Per-project fallback, kept for backward compatibility with adopters who set up `user.md` inside their tracker repo before `~/.config/apache-steward/` existed as the canonical location. Future adopters should prefer (2); existing adopters keep working without action. |
+| 2 | `~/.config/apache-magpie/user.md` | **Recommended default for new adopters.** Per-user, OS-conventional. One file shared across every worktree of every adopter project on the machine — so the operator has one identity-and-tool-picks config, not one per tracker repo and not one per worktree. |
+| 3 | `<project-config>/user.md` | Per-project fallback, kept for backward compatibility with adopters who set up `user.md` inside their tracker repo before `~/.config/apache-magpie/` existed as the canonical location. Future adopters should prefer (2); existing adopters keep working without action. |
 
 Skills must consult locations (1) → (2) → (3) and use the first
 file that exists. Do **not** merge across locations; the first
@@ -304,7 +305,7 @@ per the order above. The legacy phrasing
 *"… or whichever location wins per the resolution order"*.
 
 The cross-worktree story falls out of (2): every worktree of every
-adopter resolves to the same `~/.config/apache-steward/user.md`,
+adopter resolves to the same `~/.config/apache-magpie/user.md`,
 so per-user fields (apache_id, GitHub handle, PMC status, local
 clone path) stay coherent without symlinks, pre-commit hooks, or
 per-worktree bootstrap. The framework does **not** itself manage
@@ -441,10 +442,10 @@ pinned per-tool with a 7-day default upstream cooldown).
 **Tool credentials live under `$HOME`, never in the project tree.**
 Any persistent token, API key, OAuth refresh token, or session
 cookie a framework tool needs goes under a well-known home-directory
-path — `~/.config/apache-steward/<tool>` for tools the framework
+path — `~/.config/apache-magpie/<tool>` for tools the framework
 owns, or whatever upstream convention the third-party tool already
 uses. The existing exemplars: Gmail OAuth at
-`~/.config/apache-steward/gmail-oauth.json` (see
+`~/.config/apache-magpie/gmail-oauth.json` (see
 [`tools/gmail/oauth-draft/src/oauth_draft/credentials.py`](tools/gmail/oauth-draft/src/oauth_draft/credentials.py)),
 PonyMail session cookie at `~/.ponymail-mcp/session.json`, GitHub
 auth via `gh auth` (`~/.config/gh/`). Two reasons this is
@@ -792,7 +793,7 @@ individual is already a collaborator on the `<tracker>` repo
 identity is already public/known by their collaborator status
 and is **not** redacted — there is no privacy gain from masking
 them. The mapping from identifier to real value lives at
-`~/.config/apache-steward/pii-mapping.json` (per the home-dir
+`~/.config/apache-magpie/pii-mapping.json` (per the home-dir
 credentials rule in [Local setup](#local-setup)) and is never
 sent to any LLM. Reveal-to-real-name happens only at the
 outbound boundary, when a draft is being assembled. The contract

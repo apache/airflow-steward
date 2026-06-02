@@ -27,7 +27,7 @@ Optional flags:
 - ``--from-address``: address to bake into the credentials file.
   Defaults to ``$GMAIL_FROM`` env var, then ``git config user.email``.
 - ``--out``: output path for the credentials file. Defaults to
-  ``~/.config/apache-steward/gmail-oauth.json``.
+  ``~/.config/apache-magpie/gmail-oauth.json``.
 - ``--rm-client-secrets``: delete the input ``client_secrets.json``
   after a successful write. Off by default.
 

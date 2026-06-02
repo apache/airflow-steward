@@ -290,7 +290,7 @@ Before touching any candidate thread, verify:
    is approved per
    [`tools/privacy-llm/models.md`](../../tools/privacy-llm/models.md#the-pre-flight-check).
    In addition, verify:
-   - `~/.config/apache-steward/` is writable (the redactor's
+   - `~/.config/apache-magpie/` is writable (the redactor's
      mapping file lives there);
    - the configured collaborator source is reachable via
      `gh api` (default: `<tracker>` from `project.md`);

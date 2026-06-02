@@ -681,7 +681,7 @@ the **recipient** and the **body shape**.
    attachment; the opt-in `oauth_curl` backend is used when
    `tools.gmail.draft_backend: oauth_curl` is set and
    credentials are on disk (default path
-   `~/.config/apache-steward/gmail-oauth.json`).
+   `~/.config/apache-magpie/gmail-oauth.json`).
 5. **Existing-draft check.** Before drafting, scan the inbound
    thread for an existing pending draft per the
    [*Detecting drafts that already exist on a thread*](../../tools/gmail/draft-backends.md#detecting-drafts-that-already-exist-on-a-thread)

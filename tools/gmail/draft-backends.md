@@ -95,7 +95,7 @@ who has a credentials file on disk:
    - `tools.gmail.oauth_credentials_path` from
      `.apache-magpie-overrides/user.md` when set;
    - the `$GMAIL_OAUTH_CREDENTIALS` environment variable;
-   - the default path `~/.config/apache-steward/gmail-oauth.json`.
+   - the default path `~/.config/apache-magpie/gmail-oauth.json`.
 
    The probe is a single `test -f <path>` — actually parsing the file
    or doing a token-refresh probe at this stage would burn HTTP

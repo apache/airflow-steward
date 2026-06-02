@@ -47,7 +47,7 @@ agent's context, and `privacy-llm` is what stops it from leaking.
 
 | Capability | File | What it covers |
 |---|---|---|
-| PII redaction contract | [`pii.md`](pii.md) | Which fields are PII, the hash-prefixed identifier format (`N-a3f9d2`, `E-b8c247`, …), the local mapping store at `~/.config/apache-steward/pii-mapping.json`, the redact-then-reveal lifecycle. |
+| PII redaction contract | [`pii.md`](pii.md) | Which fields are PII, the hash-prefixed identifier format (`N-a3f9d2`, `E-b8c247`, …), the local mapping store at `~/.config/apache-magpie/pii-mapping.json`, the redact-then-reveal lifecycle. |
 | Approved-LLM registry | [`models.md`](models.md) | Which LLMs the framework treats as privacy-approved (Claude Code by default; anything at `*.apache.org`; local Ollama / vLLM; everything else opt-in), how to declare additions in `<project-config>/privacy-llm.md`, and what the pre-flight gate checks. |
 | Skill-wiring pattern | [`wiring.md`](wiring.md) | The canonical step-by-step pattern every `<security-list>`- or `<private-list>`-touching skill follows when applying the contract — Step 0 pre-flight, redact-after-fetch, reveal-before-send, plus edge cases. Skill `SKILL.md` files link here from their pre-flight section rather than copying the protocol. |
 | Per-project configuration | [`projects/_template/privacy-llm.md`](../../projects/_template/privacy-llm.md) | Template the adopter copies into `<project-config>/privacy-llm.md` to declare their LLM stack, private mailing-list set, collaborator source, and redaction-tuning knobs (collaborator exemption, enabled field types). Defaults are documented inline. |
@@ -138,6 +138,6 @@ Concrete invocation patterns are in
 | Symptom | Likely cause | Remediation |
 |---|---|---|
 | Skill refuses to run with "no approved privacy LLM configured" | Adopter has not yet written `<project-config>/privacy-llm.md`, or it lists no approved entries | Follow [`docs/setup/privacy-llm.md`](../../docs/setup/privacy-llm.md) — the default `Claude Code` entry is enough for the local-only case |
-| `pii-reveal` returns text with `N-a3f9d2`-style identifiers still in place | The mapping file at `~/.config/apache-steward/pii-mapping.json` was deleted, truncated, or moved | Re-fetch the source; the redactor regenerates identifiers deterministically from the raw values, but it cannot reverse identifiers it has no mapping for |
+| `pii-reveal` returns text with `N-a3f9d2`-style identifiers still in place | The mapping file at `~/.config/apache-magpie/pii-mapping.json` was deleted, truncated, or moved | Re-fetch the source; the redactor regenerates identifiers deterministically from the raw values, but it cannot reverse identifiers it has no mapping for |
 | `pii-redact` produces different identifiers across runs | Identifier format was changed (the framework bumped the hash length, or the prefix scheme) — see the version field in `pii-mapping.json` | Migration logic lives in the next framework version's release notes; until then keep the mapping file pinned |
 | Skill is meant to read `<security-list>` but is being gated by the approved-model pre-flight | Adopter has incorrectly classified `<security-list>` as private in `<project-config>/privacy-llm.md` | Remove `<security-list>` from the private-list set; PII redaction (which IS required for `<security-list>`) is independent of the gate |

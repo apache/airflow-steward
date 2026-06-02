@@ -16,7 +16,7 @@
 # under the License.
 """Local PII mapping store + identifier generation.
 
-The mapping file at ``~/.config/apache-steward/pii-mapping.json``
+The mapping file at ``~/.config/apache-magpie/pii-mapping.json``
 records ``identifier → {type, value}`` so :mod:`redactor.reveal`
 can reverse the substitution made by :mod:`redactor.redact`.
 Identifiers are deterministic (first 24 bits of
@@ -39,7 +39,7 @@ from collections.abc import Mapping
 
 MAPPING_VERSION = 1
 
-DEFAULT_MAPPING_DIR = pathlib.Path.home() / ".config" / "apache-steward"
+DEFAULT_MAPPING_DIR = pathlib.Path.home() / ".config" / "apache-magpie"
 DEFAULT_MAPPING_PATH = DEFAULT_MAPPING_DIR / "pii-mapping.json"
 ENV_MAPPING_PATH = "PII_MAPPING_PATH"
 

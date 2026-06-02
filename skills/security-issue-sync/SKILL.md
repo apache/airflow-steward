@@ -320,7 +320,7 @@ Before reading any tracker state, verify:
 
    Plus the rest of the pre-flight items in
    [`tools/privacy-llm/wiring.md`](../../tools/privacy-llm/wiring.md#step-0--pre-flight) —
-   `~/.config/apache-steward/` is writable, the configured
+   `~/.config/apache-magpie/` is writable, the configured
    collaborator source is reachable, the redaction-tuning knobs
    are loaded into the observed-state bag. Subsequent body reads
    in Step 1 (gather current state) follow the

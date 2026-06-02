@@ -242,4 +242,4 @@ def test_locate_env_used_when_no_explicit(tmp_path: pathlib.Path, monkeypatch):
 def test_locate_default_when_no_explicit_or_env(monkeypatch):
     monkeypatch.delenv("PII_MAPPING_PATH", raising=False)
     result = locate_mapping_path(None)
-    assert result.parts[-2:] == ("apache-steward", "pii-mapping.json")
+    assert result.parts[-2:] == ("apache-magpie", "pii-mapping.json")

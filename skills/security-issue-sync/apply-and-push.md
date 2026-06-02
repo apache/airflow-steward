@@ -268,7 +268,7 @@ before moving on to the next item. Use:
     `tools.gmail.draft_backend: oauth_curl` and have credentials at
     `tools.gmail.oauth_credentials_path` /
     `$GMAIL_OAUTH_CREDENTIALS` / default
-    `~/.config/apache-steward/gmail-oauth.json`) — invoke
+    `~/.config/apache-magpie/gmail-oauth.json`) — invoke
     `uv run --project <framework>/tools/gmail/oauth-draft oauth-draft-create`
     (see [`tools/gmail/oauth-draft/README.md`](../../tools/gmail/oauth-draft/README.md))
     with `--thread-id` from Step 1c, the standard `--to` / `--cc`,

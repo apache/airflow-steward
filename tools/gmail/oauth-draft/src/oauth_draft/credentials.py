@@ -45,7 +45,7 @@ GMAIL_API = "https://gmail.googleapis.com/gmail/v1/users/me"
 # ``apache-steward`` here as the framework was generalised. Existing
 # adopters who still have the file at the old path can either move it
 # or set ``$GMAIL_OAUTH_CREDENTIALS`` (or pass ``--credentials``).
-DEFAULT_CREDENTIALS_DIR = pathlib.Path.home() / ".config" / "apache-steward"
+DEFAULT_CREDENTIALS_DIR = pathlib.Path.home() / ".config" / "apache-magpie"
 DEFAULT_CREDENTIALS_PATH = DEFAULT_CREDENTIALS_DIR / "gmail-oauth.json"
 
 

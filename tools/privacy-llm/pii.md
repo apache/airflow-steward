@@ -143,7 +143,7 @@ any single ASF project's security tracker.
 
 ## The mapping store
 
-Storage path: **`~/.config/apache-steward/pii-mapping.json`** —
+Storage path: **`~/.config/apache-magpie/pii-mapping.json`** —
 home-dir per the framework's tool-credentials rule (see
 [`AGENTS.md` — Local setup](../../AGENTS.md#local-setup)).
 
@@ -161,7 +161,7 @@ Format:
 ```
 
 - The file is mode `600` and lives outside the project tree —
-  the same security posture as `~/.config/apache-steward/gmail-oauth.json`.
+  the same security posture as `~/.config/apache-magpie/gmail-oauth.json`.
 - Writes are atomic (`tempfile + os.replace`) so a crash mid-write
   cannot leave a half-baked file.
 - The mapping is **per-machine, never committed**. Each
@@ -280,7 +280,7 @@ placeholder — see
 
 ## What never reaches an LLM
 
-- The contents of `~/.config/apache-steward/pii-mapping.json`. The
+- The contents of `~/.config/apache-magpie/pii-mapping.json`. The
   file is read by `pii-redact` / `pii-reveal` only. Skills MUST
   NOT include the mapping in any LLM-bound prompt, summary, or
   status comment. If you need to debug what mapped to what, run

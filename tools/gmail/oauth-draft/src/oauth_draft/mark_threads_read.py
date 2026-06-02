@@ -153,7 +153,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help=(
             "Override the credentials file path. "
             "Default: $GMAIL_OAUTH_CREDENTIALS or "
-            "~/.config/apache-steward/gmail-oauth.json."
+            "~/.config/apache-magpie/gmail-oauth.json."
         ),
     )
     args = ap.parse_args(argv)

@@ -360,7 +360,7 @@ below, annotated.
         "~/.cache/",                  // dev tool caches (uv HTTP cache, prek logs, ruff/mypy caches)
         "~/.local/share/uv/",         // uv's tool venvs (prek, etc.)
         "~/.local/bin/",              // uv-installed tool entry points
-        "~/.config/apache-steward/",  // Gmail OAuth refresh token (oauth-draft tool)
+        "~/.config/apache-magpie/",  // Gmail OAuth refresh token (oauth-draft tool)
         "~/.gnupg/",                  // gpg keys (commit signing)
         "/run/user/*/gnupg/"          // gpg-agent socket dir (ssh-via-gpg-agent commit signing)
       ],
@@ -388,7 +388,7 @@ below, annotated.
       "Read(~/.aws/**)", "Read(~/.ssh/**)", "Read(~/.netrc)",
       "Read(~/.docker/**)", "Read(~/.kube/**)",
       "Read(~/.config/gh/**)",                  // bash can read it (sandbox.allowRead); the AGENT can't
-      "Read(~/.config/apache-steward/**)",      // same — Bash via oauth-draft tool, not the agent directly
+      "Read(~/.config/apache-magpie/**)",      // same — Bash via oauth-draft tool, not the agent directly
       "Read(~/.config/gcloud/**)", "Read(~/.azure/**)",
       "Read(//**/.env)", "Read(//**/.env.local)", "Read(//**/.env.*.local)",
       "Bash(curl *)", "Bash(wget *)",           // network egress via Bash bypasses the sandbox proxy
@@ -410,7 +410,7 @@ below, annotated.
 ```
 
 The deny / allow split for `~/.config/gh/` and
-`~/.config/apache-steward/` is deliberate: bash subprocesses (the `gh`
+`~/.config/apache-magpie/` is deliberate: bash subprocesses (the `gh`
 CLI, `oauth-draft-create`) need to *use* the credential, but the
 agent should never *see* it. `sandbox.filesystem.allowRead` permits
 the bash subprocess to read the file; `permissions.deny[Read(...)]`

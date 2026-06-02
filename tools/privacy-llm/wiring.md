@@ -94,7 +94,7 @@ Add to the skill's existing Step 0 (pre-flight check) section:
   flows (the check itself is the same — the flag only controls
   the printed banner). The skill also confirms:
 
-  - `~/.config/apache-steward/` is writable (the redactor's
+  - `~/.config/apache-magpie/` is writable (the redactor's
     mapping file lives there). If not, prompt the user to
     create it.
   - The collaborator-source repository (default: the
@@ -165,7 +165,7 @@ processing of the body:
 
    The redactor returns the body with the matched values
    replaced by `<TYPE>-<hex>` identifiers. The mapping file at
-   `~/.config/apache-steward/pii-mapping.json` is updated in
+   `~/.config/apache-magpie/pii-mapping.json` is updated in
    place.
 
 5. **Use the redacted body for all subsequent processing.**
@@ -237,7 +237,7 @@ project knobs at filter time (step 3 above):
 | `gh api` collaborator lookup fails (network, auth, rate-limit) | Skill stops with an error. Do **not** fall back to "redact everyone including collaborators" silently — that produces a body where collaborator names are now identifiers, which downstream skills would not expect. The user retries the skill once the lookup works. |
 | The reporter is *also* a collaborator | The reporter's own values are excluded from redaction (step 3, first bullet). The collaborator filter does not apply to them — there is no special second-pass. |
 | The body contains a self-reference (`I am X`) where X is a collaborator | X is filtered out as a collaborator regardless. (Also: probably not a thing — collaborators rarely send security@ mail about themselves.) |
-| The mapping file at `~/.config/apache-steward/pii-mapping.json` is corrupt | `pii-redact` returns exit code 2 with the parse error on stderr. The skill stops; the user investigates the mapping file before re-running. |
+| The mapping file at `~/.config/apache-magpie/pii-mapping.json` is corrupt | `pii-redact` returns exit code 2 with the parse error on stderr. The skill stops; the user investigates the mapping file before re-running. |
 | `pii-reveal` encounters identifiers not in the local map | They pass through unchanged. The skill should still complete its outbound, with the unknown identifiers preserved in the draft text. (This is the cross-machine case: a colleague redacted, you are revealing.) |
 
 ## Skills that follow this pattern

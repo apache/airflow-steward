@@ -156,7 +156,7 @@ uv run --project <framework>/tools/privacy-llm/checker \
   privacy-llm-check
 ```
 
-Plus confirm `~/.config/apache-steward/` is writable (the
+Plus confirm `~/.config/apache-magpie/` is writable (the
 redactor needs to persist its mapping file there). The
 boilerplate that
 [`init_skill.py`](scripts/init_skill.py) scaffolds includes a

@@ -8,6 +8,7 @@
   - [Method 3 — git branch (defaults to `main`)](#method-3--git-branch-defaults-to-main)
   - [After any recipe — let the skill take over](#after-any-recipe--let-the-skill-take-over)
   - [Subsequent runs and drift detection](#subsequent-runs-and-drift-detection)
+  - [Migrating a pre-Magpie (`apache-steward`) adopter](#migrating-a-pre-magpie-apache-steward-adopter)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -282,3 +283,41 @@ new framework skills, removing any that were renamed away),
 and updates the local lock. See
 [`setup/upgrade.md`](../../skills/setup/upgrade.md)
 for the full flow.
+
+## Migrating a pre-Magpie (`apache-steward`) adopter
+
+A repo that adopted the framework **before** it was renamed from
+`apache-steward` to **Apache Magpie** is on the old layout: a committed
+`.claude/skills/setup-steward/` skill, an `.apache-steward/` snapshot,
+`.apache-steward.lock` / `.apache-steward-overrides/`, un-prefixed
+framework symlinks, and `~/.config/apache-steward/`. **No manual recipe
+is needed** — the migration is automatic and one-shot:
+
+```text
+/setup-steward upgrade
+```
+
+The frozen `setup-steward` skill committed in the repo refreshes the
+snapshot per its lock (which lands the current Magpie framework), and —
+because the Magpie framework still ships a transition shim at the legacy
+`.claude/skills/setup-steward/` path — reloads that shim in-flight (its
+Golden rule 9). The shim's
+[`upgrade.md`](../../.claude/skills/setup-steward/upgrade.md) then
+migrates everything in place:
+
+- `.apache-steward*` → `.apache-magpie*` (snapshot, locks, overrides)
+- the committed `setup-steward` skill → `magpie-setup`
+- every un-prefixed framework symlink → `magpie-<name>`
+- the `.gitignore` block → the collapsed `magpie-*` form
+- `~/.config/apache-steward/` → `~/.config/apache-magpie/` (per-machine)
+
+…then **removes itself**. Review and commit the migration diff as the
+upgrade PR. From then on the repo uses `/magpie-setup` for everything,
+and the `steward` name is gone.
+
+> **One manual step the framework cannot do for you:** update any
+> `~/.config/apache-steward/` entry in your Claude Code sandbox
+> allowlist (project `.claude/settings.local.json` / `.claude/settings.json`
+> or user-scope `~/.claude/settings.json`) to `~/.config/apache-magpie/`,
+> or sandboxed framework tools cannot read the moved credentials. The
+> migration surfaces the exact one-line change.

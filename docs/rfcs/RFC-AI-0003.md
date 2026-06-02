@@ -147,7 +147,7 @@ The identifier format is `<TYPE>-<6-char-lowercase-hex>` where the hex is `sh
 
 #### Mapping store
 
-Path: `~/.config/apache-steward/pii-mapping.json` — outside the project tree, per the framework's home-dir tool-credentials rule.
+Path: `~/.config/apache-magpie/pii-mapping.json` — outside the project tree, per the framework's home-dir tool-credentials rule.
 
 Format:
 
@@ -361,7 +361,7 @@ Implementation: stdlib-only (`argparse`, `dataclasses`, `re`, `urllib.parse`,
 
 The framework treats these surfaces as off-limits to LLM context, even when an "approved" LLM is in the stack:
 
-- The contents of `~/.config/apache-steward/pii-mapping.json`. The file is read by `pii-redact` / `pii-reveal` only. Skills MUST NOT include the mapping in any LLM-bound prompt, summary, or status comment. For debugging, run `pii-list` in the user's terminal — that output goes to the user's screen, not to Claude's context.
+- The contents of `~/.config/apache-magpie/pii-mapping.json`. The file is read by `pii-redact` / `pii-reveal` only. Skills MUST NOT include the mapping in any LLM-bound prompt, summary, or status comment. For debugging, run `pii-list` in the user's terminal — that output goes to the user's screen, not to Claude's context.
 - The `--field <type>:<value>` arguments themselves. Every value passed there is exactly what the redactor is replacing.
 - Any draft text *before* `pii-reveal` runs, when the destination is a non-internal surface (e.g. a public PR comment) — the body would still carry identifiers, which leak no PII, but skills should not emit identifier-laden drafts to non-internal destinations by accident. The destination check in the approved-LLM gate is a separate safety net for this.
 

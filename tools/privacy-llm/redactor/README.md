@@ -97,7 +97,7 @@ Field types accepted by `--field`:
 The mapping is stored at:
 
 ```text
-~/.config/apache-steward/pii-mapping.json     (default)
+~/.config/apache-magpie/pii-mapping.json     (default)
 $PII_MAPPING_PATH                             (env override)
 --mapping-path <path>                         (per-call override)
 ```

@@ -229,7 +229,7 @@ Before parsing the file, verify:
 
    Plus the rest of the pre-flight items from
    [`tools/privacy-llm/wiring.md`](../../tools/privacy-llm/wiring.md#step-0--pre-flight)
-   (`~/.config/apache-steward/` writable, collaborator source
+   (`~/.config/apache-magpie/` writable, collaborator source
    reachable). Findings parsed in Step 1 below feed the
    redact-after-fetch protocol the same way Gmail bodies do —
    the file IS the source-of-truth here, treat it like an

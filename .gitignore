@@ -8,7 +8,10 @@ logs
 # Skill source lives in skills/; .claude/skills/ holds only
 # gitignored self-adoption symlinks (a maintainer adopts the
 # framework into itself to make the skills active locally).
-.claude/skills/
+.claude/skills/*
+# Transition migration shim for pre-Magpie adopters — committed so it
+# ships in the snapshot a frozen `/setup-steward upgrade` fetches.
+!/.claude/skills/setup-steward/
 
 # macOS
 .DS_Store

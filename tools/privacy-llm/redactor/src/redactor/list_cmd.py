@@ -44,7 +44,7 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help=(
             "Override the mapping file path. "
-            "Default: $PII_MAPPING_PATH or ~/.config/apache-steward/pii-mapping.json."
+            "Default: $PII_MAPPING_PATH or ~/.config/apache-magpie/pii-mapping.json."
         ),
     )
     parser.add_argument(

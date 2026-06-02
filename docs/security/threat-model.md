@@ -144,7 +144,7 @@ and triggers a re-audit.
    (public visibility, over-broad collaborator list) is a tracker
    problem, not a framework problem — though the framework declines
    to operate against a tracker it detects as public.
-4. **Credentials in `~/.config/apache-steward/` are honoured by
+4. **Credentials in `~/.config/apache-magpie/` are honoured by
    `denyRead`.** The default sandbox blocks the agent from reading
    that path. An adopter who relaxes that block (for example by
    adding it to `allowRead`) accepts the resulting threat surface.
@@ -386,7 +386,7 @@ interested in it, and the boundary that protects it.
 | Tracker comment thread | Confidential, embargoed | P2, P3 | B2, B3 |
 | Reporter identity | Confidential until Step 16 | P1, P2 | B3, redactor |
 | CVE ID before advisory | Embargoed | P2 | B4 |
-| Credentials in `~/.config/apache-steward/` | Secret | P3, P5 | sandbox `denyRead` |
+| Credentials in `~/.config/apache-magpie/` | Secret | P3, P5 | sandbox `denyRead` |
 | `gh` token in env | Secret, scoped | P3 | sandbox env, `permissions.ask` |
 | CNA-tool OAuth token (`cve_authority.tool`; named example: Vulnogram on `airflow-s`) | Secret, scoped | P3 | sandbox env |
 | Mail-backend OAuth token (`mail_provider.primary`; named example: Gmail on `airflow-s`) | Secret, scoped | P3 | sandbox env |
@@ -506,7 +506,7 @@ fix-PR diff and combines them into a confirmation.
 ### X3 — Sandbox bypass via developer override
 
 A maintainer (P5) running locally edits `.claude/settings.json` to
-add `~/.config/apache-steward/` to `allowRead` because they are
+add `~/.config/apache-magpie/` to `allowRead` because they are
 debugging an authentication issue. They forget to revert. The next
 agent run reads the credentials.
 

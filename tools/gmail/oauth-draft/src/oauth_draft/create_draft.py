@@ -198,7 +198,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help=(
             "Path to the OAuth credentials JSON. "
             "Defaults to $GMAIL_OAUTH_CREDENTIALS or "
-            "~/.config/apache-steward/gmail-oauth.json."
+            "~/.config/apache-magpie/gmail-oauth.json."
         ),
     )
     p.add_argument(

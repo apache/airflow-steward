@@ -203,15 +203,15 @@ grep apache-steward .gitignore
 following are removed — retire each one only if you are
 also retiring Magpie from this machine entirely:
 
-- **`~/.config/apache-steward/user.md`** — the recommended
+- **`~/.config/apache-magpie/user.md`** — the recommended
   per-user identity / tool-picks config. One file, shared
   across every adopter repo on this machine. If you still
   use Magpie in any other repo, leave it.
   Otherwise:
 
   ```bash
-  rm -i ~/.config/apache-steward/user.md
-  rmdir ~/.config/apache-steward 2>/dev/null    # only removes the dir if empty (errors silenced)
+  rm -i ~/.config/apache-magpie/user.md
+  rmdir ~/.config/apache-magpie 2>/dev/null    # only removes the dir if empty (errors silenced)
   ```
 
 - **`~/.claude/` user-scope config, hooks, and settings** —

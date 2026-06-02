@@ -78,7 +78,7 @@ def test_parse_args_minimal(monkeypatch):
     args = parse_args(["client.json"])
     assert args.client_secrets == "client.json"
     assert args.from_address == "default@example.com"
-    assert args.out.endswith("/.config/apache-steward/gmail-oauth.json")
+    assert args.out.endswith("/.config/apache-magpie/gmail-oauth.json")
     assert args.rm_client_secrets is False
 
 

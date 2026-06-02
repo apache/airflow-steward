@@ -173,7 +173,7 @@ acceptable, etc.) and the disambiguation rules.
            uv run --project <framework>/tools/privacy-llm/checker \\
              privacy-llm-check
 
-       Plus confirm `~/.config/apache-steward/` is writable (the
+       Plus confirm `~/.config/apache-magpie/` is writable (the
        redactor needs to persist its mapping file there). See
        [`tools/privacy-llm/wiring.md`](../../../tools/privacy-llm/wiring.md)
        for the redact-after-fetch protocol.

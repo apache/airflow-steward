@@ -216,7 +216,7 @@ actual endpoint):
 2. Confirm authentication if the endpoint requires it. ASF
    endpoints typically authenticate via the user's ASF identity
    (LDAP / OAuth); credentials live at
-   `~/.config/apache-steward/<endpoint>-token.json` or similar
+   `~/.config/apache-magpie/<endpoint>-token.json` or similar
    — never in the project tree
    (see [`AGENTS.md` — Local setup](../../AGENTS.md#local-setup)).
 3. Place the file at `<project-config>/privacy-llm.md`. Commit.
@@ -295,7 +295,7 @@ zero-data-retention agreement plus a no-training clause.
 
 - An Anthropic account with a zero-data-retention agreement
   applied to the API key.
-- The API key at `~/.config/apache-steward/anthropic-api.json`
+- The API key at `~/.config/apache-magpie/anthropic-api.json`
   or via `$ANTHROPIC_API_KEY` set from a home-dir-sourced
   shell-rc — never in the project tree.
 

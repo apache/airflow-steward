@@ -57,6 +57,30 @@ Both paths run the same flow.
    route as a recover-snapshot install per the committed
    lock, not as an upgrade. Continue at Step 3.
 
+## Step 0a — Pre-Magpie leftovers safety check
+
+A repo that adopted the framework before it was renamed from
+**apache-steward** to **Apache Magpie** migrates via the
+one-shot transition shim at `.claude/skills/setup-steward/`
+(a frozen `/setup-steward upgrade` lands there automatically;
+see that skill's [`upgrade.md`](../../.claude/skills/setup-steward/upgrade.md)).
+A fully-migrated repo never reaches *this* file with legacy
+artefacts present.
+
+If you nonetheless detect **any** legacy artefact here —
+`.apache-steward.lock`, `.apache-steward/`,
+`.apache-steward-overrides/`, a committed
+`<adopter-skills-dir>/setup-steward/`, or a framework symlink
+**without** the `magpie-` prefix — a prior migration did not
+finish. Do **not** continue the normal upgrade against the
+half-migrated state. Run the transition migration to
+completion first (follow
+[`.claude/skills/setup-steward/upgrade.md`](../../.claude/skills/setup-steward/upgrade.md),
+which is idempotent and safe to re-run), then resume this
+upgrade. `~/.config/apache-steward/` alone (per-user, no
+in-repo artefacts) just needs the dir + sandbox-allowlist
+move from that file's Step 7.
+
 ## Step 1 — Compute drift
 
 Compare `<committed-lock>` to `<local-lock>` and to upstream

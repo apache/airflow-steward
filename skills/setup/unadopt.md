@@ -134,10 +134,10 @@ The following will be REMOVED:
 The following will be PRESERVED:
 
     .apache-magpie-overrides/           (M file(s); pass `--purge-overrides` to remove)
-    ~/.config/apache-steward/user.md     (per-user; shared with other adopters on this machine — remove manually if this was your last adoption)
+    ~/.config/apache-magpie/user.md     (per-user; shared with other adopters on this machine — remove manually if this was your last adoption)
 ```
 
-Surface the `~/.config/apache-steward/user.md` line only if that
+Surface the `~/.config/apache-magpie/user.md` line only if that
 file is actually present on disk. If it is absent (or the
 operator drove `user.md` resolution via
 `$APACHE_STEWARD_USER_CONFIG` / the legacy per-project location),
@@ -285,7 +285,7 @@ A summary of what was removed + what remains:
 
 Preserved:
   .apache-magpie-overrides/   (M files; pass `--purge-overrides` to remove)
-  ~/.config/apache-steward/user.md   (per-user; shared with other adopters on this machine — remove manually if this was your last adoption)
+  ~/.config/apache-magpie/user.md   (per-user; shared with other adopters on this machine — remove manually if this was your last adoption)
   .claude/skills (or .github/skills)   (Pattern D directory symlink — adopter-owned, predates framework adoption)
   <list of any non-steward-owned content the plan flagged>
 

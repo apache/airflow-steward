@@ -548,7 +548,7 @@ status, local clone paths, optional tool backends). If the file
 is missing, the skills fall back to interactive prompting and
 offer to save the answer back into this file.
 
-**Recommended location: `~/.config/apache-steward/user.md`** — the
+**Recommended location: `~/.config/apache-magpie/user.md`** — the
 OS-conventional per-user config dir. One file, shared across every
 worktree of every adopter project on the operator's machine, so
 identity-and-tool-picks stay coherent without symlinks or
@@ -624,7 +624,7 @@ setup; the skills skip any block that is missing or marked `TODO`.
 ```
 
 **Where to write the file.** Default to
-`~/.config/apache-steward/user.md` for new adopters (the per-user
+`~/.config/apache-magpie/user.md` for new adopters (the per-user
 canonical location — shared across every worktree and every
 adopter project on the operator's machine). If the operator
 already has `<repo-root>/.apache-magpie-overrides/user.md` from a
@@ -633,7 +633,7 @@ file as a fallback, no migration needed. If both exist, the
 per-user file wins; surface the conflict to the operator so they
 can pick one and delete the other.
 
-Create the parent directory with `mkdir -p ~/.config/apache-steward/`
+Create the parent directory with `mkdir -p ~/.config/apache-magpie/`
 before writing, then write the file at mode `0600` (the directory at
 `0700`) since it holds personal preferences and — eventually —
 identity that the operator may not want world-readable.
