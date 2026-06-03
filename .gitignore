@@ -5,13 +5,18 @@ logs
 .build
 .claude/worktrees/
 .claude/settings.local.json
-# Skill source lives in skills/; .claude/skills/ holds only
-# gitignored self-adoption symlinks (a maintainer adopts the
-# framework into itself to make the skills active locally).
+# Skill source lives in skills/. The framework self-adopts by
+# committing magpie-<skill> symlinks that point into ../../skills/<skill>/
+# (see skills/setup/adopt.md → "Local self-adoption"). They live under
+# BOTH .claude/skills/ (Claude Code) and .github/skills/ (GitHub's skill
+# loader). Those symlinks ARE committed — their targets are in-repo and
+# always resolve on a fresh clone, so every contributor gets the skills
+# active with no setup step. Everything else dropped into these dirs
+# stays local.
 .claude/skills/*
-# Transition migration shim for pre-Magpie adopters — committed so it
-# ships in the snapshot a frozen `/setup-steward upgrade` fetches.
-!/.claude/skills/setup-steward/
+!/.claude/skills/magpie-*
+.github/skills/*
+!/.github/skills/magpie-*
 
 # macOS
 .DS_Store

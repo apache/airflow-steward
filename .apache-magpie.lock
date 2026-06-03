@@ -1,0 +1,6 @@
+# .apache-magpie.lock — committed. Local self-adoption marker.
+# The framework checkout links its own skills/ source; there is
+# no remote snapshot. Edited only by /magpie-setup.
+
+method: local
+source: skills/

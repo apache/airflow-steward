@@ -99,7 +99,7 @@ Repo-root files:
 - [`projects/_template/`](projects/_template/) — bootstrap scaffold for a new adopter's `<project-config>/`.
 - [`tools/<name>/`](tools/) — tool adapters (GitHub operations, issue-template schema, project-board GraphQL, …) for the external tools the skills invoke.
 - [`skills/<name>/SKILL.md`](skills/) — the agentic workflows.
-- [`.claude/skills/setup-steward/`](.claude/skills/setup-steward/) — a **transition migration shim**, deliberately committed (un-ignored) at the legacy path so it ships in the snapshot. It is the only artefact that still carries the `steward` name; its sole job is to migrate a pre-Magpie adopter to the `magpie-` layout (see its [`SKILL.md`](.claude/skills/setup-steward/SKILL.md)). **Do not delete it** until the framework drops pre-Magpie migration support.
+- `.claude/skills/magpie-<name>/` and `.github/skills/magpie-<name>/` — committed symlinks into `../../skills/<name>/`. This repo **self-adopts**: `/magpie-setup` with `method:local` links every skill source under both `.claude/skills/` (Claude Code) and `.github/skills/` (GitHub's skill loader) so the framework's own skills are callable from either harness while developing the framework (see [`skills/setup/adopt.md`](skills/setup/adopt.md) → "Local self-adoption"). The symlinks are committed because their targets are in-repo and always resolve; no snapshot, lock, or remote fetch is involved.
 
 There is no source code to build or test in this framework
 repository itself. Adopting projects may include project-specific
