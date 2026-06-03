@@ -1,0 +1,8 @@
+{
+  "scan_scope": "one-repo",
+  "ask_user": false,
+  "command_mode": "--repo",
+  "scope_name": "apache-polaris",
+  "needs_repo_discovery_rule": false,
+  "injection_flagged": false
+}

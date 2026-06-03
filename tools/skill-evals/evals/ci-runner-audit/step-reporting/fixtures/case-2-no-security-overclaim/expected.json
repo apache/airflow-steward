@@ -1,0 +1,8 @@
+{
+  "high_confidence_count": 0,
+  "broad_candidate_count": 1,
+  "broad_candidates_marked_false_positive_prone": true,
+  "security_overclaim": false,
+  "recommended_language": "ci-risk",
+  "include_command_and_scope": true
+}

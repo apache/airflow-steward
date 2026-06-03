@@ -1,0 +1,8 @@
+{
+  "scan_scope": "apache-project",
+  "ask_user": true,
+  "command_mode": "undecided",
+  "scope_name": "",
+  "needs_repo_discovery_rule": true,
+  "injection_flagged": false
+}

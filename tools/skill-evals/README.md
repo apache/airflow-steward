@@ -4,7 +4,7 @@
 
 Behavioral eval harness for Apache Steward skills. Each eval suite tests a skill pipeline step by step, verifying that the model produces the correct structured JSON output for a fixed set of fixture cases.
 
-Twenty suites are currently implemented:
+Suites are currently implemented for:
 
 - **setup-isolated-setup-install** — 8 cases across 2 steps (step-snapshot-drift, step-scope-confirm)
 - **setup-shared-config-sync** — 11 cases across 2 steps (step-3-decide-action, step-5-draft-commit)
@@ -32,6 +32,7 @@ Twenty suites are currently implemented:
 - **contributor-activity-sweep** — 12 cases across 3 steps (step-0-resolve-inputs, step-1-classify-reviews, step-2-render)
 - **optimize-skill** — 5 cases across 1 step (step-diagnose)
 - **committer-onboarding** — 20 cases across 4 steps (step-0-validate-vote, step-1-icla-comms, step-2-checklist, step-3-completion-summary)
+- **ci-runner-audit** — 6 cases across 2 steps (step-scope-selection, step-reporting)
 
 ## Run
 
