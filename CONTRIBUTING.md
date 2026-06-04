@@ -511,8 +511,17 @@ First-time clone:
 ```bash
 git clone git@github.com:apache/airflow-steward.git
 cd airflow-steward
+uv tool install prek
 prek install                   # wire the hooks into .git/hooks
 prek run --all-files           # runs every hook on every file
+```
+
+Note that if you are already using `prek` for some other project, you
+may need to do the following:
+
+```bash
+git config --local core.hooksPath .git/hooks
+prek install
 ```
 
 The hooks are described in detail under [Running the dev loop](#running-the-dev-loop).
