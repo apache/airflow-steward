@@ -4,6 +4,7 @@
 import json
 import subprocess
 import concurrent.futures
+import datetime as dt
 import os
 
 ROOT = os.environ.get('TRACKER_STATS_CACHE', '/tmp/tracker-stats-cache')
@@ -14,6 +15,16 @@ with open(f'{ROOT}/issues.json') as f:
     issues = json.load(f)
 
 numbers = [i['number'] for i in issues]
+# Map issue number -> last-updated epoch so the cache can be refreshed when an
+# issue was relabeled / closed after its events were last fetched.
+def _iso_to_epoch(s):
+    if not s:
+        return None
+    try:
+        return dt.datetime.fromisoformat(s.replace('Z', '+00:00')).timestamp()
+    except ValueError:
+        return None
+UPDATED_AT = {i['number']: _iso_to_epoch(i.get('updatedAt')) for i in issues}
 print(f"Fetching events for {len(numbers)} issues...")
 
 os.makedirs(EVENTS_DIR, exist_ok=True)
@@ -21,7 +32,11 @@ os.makedirs(EVENTS_DIR, exist_ok=True)
 def fetch_one(n):
     out_path = f'{EVENTS_DIR}/{n}.json'
     if os.path.exists(out_path) and os.path.getsize(out_path) > 0:
-        return (n, True, 'cached')
+        # Trust the cache only if it was written after the issue was last
+        # updated; otherwise the issue changed since and the events are stale.
+        upd = UPDATED_AT.get(n)
+        if upd is None or os.path.getmtime(out_path) >= upd:
+            return (n, True, 'cached')
     try:
         r = subprocess.run(
             ['gh', 'api', f'repos/{REPO}/issues/{n}/events',

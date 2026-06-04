@@ -382,7 +382,7 @@ if UPSTREAM_REPO:
         with open(prs_path) as f:
             prs_cache = json.load(f)
 
-NOW = dt.datetime(2026, 5, 21, 0, 0, 0, tzinfo=dt.timezone.utc)
+NOW = dt.datetime.now(dt.timezone.utc)
 
 if UPSTREAM_REPO:
     # Match the original literal in the body-parse regex so an upstream
@@ -586,6 +586,13 @@ def labels_open_at(issue, ts):
             is_open = False
         elif e['event'] == 'reopened':
             is_open = True
+    # The issue-events API can omit the 'closed' event for some (often
+    # older) issues, which would leave is_open stuck True and miscount a
+    # closed issue as open. Trust the authoritative closedAt from the
+    # issue payload as a backstop (the cum_closed series already does).
+    closed_at = parse_dt(issue.get('closedAt'))
+    if issue.get('state') == 'CLOSED' and closed_at and closed_at <= ts:
+        is_open = False
     return labels, is_open
 
 
