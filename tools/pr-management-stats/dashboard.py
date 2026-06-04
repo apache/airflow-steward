@@ -93,6 +93,20 @@ C_PANEL = "#161b22"
 C_BORDER = "#30363d"
 C_FG = "#c9d1d9"
 
+# Distinct palette for multi-area line charts (top-areas). The pressure-band
+# colours (red/amber/grey) repeat across areas and are visually
+# indistinguishable; this palette gives each area its own hue.
+AREA_PALETTE = [
+    "#58a6ff",  # blue
+    "#f85149",  # red
+    "#56d364",  # green
+    "#d29922",  # amber
+    "#a371f7",  # purple
+    "#e34c9e",  # pink
+    "#39c5cf",  # cyan
+    "#db6d28",  # orange
+]
+
 
 # ============================================================
 # Tiny utilities
@@ -436,9 +450,20 @@ def compute_pressure_by_area(open_prs, area_prefix):
         lambda: {
             "score": 0,
             "contribs": 0,
+            # Age distribution of the area's open non-draft contributor PRs
+            # (all of them) — this is what the panel displays, so the age
+            # columns reflect real backlog age instead of the near-empty
+            # untriaged-only counts. Each bucket tracks the ready subset too,
+            # rendered as "ready/all".
+            "age_4w": 0,
+            "age_4w_ready": 0,
+            "age_1to4w": 0,
+            "age_1to4w_ready": 0,
+            "age_rec": 0,
+            "age_rec_ready": 0,
+            # Untriaged-only age counts — drive the score and recommendations.
             "u4w": 0,
             "u14w": 0,
-            "urec": 0,
             "wait": 0,
             "ready": 0,
         }
@@ -451,6 +476,17 @@ def compute_pressure_by_area(open_prs, area_prefix):
         for area in areas:
             a = scores[area]
             a["contribs"] += 1
+            if not pr["isDraft"]:
+                rdy = pr["_has_ready"]
+                if age > 28:
+                    a["age_4w"] += 1
+                    a["age_4w_ready"] += rdy
+                elif age > 7:
+                    a["age_1to4w"] += 1
+                    a["age_1to4w_ready"] += rdy
+                else:
+                    a["age_rec"] += 1
+                    a["age_rec_ready"] += rdy
             if pr["_is_untriaged"]:
                 if age > 28:
                     a["u4w"] += 1
@@ -459,7 +495,6 @@ def compute_pressure_by_area(open_prs, area_prefix):
                     a["u14w"] += 1
                     a["score"] += 3
                 else:
-                    a["urec"] += 1
                     a["score"] += 1
             elif pr["_is_triaged"] and not pr["_responded"] and age > 7:
                 a["wait"] += 1
@@ -638,10 +673,16 @@ def _bucket_dates(weeks):
 
 
 def compute_backlog_over_time(open_prs, closed_prs, weeks):
-    """End-of-week open backlog snapshot."""
+    """End-of-week open backlog snapshot, total and non-draft.
+
+    Draft status is only known as of the snapshot (current isDraft for still-open
+    PRs, draft-at-close for closed PRs); the non-draft series uses that as a proxy
+    for historical draft state.
+    """
     out = []
     for s, e in weeks:
         n = 0
+        nondraft = 0
         for pr in open_prs + closed_prs:
             created = parse_iso(pr.get("createdAt"))
             if not created or created > e:
@@ -649,7 +690,9 @@ def compute_backlog_over_time(open_prs, closed_prs, weeks):
             closed_at = parse_iso(pr.get("closedAt"))
             if closed_at is None or closed_at > e:
                 n += 1
-        out.append({"start": s, "end": e, "value": n})
+                if not pr.get("isDraft"):
+                    nondraft += 1
+        out.append({"start": s, "end": e, "value": n, "nondraft": nondraft})
     return out
 
 
@@ -674,6 +717,44 @@ def compute_opened_by_author_class(all_prs, weeks):
                 b["contributor"] += 1
         out.append(b)
     return out
+
+
+def compute_maintainer_opened(open_prs, area_prefix):
+    """Currently-open maintainer-authored PRs by author and by provider area.
+
+    Pass only the currently-open PR set (not closed/merged): the panel reports
+    the standing maintainer-authored queue, not historical throughput.
+    "Maintainer-authored" = authorAssociation in COLLAB_ASSOCIATIONS (and not a
+    bot). Returns two ranked lists:
+      - by_author: [(login, count), ...] desc
+      - by_provider: [(provider, count), ...] desc over labels starting
+        "provider:" (the per-provider areas); PRs with no provider label are
+        grouped under "(non-provider)".
+    """
+    by_author = defaultdict(int)
+    by_provider = defaultdict(int)
+    total = 0
+    for pr in open_prs:
+        if pr.get("authorAssociation", "") not in COLLAB_ASSOCIATIONS:
+            continue
+        author = (pr.get("author") or {}).get("login")
+        if not author or is_bot(author):
+            continue
+        total += 1
+        by_author[author] += 1
+        provider_labels = [
+            lbl for lbl in pr.get("_labels", []) if lbl.startswith("provider:")
+        ]
+        if not provider_labels:
+            by_provider["(non-provider)"] += 1
+        else:
+            for lbl in provider_labels:
+                by_provider[lbl.replace("provider:", "")] += 1
+    return {
+        "total": total,
+        "by_author": sorted(by_author.items(), key=lambda x: -x[1])[:12],
+        "by_provider": sorted(by_provider.items(), key=lambda x: -x[1])[:12],
+    }
 
 
 def compute_ready_queue_cumulative(open_prs, weeks):
@@ -1164,16 +1245,46 @@ def render_recommendations(recs):
     return "".join(out)
 
 
-def render_trends_over_time(*, backlog, by_author, ready_cum, triage_velocity,
-                              coverage_rate, weeks, ctx):
+def render_maintainer_opened(mo, ctx):
+    """Two side-by-side tables: maintainer-opened PRs by author and by provider area."""
+    total = mo.get("total", 0)
+    if not total:
+        return ("<h3>Maintainer-opened PRs (by author &amp; provider area)</h3>"
+                '<div class="caveat">No maintainer-authored PRs in the window.</div>')
+
+    def tbl(rows, head):
+        body = "".join(
+            f'<tr><td>{esc(k)}</td><td style="text-align:right">{n}</td>'
+            f'<td style="text-align:right">{pct(n, total)}%</td></tr>'
+            for k, n in rows
+        )
+        return (f'<table style="width:48%;display:inline-table;vertical-align:top;margin-right:2%">'
+                f'<tr><th>{head}</th><th style="text-align:right">PRs</th>'
+                f'<th style="text-align:right">%</th></tr>{body}</table>')
+
+    return (
+        "<h3>Maintainer-opened PRs — currently open (by author &amp; provider area)</h3>"
+        f'<div class="caveat">{total} currently-open PRs authored by maintainers '
+        "(authorAssociation OWNER/MEMBER/COLLABORATOR). Left: top authors. "
+        "Right: distribution across <code>provider:*</code> areas.</div>"
+        + tbl(mo["by_author"], "Maintainer (author)")
+        + tbl(mo["by_provider"], "Provider area")
+    )
+
+
+def render_trends_over_time(*, backlog, by_author, maintainer_opened, ready_cum,
+                              triage_velocity, coverage_rate, weeks, ctx):
     labels = [week_label(s) for s, _ in weeks]
     out = ["<h2>Trends over time</h2>"]
 
-    # backlog
+    # backlog (total + non-draft)
     out.append("<h3>Open backlog over time</h3>")
     out.append(
         svg_line_chart(
-            [{"label": "open backlog", "values": [b["value"] for b in backlog], "colour": C_BLUE}],
+            [
+                {"label": "open backlog", "values": [b["value"] for b in backlog], "colour": C_BLUE},
+                {"label": "non-draft", "values": [b.get("nondraft", 0) for b in backlog], "colour": C_GREEN},
+            ],
             x_labels=labels,
             y_label="open count",
         )
@@ -1192,11 +1303,14 @@ def render_trends_over_time(*, backlog, by_author, ready_cum, triage_velocity,
         )
     )
 
-    # ready cumulative
+    # maintainer-opened breakdown (by author + by provider area)
+    out.append(render_maintainer_opened(maintainer_opened, ctx))
+
+    # ready queue cumulative
     out.append("<h3>Ready-for-review queue size (cumulative)</h3>")
     out.append(
         svg_line_chart(
-            [{"label": "ready cum", "values": [b["value"] for b in ready_cum], "colour": C_GREEN}],
+            [{"label": "ready queue", "values": [b["value"] for b in ready_cum], "colour": C_GREEN}],
             x_labels=labels,
         )
     )
@@ -1286,11 +1400,11 @@ def render_ready_trend(ready_trend, weeks):
             '<div class="caveat">No areas with ≥3 currently-ready PRs.</div>'
         )
     series = []
-    for area, vals in series_data.items():
-        # colour by pressure-band — approximate via the last value
-        last = vals[-1] if vals else 0
-        c = C_RED if last >= 30 else (C_AMBER if last >= 15 else C_GREY)
-        series.append({"label": area, "values": vals, "colour": c})
+    for idx, (area, vals) in enumerate(series_data.items()):
+        # One distinct hue per area (pressure-band colours repeat and are
+        # indistinguishable when several areas share a band).
+        series.append({"label": area, "values": vals,
+                       "colour": AREA_PALETTE[idx % len(AREA_PALETTE)]})
     chart = svg_line_chart(series, x_labels=labels)
     growth_lines = []
     for area, vals in series_data.items():
@@ -1346,7 +1460,10 @@ def render_pressure(pressure, area_prefix):
         )
     out = [
         "<h2>Pressure by area</h2>",
-        '<div class="caveat">Pressure score = weighted sum of urgent PR conditions per area. Higher score = more attention needed.</div>',
+        '<div class="caveat">Pressure score = weighted sum of urgent PR conditions per area '
+        "(untriaged &gt;4w ×5, 1–4w ×3, &lt;1w ×1; triaged-waiting &gt;7d ×2; ready ×1). "
+        "Age columns show the age distribution of the area's open non-draft contributor PRs "
+        "as <strong>ready/all</strong> (PRs labelled ready-for-review / total in that age bucket).</div>",
     ]
     for area, v in pressure:
         band = "high" if v["score"] >= 30 else ("medium" if v["score"] >= 15 else "low")
@@ -1354,9 +1471,9 @@ def render_pressure(pressure, area_prefix):
             f'<div class="pressure-row {band}">'
             f'<div><strong class="area">{esc(area)}</strong> — '
             f'{v["contribs"]} contributor PRs · '
-            f'<span class="red">{v["u4w"]}</span> &gt;4w · '
-            f'<span class="amber">{v["u14w"]}</span> 1-4w · '
-            f'<span class="grey">{v["urec"]}</span> recent · '
+            f'<span class="red">{v["age_4w_ready"]}/{v["age_4w"]}</span> &gt;4w · '
+            f'<span class="amber">{v["age_1to4w_ready"]}/{v["age_1to4w"]}</span> 1-4w · '
+            f'<span class="grey">{v["age_rec_ready"]}/{v["age_rec"]}</span> recent · '
             f'<span class="green">{v["ready"]}</span> ready</div>'
             f'<div><span class="score">{v["score"]}</span> '
             f'<code>/pr-management-triage label:area:{esc(area)}</code></div>'
@@ -1515,77 +1632,6 @@ def render_detailed_tables(table1, table2, cutoff, repo):
     return "".join(t1) + "".join(t2)
 
 
-def render_legend():
-    return f"""<h2>Legend / methodology</h2>
-<div class="legend">
-<dl>
-<dt>Hero card colours</dt>
-<dd><span class="green">green</span> = healthy / on-target;
-    <span class="amber">amber</span> = needs attention soon;
-    <span class="red">red</span> = action needed now;
-    <span class="cyan">cyan</span> = informational (raw counts).</dd>
-
-<dt>Recommendation priorities</dt>
-<dd>Coloured left border on action cards:
-    <span class="red">red</span> = high (do today),
-    <span class="amber">amber</span> = medium (this week),
-    <span class="grey">grey</span> = low (background awareness).</dd>
-
-<dt>Closure velocity bars</dt>
-<dd><span class="green">green</span> = PRs merged that week,
-    <span class="grey">grey</span> = PRs closed without merging.
-    Bar widths normalised to the busiest week in the 6-week window.</dd>
-
-<dt>Opened-vs-closed line chart</dt>
-<dd><span class="blue">Blue</span> = opened per week. <span class="green">Green</span> = closed/merged per week.
-    Where blue is above green the backlog grew; vice-versa, it shrank.</dd>
-
-<dt>Ready-for-review trend</dt>
-<dd>Cumulative count of currently-ready PRs by week, per top-pressure area.
-    Line colour by area's pressure band: <span class="red">red ≥ 30</span>,
-    <span class="amber">amber 15–29</span>, <span class="grey">grey &lt; 15</span>.</dd>
-
-<dt>Closed by triage reason</dt>
-<dd><span class="green">merged</span> · <span class="amber">closed after author responded</span> ·
-    <span class="red">closed after triage, no response (sweep)</span> ·
-    <span class="grey">closed without ever being triaged</span>.</dd>
-
-<dt>Pressure score</dt>
-<dd>Weighted sum of urgent contributor PRs per area: untriaged &gt;4w = 5pt,
-    1–4w = 3pt, &lt;1w = 1pt; triaged-waiting &gt;7d = 2pt; ready = 1pt.</dd>
-
-<dt>Triage states (funnel grid)</dt>
-<dd><span class="green"><strong>Ready</strong></span>: has <code>ready for maintainer review</code> label.
-    <span class="cyan"><strong>Responded</strong></span>: QC marker present AND author replied/pushed after it.
-    <span class="magenta"><strong>Waiting: AI-only</strong></span>: only AI-drafted comment unresponded.
-    <span class="red"><strong>Waiting: author response to maintainer</strong></span>: manual maintainer comment unresponded.
-    <span class="blue"><strong>Not yet triaged</strong></span>: never received a QC comment.</dd>
-
-<dt>Triager activity sparkline</dt>
-<dd>One bar per week (6 bars total). Magenta = AI-drafted, blue = manual. Bar height = relative weekly volume.</dd>
-
-<dt>Percentage-cell colours</dt>
-<dd><span class="green">green ≥ 50%</span>, <span class="amber">amber 20–49%</span>, <span class="red">red &lt; 20%</span>.
-    50% reads green (happier colour wins on tie).</dd>
-
-<dt>Detailed-table columns</dt>
-<dd><span class="cyan"><strong>Contrib.</strong></span> — non-collaborator-authored PRs (denominator for contributor-scoped metrics).
-    <span class="amber"><strong>Triaged</strong></span> — comment by OWNER/MEMBER/COLLABORATOR containing
-    <code>Pull Request quality criteria</code> after the last commit.
-    <span class="green"><strong>Responded</strong></span> — author commented/pushed after the triage comment.
-    <span class="green"><strong>Ready</strong></span> — carries <code>ready for maintainer review</code> label.
-    <span class="magenta"><strong>Drafted by triager</strong></span> — drafts that are also triaged.</dd>
-
-<dt>Methodology</dt>
-<dd>Snapshot taken at the timestamp shown in the title bar. Open PRs via GraphQL search
-    with full engagement schema (comments, latestReviews, reviewThreads, timelineItems).
-    Closed/merged via GitHub search. Triage marker: collab comment containing the literal
-    string <code>Pull Request quality criteria</code> after the last commit. Bots filtered
-    at fetch time (<code>*[bot]</code>, dependabot, github-actions).</dd>
-</dl>
-</div>"""
-
-
 def render_summary(hero, recent_drafts):
     return (
         f'<div class="footer">Summary: {hero["open_total"]} open · '
@@ -1614,6 +1660,7 @@ def render_dashboard(
     funnel,
     backlog,
     by_author,
+    maintainer_opened,
     ready_cum,
     triage_velocity,
     coverage_rate,
@@ -1634,6 +1681,7 @@ def render_dashboard(
         render_trends_over_time(
             backlog=backlog,
             by_author=by_author,
+            maintainer_opened=maintainer_opened,
             ready_cum=ready_cum,
             triage_velocity=triage_velocity,
             coverage_rate=coverage_rate,
@@ -1649,7 +1697,6 @@ def render_dashboard(
         render_funnel(funnel),
         render_triager_activity(triager_activity, ctx["weeks"]),
         render_detailed_tables(table_final, table_open, ctx["cutoff"], ctx["repo"]),
-        render_legend(),
         render_summary(hero, recent_drafts),
         "</body></html>",
     ]
@@ -1765,6 +1812,7 @@ def main():
     )
     backlog = compute_backlog_over_time(open_prs, closed_prs, ctx["weeks"])
     by_author = compute_opened_by_author_class(open_prs + closed_prs, ctx["weeks"])
+    maintainer_opened = compute_maintainer_opened(open_prs, args.area_prefix)
     ready_cum = compute_ready_queue_cumulative(open_prs, ctx["weeks"])
     triage_vel = compute_triage_velocity(open_prs + closed_prs, ctx["weeks"], ctx)
     coverage = compute_triage_coverage_rate(open_prs + closed_prs, ctx["weeks"])
@@ -1808,6 +1856,7 @@ def main():
         funnel=funnel,
         backlog=backlog,
         by_author=by_author,
+        maintainer_opened=maintainer_opened,
         ready_cum=ready_cum,
         triage_velocity=triage_vel,
         coverage_rate=coverage,
