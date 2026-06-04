@@ -1,3 +1,19 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [What is Apache Magpie?](#what-is-apache-magpie)
+  - [How it works](#how-it-works)
+  - [Who is this for?](#who-is-this-for)
+    - [Maintainers wanting to adopt Magpie in their project](#maintainers-wanting-to-adopt-magpie-in-their-project)
+    - [Security team members](#security-team-members)
+    - [Contributors to the Magpie framework itself](#contributors-to-the-magpie-framework-itself)
+    - [People evaluating whether to adopt](#people-evaluating-whether-to-adopt)
+  - [Key concepts in 60 seconds](#key-concepts-in-60-seconds)
+  - [Where to go next](#where-to-go-next)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # What is Apache Magpie?
 
 Apache Magpie is an AI assistant for open-source project maintainers. It handles the repetitive parts of running a project — triaging issues, reviewing PRs, onboarding contributors, managing security reports, cutting releases — so maintainers can spend their time on design, relationships, and the work that actually requires a human.
