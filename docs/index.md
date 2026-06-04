@@ -9,6 +9,7 @@
     - [Security team members](#security-team-members)
     - [Contributors to the Magpie framework itself](#contributors-to-the-magpie-framework-itself)
     - [People evaluating whether to adopt](#people-evaluating-whether-to-adopt)
+    - [People who are concerned for security and privacy when using their agents](#people-who-are-concerned-for-security-and-privacy-when-using-their-agents)
   - [Key concepts in 60 seconds](#key-concepts-in-60-seconds)
   - [Where to go next](#where-to-go-next)
 
@@ -66,13 +67,13 @@ You want to understand the trust model, cost, and governance commitments before 
 
 → Read [MISSION.md](../MISSION.md) (the why), [PRINCIPLES.md](../PRINCIPLES.md) (the rules), and [mode economics](mode-economics.md) (what it costs in tokens).
 
-### Peple who are concerned for security and privacy when using their agents
+### People who are concerned for security and privacy when using their agents
 
 You would like to use agentic AI but you are concerned about security and privacy - when LLMs / Agent
 might get access to your credentials and poison your workstation, or have access to private information
-from mailing lists, slack etc. 
+from mailing lists, slack etc.
 
-→ When you setup Magpie, it will setup your workstation with security guardrail layers that will run your agents in contenairized sandbox, and it will setup privacy gateways for the tools your agentic setup will use. Read more details in [Secure agent setup RFC](../docs/rfcs/RFC-AI-0002.md) and [Privacy-aware LLM routing for foundation private information](docs/rfcs/RFC-AI-0003.md).
+→ When you setup Magpie, it will setup your workstation with security guardrail layers that will run your agents in containerized sandbox, and it will setup privacy gateways for the tools your agentic setup will use. Read more details in [Secure agent setup RFC](../docs/rfcs/RFC-AI-0002.md) and [Privacy-aware LLM routing for foundation private information](docs/rfcs/RFC-AI-0003.md).
 
 ---
 
