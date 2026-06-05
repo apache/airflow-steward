@@ -3,6 +3,16 @@
 
 # conventions — auto-detect the adopter's skills-dir layout
 
+> **Scope.** This file covers the **`.claude/` ↔ `.github/` pair**
+> — the one coupled entry of the agent-target registry in
+> [`agents.md`](agents.md), where some adopters mirror one
+> directory into the other. The *wider* question of **which**
+> agent targets `adopt` wires (the universal `.agents/skills/`
+> path, plus holdout natives like Windsurf / Goose) lives in
+> [`agents.md`](agents.md). The universal and holdout targets are
+> always wired **flat** (like Pattern A below); only this
+> `.claude/`/`.github/` pair has the A/B/C/D layout variants.
+
 Different ASF projects already organise their `.claude/skills/`
 differently. Before `setup adopt` creates symlinks
 into the snapshot, it detects which pattern is in place and

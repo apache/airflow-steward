@@ -70,13 +70,16 @@ Then verify the chain end-to-end:
 - `ls <worktree>/.apache-magpie/skills/` lists the
   same skills as `ls <main>/.apache-magpie/skills/`.
 
-## Step 1b — Wire up the worktree's `<adopter-skills-dir>` symlinks
+## Step 1b — Wire up the worktree's per-target symlinks
 
 The snapshot symlink in Step 1 only makes the framework's
-*source* available to this worktree. The `<adopter-skills-dir>`
-symlinks (the gitignored per-skill entries the agent harness
-actually resolves) are **per-worktree** — each working copy
-needs its own. A worktree branched from before adoption
+*source* available to this worktree. The per-skill symlinks (the
+gitignored entries the agent harness actually resolves) live in
+**every active target dir** ([`agents.md`](agents.md) —
+`.agents/skills/` (universal), `.claude/skills/`,
+`.github/skills/`, plus any present holdout) and are
+**per-worktree** — each working copy needs its own in every
+target. A worktree branched from before adoption
 landed, or branched from a state where the symlinks were
 cleaned, has none on disk.
 
@@ -91,18 +94,23 @@ Compose the **effective family set** for this worktree:
   [`SKILL.md` Golden rule 8](SKILL.md#golden-rules). These
   are added unconditionally, never read from the lock.
 
-For each framework skill in the effective family set:
+For each framework skill in the effective family set, and for
+**each active target dir**:
 
-- If `<worktree>/<adopter-skills-dir>/magpie-<skill>` is missing —
+- If `<worktree>/<target>/magpie-<skill>` is missing —
   create it (gitignored).
 - If it exists and points at the correct snapshot path —
   leave it alone.
 - If it exists but is broken or points at the wrong path —
   repair it.
 
-Reuse the convention detection from
-[`conventions.md`](conventions.md). The pattern drives how
-many layers the worktree's `<adopter-skills-dir>` needs:
+The `.agents/skills/` (universal) target and any present
+holdout (`.windsurf/skills/`, `.goose/skills/`, …) are wired
+**flat** — one `magpie-<n>` → snapshot per skill, exactly like
+conventions Pattern A. For the `.claude/`/`.github/` pair, reuse
+the convention detection from
+[`conventions.md`](conventions.md); the pattern drives how
+many layers that pair needs:
 
 - **Pattern A (flat)** — one layer at
   `.claude/skills/magpie-<n>`.
@@ -115,20 +123,25 @@ many layers the worktree's `<adopter-skills-dir>` needs:
   automatically through the directory symlink, so there is
   no per-skill plumbing to add or repair on that side.
 
-The worktree's `.claude/skills` / `.github/skills` directory
-symlink itself (for Pattern D) is **not** a framework
-artefact — it is checked into the repo as part of the
-adopter's layout, so every worktree inherits it via the
-ordinary `git worktree add` flow. `worktree-init` does not
-touch it.
+The worktree's target directories themselves — `.agents/skills/`,
+any holdout, and the `.claude/skills` / `.github/skills`
+directory symlink (for Pattern D) — are **not** framework
+artefacts; they are checked into the repo as part of the
+adopter's layout, so every worktree inherits them via the
+ordinary `git worktree add` flow. `worktree-init` only wires the
+`magpie-*` entries inside them; it does not touch the
+directories.
 
-Pick any framework skill symlink that should now exist (e.g.
-`<worktree>/.claude/skills/magpie-security-issue-sync/SKILL.md`) and
-confirm `readlink -f` resolves it into
+Pick a framework skill symlink that should now exist in **each**
+active target dir (e.g.
+`<worktree>/.agents/skills/magpie-security-issue-sync/SKILL.md`
+and `<worktree>/.claude/skills/magpie-security-issue-sync/SKILL.md`)
+and confirm `readlink -f` resolves each into
 `<main>/.apache-magpie/...` rather than dangling — same
 sanity check as Step 1's bottom bullet, just now end-to-end
 from agent-harness path through the worktree's symlink
-through the snapshot symlink to the framework source.
+through the snapshot symlink to the framework source, in every
+target.
 
 ## Step 1c — Add the worktree to its own project-local sandbox allowlists
 
@@ -182,9 +195,10 @@ Print a short summary:
 - The main checkout's resolved path.
 - The framework version the main is pinned at (read from
   `<main>/.apache-magpie.lock`).
-- The effective family set wired in Step 1b, split into
-  *opt-in* and *always-on*, with per-skill ✓ / + / ↻
-  counts.
+- The effective family set wired in Step 1b across every
+  active target dir (`.agents/skills/`, the `.claude/`/`.github/`
+  pair, any present holdout), split into *opt-in* and
+  *always-on*, with per-skill ✓ / + / ↻ counts.
 - A reminder: `upgrade` from the main, not from the worktree.
 
 ## Inputs
@@ -218,5 +232,5 @@ different overrides. Symlinking it would conflate branches.
 | Symptom | Likely cause | Fix |
 |---|---|---|
 | Step 0 step 3 stops with "main checkout not adopted" | The main has never run `adopt`. | `cd <main> && /magpie-setup`, then re-run `worktree-init` here. |
-| `worktree-init` runs but skills still fail to resolve | The `<adopter-skills-dir>/magpie-<skill>` symlinks are missing from this worktree's commit (the worktree was branched from before `adopt` ran on main). | Re-run `worktree-init` from main's `adopt` flow afterwards, or `git merge` / `git rebase` the branch carrying the symlink commits. |
+| `worktree-init` runs but skills still fail to resolve | The per-target `magpie-<skill>` symlinks (in `.agents/skills/`, the `.claude/`/`.github/` pair, or a holdout) are missing from this worktree's commit (the worktree was branched from before `adopt` ran on main). | Re-run `worktree-init` from main's `adopt` flow afterwards, or `git merge` / `git rebase` the branch carrying the symlink commits. |
 | `<snapshot-dir>` is a regular directory and `--force` is not passed | A previous worktree snapshot is still on disk. | Re-run the skill, accept the move-aside prompt, then optionally inspect `.apache-magpie.bak.<timestamp>` for any non-snapshot content before deleting. |

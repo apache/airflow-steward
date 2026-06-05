@@ -6,10 +6,19 @@
 The reverse of [`adopt.md`](adopt.md). Removes the framework
 artefacts the adopt flow installed — gitignored snapshot,
 committed lock, gitignored local lock, framework-skill
-symlinks, `.gitignore` entries, post-checkout hook, the
-adoption sections in `README.md` / `AGENTS.md` /
-`CONTRIBUTING.md`, and the committed `setup` skill
-itself.
+symlinks **in every active target dir** ([`agents.md`](agents.md)
+— `.agents/skills/`, `.claude/skills/`, `.github/skills/`, plus
+any present holdout), the matching `.gitignore` blocks,
+post-checkout hook, the adoption sections in `README.md` /
+`AGENTS.md` / `CONTRIBUTING.md`, and the committed `setup`
+skill itself.
+
+> **Critical — tear down *all* target dirs.** Removing only the
+> `.claude/skills/` + `.github/skills/` pair would **orphan** the
+> `.agents/skills/magpie-*` links (and any holdout's) — dangling
+> symlinks into a snapshot that no longer exists, plus stale
+> `.gitignore` blocks. The removal must cover every active target
+> dir per [`agents.md`](agents.md).
 
 By default the adopter-authored `.apache-magpie-overrides/`
 directory is **preserved** — it contains hand-written
@@ -88,7 +97,7 @@ every artefact).
 | Local lock | `<local-lock>` | exists |
 | Committed lock | `<committed-lock>` | exists |
 | `.gitignore` entries | `<repo-root>/.gitignore` | which of the entries from [`adopt.md` Step 7](adopt.md) are present |
-| Framework-skill symlinks | `<adopter-skills-dir>/` — both layers under Pattern B; canonical side only under Pattern D (D.1: `.github/skills/`; D.2: `.claude/skills/`); single layer under Pattern A | each symlink whose target resolves into `<snapshot-dir>/skills/` |
+| Framework-skill symlinks | **Every active target dir** ([`agents.md`](agents.md)): `.agents/skills/` (universal — always present), any present holdout (`.windsurf/skills/`, `.goose/skills/`), plus the `.claude/`/`.github/` pair — both layers under Pattern B; canonical side only under Pattern D (D.1: `.github/skills/`; D.2: `.claude/skills/`); single layer under Pattern A | each `magpie-*` symlink whose target resolves into `<snapshot-dir>/skills/`, in **each** target dir |
 | Post-checkout hook | `<repo-root>/.git/hooks/post-checkout` | exists + invokes `~/.claude/scripts/sandbox-add-project-root.sh` |
 | Doc section: `README.md` | `<repo-root>/README.md` | contains the `## Agent-assisted contribution (apache-steward)` heading |
 | Doc section: `AGENTS.md` | `<repo-root>/AGENTS.md` | contains the `## apache-steward framework` heading |
@@ -115,10 +124,15 @@ The following will be REMOVED:
   Gitignored (no commit needed):
     .apache-magpie/                      (snapshot, ~N MB)
     .apache-magpie.local.lock
-    <adopter-skills-dir>/<symlink-1>     → .apache-magpie/skills/<skill-1>/
-    <adopter-skills-dir>/<symlink-2>     → ...
-    .github/skills/<symlink-1>           (Pattern B only — second physical layer)
+    .agents/skills/magpie-<skill-1>      → .apache-magpie/skills/<skill-1>/   (universal target)
+    .agents/skills/magpie-<skill-2>      → ...
+    <holdout>/skills/magpie-<skill-1>    → ...   (e.g. .windsurf/skills/, .goose/skills/ — only if present)
+    <adopter-skills-dir>/magpie-<skill-1> → .apache-magpie/skills/<skill-1>/   (claude-code/github pair)
+    <adopter-skills-dir>/magpie-<skill-2> → ...
+    .github/skills/magpie-<skill-1>      (Pattern B only — second physical layer of the pair)
     .git/hooks/post-checkout              (if it contains the steward recipe)
+    # Target dirs (per agents.md): always .agents/skills/ (universal),
+    #   any present holdout, plus the claude-code/github pair below.
     # Pattern A:  <adopter-skills-dir> = .claude/skills/
     # Pattern B:  <adopter-skills-dir> spans .claude/skills/ AND .github/skills/
     # Pattern D:  <adopter-skills-dir> = canonical side only
@@ -163,8 +177,9 @@ uncommitted edits, prepend a **warning** above the table:
   Commit, stash, or copy them out before continuing.
 ```
 
-If any framework-skill symlink under `<adopter-skills-dir>/`
-resolves to a path **outside** `<snapshot-dir>/` — i.e. an
+If any `magpie-*` symlink in **any active target dir**
+(`.agents/skills/`, a holdout, or the `.claude/`/`.github/`
+pair) resolves to a path **outside** `<snapshot-dir>/` — i.e. an
 adopter committed a real skill at the same name post-
 adoption, or a symlink points elsewhere — list it under a
 separate **Preserved (not framework-owned)** subsection. The
@@ -191,9 +206,17 @@ artefacts that *depend* on others come out first, so a
 half-completed unadopt never leaves a dangling symlink
 pointing at a deleted snapshot.
 
-1. **Framework-skill symlinks.** For each entry in the
-   inventory, `rm` the symlink. Per-pattern:
+1. **Framework-skill symlinks — in every active target dir.**
+   For each entry in the inventory, `rm` the `magpie-*` symlink.
+   Cover **every active target dir** ([`agents.md`](agents.md)),
+   not just the `.claude/`/`.github/` pair — skipping
+   `.agents/skills/` or a holdout would orphan its `magpie-*`
+   links once the snapshot is removed in step 3.
 
+   - **Universal target (`.agents/skills/`)** — one flat layer;
+     remove each `.agents/skills/magpie-<n>`. Any present holdout
+     (`.windsurf/skills/`, `.goose/skills/`, …) is torn down the
+     same flat way.
    - **Pattern A** — one layer; just remove
      `.claude/skills/magpie-<n>`.
    - **Pattern B** — two layers; remove both
@@ -203,7 +226,10 @@ pointing at a deleted snapshot.
      The directory symlink itself (`.claude/skills` or
      `.github/skills`) is **adopter-owned** and **not
      removed by unadopt** — it predates framework adoption
-     and serves the adopter's own native skills too.
+     and serves the adopter's own native skills too. The same
+     adopter-owned rule applies to the target dirs themselves
+     (`.agents/skills/`, a holdout): only the `magpie-*` entries
+     come out, never the directory.
 
    Never touch a non-symlink at the same path.
 2. **Post-checkout hook.** Remove only if its content matches
@@ -257,9 +283,10 @@ After the deletions, verify the post-state:
 
 - `<snapshot-dir>/` does not exist.
 - `<committed-lock>` and `<local-lock>` do not exist.
-- No symlinks under `<adopter-skills-dir>/` resolve into
-  `<snapshot-dir>/` (the path is gone, so dangling symlinks
-  would surface here).
+- No `magpie-*` symlinks in **any active target dir**
+  (`.agents/skills/`, any holdout, or the `.claude/`/`.github/`
+  pair) resolve into `<snapshot-dir>/` (the path is gone, so
+  any orphaned dangling symlink would surface here).
 - `.gitignore` no longer contains the steward entries.
 - The doc sections are gone from the affected files.
 - `<adopter-skills-dir>/magpie-setup/` does not exist.
@@ -277,7 +304,7 @@ A summary of what was removed + what remains:
 ```text
 ✓ Snapshot removed:        .apache-magpie/
 ✓ Locks removed:           .apache-magpie.lock, .apache-magpie.local.lock
-✓ Symlinks removed:        <count> (per-pattern — A: under .claude/skills/; B: under both .claude/skills/ AND .github/skills/; D: under the canonical side only)
+✓ Symlinks removed:        <count> across every active target dir — .agents/skills/ (universal) + any present holdout + the claude-code/github pair (A: under .claude/skills/; B: under both .claude/skills/ AND .github/skills/; D: under the canonical side only)
 ✓ Post-checkout hook:      removed (or: preserved — contained extra adopter logic)
 ✓ Doc sections removed:    README.md[, AGENTS.md][, CONTRIBUTING.md]
 ✓ .gitignore cleaned:      <N> entries removed
