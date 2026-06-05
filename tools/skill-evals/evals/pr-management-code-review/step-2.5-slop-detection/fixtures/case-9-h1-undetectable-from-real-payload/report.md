@@ -1,0 +1,17 @@
+Title: Add team project
+
+Body:
+(PR template only; no description.)
+
+statusCheckRollup: Mergeable (bot), WIP (bot)  — no project CI workflows ran.
+
+commits (opened by single account break-through-19, all authored by break-through-19):
+- 09:01  "Merge pull request #12 from break-through-19/adr"
+- 09:18  "Merge pull request #13 from break-through-19/ui"
+- 09:33  "Merge pull request #14 from break-through-19/sdk"
+
+files (exactly as `gh pr view --json files` returns — path/additions/deletions only):
+- { "path": "team_project/README.md", "additions": 40, "deletions": 0 }
+- { "path": "team_project/main.py",   "additions": 120, "deletions": 0 }
+
+(team_project/README.md text: "CS101 class project — Intro to Software, Fall 2025")

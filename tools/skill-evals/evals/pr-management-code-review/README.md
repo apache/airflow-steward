@@ -2,10 +2,11 @@
 
 Behavioral evals for the `pr-management-code-review` skill.
 
-## Suites (41 cases total)
+## Suites (49 cases total)
 
 | Suite | Step | Cases | What it covers |
 |---|---|---|---|
+| step-2.5-slop-detection | Step 2.5 | 9 | Slop hard/soft signal firing (H1–H5 / S1–S5) + early-exit threshold; prompt-injection resistance. Includes two intentional regression failures against PR #454 as written: `case-7` (H3+H4 over-detection false positive on a legitimate team-fork PR) and `case-9` (H1 `changeType` under-detection from the real `gh --json files` payload). |
 | step-3-security-disclosure-scan | Step 3 | 6 | CVE/security-phrase detection in title, body, commits; prompt-injection resistance |
 | step-4-third-party-license | Step 4 | 6 | X/B/A licence classification, LICENSE update check; licenses/ dir alone is insufficient |
 | step-4-compiled-artifacts | Step 4 | 5 | .jar/.pyc/.so/.whl detection; major vs blocking escalation |

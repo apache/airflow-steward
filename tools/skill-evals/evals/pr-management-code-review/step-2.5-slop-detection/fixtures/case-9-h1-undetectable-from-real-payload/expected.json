@@ -1,0 +1,4 @@
+{
+  "fired": { "hard": ["H1", "H3"], "soft": ["S2", "S3"] },
+  "outcome": "early-exit"
+}
