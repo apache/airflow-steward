@@ -20,11 +20,13 @@ doubt, proceed with the normal review.
 
 Signals are split into **hard** (individually strong) and **soft**
 (individually weak; accumulate). Most checks use only data already
-in the Step 2 payload. H1 infers new-directory status from
-`files[].changeType` (no base-ref tree lookup needed). H2 matches
-full-URL fork references in the PR body (no issue-resolution API
-call needed). H3–H5 and all soft signals are fully derivable from
-the Step 2 payload with no extra `gh` calls.
+in the Step 2 payload. H1 detects new standalone directories from
+the cached unified diff (`new file mode` / `--- /dev/null` headers)
+and `files[].path` — no `changeType` field, no base-ref tree lookup.
+H2 matches full-URL fork references in the PR body (no
+issue-resolution API call needed). H3–H5 and S2–S5 are fully
+derivable from the Step 2 payload with no extra `gh` calls. S1 uses
+the PR title from the Step 1 working-list cache.
 
 ### Hard signals
 
@@ -33,7 +35,7 @@ two or more together are nearly conclusive.
 
 | ID | Signal | How to detect |
 |---|---|---|
-| H1 | **New standalone top-level directory** | All files under a first-level directory path are `changeType: ADDED` (the directory is entirely new in this diff), AND the directory contains a project-root file at its first level (`README.md`, `pyproject.toml`, `package.json`, `go.mod`, `pom.xml`, etc.), AND the directory name and/or any README within it suggest it is an independent project unrelated to the upstream codebase. Detection uses `files[].path` and `files[].changeType` only — no base-ref tree lookup. |
+| H1 | **New standalone top-level directory** | The cached unified diff contains `+++ b/<dir>/...` entries where every path shares a single first-level directory prefix AND every file in that prefix appears as a new file in the diff (signalled by `new file mode` or `--- /dev/null` headers), AND the directory contains a project-root file at its first level (`README.md`, `pyproject.toml`, `package.json`, `go.mod`, `pom.xml`, etc.), AND the directory name and/or any README within it suggest it is an independent project unrelated to the upstream codebase. Detection uses the cached unified diff and `files[].path` — no `changeType` field, no base-ref tree lookup. |
 | H2 | **Private-fork issue URL in PR body** | The body contains a full GitHub issue or PR URL pointing to a repository that is not the upstream repo — pattern: `https://github.com/<author>/<repo-name>/(issues\|pull)/\d+` where `<repo-name>` differs from the upstream repo. Match against the raw body string. Do not attempt to resolve bare `#N` references; only flag explicit fork URLs. |
 | H3 | **Fork merge-commit flood** | The commit list contains 3+ commit messages matching `^Merge (pull request|branch) #\d+ from` that all share the same fork prefix and were authored within a narrow window (< 60 minutes apart). |
 | H4 | **Multi-author team project** | Commits are authored by 3 or more distinct GitHub logins, yet the PR is opened by a single account — typical of a university team pushing their entire fork history. |
@@ -59,8 +61,16 @@ Run the check after computing which signals fire. Apply the rules below:
 |---|---|
 | **2+ hard signals** | Early exit — crystal-clear slop |
 | **1 hard signal + 3+ soft signals** | Early exit — crystal-clear slop |
-| **1 hard signal, < 3 soft** | Note only — add `[suspicious]` chip to headline, proceed with normal review |
-| **0 hard signals, any soft** | Note only — add `[suspicious]` chip if ≥ 2 soft signals, otherwise silent |
+| **1 hard signal, < 3 soft** | Note only — emit `⚠ [suspicious] — <fired signal IDs>` after the scan, proceed with normal review |
+| **0 hard signals, any soft** | Note only — emit `⚠ [suspicious] — <fired signal IDs>` if ≥ 2 soft signals, otherwise silent |
+
+**H3 and H4 are correlated.** Both arise from the same root cause: a
+team developed on a shared fork and merged internal PRs before sending
+one upstream. When H3 and H4 fire *together* and no other hard signal
+fires, treat them as a single hard signal for the "2+ hard signals"
+threshold — a H3+H4-only pair meets note-only, not early exit. Early
+exit on H3+H4 requires at least one independent additional hard signal
+(H1, H2, or H5).
 
 The `[suspicious]` note-only path does **not** interrupt the review
 flow. It surfaces in the headline so the maintainer has the information
@@ -155,6 +165,13 @@ cannot be accepted in its current form.
 
 We welcome genuine contributions and are happy to help if you have
 questions about the process.
+
+If you believe this assessment is incorrect and your changes are a
+genuine upstream contribution, please reply to this comment explaining
+the purpose of your PR and a maintainer will take another look.
+
+---
+*Drafted by an AI-assisted tool; reviewed by @<viewer> before posting.*
 ```
 
 The `<contributing-docs-url>` is the adopter's contributing guide, read
@@ -173,8 +190,8 @@ follow-up `[X]` close if the maintainer wants to.
 
 **Propose** the sequence of operations, then **confirm** before executing:
 
-> *About to: close PR #N, lock the conversation (reason: spam), and
-> show you the report link. Confirm? `[Y]es` / `[N]o`.*
+> *About to: close PR #N, lock the conversation (reason: off-topic),
+> and show you the report link. Confirm? `[Y]es` / `[N]o`.*
 
 On confirm, execute in order:
 
@@ -183,19 +200,23 @@ On confirm, execute in order:
 gh pr close <N> --repo <repo>
 
 # 2. Lock the conversation
-gh api --method PUT "repos/<owner>/<repo>/issues/<N>/lock" \
-  --field lock_reason=spam
+# <repo> is owner/name form (e.g. apache/airflow)
+gh api --method PUT "repos/<repo>/issues/<N>/lock" \
+  --field lock_reason=off-topic
 ```
 
 Then surface the report link (cannot be automated — GitHub does not
 expose a report API):
 
 ```text
-To report this PR to GitHub:
+To report this PR to GitHub (optional — only for genuine spam):
   1. Open: https://github.com/<upstream>/pull/<N>
   2. Click the "…" menu (top-right of the PR header).
   3. Select "Report content".
-  4. Choose the appropriate reason (e.g. "Spam or misleading").
+  4. Choose the appropriate reason.
+     Note: "Spam or misleading" is for deceptive content, not for
+     misdirected class projects. Most slop-detected PRs should
+     simply be closed without a report.
 ```
 
 Note in the session summary that this PR was closed and locked, with

@@ -132,10 +132,12 @@ posting (Step 8), use the SHA-comparison shortcut.
 
 **Read** the cached metadata and diff from Step 2 and run the
 structural scan defined in [`slop-detection.md`](slop-detection.md).
-All signals are evaluated from the Step 2 payload already in memory;
-no extra `gh` calls are needed (see signal descriptions in
+Most signals are evaluated from the Step 2 payload already in
+memory; no extra `gh` calls are needed. S1 (ticket-style title) uses
+the PR title from the Step 1 working-list cache. See signal
+descriptions in
 [`slop-detection.md` § Signals](slop-detection.md#signals) for
-per-signal data-source notes).
+per-signal data-source notes.
 
 Two outcomes:
 

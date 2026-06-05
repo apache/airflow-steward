@@ -236,6 +236,17 @@ should really be drafted because of merge conflicts that
 appeared), the skill says so explicitly and points them at
 `/magpie-pr-management-triage pr:<N>`. It does not silently invoke triage actions.
 
+**Exception — slop-detection early exit.** The `[X]` action in
+[`slop-detection.md`](slop-detection.md) (close PR + lock
+conversation) is an explicit, deliberate carve-out for structurally
+non-genuine PRs detected at Step 2.5. This action is only surfaced
+after two or more hard signals fire; it is never available during a
+normal review flow. The maintainer must confirm before execution —
+the skill never auto-closes. The decision to add this action here
+rather than in `pr-management-triage` is deliberate: slop detection
+fires in the middle of a review session and the `[X]` path must not
+require a context switch to a separate skill.
+
 **Golden rule 10 — every PR number is rendered as its full
 URL.** A bare `#65981` is unclickable in most terminals; the
 maintainer cannot open it without retyping. Whenever this
@@ -535,11 +546,12 @@ writes a session log to disk.
 
 ## What this skill deliberately does NOT do
 
-- **First-pass triage actions.** Drafting, closing, rebasing,
+- **First-pass triage actions.** Drafting, rebasing,
   pinging, rerunning CI, marking `ready for maintainer review` —
   all live in [`pr-management-triage`](../pr-management-triage/SKILL.md). If the
   current PR needs one of those, the skill says so and points
-  at `/magpie-pr-management-triage pr:<N>`.
+  at `/magpie-pr-management-triage pr:<N>`. *(Exception: the
+  slop-detection `[X]` close+lock path — see Golden rule 9.)*
 - **Merging.** Merging is a conscious maintainer action that
   belongs in a separate flow.
 - **Submitting reviews on closed / merged PRs.** The skill only
