@@ -128,6 +128,33 @@ posting (Step 8), use the SHA-comparison shortcut.
 
 ---
 
+## Step 2.5 — Slop detection
+
+**Read** the cached metadata and diff from Step 2 and run the
+structural scan defined in [`slop-detection.md`](slop-detection.md).
+This step costs no extra `gh` calls — it operates on the payload
+already in memory.
+
+Two outcomes:
+
+- **Early exit** — two or more hard signals fired, or one hard
+  signal plus three or more soft signals. **Propose** the slop
+  report to the maintainer (template in
+  [`slop-detection.md` § Maintainer interaction](slop-detection.md#maintainer-interaction-on-early-exit))
+  and wait for an action choice (`[C]omment`, `[X]` close+lock,
+  `[R]eview anyway`, `[S]kip`, `[Q]uit`). **Do not proceed to
+  Step 3** until the maintainer either picks `[R]eview anyway`
+  (which resumes the normal flow) or an exit action (which ends
+  this PR's flow and moves to Step 9).
+
+- **Note only** — fewer signals than the early-exit threshold.
+  Add a `[suspicious]` chip to the already-shown headline when
+  at least one hard signal or two or more soft signals fired;
+  otherwise proceed silently. In either case, **continue to
+  Step 3** without interruption.
+
+---
+
 ## Step 3 — Read the PR body and acceptance criteria
 
 **Read** the body. Extract:
