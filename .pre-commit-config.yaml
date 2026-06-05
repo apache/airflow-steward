@@ -24,7 +24,12 @@ default_language_version:
   # 18.6.0 pin matched the framework's pre-PR-#18 tooling baseline
   # but is incompatible with the markdownlint-cli2 v0.22.1 rev
   # pinned below.
-  node: 22.11.0
+  #
+  # Bumped 22.11.0 -> 22.13.0: markdownlint-cli2's transitive dep
+  # `@eslint/js@10.0.1` declares engines `^20.19.0 || ^22.13.0 || >=24`,
+  # so the old 22.11.0 pin failed `npm install` with EBADENGINE. 22.13.0
+  # is the lowest 22.x that satisfies it.
+  node: 22.13.0
 minimum_prek_version: '0.3.5'
 repos:
   - repo: meta

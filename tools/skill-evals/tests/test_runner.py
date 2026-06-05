@@ -1494,7 +1494,7 @@ def test_run_cli_passes_prompt_on_stdin():
 
 
 def test_run_cli_reports_non_zero_exit():
-    _stdout, _stderr, rc = run_cli("python3 -c \"import sys; sys.exit(3)\"", "", timeout=10)
+    _stdout, _stderr, rc = run_cli('python3 -c "import sys; sys.exit(3)"', "", timeout=10)
     assert rc == 3
 
 

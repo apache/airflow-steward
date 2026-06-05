@@ -10,9 +10,12 @@ for the viewer:
 1. **review-requested** — review is requested from the viewer individually.
    Chip: `review-requested`.
 2. **touches** — the PR changes at least one file in the viewer's active
-   set (files the viewer has recently worked on). Chip:
-   `touches: <first-matched-path>` (if more than one matches, append
-   ` +N more`).
+   set (files the viewer has recently worked on). A changed file matches
+   **only when its exact path is listed in the active set** — do not infer a
+   match from a shared directory or path prefix. Count only the changed
+   files whose exact path appears in the active set. Chip:
+   `touches: <first-matched-path>` (append ` +N more` only when **two or
+   more** changed files exactly match active-set paths).
 3. **codeowner** — the PR changes at least one file CODEOWNERS assigns to
    the viewer. Chip: `codeowner: <first-matched-path>`.
 4. **mentioned-in** — the viewer's `@login` appears in the PR body, a PR
