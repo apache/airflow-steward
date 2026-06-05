@@ -149,12 +149,14 @@ How it differs from a remote adoption:
 - **Symlinks are committed, not gitignored.** Each
   `magpie-<skill>` symlink targets `../../skills/<skill>/` — an
   in-repo path that always resolves on a fresh clone — so the
-  links are committed. They are written under **both**
-  `.claude/skills/` (Claude Code) and `.github/skills/` (GitHub's
-  skill loader), so the framework's own skills are discoverable
-  by either harness; `.gitignore` un-ignores `magpie-*` in both
-  dirs. Every contributor gets the skills active with no setup
-  step.
+  links are committed. They are written under **every active
+  target dir** ([`agents.md`](agents.md)) — `.agents/skills/`
+  (the universal path shared by Codex, Cursor, Gemini CLI,
+  Copilot, …), `.claude/skills/` (Claude Code), and
+  `.github/skills/` (GitHub's skill loader) — so the framework's
+  own skills are discoverable by any harness; `.gitignore`
+  un-ignores `magpie-*` in each. Every contributor gets the
+  skills active with no setup step, whatever agent they use.
 - **All skills, no family prompt.** Self-adoption links *every*
   skill under `skills/`, so the opt-in family prompt of
   [Step 5](#step-5--pick-the-skill-families) is skipped.
@@ -192,25 +194,37 @@ How it differs from a remote adoption:
    ```
 
 5. **`.gitignore`.** Ensure each skills dir glob is ignored with
-   the `magpie-*` set un-ignored, in **both** locations
-   (idempotent — add any missing line):
+   the `magpie-*` set un-ignored, in **every active target
+   location** ([`agents.md`](agents.md) — the always-on neutral
+   targets `.agents/skills/`, `.claude/skills/`, `.github/skills/`
+   plus any other registry dir already present). Idempotent — add
+   any missing line. For the default set:
 
    ```text
+   .agents/skills/*
+   !/.agents/skills/magpie-*
    .claude/skills/*
    !/.claude/skills/magpie-*
    .github/skills/*
    !/.github/skills/magpie-*
    ```
 
+   (Self-adoption symlinks are *committed*, not gitignored — see
+   the next step — so the `!…/magpie-*` negation here un-ignores
+   the whole set, not just `magpie-setup`.)
+
 6. **Create the symlinks.** For each enumerated skill `<n>`,
    create the relative symlink `magpie-<n>` → `../../skills/<n>`
-   under **both** `<repo-root>/.claude/skills/` and
-   `<repo-root>/.github/skills/`. Idempotent: re-point a
-   pre-existing `magpie-<n>` symlink only if it targets something
-   else; never overwrite a non-symlink (surface the conflict and
-   stop). Show the full list and confirm before writing.
+   under **every active target dir** from
+   [`agents.md`](agents.md) (`.agents/skills/`, `.claude/skills/`,
+   `.github/skills/`, plus any present holdout). Idempotent:
+   re-point a pre-existing `magpie-<n>` symlink only if it targets
+   something else; never overwrite a non-symlink (surface the
+   conflict and stop). Show the full list and confirm before
+   writing.
 7. **Verify + stage.** Confirm every `magpie-<n>` symlink (in
-   both dirs) resolves to a directory containing `SKILL.md`, then
+   every target dir) resolves to a directory containing
+   `SKILL.md`, then
    suggest the user `git add` the symlinks, `.apache-magpie.lock`,
    and `.gitignore`.
 
@@ -508,13 +522,26 @@ idempotent — re-add them if they're missing.
 /.claude/settings.local.json
 ```
 
-**Symlink-pattern entries — vary by adopter
-[skills-dir convention](conventions.md)**:
+**Symlink-pattern entries — one block per active target
+([`agents.md`](agents.md)).** Every framework skill is symlinked
+under the `magpie-` prefix (see
+[`SKILL.md` Golden rule 6](SKILL.md#golden-rules)), so a single
+`magpie-*` glob covers them all in each target dir — no per-family
+lines.
 
-  Every framework skill is symlinked under the `magpie-`
-  prefix (see [`SKILL.md` Golden rule 6](SKILL.md#golden-rules)),
-  so a single `magpie-*` glob covers them all — no per-family
-  lines.
+**Universal target — always emitted** (the `.agents/skills/`
+path shared by Codex, Cursor, Gemini CLI, Copilot, OpenCode, …):
+
+  ```text
+  /.agents/skills/magpie-*
+  !/.agents/skills/magpie-setup
+  ```
+
+**Any present holdout** (`.windsurf/skills/`, `.goose/skills/`,
+…) gets the same flat two-line block keyed on its own dir.
+
+**Claude Code + GitHub pair — varies by adopter
+[skills-dir convention](conventions.md):**
 
 - **Pattern A (flat)** — only the `.claude/skills/...` lines:
 
@@ -601,12 +628,25 @@ adoption path where the committed lock only records the
 opt-in pick. Compute the family glob fresh from the snapshot
 contents on disk — do not hard-code skill names.
 
-Per-pattern symlink wiring (see
+Per-target symlink wiring (targets from
+[`agents.md`](agents.md); the Claude+GitHub layout from
 [`conventions.md`](conventions.md)):
 
 Every symlink is named `magpie-<n>` (the `magpie-` prefix
 namespaces framework skills); its target keeps the snapshot's
-clean source name `skills/<n>/`.
+clean source name `skills/<n>/`. Wire the **same set of skills**
+into **every active target dir**.
+
+- **Universal target (`.agents/skills/`)** — one flat symlink
+  per skill at `.agents/skills/magpie-<n>` → snapshot. Gitignored.
+  This single placement is what makes the framework discoverable
+  to Codex, Cursor, Gemini CLI, Copilot, OpenCode, and the rest
+  of the shared-path cluster. Any present holdout
+  (`.windsurf/skills/`, `.goose/skills/`, …) is wired the same
+  flat way.
+
+- **Claude Code + GitHub pair** — wired per the detected
+  convention pattern below:
 
 - **Pattern A (flat)** — one symlink per skill at
   `.claude/skills/magpie-<n>` → snapshot. Gitignored.

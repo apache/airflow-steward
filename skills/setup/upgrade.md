@@ -111,7 +111,7 @@ For each kind of drift, present:
   `git-branch` and `git-tag` methods, list the commit log
   (`git log --oneline <local-commit>..<committed-commit>`)
   via the GitHub API or by re-cloning to a temp dir.
-- **Files touched in the framework's `.claude/skills/`** —
+- **Files touched in the framework's skill set** —
   grouped by skill family. Call out any change to a skill
   the adopter has an override for (the override will need
   reconciliation in Step 5).
@@ -258,6 +258,23 @@ pattern-matching.
 
 ## Step 6 — Refresh framework-skill symlinks
 
+This step refreshes symlinks for **every active target dir**
+([`agents.md`](agents.md)), not just the `.claude/`/`.github/`
+pair. Compute the **active target set** the same way `adopt`
+does: the always-on neutral targets `.agents/skills/`
+(`universal` — the path shared by Codex, Cursor, Gemini CLI,
+Copilot, OpenCode, …), `.claude/skills/` (`claude-code`), and
+`.github/skills/` (`github`), **plus any registry holdout
+already present in the repo** (`.windsurf/skills/`,
+`.goose/skills/`, …). When the framework has added a new
+always-on target since the last run, it joins the active set and
+gets its symlinks created on this upgrade — the same way the
+effective family set below picks up newly-introduced families.
+The `.agents/skills/` target and every holdout are wired **flat**
+(one `magpie-<n>` → snapshot per skill, like conventions
+Pattern A); only the `.claude/`/`.github/` pair follows the
+A/B/C/D layout from [`conventions.md`](conventions.md).
+
 Read the opt-in skill families from `<committed-lock>`
 (falling back to `<local-lock>` if the committed lock is
 silent on families). Compose the **effective family set**
@@ -293,40 +310,58 @@ a new `setup-*` or `list-*` skill in a release, and
 contracts on a rename / removal without code changes here.
 
 Before creating symlinks for a newly-introduced opt-in
-family, reconcile the adopter's `.gitignore` so the new
-family's snapshot symlinks are gitignored. Append the
-`.gitignore` lines from
+family — or for a newly-present active target dir — reconcile
+the adopter's `.gitignore` so the new snapshot symlinks are
+gitignored. Append the `.gitignore` lines from
 [`adopt.md` Step 7](adopt.md#step-7--gitignore-entries-fresh-only)
-for the new family's prefix, matching the adopter's
-[skills-dir convention](conventions.md):
+for **each active target dir** ([`agents.md`](agents.md)). Every
+framework skill is symlinked under the `magpie-` prefix, so a
+single `magpie-*` glob (plus the `!…/magpie-setup` negation that
+keeps the committed bootstrap tracked) covers them all per
+target — no per-family lines:
 
-- Pattern A — `/.claude/skills/<prefix>-*` only.
-- Pattern B — both `/.claude/skills/<prefix>-*` and
-  `/.github/skills/<prefix>-*` (two physical symlinks per
-  skill).
-- Pattern D — only the *canonical-side* `<canonical>/<prefix>-*`
-  ignore line. D.1 → `/.github/skills/<prefix>-*`; D.2 →
-  `/.claude/skills/<prefix>-*`. The symlinked side's
-  directory symlink does not need its own ignore line — git
-  does not descend into it.
+- **Universal target (`.agents/skills/`)** — always present:
+
+  ```text
+  /.agents/skills/magpie-*
+  !/.agents/skills/magpie-setup
+  ```
+
+- **Any present holdout** (`.windsurf/skills/`,
+  `.goose/skills/`, …) — the same flat two-line block keyed on
+  its own dir.
+
+- **Claude Code + GitHub pair**, per the adopter's
+  [skills-dir convention](conventions.md):
+  - Pattern A — `/.claude/skills/magpie-*` (plus
+    `!/.claude/skills/magpie-setup`) only.
+  - Pattern B — both `/.claude/skills/magpie-*` and
+    `/.github/skills/magpie-*` (two physical symlinks per
+    skill), each with its `!…/magpie-setup` negation.
+  - Pattern D — only the *canonical-side* `<canonical>/magpie-*`
+    ignore line. D.1 → `/.github/skills/magpie-*`; D.2 →
+    `/.claude/skills/magpie-*`. The symlinked side's
+    directory symlink does not need its own ignore line — git
+    does not descend into it.
 
 The append is idempotent — skip lines that already exist.
 The same idempotence covers adopters whose `.gitignore`
 already had the entries (e.g. from a manually-edited block
 or a previous adopt run).
 
-The post-upgrade state must be: *every framework skill in
-the new snapshot that belongs to the effective family set
-has a valid symlink in `<adopter-skills-dir>`*, and *no
-symlink points at a framework skill that no longer exists
-in the snapshot*.
+The post-upgrade state must be: *in every active target dir,
+every framework skill in the new snapshot that belongs to the
+effective family set has a valid symlink*, and *no symlink (in
+any target dir) points at a framework skill that no longer
+exists in the snapshot*.
 
-Run two passes:
+Run two passes **per active target dir** ([`agents.md`](agents.md)):
 
 1. **Ensure every family-member skill is linked.** For each
    framework skill in the new snapshot that belongs to the
-   effective family set, check
-   `<adopter-skills-dir>/magpie-<skill>`:
+   effective family set, check `<target>/magpie-<skill>` in each
+   active target dir (`.agents/skills/`, `.claude/skills/`,
+   `.github/skills/`, plus any present holdout):
    - If the symlink exists and points at the matching
      snapshot path, leave it alone.
    - If it's missing, create it.
@@ -335,34 +370,41 @@ Run two passes:
 
    Do this unconditionally — do not skip skills whose
    symlinks "should" already be there. A contributor who
-   ran `git clean -fdx`, blew away `<adopter-skills-dir>` by
+   ran `git clean -fdx`, blew away a target dir by
    accident, or merged a branch that removed the symlinks
-   gets the full set restored without per-symlink re-
-   prompting. The aggregated list of created / repaired
-   links is reported in the upgrade summary (Step 8 output
-   block, under the `+` and `↻` rows).
+   gets the full set restored in **every** target without
+   per-symlink re-prompting. The aggregated list of created /
+   repaired links is reported in the upgrade summary (Step 8
+   output block, under the `+` and `↻` rows). A newly-present
+   target dir (a holdout that just appeared, or a new always-on
+   target the framework added) gets its full set created here.
 
-2. **Reconcile stale symlinks.** Walk
-   `<adopter-skills-dir>` looking for symlinks that point
-   at framework skills no longer in the new snapshot
-   (rename, removal). For each:
+2. **Reconcile stale symlinks.** Walk **each active target
+   dir** looking for symlinks that point at framework skills no
+   longer in the new snapshot (rename, removal). For each:
    - If renamed (the framework documented a rename in its
      release notes), offer to re-symlink to the new name.
    - If removed, offer to remove the stale symlink.
 
-Per-pattern symlink layers to refresh:
+Per-target symlink layers to refresh:
 
-- **Pattern A (flat)** — refresh the single layer at
-  `.claude/skills/magpie-<n>`.
-- **Pattern B (double-symlinked)** — refresh both layers
-  (inner at `.github/skills/magpie-<n>`, outer at
-  `.claude/skills/magpie-<n>` → inner).
-- **Pattern D (single directory symlink)** — refresh only
-  the *canonical-side* layer at
-  `<canonical-side>/magpie-<n>` (D.1 → `.github/skills/magpie-<n>`;
-  D.2 → `.claude/skills/magpie-<n>`). The symlinked-side path
-  resolves through the directory symlink and needs no
-  per-skill plumbing.
+- **Universal target (`.agents/skills/`)** — refresh the single
+  flat layer at `.agents/skills/magpie-<n>`. Any present holdout
+  (`.windsurf/skills/`, `.goose/skills/`, …) is refreshed the
+  same flat way.
+- **Claude Code + GitHub pair**, per the detected
+  [convention](conventions.md):
+  - **Pattern A (flat)** — refresh the single layer at
+    `.claude/skills/magpie-<n>`.
+  - **Pattern B (double-symlinked)** — refresh both layers
+    (inner at `.github/skills/magpie-<n>`, outer at
+    `.claude/skills/magpie-<n>` → inner).
+  - **Pattern D (single directory symlink)** — refresh only
+    the *canonical-side* layer at
+    `<canonical-side>/magpie-<n>` (D.1 → `.github/skills/magpie-<n>`;
+    D.2 → `.claude/skills/magpie-<n>`). The symlinked-side path
+    resolves through the directory symlink and needs no
+    per-skill plumbing.
 
 ## Step 6b — Sync locally-installed hooks and configuration
 
@@ -641,9 +683,10 @@ Symlinks (main checkout):
   - <list of removed stale symlinks>
 
 .gitignore reconcile:
-  ✓ all opt-in family prefixes already gitignored   OR
-  + <list of /.claude/skills/<prefix>-* and /.github/skills/<prefix>-*
-     lines appended for newly-introduced opt-in families>
+  ✓ all active-target magpie-* globs already gitignored   OR
+  + <list of /.agents/skills/magpie-*, /.claude/skills/magpie-*,
+     /.github/skills/magpie-* (+ any holdout) lines appended for
+     newly-introduced families or newly-present target dirs>
 
 Hooks + local config:
   ✓ <list of files in sync>

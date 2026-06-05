@@ -100,9 +100,11 @@ Apache Magpie framework checkout itself — a remote snapshot of the
 framework into itself would be circular. Instead it **self-adopts**
 with `method:local`: each `magpie-<skill>` is a **committed**
 symlink into the in-repo `../../skills/<skill>/` source — written
-under both `.claude/skills/` (Claude Code) and `.github/skills/`
-(GitHub's skill loader) — with no snapshot, no remote fetch, and
-no copy. This makes
+under **every active agent target** ([`agents.md`](agents.md)):
+`.agents/skills/` (the universal path shared by Codex, Cursor,
+Gemini CLI, Copilot, …), `.claude/skills/` (Claude Code), and
+`.github/skills/` (GitHub's skill loader) — with no snapshot, no
+remote fetch, and no copy. This makes
 the framework's own skills callable while developing the framework,
 and every contributor gets them active on a fresh clone with no
 setup step. `adopt` detects the framework checkout structurally and
@@ -170,7 +172,8 @@ proposed `/magpie-setup upgrade`.
 | [`adopt.md`](adopt.md) | First-time adoption walk-through — recognise existing-snapshot vs needs-bootstrap, write the two lock files, ask the user which skill families to wire up, create the gitignored symlinks, scaffold `.apache-magpie-overrides/`, install the post-checkout hook, update project docs. The default sub-action. |
 | [`upgrade.md`](upgrade.md) | Refresh the gitignored snapshot per the committed lock, reconcile any agentic overrides + symlinks against the new framework structure, surface conflicts. Drives the on-drift remediation flow. |
 | [`verify.md`](verify.md) | Read-only health check — snapshot present + intact, both lock files in sync, symlinks point at live targets, `.gitignore` correct, `.apache-magpie-overrides/` exists, drift status (committed vs local), the `setup` skill itself is current. |
-| [`conventions.md`](conventions.md) | Adopter skills-dir convention auto-detection — four patterns: A (flat `.claude/skills/<n>/`), B (per-skill `.claude/skills/<n>` → `.github/skills/<n>/` double-symlink), C (none yet), D (single directory symlink where one of `.claude/skills` / `.github/skills` is itself a symlink to the other; two orientations). |
+| [`agents.md`](agents.md) | The agent-target registry — *which* directories framework-skill symlinks land in across vendors. Defines the universal `.agents/skills/` path (shared by Codex, Cursor, Gemini CLI, Copilot, OpenCode, …), the `claude-code` + `github` pair, holdout natives (Windsurf, Goose), active-target selection, SKILL.md format portability, and the Claude-Code-only layer (sandbox/hooks). The source of truth every sub-action consults for the target set. |
+| [`conventions.md`](conventions.md) | Adopter skills-dir convention auto-detection for the **`.claude/` ↔ `.github/` pair** — four patterns: A (flat `.claude/skills/<n>/`), B (per-skill `.claude/skills/<n>` → `.github/skills/<n>/` double-symlink), C (none yet), D (single directory symlink where one of `.claude/skills` / `.github/skills` is itself a symlink to the other; two orientations). Describes the *layout of that one coupled pair*; [`agents.md`](agents.md) is the wider which-targets picture. |
 | [`overrides.md`](overrides.md) | Agentic-override file management — open / scaffold an override for a framework skill, list existing overrides, help reconcile when the framework changes the underlying skill's structure on upgrade. |
 | [`unadopt.md`](unadopt.md) | Reverse the adoption — remove snapshot, locks, symlinks, post-checkout hook, `.gitignore` entries, the adoption sections in `README.md` / `AGENTS.md` / `CONTRIBUTING.md`, and the committed `setup` skill itself. Preserves `.apache-magpie-overrides/` by default; `--purge-overrides` removes it too. Surfaces the full removal plan before any write. |
 
@@ -358,6 +361,7 @@ first, then continue.
 |---|---|
 | `from:<git-ref>` / `from:<version>` | Adopt or upgrade from a specific framework ref or version. Used during `adopt` (overrides the user prompt) and `upgrade` (overrides the committed lock for *this run only* — does NOT update the committed lock). |
 | `method:<git-branch\|git-tag\|svn-zip\|local>` | Pick the install method explicitly. Default during `adopt`: prompt the user. **`local`** is **framework-checkout only** — it self-adopts by linking the in-repo `skills/` source directly instead of fetching a snapshot (see [`adopt.md` → Local self-adoption](adopt.md#local-self-adoption-methodlocal)). |
+| `agents:<list>` | Comma-separated **agent targets** to wire symlinks into ([`agents.md`](agents.md) registry ids: `universal`, `claude-code`, `github`, `windsurf`, `goose`, …). Default on `adopt`/`upgrade`: auto — the always-on neutral set (`universal` + `claude-code` + `github`) plus any other registry dir already present in the repo. When passed, **replaces** the auto-detected set for that run, except `universal` (`.agents/skills/`) which is always retained because dropping it defeats vendor neutrality. |
 | `skill-families:<list>` | Comma-separated **opt-in** families to symlink (`security`, `pr-management`, `issue`). Default on `adopt`: prompt. Default on `upgrade`: read the families list from `<committed-lock>` / `<local-lock>`, **auto-include any opt-in family the framework has introduced since the lock was written** (recorded back into the lock), and **ensure every framework skill in the effective family set has a valid symlink** — create or repair missing / broken symlinks, not just add new ones. The flag never accepts the always-on families (`setup-*` minus `setup` itself, and `list-*`); per [Golden rule 8](#golden-rules) those are wired up unconditionally on every run and there is no way to ask for them or opt out. |
 | `--purge-overrides` | *(unadopt only)* Also `git rm -r` `.apache-magpie-overrides/`. Default: preserve. |
 | `dry-run` | Show what the skill would do without writing anything. |
