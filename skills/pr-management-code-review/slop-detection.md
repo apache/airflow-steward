@@ -19,8 +19,12 @@ doubt, proceed with the normal review.
 ## Signals
 
 Signals are split into **hard** (individually strong) and **soft**
-(individually weak; accumulate). All checks use data already in the
-Step 2 payload — no extra `gh` calls.
+(individually weak; accumulate). Most checks use only data already
+in the Step 2 payload. H1 infers new-directory status from
+`files[].changeType` (no base-ref tree lookup needed). H2 matches
+full-URL fork references in the PR body (no issue-resolution API
+call needed). H3–H5 and all soft signals are fully derivable from
+the Step 2 payload with no extra `gh` calls.
 
 ### Hard signals
 
@@ -29,8 +33,8 @@ two or more together are nearly conclusive.
 
 | ID | Signal | How to detect |
 |---|---|---|
-| H1 | **New top-level directory, unrecognised** | A file path in `files[].path` starts with a directory that (a) is not present in the base ref's tree and (b) has no plausible relationship to the rest of the PR's changes. Strongest form: a new directory whose `README` or docs reference a university course, team name, instructor, or academic project. |
-| H2 | **Private-fork issue reference in PR body** | The body contains an issue URL or bare `#N` reference that resolves to a fork rather than the upstream repo (pattern: `github.com/<author>/<repo-name>#\d+` where `<repo-name>` is not the upstream repo). |
+| H1 | **New standalone top-level directory** | All files under a first-level directory path are `changeType: ADDED` (the directory is entirely new in this diff), AND the directory contains a project-root file at its first level (`README.md`, `pyproject.toml`, `package.json`, `go.mod`, `pom.xml`, etc.), AND the directory name and/or any README within it suggest it is an independent project unrelated to the upstream codebase. Detection uses `files[].path` and `files[].changeType` only — no base-ref tree lookup. |
+| H2 | **Private-fork issue URL in PR body** | The body contains a full GitHub issue or PR URL pointing to a repository that is not the upstream repo — pattern: `https://github.com/<author>/<repo-name>/(issues\|pull)/\d+` where `<repo-name>` differs from the upstream repo. Match against the raw body string. Do not attempt to resolve bare `#N` references; only flag explicit fork URLs. |
 | H3 | **Fork merge-commit flood** | The commit list contains 3+ commit messages matching `^Merge (pull request|branch) #\d+ from` that all share the same fork prefix and were authored within a narrow window (< 60 minutes apart). |
 | H4 | **Multi-author team project** | Commits are authored by 3 or more distinct GitHub logins, yet the PR is opened by a single account — typical of a university team pushing their entire fork history. |
 | H5 | **Area sprawl** | Changed files span 5 or more distinct top-level directories (or well-known project sub-areas) with no discernible semantic relationship. Count using the first two path components of each changed file. |
@@ -43,7 +47,7 @@ two or more together are nearly conclusive.
 | S2 | **Template-only PR body** | Body contains no prose beyond the PR template boilerplate (checked: no description above the first `---`, no non-template `closes:` / `related:` references to the upstream repo). |
 | S3 | **No real CI** | `statusCheckRollup` contains only external bots (e.g. Mergeable, WIP, boring-cyborg) and zero entries from the project's own CI workflows. |
 | S4 | **Label sprawl** | PR carries 3+ `area:` labels spanning unrelated subsystems, suggesting the author ran an automated labeller or copied labels from multiple separate changes. |
-| S5 | **Commit messages reference internal sprint/ticket tooling** | 2+ commit messages contain phrases like `sprint`, `kanban`, `jira`, `ticket #`, `story #`, or `[CSS \d+` (course codes). |
+| S5 | **Commit messages reference internal sprint/ticket tooling** | 2+ commit messages contain phrases like `sprint`, `kanban`, `jira`, `ticket #`, `story #`, or course-code patterns like `CSS 566A` (university course identifiers). |
 
 ---
 

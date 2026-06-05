@@ -132,8 +132,10 @@ posting (Step 8), use the SHA-comparison shortcut.
 
 **Read** the cached metadata and diff from Step 2 and run the
 structural scan defined in [`slop-detection.md`](slop-detection.md).
-This step costs no extra `gh` calls — it operates on the payload
-already in memory.
+All signals are evaluated from the Step 2 payload already in memory;
+no extra `gh` calls are needed (see signal descriptions in
+[`slop-detection.md` § Signals](slop-detection.md#signals) for
+per-signal data-source notes).
 
 Two outcomes:
 
@@ -148,10 +150,14 @@ Two outcomes:
   this PR's flow and moves to Step 9).
 
 - **Note only** — fewer signals than the early-exit threshold.
-  Add a `[suspicious]` chip to the already-shown headline when
-  at least one hard signal or two or more soft signals fired;
-  otherwise proceed silently. In either case, **continue to
-  Step 3** without interruption.
+  When at least one hard signal or two or more soft signals fired,
+  output a single note line immediately after the scan (do **not**
+  attempt to modify the already-displayed Step 1 headline):
+
+  > `⚠ [suspicious] — <comma-separated list of fired signal IDs, e.g. H5, S1, S2>`
+
+  Otherwise proceed silently. In both cases, **continue to Step 3**
+  without interruption.
 
 ---
 
