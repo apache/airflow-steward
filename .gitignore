@@ -8,11 +8,14 @@ logs
 # Skill source lives in skills/. The framework self-adopts by
 # committing magpie-<skill> symlinks that point into ../../skills/<skill>/
 # (see skills/setup/adopt.md → "Local self-adoption"). They live under
-# BOTH .claude/skills/ (Claude Code) and .github/skills/ (GitHub's skill
-# loader). Those symlinks ARE committed — their targets are in-repo and
-# always resolve on a fresh clone, so every contributor gets the skills
+# the universal .agents/skills/ path (Codex, Cursor, Gemini CLI, Copilot,
+# …) plus BOTH .claude/skills/ (Claude Code) and .github/skills/ (GitHub's
+# skill loader). Those symlinks ARE committed — their targets are in-repo
+# and always resolve on a fresh clone, so every contributor gets the skills
 # active with no setup step. Everything else dropped into these dirs
 # stays local.
+.agents/skills/*
+!/.agents/skills/magpie-*
 .claude/skills/*
 !/.claude/skills/magpie-*
 .github/skills/*
