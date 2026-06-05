@@ -934,7 +934,7 @@ the user before writing:
 # apache-steward post-checkout hook (installed by /magpie-setup adopt).
 # Add the current worktree's working dir to the worktree's own
 # .claude/settings.local.json sandbox allowlists (per issue #197).
-# Chains into the helper if installed by /setup-isolated-setup-install;
+# Chains into the helper if installed by /magpie-setup-isolated-setup-install;
 # no-op when the helper is absent.
 set -u
 if [ -x "$HOME/.claude/scripts/sandbox-add-project-root.sh" ]; then
@@ -947,7 +947,7 @@ The `|| true` guard keeps the hook from failing the surrounding
 git operation (`git checkout`, `git worktree add`) — the hook is
 best-effort reconciliation, not a gate.
 
-If the operator has not yet run `/setup-isolated-setup-install`,
+If the operator has not yet run `/magpie-setup-isolated-setup-install`,
 the helper-script line is a no-op (the `-x` test fails). When
 they later install the secure setup, no hook re-write is needed:
 the next `post-checkout` fires the helper automatically.
@@ -1185,7 +1185,7 @@ Four passes, in this order:
 
    - **Helper absent** (`~/.claude/scripts/sandbox-add-project-root.sh`
      does not exist) → surface as ⚠ in the adopt summary with a
-     pointer at `/setup-isolated-setup-install`. Do not block
+     pointer at `/magpie-setup-isolated-setup-install`. Do not block
      adopt — many adopters set up secure-agent isolation later,
      and the framework-skill symlinks are usable without it (the
      adopter just runs Bash outside the sandbox until they wire

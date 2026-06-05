@@ -34,7 +34,7 @@ Pass the slash command to invoke as the `with-reviewer:`
 selector:
 
 ```text
-/pr-management-code-review with-reviewer:/some-plugin:adversarial-review
+/magpie-pr-management-code-review with-reviewer:/some-plugin:adversarial-review
 ```
 
 The skill stores that command for the session and proposes it

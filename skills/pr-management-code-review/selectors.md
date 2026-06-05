@@ -545,7 +545,7 @@ why the assistant proposes but does not invoke.
 Example:
 
 ```text
-/pr-management-code-review with-reviewer:/some-plugin:adversarial-review
+/magpie-pr-management-code-review with-reviewer:/some-plugin:adversarial-review
 ```
 
 If `with-reviewer:` is not passed, the skill checks the

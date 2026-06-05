@@ -25,7 +25,7 @@
 How to configure the framework's privacy-aware LLM routing for
 your adopting project. Pick a variant below; copy the matching
 `<project-config>/privacy-llm.md` block into your project; verify
-with `/setup-isolated-setup-verify` (or the privacy-llm-specific
+with `/magpie-setup-isolated-setup-verify` (or the privacy-llm-specific
 check once PR-3 lands the gate-call wiring).
 
 The contract behind these recipes lives in
@@ -107,7 +107,7 @@ substitute `<private-list>` for your project's actual list):
    adopter repo (alongside `project.md`).
 2. Commit it. The file is project-config — it travels with the
    repo, not per-machine.
-3. Run `/setup-isolated-setup-verify` to confirm the existing
+3. Run `/magpie-setup-isolated-setup-verify` to confirm the existing
    secure-agent setup is in place — no new secure-setup steps
    are needed for Variant 1.
 
@@ -330,7 +330,7 @@ gate as incomplete.
 
 Once `<project-config>/privacy-llm.md` is in place:
 
-1. Run `/setup-isolated-setup-verify` to confirm the underlying
+1. Run `/magpie-setup-isolated-setup-verify` to confirm the underlying
    secure-agent setup is unchanged.
 2. (PR-3) Run the privacy-llm-specific check:
 

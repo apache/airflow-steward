@@ -169,7 +169,7 @@ one-line recap row for the Step 2 summary:
 
 - ✓ already covered, OR
 - + added `<worktree-path>`, OR
-- ⚠ helper not installed — `/setup-isolated-setup-install` to wire it up.
+- ⚠ helper not installed — `/magpie-setup-isolated-setup-install` to wire it up.
 
 `worktree-init` does **not** fail when the helper is absent;
 secure-agent isolation is independent of framework adoption.

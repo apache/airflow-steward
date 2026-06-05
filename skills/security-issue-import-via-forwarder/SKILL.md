@@ -188,7 +188,7 @@ The parent skill passes in:
 
 The skill is **invoked**, never called from the command line directly
 in the common case. A standalone invocation (security team member
-typing `/security-issue-import-via-forwarder` against a single
+typing `/magpie-security-issue-import-via-forwarder` against a single
 message they handed over) still resolves the same inputs from a
 prompt-time interactive Q&A: which message-id, which mode, which
 links, which inner-body.

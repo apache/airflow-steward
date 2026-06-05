@@ -739,7 +739,7 @@ feedback is faster. When working on a Python bridge:
 **Concrete first moves.** The framework provides agent entry
 points for the two most common authoring tasks:
 
-- **New skill** — invoke [`/write-skill`](skills/write-skill/SKILL.md).
+- **New skill** — invoke [`/magpie-write-skill`](skills/write-skill/SKILL.md).
   The meta-skill walks you through the framework's skill shape
   (frontmatter, resources, placeholder convention, prompt-injection
   defences, privacy-LLM gate-check), scaffolds the directory, and
@@ -913,7 +913,7 @@ Good entry points, in rough order of ramp-up cost:
    [`tools/skill-evals/README.md`](tools/skill-evals/README.md)
    for the fixture format.
 
-4. **A new skill via [`/write-skill`](skills/write-skill/SKILL.md).**
+4. **A new skill via [`/magpie-write-skill`](skills/write-skill/SKILL.md).**
    The meta-skill walks you through the framework's skill shape
    (frontmatter, resources, placeholder convention, prompt-injection
    defences, privacy-LLM gate-check) and validates via

@@ -311,13 +311,13 @@ For the current worktree (resolved via
   pass.
 - ⚠ if missing from either array **and** the helper script is
   absent — the operator has not run
-  `/setup-isolated-setup-install` yet. Suggest that skill.
+  `/magpie-setup-isolated-setup-install` yet. Suggest that skill.
   Not ✗ because secure-agent isolation is independent of
   framework adoption, and an adopter who runs without the
   sandbox enabled has nothing to lose by the missing entry.
 - ⚠ if `<worktree>/.claude/settings.local.json` is absent
   entirely — same remediation (re-run the helper or
-  `/setup-isolated-setup-install`). The file is auto-created
+  `/magpie-setup-isolated-setup-install`). The file is auto-created
   by the helper on first run.
 - ✗ if `<worktree>/.claude/settings.local.json` exists AND
   is **not** gitignored (cross-check via `git check-ignore`).
@@ -550,7 +550,7 @@ which holds a POSIX `fcntl.flock` advisory exclusive lock on
 the target file, re-parses under the lock, mutates
 `.permissions.allow[]` in place, writes to a sibling temp
 file, and `os.replace`s into place — so concurrent
-`/setup-isolated-setup-install` (which also writes to the same
+`/magpie-setup-isolated-setup-install` (which also writes to the same
 file's `sandbox.filesystem.*` arrays) does not silently
 clobber the diff. When the target file lives at a path the
 agent's sandbox marks as `denyWithinAllow` (the per-machine
@@ -559,7 +559,7 @@ operator to authorise the sandbox bypass for that single write
 — it does not silently skip the file. ⚠ if either file is
 absent (most adopters will have at least
 `settings.local.json` after the first
-`/setup-isolated-setup-install` pass; absence is a soft signal
+`/magpie-setup-isolated-setup-install` pass; absence is a soft signal
 not a hard fault).
 
 **Why we propose, never auto-apply.** The allow-list is

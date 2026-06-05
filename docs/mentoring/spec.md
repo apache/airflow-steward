@@ -74,7 +74,7 @@ invoked on. The skill is opt-in per invocation. Three trigger
 paths:
 
 1. **Maintainer-on-demand**. A maintainer runs
-   `/pr-management-mentor <pr-number>` (working name). The skill
+   `/magpie-pr-management-mentor <pr-number>` (working name). The skill
    reads the thread, decides whether a mentoring intervention is
    warranted, drafts the comment, and waits for the maintainer
    to confirm before posting.
@@ -82,7 +82,7 @@ paths:
    [`pr-management-triage`](../../skills/pr-management-triage/SKILL.md)
    classifies a PR as "first contributor, missing repro" (or
    equivalent triage flag), the maintainer can chain
-   `/pr-management-mentor` on that PR. The two skills compose;
+   `/magpie-pr-management-mentor` on that PR. The two skills compose;
    Mentoring does not run inside Triage by default.
 3. **Issue-thread invocation**. Same opt-in, on issues rather
    than PRs, for the "missing version / missing repro" case.
@@ -178,7 +178,7 @@ Required keys:
 
 | Key | Purpose |
 |---|---|
-| `mentoring_invocation_command` | Slash-command name (e.g. `/pr-management-mentor`). |
+| `mentoring_invocation_command` | Slash-command name (e.g. `/magpie-pr-management-mentor`). |
 | `maintainer_team_handle` | `@<org>/<team>` mentioned on hand-off. |
 | `ai_attribution_footer` | Literal footer markdown. Mirrors the triage-footer convention. |
 | `convention_pointers` | Table of `{trigger phrase} → {docs link, one-line label}` so the agent links rather than paraphrases. |

@@ -492,7 +492,7 @@ committed project-scope file). Idempotent — already-present
 paths are skipped. If
 `~/.claude/scripts/sandbox-add-project-root.sh` is absent,
 surface as ⚠ in the upgrade summary with a pointer at
-`/setup-isolated-setup-install` and continue (do not block
+`/magpie-setup-isolated-setup-install` and continue (do not block
 upgrade — secure-agent setup is independent of framework
 upgrade). The recap row in Step 8's output goes under a new
 `Sandbox allowlist:` section.
@@ -659,7 +659,7 @@ Worktrees (worktree-init was run on each, idempotently):
 Sandbox allowlist (sandbox-add-project-root.sh --all-worktrees):
   ✓ already covers this project + N worktrees   OR
   + <list of <worktree>/.claude/settings.local.json files updated>   OR
-  ⚠ helper not installed — run /setup-isolated-setup-install
+  ⚠ helper not installed — run /magpie-setup-isolated-setup-install
 
 Overrides:
   ✓ <list of overrides whose target is unchanged>
@@ -673,7 +673,7 @@ Framework templates (projects/_template/):
   → file an issue against apache/airflow-steward to upstream a fix
 
 Recommended follow-ups:
-  - Run /setup-isolated-setup-update if the secure-setup blast
+  - Run /magpie-setup-isolated-setup-update if the secure-setup blast
     radius (settings.json, agent-isolation/, pinned-versions.toml)
     appears in the diff.
   - Open .apache-magpie-overrides/<name>.md for any ⚠ entry above.
