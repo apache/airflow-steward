@@ -32,6 +32,7 @@
     - [Verify](#verify-1)
     - [Trade-offs](#trade-offs-1)
   - [Sandbox-state status line](#sandbox-state-status-line)
+  - [Waiting-for-input terminal tint](#waiting-for-input-terminal-tint)
   - [Syncing user-scope config across machines](#syncing-user-scope-config-across-machines)
     - [What to track, what not to track](#what-to-track-what-not-to-track)
     - [Layout](#layout)
@@ -1158,6 +1159,141 @@ bold red.
   read that field directly. Until then the file-read approach is
   the only option, with the trade-off above.
 
+## Waiting-for-input terminal tint
+
+> **Quality-of-life helper, not a security control.** Unlike the
+> rest of this document, this piece protects nothing — it just
+> makes the "Claude is blocked on me" state impossible to miss. It
+> rides the same user-scope-hook install machinery as the helpers
+> above, which is why it lives here, but it is entirely optional
+> and off by default.
+
+When you run several agents across tabs, it is easy to leave one
+sitting at a permission prompt or a finished turn while you work
+elsewhere. The framework ships
+[`tools/agent-isolation/claude-term-bg.sh`](../../tools/agent-isolation/claude-term-bg.sh)
+to make a **calm baseline the normal state and tint the background
+only when Claude genuinely wants you to act** — never while it is
+working. The model is two states, wired across five hooks:
+
+| Moment | Hook → action | Background |
+|---|---|---|
+| Turn finished — your turn to respond | `Stop` → `wait` | tinted (muted indigo `#2a1a3a`) |
+| Blocked on a permission prompt | `Notification` → `notify` | tinted |
+| Actively working (running a tool) | `PreToolUse` → `reset` | calm |
+| Fresh/idle session, plain idle ping | `SessionStart` / `Notification` → `reset`/`notify` | calm |
+| You submit a reply | `UserPromptSubmit` → `reset` | calm |
+
+Three details make the model behave:
+
+- **`PreToolUse` → `reset`** fires on every tool call, so the moment
+  Claude resumes work — including right after you approve a
+  permission prompt that had tinted the screen — it returns to calm.
+  Without it, an approved-permission tint would linger until the
+  turn ended.
+- **`SessionStart` → `reset`** clears any tint a *previous* session
+  left behind (OSC background changes persist in the terminal
+  across processes, so a session closed mid-wait would otherwise
+  hand its tint to the next one — making a "fresh" session look
+  like it is waiting on you).
+- **`Notification` → `notify`** is selective: the same hook fires
+  both for permission prompts *and* the plain 60-second idle ping,
+  so the script reads the notification payload on stdin and tints
+  only when the message is a permission/attention prompt; an idle
+  session stays calm.
+
+**Two mechanics make this work** (both are easy to get wrong):
+
+1. **Hooks have no controlling terminal.** Claude Code spawns hook
+   commands detached from the tty, so `/dev/tty` does not resolve
+   to your window — a naive `printf '\033]11;…' > /dev/tty` writes
+   nowhere. The script walks up the process tree from `$PPID` to
+   find the Claude process's pty (e.g. `/dev/ttys003`) and writes
+   the escape straight to that device.
+2. **Set and reset are not symmetric.** iTerm2 honours OSC 11 (set
+   background) but does **not** reliably honour OSC 111
+   (reset-to-default) through Claude's fullscreen TUI, so a naive
+   reset leaves the tint stuck on. The script resets
+   belt-and-braces: it emits both OSC 111 *and* iTerm2's
+   proprietary `SetColors=bg=default`. For a guaranteed reset on
+   any terminal, set `CLAUDE_RESET_BG` to your normal background
+   colour and the script re-applies it via OSC 11 (the path that
+   is known to work since the tint itself does).
+
+**Why user-scope.** Same reasoning as the helpers above: you want
+the signal in every session on the host, not only tracker
+sessions. Install in `~/.claude/settings.json`.
+
+**Install (user-scope).**
+
+```bash
+mkdir -p ~/.claude/scripts
+cp /path/to/airflow-steward/tools/agent-isolation/claude-term-bg.sh \
+    ~/.claude/scripts/claude-term-bg.sh
+chmod +x ~/.claude/scripts/claude-term-bg.sh
+```
+
+Wire it into `~/.claude/settings.json` under four hook events. If
+you already have hooks on any of these events, add the command as
+an extra entry rather than replacing the existing array. The
+`CLAUDE_RESET_BG=#000000` prefix makes the calm state a
+deterministic black (recommended — it sidesteps the OSC-111 reset
+gap described above); drop it to fall back to profile-default
+reset.
+
+```jsonc
+{
+  "hooks": {
+    "Stop": [
+      { "hooks": [ { "type": "command", "command": "~/.claude/scripts/claude-term-bg.sh wait" } ] }
+    ],
+    "PreToolUse": [
+      { "matcher": "*", "hooks": [ { "type": "command", "command": "CLAUDE_RESET_BG=#000000 ~/.claude/scripts/claude-term-bg.sh reset" } ] }
+    ],
+    "UserPromptSubmit": [
+      { "hooks": [ { "type": "command", "command": "CLAUDE_RESET_BG=#000000 ~/.claude/scripts/claude-term-bg.sh reset" } ] }
+    ],
+    "SessionStart": [
+      { "hooks": [ { "type": "command", "command": "CLAUDE_RESET_BG=#000000 ~/.claude/scripts/claude-term-bg.sh reset" } ] }
+    ],
+    "Notification": [
+      { "hooks": [ { "type": "command", "command": "CLAUDE_RESET_BG=#000000 ~/.claude/scripts/claude-term-bg.sh notify" } ] }
+    ]
+  }
+}
+```
+
+Override the colours via the environment: `CLAUDE_WAIT_BG`
+(default `#2a1a3a`) and `CLAUDE_RESET_BG` (default unset → reset to
+the profile default; set to a colour like `#000000` for a
+deterministic calm background).
+
+**Verify.** The hooks fire on real events, so the quickest check
+is live: start a session, let a turn finish, and confirm the
+background tints; then send a reply and confirm it resets. To
+sanity-check the script in isolation, run it against your own
+terminal device:
+
+```bash
+~/.claude/scripts/claude-term-bg.sh wait   # background tints
+~/.claude/scripts/claude-term-bg.sh reset  # background restored
+```
+
+(Run directly from an interactive shell, the script finds the
+shell's pty via `$PPID` and writes there.)
+
+**Trade-offs.**
+
+- **iTerm2-tested, fail-soft elsewhere.** The set path uses OSC 11,
+  which most modern terminal emulators support; terminals that
+  ignore it simply show no change. The reset path is hardened for
+  iTerm2's OSC-111 gap specifically. On a terminal where reset
+  misbehaves, set `CLAUDE_RESET_BG` for a deterministic restore.
+- **Cosmetic only.** It conveys no sandbox or permission state —
+  pair it with the [Sandbox-state status line](#sandbox-state-status-line)
+  and [Sandbox-bypass visibility hook](#sandbox-bypass-visibility-hook)
+  for the security-relevant signals.
+
 ## Syncing user-scope config across machines
 
 The user-scope pieces of the secure setup —
@@ -1545,7 +1681,23 @@ Then walk through:
    (e.g. I have other PreToolUse hooks for unrelated work),
    surface the merge diff and ask me to approve before writing.
 
-6. **Verify.** After everything is in place, walk through the
+6. **(Optional) Waiting-for-input terminal tint.** Ask me whether
+   I want the terminal background to tint while Claude is waiting
+   on me (a pure quality-of-life signal, no security effect).
+   **Default no.** Only if I say yes: copy
+   `<airflow-steward>/tools/agent-isolation/claude-term-bg.sh`
+   into `~/.claude/scripts/` and `chmod +x` it, then add five
+   hooks to `~/.claude/settings.json`, merging into any existing
+   arrays on those events — `Stop` → `claude-term-bg.sh wait`;
+   `UserPromptSubmit`, `SessionStart`, and `PreToolUse` (matcher
+   `*`) → `claude-term-bg.sh reset`; and `Notification` →
+   `claude-term-bg.sh notify`. Ask whether I want the calm state
+   to be a deterministic black (prefix the reset/notify commands
+   with `CLAUDE_RESET_BG=#000000`) or the terminal's profile
+   default. See
+   [Waiting-for-input terminal tint](#waiting-for-input-terminal-tint).
+
+7. **Verify.** After everything is in place, walk through the
    Verification checks from the next section of this document
    ("Verification — Via a Claude Code prompt") and report
    ✓ done / ✗ missing / ⚠ partial for each piece.
