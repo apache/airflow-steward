@@ -4,9 +4,10 @@
 # Slop detection — structural scan
 
 This step runs immediately after Step 2 (diff and metadata fetched),
-before the full line-by-line review in Step 3. It is cheap — purely
-structural analysis, no LLM token budget — and it short-circuits the
-review when a PR is clearly not a genuine upstream contribution.
+before the full line-by-line review in Step 3. It is cheap (mostly
+structural; H1 and H5 still need a brief read to judge project intent),
+and it short-circuits the review when a PR is clearly not a genuine
+upstream contribution.
 
 "Slop" here means a PR whose structure demonstrates it is a **class
 project, personal experiment, or low-effort AI-generated submission**
@@ -35,10 +36,10 @@ two or more together are nearly conclusive.
 
 | ID | Signal | How to detect |
 |---|---|---|
-| H1 | **New standalone top-level directory** | The cached unified diff contains `+++ b/<dir>/...` entries where every path shares a single first-level directory prefix AND every file in that prefix appears as a new file in the diff (signalled by `new file mode` or `--- /dev/null` headers), AND the directory contains a project-root file at its first level (`README.md`, `pyproject.toml`, `package.json`, `go.mod`, `pom.xml`, etc.), AND the directory name and/or any README within it suggest it is an independent project unrelated to the upstream codebase. Detection uses the cached unified diff and `files[].path` — no `changeType` field, no base-ref tree lookup. |
-| H2 | **Private-fork issue URL in PR body** | The body contains a full GitHub issue or PR URL pointing to a repository that is not the upstream repo — pattern: `https://github.com/<author>/<repo-name>/(issues\|pull)/\d+` where `<repo-name>` differs from the upstream repo. Match against the raw body string. Do not attempt to resolve bare `#N` references; only flag explicit fork URLs. |
+| H1 | **New standalone top-level directory** | The cached unified diff contains a subset of `+++ b/<dir>/...` entries that all share one first-level directory prefix AND every file under that prefix appears as a new file in the diff (signalled by `new file mode` or `--- /dev/null` headers), AND that directory contains a project-root file at its first level (`README.md`, `pyproject.toml`, `package.json`, `go.mod`, `pom.xml`, etc.), AND the directory name and/or any README within it suggest it is an independent project unrelated to the upstream codebase. Detection uses the cached unified diff and `files[].path` (no `changeType` field, no base-ref tree lookup). |
+| H2 | **Private-fork issue URL in PR body** | The body contains a full GitHub issue or PR URL whose `<author>` matches the PR author but whose `<repo-name>` differs from the upstream repo — pattern: `https://github.com/<author>/<repo-name>/(issues\|pull)/\d+`. Matching `<author>` to the PR author avoids flagging legitimate cross-repo links (e.g. a reference to another Apache repo). Match against the raw body string. Do not attempt to resolve bare `#N` references; only flag explicit fork URLs. |
 | H3 | **Fork merge-commit flood** | The commit list contains 3+ commit messages matching `^Merge (pull request|branch) #\d+ from` that all share the same fork prefix and were authored within a narrow window (< 60 minutes apart). |
-| H4 | **Multi-author team project** | Commits are authored by 3 or more distinct GitHub logins, yet the PR is opened by a single account — typical of a university team pushing their entire fork history. |
+| H4 | **Multi-author team project** | Commits are authored by 3 or more distinct contributors, yet the PR is opened by a single account — typical of a university team pushing their entire fork history. Count distinct `commits[].authors[].login`, falling back to author name/email when `login` is empty (unlinked commit emails are common for student contributors). |
 | H5 | **Area sprawl** | Changed files span 5 or more distinct top-level directories (or well-known project sub-areas) with no discernible semantic relationship. Count using the first two path components of each changed file. |
 
 ### Soft signals
@@ -47,7 +48,7 @@ two or more together are nearly conclusive.
 |---|---|---|
 | S1 | **Ticket-style PR title** | Title matches patterns like `[Ticket #N]`, `ts/ticket-\d+`, `sprint-N`, `task-\d+`, or contains a student name followed by a ticket reference. |
 | S2 | **Template-only PR body** | Body contains no prose beyond the PR template boilerplate (checked: no description above the first `---`, no non-template `closes:` / `related:` references to the upstream repo). |
-| S3 | **No real CI** | `statusCheckRollup` contains only external bots (e.g. Mergeable, WIP, boring-cyborg) and zero entries from the project's own CI workflows. |
+| S3 | **No real CI** | `statusCheckRollup` contains only external bots (e.g. Mergeable, WIP, boring-cyborg) and zero entries from the project's own CI workflows. Treat an empty or pending rollup (common when GitHub holds workflows awaiting maintainer approval for first-time contributors) as inconclusive, not as a fired signal. |
 | S4 | **Label sprawl** | PR carries 3+ `area:` labels spanning unrelated subsystems, suggesting the author ran an automated labeller or copied labels from multiple separate changes. |
 | S5 | **Commit messages reference internal sprint/ticket tooling** | 2+ commit messages contain phrases like `sprint`, `kanban`, `jira`, `ticket #`, `story #`, or course-code patterns like `CSS 566A` (university course identifiers). |
 
@@ -67,14 +68,17 @@ Run the check after computing which signals fire. Apply the rules below:
 **H3 and H4 are correlated.** Both arise from the same root cause: a
 team developed on a shared fork and merged internal PRs before sending
 one upstream. When H3 and H4 fire *together* and no other hard signal
-fires, treat them as a single hard signal for the "2+ hard signals"
-threshold — a H3+H4-only pair meets note-only, not early exit. Early
-exit on H3+H4 requires at least one independent additional hard signal
-(H1, H2, or H5).
+fires, count them as a single hard signal for threshold purposes — an
+H3+H4-only pair does not meet the "2+ hard signals" threshold on its
+own, but it can still reach early exit via the 1-hard-plus-3-soft path.
+When any other hard signal (H1, H2, or H5) also fires, H3 and H4 count
+normally.
 
 The `[suspicious]` note-only path does **not** interrupt the review
-flow. It surfaces in the headline so the maintainer has the information
-but is not forced to act on it before seeing the diff.
+flow. It is emitted as a separate line immediately after the scan,
+leaving the already-displayed Step 1 headline untouched, so the
+maintainer has the information but is not forced to act on it before
+seeing the diff.
 
 Early exit **does** interrupt the flow: Step 3 and beyond are skipped.
 The maintainer chooses an action (see below) before the skill moves on.
@@ -98,7 +102,7 @@ Hard signals:
   [H4] Multi-author team project: 3 distinct commit authors
         (break-through-19, sanwar47, sharan-s2k) on a single-author PR
   [H5] Area sprawl: changes span go-sdk/, airflow-core/ui/,
-        docs/adr/, team_project/ — no semantic relationship
+        docs/adr/, providers/amazon/, team_project/ — no semantic relationship
 
 Soft signals:
   [S1] Ticket-style title: "Poorani ts/ticket 36 adr document review"
@@ -170,8 +174,7 @@ If you believe this assessment is incorrect and your changes are a
 genuine upstream contribution, please reply to this comment explaining
 the purpose of your PR and a maintainer will take another look.
 
----
-*Drafted by an AI-assisted tool; reviewed by @<viewer> before posting.*
+<ai_attribution_footer>
 ```
 
 The `<contributing-docs-url>` is the adopter's contributing guide, read
@@ -253,8 +256,8 @@ remember which PRs they handled as slop.
 
 The threshold is deliberately conservative. A PR that looks suspicious
 but doesn't cross the 2-hard-signal or 1-hard-3-soft threshold proceeds
-with the normal review. The `[suspicious]` chip in the headline is the
-only signal — no interruption, no menu.
+with the normal review. The separate `[suspicious]` line emitted after
+the scan is the only signal (no interruption, no menu).
 
 When the maintainer says `[R]eview anyway` after an early exit, that
 choice is noted and the full review runs normally. The slop detection
