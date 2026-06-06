@@ -27,7 +27,10 @@ fire a signal.
 - **H4 multi-author team project** — commits authored by 3+ distinct GitHub
   logins while the PR is opened by a single account.
 - **H5 area sprawl** — changed files span 5+ distinct top-level directories
-  with no discernible semantic relationship.
+  with no discernible semantic relationship. Count using the first two path
+  components of each changed file (e.g. `airflow/core/serde.py` and
+  `airflow/core/dag.py` count as the same area; `airflow/core/…` and
+  `providers/amazon/…` count as two).
 
 ## Soft signals (individually weak; accumulate)
 

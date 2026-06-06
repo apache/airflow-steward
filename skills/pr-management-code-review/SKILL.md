@@ -303,7 +303,10 @@ headline-confirm gate anyway).
 full review on structurally non-genuine PRs.** After fetching the
 diff (Step 2), run the structural scan in
 [`slop-detection.md`](slop-detection.md). If two or more hard
-signals fire, or one hard signal plus three or more soft signals fire,
+signals fire, or one hard signal plus three or more soft signals fire
+(note: H3+H4 together count as one hard signal for threshold purposes
+when no other hard signal is present — see the Threshold section of
+[`slop-detection.md`](slop-detection.md)),
 **stop the review and present the slop report** to the maintainer
 before spending tokens on a line-by-line analysis. Offer: post a
 contribution-guidelines warning comment, close+lock the PR and show
