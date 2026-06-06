@@ -67,7 +67,7 @@ must be migrated by hand.
 If you detect **any** legacy artefact here —
 `.apache-steward.lock`, `.apache-steward/`,
 `.apache-steward-overrides/`, a committed
-`<adopter-skills-dir>/setup-steward/`, or a framework symlink
+`setup-steward/` skill directory, or a framework symlink
 **without** the `magpie-` prefix — do **not** continue the normal
 upgrade against the half-migrated state. Stop and surface the
 manual remediation:
@@ -171,9 +171,8 @@ project just pinned to, not against the pre-upgrade
 bootstrap logic. It implements
 [`SKILL.md` Golden rule 9](SKILL.md#golden-rules).
 
-1. Compute the diff between the adopter-side
-   `<adopter-skills-dir>/magpie-setup/` (committed copy)
-   and the snapshot's
+1. Compute the diff between the canonical committed copy
+   `.agents/skills/magpie-setup/` and the snapshot's
    `.apache-magpie/skills/setup/`.
 2. **If the adopter has local modifications** to their
    committed copy beyond what the snapshot ships — surface
@@ -187,37 +186,22 @@ bootstrap logic. It implements
    over the committed copy:
 
    ```bash
-   # For the flat layout (Pattern A):
-   rm -rf .claude/skills/magpie-setup
+   # Overwrite the canonical committed copy:
+   rm -rf .agents/skills/magpie-setup
    cp -r .apache-magpie/skills/setup \
-         .claude/skills/magpie-setup
-
-   # For the double-symlinked layout (Pattern B):
-   rm -rf .github/skills/magpie-setup
-   cp -r .apache-magpie/skills/setup \
-         .github/skills/magpie-setup
-   # The .claude/skills/magpie-setup per-skill symlink does
-   # not need touching — it points at .github/skills/magpie-setup
-   # which is now the new content.
-
-   # For the single directory-symlink layout (Pattern D),
-   # write to the *canonical* side only. With D.1
-   # (canonical = .github/skills/):
-   rm -rf .github/skills/magpie-setup
-   cp -r .apache-magpie/skills/setup \
-         .github/skills/magpie-setup
-   # With D.2 (canonical = .claude/skills/), write to
-   # .claude/skills/magpie-setup instead. Either way: the
-   # symlinked side resolves to the refreshed content
-   # automatically — nothing to touch there.
+         .agents/skills/magpie-setup
+   # The relay symlinks (.claude/skills/magpie-setup,
+   # .github/skills/magpie-setup) point at
+   # ../../.agents/skills/magpie-setup and resolve to the
+   # refreshed content automatically — nothing to touch there.
    ```
 
 4. **Reload in-flight.** Immediately after the copy lands —
    before doing anything else in this run — re-read the
-   updated `<adopter-skills-dir>/magpie-setup/SKILL.md`,
+   updated `.agents/skills/magpie-setup/SKILL.md`,
    the just-overwritten `upgrade.md` (this file), and any
    helper file you have already opened in this run
-   (`conventions.md`, `overrides.md`, `verify.md`). Resume
+   (`agents.md`, `overrides.md`, `verify.md`). Resume
    the upgrade from the step *after* this one, executing
    the reloaded content — not the version of this file
    that was in memory when the upgrade started.
@@ -270,10 +254,12 @@ already present in the repo** (`.windsurf/skills/`,
 always-on target since the last run, it joins the active set and
 gets its symlinks created on this upgrade — the same way the
 effective family set below picks up newly-introduced families.
-The `.agents/skills/` target and every holdout are wired **flat**
-(one `magpie-<n>` → snapshot per skill, like conventions
-Pattern A); only the `.claude/`/`.github/` pair follows the
-A/B/C/D layout from [`conventions.md`](conventions.md).
+Wiring is the **canonical-plus-relay** model
+([`agents.md`](agents.md)), applied identically regardless of any
+pre-existing `.claude/`/`.github/` layout: `.agents/skills/` holds
+the canonical `magpie-<n>` → snapshot links; every other active
+target gets relay `magpie-<n>` → `../../.agents/skills/magpie-<n>`
+links.
 
 Read the opt-in skill families from `<committed-lock>`
 (falling back to `<local-lock>` if the committed lock is
@@ -320,29 +306,20 @@ single `magpie-*` glob (plus the `!…/magpie-setup` negation that
 keeps the committed bootstrap tracked) covers them all per
 target — no per-family lines:
 
-- **Universal target (`.agents/skills/`)** — always present:
+One **uniform** two-line block per active target dir (canonical
+and relays alike), no per-layout variation:
 
-  ```text
-  /.agents/skills/magpie-*
-  !/.agents/skills/magpie-setup
-  ```
+```text
+/.agents/skills/magpie-*
+!/.agents/skills/magpie-setup
+/.claude/skills/magpie-*
+!/.claude/skills/magpie-setup
+/.github/skills/magpie-*
+!/.github/skills/magpie-setup
+```
 
-- **Any present holdout** (`.windsurf/skills/`,
-  `.goose/skills/`, …) — the same flat two-line block keyed on
-  its own dir.
-
-- **Claude Code + GitHub pair**, per the adopter's
-  [skills-dir convention](conventions.md):
-  - Pattern A — `/.claude/skills/magpie-*` (plus
-    `!/.claude/skills/magpie-setup`) only.
-  - Pattern B — both `/.claude/skills/magpie-*` and
-    `/.github/skills/magpie-*` (two physical symlinks per
-    skill), each with its `!…/magpie-setup` negation.
-  - Pattern D — only the *canonical-side* `<canonical>/magpie-*`
-    ignore line. D.1 → `/.github/skills/magpie-*`; D.2 →
-    `/.claude/skills/magpie-*`. The symlinked side's
-    directory symlink does not need its own ignore line — git
-    does not descend into it.
+Add the analogous two lines for any present holdout
+(`.windsurf/skills/`, `.goose/skills/`, …).
 
 The append is idempotent — skip lines that already exist.
 The same idempotence covers adopters whose `.gitignore`
@@ -362,8 +339,9 @@ Run two passes **per active target dir** ([`agents.md`](agents.md)):
    effective family set, check `<target>/magpie-<skill>` in each
    active target dir (`.agents/skills/`, `.claude/skills/`,
    `.github/skills/`, plus any present holdout):
-   - If the symlink exists and points at the matching
-     snapshot path, leave it alone.
+   - If the symlink exists and points at the expected target
+     for that dir (canonical → snapshot; relay →
+     `../../.agents/skills/magpie-<skill>`), leave it alone.
    - If it's missing, create it.
    - If it exists but is broken (target gone, points at the
      wrong path), repair it.
@@ -388,23 +366,15 @@ Run two passes **per active target dir** ([`agents.md`](agents.md)):
 
 Per-target symlink layers to refresh:
 
-- **Universal target (`.agents/skills/`)** — refresh the single
-  flat layer at `.agents/skills/magpie-<n>`. Any present holdout
-  (`.windsurf/skills/`, `.goose/skills/`, …) is refreshed the
-  same flat way.
-- **Claude Code + GitHub pair**, per the detected
-  [convention](conventions.md):
-  - **Pattern A (flat)** — refresh the single layer at
-    `.claude/skills/magpie-<n>`.
-  - **Pattern B (double-symlinked)** — refresh both layers
-    (inner at `.github/skills/magpie-<n>`, outer at
-    `.claude/skills/magpie-<n>` → inner).
-  - **Pattern D (single directory symlink)** — refresh only
-    the *canonical-side* layer at
-    `<canonical-side>/magpie-<n>` (D.1 → `.github/skills/magpie-<n>`;
-    D.2 → `.claude/skills/magpie-<n>`). The symlinked-side path
-    resolves through the directory symlink and needs no
-    per-skill plumbing.
+- **Canonical target (`.agents/skills/`)** — refresh the
+  canonical layer at `.agents/skills/magpie-<n>` →
+  `../../.apache-magpie/skills/<n>/`.
+- **Relay targets (`.claude/skills/`, `.github/skills/`, any
+  present holdout)** — refresh the relay layer at
+  `<target>/skills/magpie-<n>` → `../../.agents/skills/magpie-<n>`.
+  Repair a relay if it is missing, broken, or still points at the
+  old snapshot path directly (a pre-canonical-model layout) rather
+  than at the canonical `.agents/skills/` entry.
 
 ## Step 6b — Sync locally-installed hooks and configuration
 
@@ -446,12 +416,12 @@ case (e.g. a contributor accidentally edited
 ## Step 6c — Propagate to every worktree (run `worktree-init` unconditionally)
 
 The main checkout drives the upgrade, but each worktree
-carries its own gitignored `<adopter-skills-dir>` symlinks.
-Those symlinks need refreshing too — otherwise a developer
-sitting in a worktree sees the new snapshot via the shared
-`<snapshot-dir>` symlink (per
-[`worktree-init.md`](worktree-init.md)) but their
-`<adopter-skills-dir>` may still point at *missing* skills
+carries its own gitignored canonical + relay framework-skill
+symlinks. Those symlinks need refreshing too — otherwise a
+developer sitting in a worktree sees the new snapshot via the
+shared `<snapshot-dir>` symlink (per
+[`worktree-init.md`](worktree-init.md)) but their per-target
+`magpie-*` symlinks may still point at *missing* skills
 (a family the upgrade added) or *renamed* ones (a framework
 rename).
 
@@ -477,8 +447,8 @@ Procedure:
    committed lock the worktree shares via git) plus the
    always-on families per
    [`SKILL.md` Golden rule 8](SKILL.md#golden-rules), and
-   reconciles both the snapshot symlink and the
-   `<adopter-skills-dir>` symlinks (see
+   reconciles both the snapshot symlink and the canonical +
+   relay framework-skill symlinks (see
    [`worktree-init.md` Step 1 + Step 1b](worktree-init.md)).
 3. Collect each invocation's recap into a per-worktree row
    for the upgrade summary's `Worktrees:` section
@@ -677,7 +647,7 @@ Symlinks (main checkout):
   Always-on families:  setup-*, list-*       (per Golden rule 8)
   ✓ <list of unchanged symlinks>
   + <list of newly-created symlinks (skill present in the
-     effective family set but missing from <adopter-skills-dir>)>
+     effective family set but missing from an active target dir)>
   ↻ <list of repaired symlinks (existed but broken / pointing
      at the wrong path)>
   - <list of removed stale symlinks>

@@ -94,39 +94,25 @@ Compose the **effective family set** for this worktree:
   [`SKILL.md` Golden rule 8](SKILL.md#golden-rules). These
   are added unconditionally, never read from the lock.
 
-For each framework skill in the effective family set, and for
-**each active target dir**:
+Wiring follows the **canonical-plus-relay** model
+([`agents.md`](agents.md)), with no per-layout variation. For each
+framework skill in the effective family set:
 
-- If `<worktree>/<target>/magpie-<skill>` is missing —
-  create it (gitignored).
-- If it exists and points at the correct snapshot path —
-  leave it alone.
-- If it exists but is broken or points at the wrong path —
-  repair it.
+- **Canonical (`.agents/skills/`)** — ensure
+  `<worktree>/.agents/skills/magpie-<skill>` →
+  `../../.apache-magpie/skills/<skill>/` (the worktree's snapshot
+  symlink from Step 1). Create if missing, repair if broken or
+  pointing at the wrong path, leave alone if correct.
+- **Relays (`.claude/skills/`, `.github/skills/`, any present
+  holdout)** — ensure `<worktree>/<target>/skills/magpie-<skill>`
+  → `../../.agents/skills/magpie-<skill>`. Create / repair / leave
+  alone the same way.
 
-The `.agents/skills/` (universal) target and any present
-holdout (`.windsurf/skills/`, `.goose/skills/`, …) are wired
-**flat** — one `magpie-<n>` → snapshot per skill, exactly like
-conventions Pattern A. For the `.claude/`/`.github/` pair, reuse
-the convention detection from
-[`conventions.md`](conventions.md); the pattern drives how
-many layers that pair needs:
-
-- **Pattern A (flat)** — one layer at
-  `.claude/skills/magpie-<n>`.
-- **Pattern B (double-symlinked)** — two layers (inner at
-  `.github/skills/magpie-<n>`, outer at `.claude/skills/magpie-<n>` →
-  inner). Both gitignored.
-- **Pattern D (single directory symlink)** — one layer at
-  the canonical side (D.1: `.github/skills/magpie-<n>`;
-  D.2: `.claude/skills/magpie-<n>`). The symlinked side resolves
-  automatically through the directory symlink, so there is
-  no per-skill plumbing to add or repair on that side.
+All these entries are gitignored and per-worktree.
 
 The worktree's target directories themselves — `.agents/skills/`,
-any holdout, and the `.claude/skills` / `.github/skills`
-directory symlink (for Pattern D) — are **not** framework
-artefacts; they are checked into the repo as part of the
+`.claude/skills/`, `.github/skills/`, any holdout — are **not**
+framework artefacts; they are checked into the repo as part of the
 adopter's layout, so every worktree inherits them via the
 ordinary `git worktree add` flow. `worktree-init` only wires the
 `magpie-*` entries inside them; it does not touch the

@@ -32,30 +32,20 @@ Pick the recipe that matches your distribution preference:
 | [**git-tag**](#method-2--git-tag) | Pinning a specific framework version (e.g. for testing a release candidate, or for a cautious adopter who tracks named releases only). | Frozen by tag |
 | [**git-branch**](#method-3--git-branch-defaults-to-main) | WIP path — track the framework's `main` branch directly. The default during the framework's pre-release phase. | Tracks branch tip |
 
-> **Adopter convention** — pick the right `cp` step per your
-> existing skills layout (see
-> [`.claude/skills/magpie-setup/conventions.md`](../../skills/setup/conventions.md)
-> for the full taxonomy):
->
-> - **A — flat** (`.claude/skills/<n>/SKILL.md` directly): copy
->   `setup` into `.claude/skills/magpie-setup/`.
-> - **B — double-symlinked** (per-skill
->   `.claude/skills/<n>` → `.github/skills/<n>/` symlinks): copy
->   the content into `.github/skills/magpie-setup/` AND symlink
->   `.claude/skills/magpie-setup` → `../../.github/skills/magpie-setup`.
-> - **D — single directory symlink** (one of
->   `.claude/skills` / `.github/skills` is itself a directory
->   symlink to the other): copy the content into the
->   *canonical* side only — `.github/skills/magpie-setup/`
->   for D.1 (canonical `.github/skills/`) or
->   `.claude/skills/magpie-setup/` for D.2 (canonical
->   `.claude/skills/`). The opposite side is the same
->   directory via the symlink, so there is nothing to wire up.
+> **Canonical layout — no per-project convention to pick.**
+> `.agents/skills/` is the one canonical home (see
+> [`agents.md`](../../skills/setup/agents.md)). Copy `setup` into
+> `.agents/skills/magpie-setup/`, then add a relay symlink to it
+> from every agent-specific dir you use
+> (`.claude/skills/magpie-setup` and `.github/skills/magpie-setup`
+> → `../../.agents/skills/magpie-setup`). This is the same for
+> every adopter regardless of how `.claude/` / `.github/` were
+> previously organised.
 >
 > The `setup` skill itself is the **only** framework
 > artefact you commit. Every other framework skill is wired
-> in by the `setup adopt` flow as gitignored symlinks
-> into the gitignored snapshot.
+> in by the `setup adopt` flow as gitignored symlinks —
+> canonical in `.agents/skills/`, relayed everywhere else.
 
 ---
 
@@ -103,27 +93,14 @@ mv .apache-magpie/apache-steward-${VERSION}/* \
 rmdir .apache-magpie/apache-steward-${VERSION}
 rm -f ${ZIP} ${ZIP}.sha512 ${ZIP}.asc
 
-# 2. Copy the `setup` skill into your skills dir.
-#    Pick ONE branch based on your existing convention.
-#
-#    A — flat layout (default):
-mkdir -p .claude/skills
-cp -r .apache-magpie/skills/setup .claude/skills/magpie-setup
-#
-#    B — double-symlinked layout (per-skill symlinks):
-# mkdir -p .github/skills .claude/skills
-# cp -r .apache-magpie/skills/setup .github/skills/magpie-setup
-# ln -sf ../../.github/skills/magpie-setup .claude/skills/magpie-setup
-#
-#    D.1 — single directory symlink, canonical .github/skills/:
-#    (.claude/skills is itself a symlink → ../.github/skills/)
-# cp -r .apache-magpie/skills/setup .github/skills/magpie-setup
-#    (No second copy needed — .claude/skills/magpie-setup resolves
-#     to .github/skills/magpie-setup via the directory symlink.)
-#
-#    D.2 — single directory symlink, canonical .claude/skills/:
-#    (.github/skills is itself a symlink → ../.claude/skills/)
-# cp -r .apache-magpie/skills/setup .claude/skills/magpie-setup
+# 2. Copy the `setup` skill into the canonical .agents/skills/,
+#    then relay it from each agent-specific dir you use.
+mkdir -p .agents/skills .claude/skills .github/skills
+cp -r .apache-magpie/skills/setup .agents/skills/magpie-setup
+ln -sf ../../.agents/skills/magpie-setup .claude/skills/magpie-setup
+ln -sf ../../.agents/skills/magpie-setup .github/skills/magpie-setup
+#    (Drop the .claude or .github relay if you don't use that agent;
+#     add the same `ln -sf` line for any holdout like .windsurf/skills.)
 
 # 3. Add gitignore entries (idempotent — re-run is safe)
 cat >> .gitignore <<'GITIGNORE'
@@ -137,27 +114,18 @@ cat >> .gitignore <<'GITIGNORE'
 # detect drift.
 /.apache-magpie.local.lock
 
-# Symlinks created by /magpie-setup into the gitignored snapshot.
-# Pattern A (flat) → keep only the .claude/skills/ block below.
-# Pattern B (per-skill double-symlinked) → keep BOTH blocks (one
-#   physical symlink per layer needs its own ignore line).
-# Pattern D.1 (.claude/skills → .github/skills/) → keep only the
-#   .github/skills/ block — git does not descend into the directory
-#   symlink, so .claude/skills/ ignore lines are unnecessary.
-# Pattern D.2 (.github/skills → .claude/skills/) → keep only the
-#   .claude/skills/ block (same reason, opposite orientation).
-/.claude/skills/security-*
-/.claude/skills/pr-management-*
-/.claude/skills/issue-*
-/.claude/skills/setup-isolated-setup-*
-/.claude/skills/setup-shared-config-sync
-/.claude/skills/list-*
-/.github/skills/security-*
-/.github/skills/pr-management-*
-/.github/skills/issue-*
-/.github/skills/setup-isolated-setup-*
-/.github/skills/setup-shared-config-sync
-/.github/skills/list-*
+# Framework-skill symlinks created by /magpie-setup. One uniform
+# block per skills dir you use: the `magpie-*` glob ignores them
+# all (their targets are the gitignored snapshot, so they would
+# dangle on a fresh clone), and the `!…/magpie-setup` negation keeps
+# the one committed bootstrap tracked. .agents/skills/ is canonical;
+# the rest are relays into it. Drop any block for a dir you don't use.
+/.agents/skills/magpie-*
+!/.agents/skills/magpie-setup
+/.claude/skills/magpie-*
+!/.claude/skills/magpie-setup
+/.github/skills/magpie-*
+!/.github/skills/magpie-setup
 GITIGNORE
 
 # 4. Tell your agent: "follow /magpie-setup to finish adopting Magpie."
@@ -184,14 +152,11 @@ git clone --depth=1 \
     https://github.com/apache/airflow-steward.git \
     .apache-magpie
 
-# Copy the `setup` skill — pick A / B / D (see Method 1 step 2)
-mkdir -p .claude/skills
-cp -r .apache-magpie/skills/setup .claude/skills/magpie-setup
-# OR for double-symlinked (B):
-# cp -r .apache-magpie/skills/setup .github/skills/magpie-setup
-# ln -sf ../../.github/skills/magpie-setup .claude/skills/magpie-setup
-# OR for single directory-symlink (D) — copy to canonical side only;
-# the .claude/skills ↔ .github/skills directory symlink does the rest.
+# Copy the `setup` skill to canonical + relays (see Method 1 step 2)
+mkdir -p .agents/skills .claude/skills .github/skills
+cp -r .apache-magpie/skills/setup .agents/skills/magpie-setup
+ln -sf ../../.agents/skills/magpie-setup .claude/skills/magpie-setup
+ln -sf ../../.agents/skills/magpie-setup .github/skills/magpie-setup
 
 # Add gitignore entries (same block as Method 1 step 3 — see there)
 
@@ -214,14 +179,11 @@ git clone --depth=1 \
     https://github.com/apache/airflow-steward.git \
     .apache-magpie
 
-# Copy the `setup` skill — pick A / B / D (see Method 1 step 2)
-mkdir -p .claude/skills
-cp -r .apache-magpie/skills/setup .claude/skills/magpie-setup
-# OR for double-symlinked (B):
-# cp -r .apache-magpie/skills/setup .github/skills/magpie-setup
-# ln -sf ../../.github/skills/magpie-setup .claude/skills/magpie-setup
-# OR for single directory-symlink (D) — copy to canonical side only;
-# the .claude/skills ↔ .github/skills directory symlink does the rest.
+# Copy the `setup` skill to canonical + relays (see Method 1 step 2)
+mkdir -p .agents/skills .claude/skills .github/skills
+cp -r .apache-magpie/skills/setup .agents/skills/magpie-setup
+ln -sf ../../.agents/skills/magpie-setup .claude/skills/magpie-setup
+ln -sf ../../.agents/skills/magpie-setup .github/skills/magpie-setup
 
 # Add gitignore entries (same block as Method 1 step 3 — see there)
 
@@ -236,7 +198,7 @@ Once the recipe completes, `setup` is in your repo and
 the snapshot is on disk (gitignored). Tell your agent:
 
 ```text
-follow .claude/skills/magpie-setup to adopt Magpie
+follow .agents/skills/magpie-setup to adopt Magpie
 ```
 
 (or invoke `/magpie-setup` directly). The skill walks through

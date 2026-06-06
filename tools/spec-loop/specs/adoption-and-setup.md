@@ -43,6 +43,11 @@ gitignored skill symlinks, and committed agent-readable override files.
 
 - **One committed skill, no submodules, no vendored framework copies.**
   The snapshot lives in a gitignored `.apache-magpie/`.
+- **`.agents/skills/` is the canonical home** for framework-skill
+  symlinks (the path shared by Codex, Cursor, Gemini CLI, Copilot, …);
+  every other agent dir (`.claude/skills/`, `.github/skills/`, holdouts)
+  gets per-skill relay symlinks into it. This is uniform — there is no
+  per-project skills-dir convention to detect.
 - **Committed lock is the source of truth.** A fresh contributor runs
   `/magpie-setup` and re-installs to the project's pinned version.
 - **Drift detection** at the top of every framework skill: if the
@@ -73,5 +78,6 @@ uv run --project tools/skill-and-tool-validator --group dev skill-and-tool-valid
 
 ## Known gaps
 
-- `stable`; gaps appear as new adopter skill-directory layouts to support
-  or new override surfaces — recorded by the plan pass.
+- `stable`; gaps appear as new agent targets to add to the registry
+  ([`agents.md`](../../../skills/setup/agents.md)) or new override
+  surfaces — recorded by the plan pass.

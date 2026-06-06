@@ -49,16 +49,20 @@ adoption state.
 1. **Marker lock.** `.apache-magpie.lock` parses and records
    `method: local`. ✓ when present; ✗ with a pointer at
    `/magpie-setup` otherwise.
-2. **Symlinks resolve into `skills/`.** In **every active target
-   dir** ([`agents.md`](agents.md) — `.agents/skills/`,
-   `.claude/skills/`, `.github/skills/`, plus any present
-   holdout), every `magpie-<n>` is a symlink whose target
-   (`../../skills/<n>/`) resolves to a directory containing
-   `SKILL.md`. ✗ list any dangling or non-symlink entry, naming
-   the target dir; remediation: re-run `/magpie-setup`
-   (idempotent).
+2. **Symlinks resolve (canonical → source, relays → canonical).**
+   In the canonical dir `.agents/skills/`, every `magpie-<n>` is a
+   symlink whose target (`../../skills/<n>/`) resolves to a
+   directory containing `SKILL.md`. In every **relay** target dir
+   ([`agents.md`](agents.md) — `.claude/skills/`, `.github/skills/`,
+   plus any present holdout), every `magpie-<n>` is a symlink whose
+   target (`../../.agents/skills/magpie-<n>`) resolves through the
+   canonical entry to the same `SKILL.md`. ✗ list any dangling or
+   non-symlink entry — or any relay that points straight at the
+   snapshot/source instead of at `.agents/skills/` — naming the
+   target dir; remediation: re-run `/magpie-setup` (idempotent).
 3. **Coverage.** Every `skills/<n>/` with a `SKILL.md` has a
-   matching `magpie-<n>` symlink in **every active target dir**
+   canonical `magpie-<n>` symlink in `.agents/skills/` and a
+   matching relay in **every other active target dir**
    (unless a `skill-families:` filter was deliberately applied).
    ⚠ list any source skill with no link, per target; remediation:
    `/magpie-setup`.
@@ -156,26 +160,19 @@ Check that the entries from
   must never be committed since the content is machine-specific
   absolute paths)
 
-Recommended (the `magpie-*` glob per **active target dir** —
-[`agents.md`](agents.md) — plus the `.claude/`/`.github/`
-[skills-dir convention](conventions.md)):
+Recommended (a **uniform** `magpie-*` glob block per **active
+target dir** — [`agents.md`](agents.md) — with no per-layout
+variation):
 
-- **Universal target (`.agents/skills/`)** — always present:
+- **Canonical target (`.agents/skills/`)** — always present:
   `/.agents/skills/magpie-*` with `!/.agents/skills/magpie-setup`.
+- **Relay targets (`.claude/skills/`, `.github/skills/`)** — the
+  same two-line block keyed on each dir
+  (`/.claude/skills/magpie-*` with `!/.claude/skills/magpie-setup`,
+  and likewise for `.github/skills/`).
 - **Any present holdout** (`.windsurf/skills/`,
-  `.goose/skills/`, …) — the same flat two-line block keyed on
-  its own dir.
-- **Claude Code + GitHub pair**, per convention:
-  - **Pattern A** — `/.claude/skills/magpie-*` (with
-    `!/.claude/skills/magpie-setup`) only.
-  - **Pattern B** — the same glob under **both**
-    `.claude/skills/` and `.github/skills/` (one ignore line
-    per physical symlink).
-  - **Pattern D** — the same glob under the **canonical side
-    only** (`.github/skills/` for D.1; `.claude/skills/` for
-    D.2). The symlinked side does not need its own ignore
-    lines because git does not descend into a directory
-    symlink.
+  `.goose/skills/`, …) — the same two-line block keyed on its own
+  dir.
 
 - ✗ if `/.apache-magpie/` is not gitignored — the snapshot
   is at risk of being accidentally committed.
@@ -196,13 +193,17 @@ Run this check across **every active target dir**
 `.github/skills/`, plus any present holdout), not just the
 `.claude/`/`.github/` pair.
 
-For each symlink under any active target dir that resolves
-into `.apache-magpie/skills/<name>/`:
+For each `magpie-*` symlink under any active target dir —
+canonical ones resolving (via `.agents/skills/`) into
+`.apache-magpie/skills/<name>/`, relays resolving through
+`../../.agents/skills/magpie-<name>` to the same:
 
-- ✓ if the target exists.
-- ✗ if dangling (target deleted or snapshot missing), naming
-  the target dir. Remediation: `/magpie-setup adopt` (idempotent
-  re-run) or this same skill with `--auto-fix-symlinks`.
+- ✓ if it resolves to a live skill.
+- ✗ if dangling (target deleted or snapshot missing), or a relay
+  pointing straight at the snapshot instead of at the canonical
+  `.agents/skills/` entry, naming the target dir. Remediation:
+  `/magpie-setup adopt` (idempotent re-run) or this same skill
+  with `--auto-fix-symlinks`.
 
 For each framework skill in the snapshot **not** symlinked
 in a given active target dir, classify it (a skill missing
@@ -244,8 +245,8 @@ with the `README.md` scaffold from
 
 ### 7. The `setup` skill itself is up to date
 
-Compare the adopter-side committed `setup` skill
-(at `<adopter-skills-dir>/magpie-setup/`) against the
+Compare the canonical committed `setup` skill
+(at `.agents/skills/magpie-setup/`) against the
 snapshot's `.apache-magpie/skills/setup/`.
 
 - ✓ if same content.

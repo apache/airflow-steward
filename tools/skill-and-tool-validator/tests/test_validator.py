@@ -612,7 +612,7 @@ class TestFindRepoRoot:
 # ---------------------------------------------------------------------------
 #
 # Several setup skills ship supporting .md files alongside their SKILL.md:
-#   setup/ → adopt.md, conventions.md, overrides.md, upgrade.md, …
+#   setup/ → adopt.md, agents.md, overrides.md, upgrade.md, …
 #
 # The validator must:
 #   • NOT require YAML frontmatter from these files (only SKILL.md gets that).
@@ -697,7 +697,7 @@ class TestSubDocFiles:
         # A setup skill directory that mirrors the real layout (SKILL.md + several
         # clean sub-docs) must produce no hard violations.
         skill_dir = self._make_skill_dir(tmp_path, skill_name="setup")
-        for name in ("adopt.md", "conventions.md", "overrides.md", "upgrade.md", "verify.md"):
+        for name in ("adopt.md", "agents.md", "overrides.md", "upgrade.md", "verify.md"):
             (skill_dir / name).write_text(
                 f"# {name.removesuffix('.md')}\n\nContent for {name}.\n",
                 encoding="utf-8",

@@ -69,13 +69,16 @@ into their repo. That skill manages everything else:
    The snapshot is a build artefact, not source — refreshed
    by `/magpie-setup upgrade`, never committed.
 2. **Symlinks.** `setup` symlinks the framework's
-   skills (security, pr-management, the rest of setup) into
-   the adopter's existing skill directory, matching whichever
-   convention the adopter uses (flat `.claude/skills/`, or the
-   double-symlink `.claude/skills/<n>` → `.github/skills/<n>/`
-   pattern apache/airflow uses). The symlinks are **also
-   gitignored** — they target the gitignored snapshot, so they
-   would dangle on a fresh clone before `/magpie-setup` runs.
+   skills (security, pr-management, the rest of setup) under
+   one canonical home — `.agents/skills/` (the path shared by
+   Codex, Cursor, Gemini CLI, Copilot, …) — and gives every
+   other agent dir (`.claude/skills/`, `.github/skills/`, …) a
+   thin per-skill **relay** symlink pointing back at the
+   canonical entry. This is the same regardless of how the
+   adopter previously organised those dirs. The symlinks are
+   **also gitignored** — they ultimately target the gitignored
+   snapshot, so they would dangle on a fresh clone before
+   `/magpie-setup` runs.
 3. **Overrides.** Adopter-specific modifications to framework
    workflows live as agent-readable markdown under
    `<adopter>/.apache-magpie-overrides/<skill>.md`,
@@ -115,10 +118,9 @@ Each recipe is a single shell block that:
    source).
 3. Copies the
    [`setup`](skills/setup/SKILL.md)
-   skill into your skills directory, matching your existing
-   convention (flat `.claude/skills/<n>/` or the
-   double-symlinked `.claude/skills/<n>` →
-   `.github/skills/<n>/` pattern).
+   skill into the canonical `.agents/skills/magpie-setup/` and
+   adds a relay symlink to it from each agent dir you use
+   (`.claude/skills/magpie-setup`, `.github/skills/magpie-setup`).
 
 After the recipe completes, the framework snapshot is on
 disk and the bootstrap skill is in your repo.

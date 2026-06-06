@@ -75,9 +75,9 @@ The following will be REMOVED:
   Gitignored (no commit needed):
     .apache-magpie/                          (snapshot)
     .apache-magpie.local.lock
-    <skills-dir>/<symlink-1>                  → .apache-magpie/skills/<skill-1>/
-    <skills-dir>/<symlink-2>                  → ...
-    .github/skills/<symlink-1>                (Pattern B only — second physical layer)
+    .agents/skills/magpie-<skill-1>          → .apache-magpie/skills/<skill-1>/   (canonical)
+    .claude/skills/magpie-<skill-1>          → ../../.agents/skills/magpie-<skill-1>   (relay)
+    .github/skills/magpie-<skill-1>          → ../../.agents/skills/magpie-<skill-1>   (relay)
     .git/hooks/post-checkout                  (if it contains the Magpie recipe)
 
   Committed (will show in `git status`):
@@ -86,24 +86,22 @@ The following will be REMOVED:
     README.md                                 (the adoption section, if present)
     AGENTS.md                                 (the Magpie framework section, if present)
     CONTRIBUTING.md                           (the adoption section, if present)
-    <skills-dir>/magpie-setup/               (this skill itself — self-destructive)
+    .agents/skills/magpie-setup/             (this skill itself — self-destructive; canonical copy)
+    .claude/skills/magpie-setup              (relay symlink)
+    .github/skills/magpie-setup              (relay symlink)
 
 The following will be PRESERVED:
 
     .apache-magpie-overrides/                (pass `--purge-overrides` to remove)
 ```
 
-`<skills-dir>` resolves to your skills directory per the
-[skills-dir convention](../../skills/setup/conventions.md)
-your repo uses:
-
-- **Pattern A** — `.claude/skills/`.
-- **Pattern B** — both `.claude/skills/` and `.github/skills/`
-  (one physical symlink per layer).
-- **Pattern D** — the canonical side only (D.1:
-  `.github/skills/`; D.2: `.claude/skills/`). The directory
-  symlink itself is adopter-owned and is **not** removed by
-  unadopt.
+The framework wires every skills dir the same way per the
+[agent-target registry](../../skills/setup/agents.md):
+`.agents/skills/` holds the canonical `magpie-*` links into the
+snapshot; `.claude/skills/` and `.github/skills/` (and any
+holdout) hold relays into `.agents/skills/`. unadopt removes the
+`magpie-*` entries from every one of them. The skills
+directories themselves are adopter-owned and are **not** removed.
 
 If `--purge-overrides` is passed, `.apache-magpie-overrides/`
 moves into the *removed* section with its files listed
