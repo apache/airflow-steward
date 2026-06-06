@@ -11,13 +11,31 @@ Commits (all by the listed authors, opened by single account break-through-19):
 - 09:33 sanwar47          "sprint 3 board cleanup"
 - 09:35 sharan-s2k        "CSS 566A team submission"
 
-Changed files (every file has changeType: ADDED — a new team_project/ project directory plus others):
-- team_project/README.md   ("CSS 566A - Software Management, University of Washington Bothell")
+Changed files (gh pr view --json files — path/additions/deletions only):
+- team_project/README.md
 - team_project/main.py
 - go-sdk/client.go
 - airflow-core/ui/panel.tsx
 - docs/adr/0001.md
 - scripts/run_demo.sh
+
+Unified diff (gh pr diff, excerpt):
+diff --git a/team_project/README.md b/team_project/README.md
+new file mode 100644
+index 0000000..a1b2c3d
+--- /dev/null
++++ b/team_project/README.md
+@@ -0,0 +1,2 @@
++# CSS 566A - Software Management, University of Washington Bothell
++Team class project.
+diff --git a/team_project/main.py b/team_project/main.py
+new file mode 100644
+index 0000000..d4e5f6a
+--- /dev/null
++++ b/team_project/main.py
+@@ -0,0 +1,3 @@
++def main():
++    print("team project")
 
 Labels: area:UI, area:task-sdk, area:go-sdk
 
