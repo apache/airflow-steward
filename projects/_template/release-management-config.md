@@ -120,13 +120,13 @@ variants* below).
 
 | Key | Value |
 |---|---|
-| `vote_dev_list` | `dev@airflow.apache.org` |
+| `vote_dev_list` | `<dev-list>` *(e.g. `dev@airflow.apache.org`)* |
 | `mail_archive` | `ponymail` |
-| `mail_archive_url_template` | `https://lists.apache.org/list.html?dev@airflow.apache.org` |
+| `mail_archive_url_template` | `<mail-archive-url>` *(ASF e.g. `https://lists.apache.org/list.html?<dev-list>`)* |
 | `vote_window_hours` | `72` |
 | `vote_pass_rule_overrides` | *(none, uses ASF baseline: 3 binding +1 minimum, more binding +1 than -1)* |
-| `vote_subject_template` | `[VOTE] Release Apache Airflow <version> from <version>-rcN` |
-| `result_subject_template` | `[RESULT] [VOTE] Release Apache Airflow <version> from <version>-rcN` |
+| `vote_subject_template` | `[VOTE] Release <Product Name> <version> from <version>-rcN` |
+| `result_subject_template` | `[RESULT] [VOTE] Release <Product Name> <version> from <version>-rcN` |
 | `release_approver_roster_path` | `<project-config>/pmc-roster.md` *(ASF default); non-ASF: e.g. `<project-config>/release-approvers.md`)* |
 
 The configured `vote_window_hours` is a floor per
@@ -155,9 +155,9 @@ variants* below).
 | Key | Value |
 |---|---|
 | `announce_list` | `announce@apache.org` |
-| `announce_cc_lists` | `dev@airflow.apache.org`, `users@airflow.apache.org` |
-| `announce_subject_template` | `[ANNOUNCE] Apache Airflow <version> released` |
-| `site_repo` | `apache/airflow-site` |
+| `announce_cc_lists` | `<dev-list>`, `<users-list>` *(e.g. `dev@airflow.apache.org`, `users@airflow.apache.org`)* |
+| `announce_subject_template` | `[ANNOUNCE] <Product Name> <version> released` |
+| `site_repo` | `<site-repo>` *(e.g. `apache/airflow-site`)* |
 | `site_pr_files` | `landing-pages/site/content/en/_index.md`, `landing-pages/site/content/en/announcements/<version>.md` |
 
 `announce@apache.org` is mandatory for ASF TLP releases per

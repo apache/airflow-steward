@@ -802,29 +802,25 @@ roster:
   # reference contributors by first name only; this map binds
   # those bare names to GitHub handles so the skills can produce
   # @-mentions on the tracker.
-  # ASF/Airflow default: the existing airflow-s bare-name map.
-  # Override when: adapt to the adopter's roster — add/remove
-  # entries as needed.
+  # Replace the example entries below with the adopter's roster —
+  # add/remove entries as needed.
   # Consumed by: security-issue-sync, pr-management-mentor.
   bare_name_handles:
-    Jarek: "@potiuk"
-    Ash: "@ashb"
-    Kaxil: "@kaxil"
-    Ephraim: "@ephraimbuddy"
-    Jed: "@jedcunningham"
+    # Example (replace with your project's contributors):
+    "<FirstName>": "@<handle>"
+    # "<FirstName>": "@<handle>"
 
   # Release-manager handles, ordered by recency of train ownership.
   # First handle is the current default RM; the rest are the
   # historical RMs the skill falls back to when assigning legacy
   # trains.
-  # ASF/Airflow default: the current RM order from release-trains.md.
-  # Override when: keep in sync with `release-trains.md`.
+  # Replace the example entries below; keep in sync with
+  # `release-trains.md`.
   # Consumed by: security-issue-sync, security-issue-fix.
   release_managers:
-    - "@ephraimbuddy"
-    - "@jedcunningham"
-    - "@potiuk"
-    - "@kaxil"
+    # Example (replace with your project's release managers):
+    - "@<handle>"
+    # - "@<handle>"
 ```
 
 ### Product
