@@ -44,16 +44,18 @@ repos:
       - id: doctoc
         name: Add TOC for Markdown and RST files
         files: ^.+\.(md|rst)$
-        # Skip agent-facing skill definitions: their YAML frontmatter must be
-        # the first thing in the file, which is incompatible with doctoc
-        # inserting a TOC block at the top. Also skip skill-evals fixture and
+        # Skip agent-facing skill definitions across every skill-dir layout
+        # (.agents/skills canonical home, plus the .claude/skills and
+        # .github/skills relays, and the skills/ source): their YAML
+        # frontmatter must be the first thing in the file, which is
+        # incompatible with doctoc inserting a TOC block at the top. Also skip skill-evals fixture and
         # README files, and the spec-loop specs/prompts (YAML-frontmatter
         # specs and short single-purpose prompts, same rationale as skills)
         # — short docs that don't warrant a TOC.
         # Skip the PR template — GitHub pre-populates a new PR description
         # with the template verbatim, so a TOC block becomes per-PR noise the
         # contributor has to delete by hand.
-        exclude: ^(\.claude/skills/.*|skills/.*|tools/cve-tool-vulnogram/generate-cve-json/SKILL\.md|tools/skill-evals/.*|tools/spec-loop/.*|\.github/PULL_REQUEST_TEMPLATE\.md)$
+        exclude: ^(\.claude/skills/.*|\.agents/skills/.*|\.github/skills/.*|skills/.*|tools/cve-tool-vulnogram/generate-cve-json/SKILL\.md|tools/skill-evals/.*|tools/spec-loop/.*|\.github/PULL_REQUEST_TEMPLATE\.md)$
         args:
           - "--maxlevel"
           - "3"
