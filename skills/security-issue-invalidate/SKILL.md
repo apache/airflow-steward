@@ -677,11 +677,12 @@ the **recipient** and the **body shape**.
 4. **Backend selection:** use the project's configured
    drafting backend per
    [`tools/gmail/draft-backends.md`](../../tools/gmail/draft-backends.md#how-the-skills-pick-a-backend).
-   Default is `claude_ai_mcp` with `replyToMessageId` thread
-   attachment; the opt-in `oauth_curl` backend is used when
-   `tools.gmail.draft_backend: oauth_curl` is set and
-   credentials are on disk (default path
-   `~/.config/apache-magpie/gmail-oauth.json`).
+   Prefer `oauth_curl` (credentials at default path
+   `~/.config/apache-magpie/gmail-oauth.json`); it preserves URLs
+   verbatim. The `claude_ai_mcp` backend is discouraged because it
+   rewrites embedded URLs into Google tracking redirects (see
+   [`draft-backends.md`](../../tools/gmail/draft-backends.md#privacy-warning--the-claudeai-gmail-mcp-rewrites-embedded-urls-into-google-tracking-redirects)) — use it only when `oauth_curl`
+   credentials are missing AND the body has no links.
 5. **Existing-draft check.** Before drafting, scan the inbound
    thread for an existing pending draft per the
    [*Detecting drafts that already exist on a thread*](../../tools/gmail/draft-backends.md#detecting-drafts-that-already-exist-on-a-thread)

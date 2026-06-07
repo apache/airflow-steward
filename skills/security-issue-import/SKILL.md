@@ -1621,12 +1621,14 @@ For each confirmed `Report` or forwarder-relayed candidate:
    created on the inbound Gmail thread** via the project's configured
    drafting backend per
    [`tools/gmail/draft-backends.md`](../../tools/gmail/draft-backends.md#how-the-skills-pick-a-backend).
-   The default `claude_ai_mcp` backend resolves the candidate's
-   chronologically-last message ID (call
+   The preferred `oauth_curl` backend uses `--thread-id` directly and
+   preserves URLs verbatim. The `claude_ai_mcp` backend is discouraged
+   because it rewrites embedded URLs into Google tracking redirects
+   (see [`draft-backends.md`](../../tools/gmail/draft-backends.md#privacy-warning--the-claudeai-gmail-mcp-rewrites-embedded-urls-into-google-tracking-redirects)); as a credentials-missing fallback
+   it resolves the candidate's chronologically-last message ID (call
    `mcp__claude_ai_Gmail__get_thread(threadId=<candidate>,
    messageFormat='MINIMAL')` and take `messages[-1].id`) and passes
    it to `mcp__claude_ai_Gmail__create_draft` as `replyToMessageId`.
-   The opt-in `oauth_curl` backend uses `--thread-id` directly.
    Surface in the proposal which backend was used and which path the
    draft took (thread-attached vs subject fallback).
 

@@ -163,10 +163,16 @@ backend is here.
 
 | Backend | Value | Thread attach? |
 |---|---|---|
-| claude.ai Gmail MCP | `claude_ai_mcp` (default) | **yes** — via `replyToMessageId` |
-| OAuth + `curl` | `oauth_curl` | **yes** — via `threadId` |
+| OAuth + `curl` | `oauth_curl` (**preferred**) | **yes** — via `threadId` |
+| claude.ai Gmail MCP | `claude_ai_mcp` (**discouraged — rewrites URLs; see [`draft-backends.md`](draft-backends.md#privacy-warning--the-claudeai-gmail-mcp-rewrites-embedded-urls-into-google-tracking-redirects)**) | **yes** — via `replyToMessageId` |
 
 ### Create draft — `claude_ai_mcp` backend
+
+> **Discouraged.** This backend silently rewrites embedded URLs into
+> Google tracking redirects (see
+> [`draft-backends.md`](draft-backends.md#privacy-warning--the-claudeai-gmail-mcp-rewrites-embedded-urls-into-google-tracking-redirects)).
+> Prefer `oauth_curl`; use this only when `oauth_curl` credentials are
+> unavailable AND the body contains no URLs.
 
 The claude.ai Gmail MCP's `create_draft` tool accepts a
 `replyToMessageId` parameter (a Gmail *message* ID, not a thread ID).

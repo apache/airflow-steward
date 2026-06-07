@@ -3,7 +3,8 @@
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
 - [Gmail drafting backends](#gmail-drafting-backends)
-  - [Why there are two](#why-there-are-two)
+  - [Privacy warning — the claude.ai Gmail MCP rewrites embedded URLs into Google tracking redirects](#privacy-warning--the-claudeai-gmail-mcp-rewrites-embedded-urls-into-google-tracking-redirects)
+  - [Why `oauth_curl` is the preferred backend](#why-oauth_curl-is-the-preferred-backend)
   - [How the skills pick a backend](#how-the-skills-pick-a-backend)
   - [Detecting drafts that already exist on a thread](#detecting-drafts-that-already-exist-on-a-thread)
   - [Limitations that apply to both backends](#limitations-that-apply-to-both-backends)
@@ -26,70 +27,89 @@ user in `.apache-magpie-overrides/user.md` under
 
 | Backend | Value | Thread attach? | Setup |
 |---|---|---|---|
-| claude.ai Gmail MCP | `claude_ai_mcp` (default, recommended) | **yes** — via `replyToMessageId` (a message ID resolved from the inbound thread) | none — works as soon as the Gmail connector is authenticated on claude.ai |
-| OAuth + `curl` script | `oauth_curl` | **yes** — via `threadId` (and explicit `In-Reply-To` / `References` headers) | one-time Google OAuth client + refresh-token setup, automated via `uv run --project <framework>/tools/gmail/oauth-draft oauth-draft-setup` — see [`oauth-draft/README.md`](oauth-draft/README.md) |
+| OAuth + `curl` script | `oauth_curl` (**strongly preferred — use this**) | **yes** — via `threadId` (and explicit `In-Reply-To` / `References` headers) | one-time Google OAuth client + refresh-token setup, automated via `uv run --project <framework>/tools/gmail/oauth-draft oauth-draft-setup` — see [`oauth-draft/README.md`](oauth-draft/README.md) |
+| claude.ai Gmail MCP | `claude_ai_mcp` (**discouraged — do not use; see privacy warning**) | **yes** — via `replyToMessageId` (a message ID resolved from the inbound thread) | none — works as soon as the Gmail connector is authenticated on claude.ai, **but silently rewrites embedded URLs into Google tracking redirects (see below)** |
 
 Both backends create **drafts** — never send. The human review-and-send
 step is still required before any outbound message leaves the user's
 Gmail.
 
-## Why there are two
+## Privacy warning — the claude.ai Gmail MCP rewrites embedded URLs into Google tracking redirects
 
-The first-party claude.ai Gmail MCP is easy to set up and now exposes
-everything the skills need for reading, searching, listing drafts,
-**and creating thread-attached drafts** via `replyToMessageId`. It is
-the default and the recommended backend for almost every adopter.
+> **Use `oauth_curl`. Do not use the claude.ai Gmail MCP `create_draft`
+> for any draft whose body contains URLs.**
 
-Historically the MCP's `create_draft` tool did not plumb through a
-`threadId` parameter, which forced thread-attached drafts down the
-`oauth_curl` path. That gap closed when the MCP added
-`replyToMessageId` (a Gmail *message* ID — Gmail attaches the draft
-to the conversation containing that message). The `oauth_curl`
-backend remains in the toolchain because it offers two capabilities
-the MCP still does not:
+As of **2026-06-05**, the claude.ai Gmail MCP `create_draft` tool
+**silently rewrites every bare URL in the draft body** into a Google
+tracking-redirect wrapper of the form:
 
-- **`threadId`-keyed draft creation** — useful when only a `threadId`
-  is on hand (e.g. from an old tracker rollup) and re-fetching the
-  thread to extract the latest message ID is not worth a round-trip.
-- **Bulk read/modify operations** — `oauth-draft-mark-read`
-  (label-modify on a query result set) has no MCP equivalent.
+```text
+https://www.google.com/url?q=<original-url>&source=gmail&ust=<timestamp>&sa=E
+```
 
-If you do not need either of those, **stay on the default
-`claude_ai_mcp` backend**. The OAuth setup, refresh-token rotation,
-and credentials-on-disk overhead is no longer required for thread
-attachment alone.
+The rewrite is **baked into the stored draft MIME** — both the
+`text/plain` and `text/html` parts — not merely a display artifact
+(confirmed by reading the draft back via `drafts.get?format=raw`). So
+when the message is sent, the recipient receives the Google redirect
+instead of the link the skill wrote. This is unacceptable for the
+project's correspondence:
+
+- **Privacy / tracking.** Every link the recipient clicks is routed
+  first through `google.com/url`, leaking click metadata (which
+  recipient, which link, when) to a third party — on security-sensitive
+  correspondence the project has no business funnelling through
+  Google's redirector.
+- **Reporter-facing and relay correctness.** Many drafts carry a
+  reporter-voice **paste-ready block** (e.g. an ASF-security relay the
+  recipient pastes onto a GHSA advisory). The rewrite would paste a
+  `google.com/url?q=...` redirect onto a public advisory instead of the
+  clean canonical URL.
+- **Integrity of CVE / advisory links.** Advisory URLs, CVE-record
+  URLs, and PR links must reach recipients verbatim; a wrapped link is
+  wrong on its face and erodes trust in the message.
+
+The `oauth_curl` backend builds the message with a plain RFC822
+`EmailMessage`, so **URLs are preserved verbatim** — no rewriting, no
+third-party redirector. That is the decisive reason `oauth_curl` is the
+preferred backend for **all** drafting, not just the threadId / bulk
+cases.
+
+If `oauth_curl` credentials are genuinely unavailable and a draft must
+be created via the MCP, the body **must not contain URLs** — inline the
+relevant text and tell the user to add the links by hand before
+sending, or (better) set up `oauth_curl` first.
+
+## Why `oauth_curl` is the preferred backend
+
+The `oauth_curl` script talks directly to the Gmail REST API on a
+user-provided OAuth refresh token and builds its own MIME, which gives
+it three advantages over the claude.ai Gmail MCP:
+
+- **Verbatim URLs (the decisive one)** — it does not rewrite links into
+  Google tracking redirects; see the privacy warning above.
+- **`threadId`-keyed draft creation** — attaches by `threadId`
+  directly; for a brand-new, non-reply message, omit `--thread-id` and
+  pass `--no-reply-headers`.
+- **Bulk read/modify + delete** — `oauth-draft-mark-read`
+  (label-modify on a query result set) has no MCP equivalent, and
+  `oauth_curl` is the only backend that can delete drafts via the
+  Gmail API.
+
+The one-time cost is a Google OAuth client + refresh-token setup
+(automated via `oauth-draft-setup`; see
+[`oauth-draft/README.md`](oauth-draft/README.md)). Treat the
+credentials file like an SSH key. It is worth it: `oauth_curl` is the
+only backend that keeps the project's outbound links clean and
+untracked.
 
 ## How the skills pick a backend
 
 Every skill step that says *"create a Gmail draft via
-`mcp__claude_ai_Gmail__create_draft`"* means *"create a draft via the
-project's configured drafting backend"*.
+`mcp__claude_ai_Gmail__create_draft`"* is shorthand for *"create a draft
+via the project's configured drafting backend"* — which should be
+`oauth_curl`.
 
-**Default — `claude_ai_mcp` with `replyToMessageId`.** This is the
-recommended path. Resolution:
-
-1. **Resolve the latest message ID on the inbound thread.** Call
-   `mcp__claude_ai_Gmail__get_thread(threadId=<inbound>,
-   messageFormat='MINIMAL')` and take the `id` of the
-   chronologically-last message. The tracker stores `threadId` (per
-   the existing *security-thread* body field convention); the
-   message-ID resolution is one extra round-trip and the skills
-   absorb it.
-2. **Create the draft.** Call
-   `mcp__claude_ai_Gmail__create_draft(..., replyToMessageId=<that
-   message id>)`. The draft attaches to the inbound thread on the
-   sender's Gmail and surfaces in both the conversation view and the
-   global Drafts folder.
-3. **Fallback — omit `replyToMessageId`.** When the latest message
-   cannot be resolved (thread archived, deleted, or stale `threadId`),
-   create the draft with `replyToMessageId` omitted and rely on
-   subject-matched threading (`Re: <root subject>` plus the recipient's
-   own `In-Reply-To` / `References` chain). See
-   [`threading.md`](threading.md#fallback--subject-matched-draft-when-replytomessageid-is-unavailable).
-
-**Opt-in — `oauth_curl` for the cases the MCP cannot serve.** A user
-who has explicitly set `tools.gmail.draft_backend: oauth_curl` and
-who has a credentials file on disk:
+**Preferred — `oauth_curl`.** Resolution:
 
 1. **Probe for `oauth_curl` credentials** in this order:
    - `tools.gmail.oauth_credentials_path` from
@@ -97,34 +117,45 @@ who has a credentials file on disk:
    - the `$GMAIL_OAUTH_CREDENTIALS` environment variable;
    - the default path `~/.config/apache-magpie/gmail-oauth.json`.
 
-   The probe is a single `test -f <path>` — actually parsing the file
-   or doing a token-refresh probe at this stage would burn HTTP
-   round-trips on every draft.
-2. **If credentials are found → use `oauth_curl`.** Invoke
+   The probe is a single `test -f <path>`.
+2. **Create the draft.** Invoke
    `uv run --project <framework>/tools/gmail/oauth-draft oauth-draft-create`
-   with `--thread-id`, `--to`, `--cc`, `--subject`, `--body-file` —
-   see [`oauth-draft/README.md`](oauth-draft/README.md) for the full
-   shape.
-3. **If credentials are not found despite the user opting in →
-   fall back to `claude_ai_mcp` and surface the missing-credentials
-   warning.** Do not silently swallow the configuration mismatch.
+   with `--to`, `--cc`, `--subject`, `--body-file`, and either
+   `--thread-id <threadId>` (reply on an existing thread — the tracker
+   stores `threadId` per the *security-thread* body field convention)
+   or, for a brand-new message, `--no-reply-headers` with no
+   `--thread-id`. See [`oauth-draft/README.md`](oauth-draft/README.md)
+   for the full shape. URLs in the body are preserved verbatim.
+
+**Last-resort fallback — `claude_ai_mcp`, only when `oauth_curl`
+credentials are unavailable.** Subject to the hard constraint in the
+[privacy warning](#privacy-warning--the-claudeai-gmail-mcp-rewrites-embedded-urls-into-google-tracking-redirects)
+above: **the body must not contain URLs.** When used:
+
+1. **Resolve the latest message ID on the inbound thread** (for
+   threading): call `mcp__claude_ai_Gmail__get_thread(threadId=<inbound>,
+   messageFormat='MINIMAL')` and take the `id` of the
+   chronologically-last message.
+2. **Create the draft** with
+   `mcp__claude_ai_Gmail__create_draft(..., replyToMessageId=<that
+   message id>)`, or omit `replyToMessageId` to fall back to
+   subject-matched threading (see
+   [`threading.md`](threading.md#fallback--subject-matched-draft-when-replytomessageid-is-unavailable)).
+3. **Warn the user** that the MCP backend was used because `oauth_curl`
+   credentials were missing, and that any links were omitted / must be
+   added by hand. Do not silently swallow the configuration mismatch.
 
 The skills **surface which backend was used** in the proposal / recap
-so the user can tell at a glance how the draft is threaded. The format
-is one line:
-
-> *Draft created via `claude_ai_mcp` (replyToMessageId-attached to
-> message `<msg-id-prefix>...` on thread `<thread-id-prefix>...`)*
-
-or
+so the user can tell at a glance how the draft is threaded:
 
 > *Draft created via `oauth_curl` (threadId-attached on
 > `<thread-id-prefix>...`)*
 
-or, when fallback kicks in:
+or, only when credentials were missing:
 
-> *Draft created via `claude_ai_mcp` (subject-matched fallback —
-> `<reason: thread archived / latest message unresolved / etc.>`)*
+> *Draft created via `claude_ai_mcp` (URLs omitted per privacy policy —
+> `oauth_curl` credentials not found; threaded via
+> `<replyToMessageId / subject-matched fallback>`)*
 
 ## Detecting drafts that already exist on a thread
 

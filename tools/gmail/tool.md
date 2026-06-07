@@ -40,7 +40,7 @@ file in this directory:
 | Capability | File | What it covers |
 |---|---|---|
 | MCP operations | [`operations.md`](operations.md) | The `mcp__claude_ai_Gmail__*` tool catalogue (search, read, draft, list) + the no-update / no-delete limitation |
-| Drafting backends | [`draft-backends.md`](draft-backends.md) | The two drafting backends (claude.ai Gmail MCP — default and recommended, with thread attachment via `replyToMessageId`; OAuth + `curl` — opt-in for bulk operations and `threadId`-keyed drafts), why both exist, and the `tools.gmail.draft_backend` config knob |
+| Drafting backends | [`draft-backends.md`](draft-backends.md) | The two drafting backends (OAuth + `curl` — **strongly preferred**, preserves URLs verbatim; claude.ai Gmail MCP — **discouraged**: silently rewrites embedded URLs into Google tracking redirects), why `oauth_curl` is preferred, and the `tools.gmail.draft_backend` config knob |
 | Threading | [`threading.md`](threading.md) | The *"always attach the draft to the inbound thread when possible"* rule — how drafts stay on the inbound thread across reporter replies, ASF-security relays, PMC credit questions, follow-ups |
 | ASF-security-relay drafting | [`asf-relay.md`](asf-relay.md) | Special-case drafting rules when the inbound report is relayed by the ASF security team rather than sent by the external reporter directly |
 | Search queries | [`search-queries.md`](search-queries.md) | Gmail search-operator cheat-sheet + skill-specific query templates (candidate-listing, reporter-thread lookup, CVE-review comments) |

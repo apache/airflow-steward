@@ -30,8 +30,8 @@ Both supported drafting backends now provide thread-attachment — see
 
 | Backend | Thread attach | Mechanism |
 |---|---|---|
-| `claude_ai_mcp` (default) | **yes** | `replyToMessageId` — the message ID of the chronologically-last message on the inbound thread |
-| `oauth_curl` (opt-in) | **yes** | `threadId` plus explicit `In-Reply-To` / `References` headers |
+| `oauth_curl` (**preferred**) | **yes** | `threadId` plus explicit `In-Reply-To` / `References` headers |
+| `claude_ai_mcp` (discouraged — see [`draft-backends.md`](draft-backends.md#privacy-warning--the-claudeai-gmail-mcp-rewrites-embedded-urls-into-google-tracking-redirects)) | **yes** | `replyToMessageId` — the message ID of the chronologically-last message on the inbound thread |
 
 The two threading paths available to the skills, in preferred order:
 

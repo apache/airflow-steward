@@ -1101,10 +1101,11 @@ will change and *why*. Group them by category:
   thread.
 
   **Never send.** Always create a draft. Prefer attaching it to the
-  inbound mail thread (the default `claude_ai_mcp` backend resolves
-  the latest message ID from the inbound `threadId` and passes it as
-  `replyToMessageId`; the opt-in `oauth_curl` backend uses
-  `--thread-id` directly). If Step 1c could not resolve a `threadId`,
+  inbound mail thread (the preferred `oauth_curl` backend uses
+  `--thread-id` directly and preserves URLs verbatim; the discouraged
+  `claude_ai_mcp` backend resolves the latest message ID from the
+  inbound `threadId` and passes it as `replyToMessageId` but rewrites
+  embedded URLs — see [`draft-backends.md`](../../tools/gmail/draft-backends.md#privacy-warning--the-claudeai-gmail-mcp-rewrites-embedded-urls-into-google-tracking-redirects)). If Step 1c could not resolve a `threadId`,
   fall back to a subject-matched draft (thread-attachment parameter
   omitted, `subject: Re: <root subject>`) per the threading rule in
   [`tools/gmail/threading.md`](../../tools/gmail/threading.md).

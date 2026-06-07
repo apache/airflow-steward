@@ -41,10 +41,13 @@ user-provided OAuth refresh token. Three console scripts:
 | `oauth-draft-create` | Create a Gmail draft with `threadId` attachment. (As of the `replyToMessageId` parameter on the claude.ai Gmail MCP `create_draft`, the MCP can also produce thread-attached drafts — see [`../draft-backends.md`](../draft-backends.md). This script remains useful when you have a `threadId` on hand and would rather skip the extra `get_thread` round-trip the MCP path requires, and is the only path that lets the skills delete drafts via the Gmail API afterwards.) |
 | `oauth-draft-mark-read` | Bulk-modify Gmail threads matching a search query (default: mark as read by removing the `UNREAD` label). No MCP equivalent today. |
 
-The default and recommended drafting backend is the claude.ai Gmail
-MCP — see [`../draft-backends.md`](../draft-backends.md) for when to
-opt into `oauth_curl`. This README covers local-setup, day-to-day
-invocation, and the project's own test/lint workflow.
+The **strongly preferred** drafting backend is this `oauth_curl` tool:
+the claude.ai Gmail MCP `create_draft` silently rewrites embedded URLs
+into Google tracking redirects, so it must not be used for drafts that
+contain links — see
+[`../draft-backends.md`](../draft-backends.md#privacy-warning--the-claudeai-gmail-mcp-rewrites-embedded-urls-into-google-tracking-redirects).
+This README covers local-setup, day-to-day invocation, and the
+project's own test/lint workflow.
 
 ## Run
 

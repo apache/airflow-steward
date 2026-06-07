@@ -253,10 +253,14 @@ before moving on to the next item. Use:
   starts returning `not found`.
 - **Gmail draft:** create via the project's configured drafting
   backend per [`tools/gmail/draft-backends.md`](../../tools/gmail/draft-backends.md#how-the-skills-pick-a-backend).
-  The default and recommended backend is `claude_ai_mcp` with
-  thread attachment via `replyToMessageId`. Per-backend call shape:
+  The **preferred** backend is `oauth_curl` — it preserves URLs in
+  the body verbatim. The `claude_ai_mcp` backend is **discouraged**
+  because it silently rewrites embedded URLs into Google tracking
+  redirects (see [`draft-backends.md`](../../tools/gmail/draft-backends.md#privacy-warning--the-claudeai-gmail-mcp-rewrites-embedded-urls-into-google-tracking-redirects)); use it only when
+  `oauth_curl` credentials are missing AND the body has no links.
+  Per-backend call shape:
 
-  - **`claude_ai_mcp`** (default) — first call
+  - **`claude_ai_mcp`** (discouraged — rewrites URLs) — first call
     `mcp__claude_ai_Gmail__get_thread(threadId=<from Step 1c>,
     messageFormat='MINIMAL')` to resolve the chronologically-last
     message ID; then call `mcp__claude_ai_Gmail__create_draft` with
@@ -264,7 +268,7 @@ before moving on to the next item. Use:
     and `replyToMessageId=<that message id>`. The draft attaches to
     the inbound thread on the sender's Gmail and surfaces in both the
     conversation view and the global Drafts folder.
-  - **`oauth_curl`** (opt-in for users who set
+  - **`oauth_curl`** (preferred — for users who set
     `tools.gmail.draft_backend: oauth_curl` and have credentials at
     `tools.gmail.oauth_credentials_path` /
     `$GMAIL_OAUTH_CREDENTIALS` / default
