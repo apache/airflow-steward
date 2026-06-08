@@ -61,19 +61,6 @@ one PR** (the branch-per-feature constraint).
 
 ---
 
-## In-flight work
-
-These branches and/or open PRs already carry the change. Do **not** add
-a plan item for any of them; the build beat must not re-pick them.
-
-| Branch | PR | Description |
-|---|---|---|
-| `security-reporting-tests` | — | Security reporting tool test suite |
-| `sync-specs-update` | — | Spec content and status alignment (update beat) |
-| `loop-imp` | #467 | Incremental .last-sync marker for the update beat |
-
----
-
 ## Work items (planned)
 
 Priority order. Each maps to one branch and one PR. Branch names are
