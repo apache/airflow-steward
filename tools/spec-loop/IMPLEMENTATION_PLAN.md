@@ -24,20 +24,40 @@ one PR** (the branch-per-feature constraint).
 - **Loop scaffolding** — `loop.sh` (plan / build / consolidate; a branch
   per work item; never pushes), `PROMPT_plan.md`, `PROMPT_build.md`,
   `PROMPT_consolidate.md`, `AGENTS.md` (loop-scoped operational context),
-  and this plan.
-- **Pairing — pre-flight self-review skill** — `.claude/skills/pairing-self-review/`
-  shipped; `docs/modes.md` Pairing row updated to 1 skill / `experimental`.
-  Spec: [`specs/pairing-mode.md`](specs/pairing-mode.md).
-- **Mentoring — first prototype skill** — `pr-management-mentor` shipped,
-  `mode: Mentoring` + `experimental`, teaching-register replies with
-  explicit hand-off. Spec: [`specs/mentoring-mode.md`](specs/mentoring-mode.md).
+  and this plan. Branch-collision guard is inline in `loop.sh`.
+- **Pairing — both skills shipped** — `pairing-self-review` and
+  `pairing-multi-agent-review` (three independent axis passes; eval
+  suites present); `docs/modes.md` Pairing row reflects 2 skills /
+  `experimental`. Spec: [`specs/pairing-mode.md`](specs/pairing-mode.md).
+- **Mentoring — both skills shipped** — `pr-management-mentor` and
+  `good-first-issue-author` (eval suites present); `docs/modes.md`
+  Mentoring row reflects 2 skills / `experimental`.
+  Spec: [`specs/mentoring-mode.md`](specs/mentoring-mode.md).
+- **Contributor skills** — `contributor-nomination`,
+  `contributor-activity-sweep`, and `committer-onboarding` shipped with
+  eval suites. Formerly tracked under draft PRs #227–#229.
+- **Drafting — issue-fix-workflow skill** — `issue-fix-workflow` and
+  `audit-finding-fix` shipped with eval suites (covers generic drafting
+  from audit findings, formerly tracked as `generic-drafting` / #296).
+  Spec: [`specs/drafting-mode.md`](specs/drafting-mode.md).
 - **Docs — mode economics page** — `docs/mode-economics.md` exists
   (per-mode token-cost shape, vendor-neutral).
 - **Meta — spec-status index** — `tools/spec-status-index/` exists as a
   `uv` tool that prints specs grouped by status.
   Spec: [`specs/meta-and-quality-tooling.md`](specs/meta-and-quality-tooling.md).
-- **Eval backfill** — 24 skill eval suites committed to `main`, covering
-  every non-setup skill. Setup-family suites are in-flight (see below).
+- **Meta — spec validator** — `tools/spec-validator/` exists as a `uv`
+  project with `pyproject.toml` and `tests/`, validating spec frontmatter
+  and body sections. Spec: [`specs/meta-and-quality-tooling.md`](specs/meta-and-quality-tooling.md).
+- **Agent isolation — Python packaging + tests** — `tools/agent-isolation/`
+  has `pyproject.toml`, `src/`, and a `tests/` directory with pytest
+  coverage for the sandbox profiles and clean-env wrapper.
+  Spec: [`specs/agent-isolation-sandbox.md`](specs/agent-isolation-sandbox.md).
+- **Eval coverage — complete** — 37 skill eval suites exist in
+  `tools/skill-evals/evals/`, covering all skills including the full
+  setup-family (setup, setup-isolated-setup-doctor,
+  setup-isolated-setup-install, setup-isolated-setup-update,
+  setup-isolated-setup-verify, setup-override-upstream,
+  setup-shared-config-sync).
 
 ---
 
@@ -48,22 +68,9 @@ a plan item for any of them; the build beat must not re-pick them.
 
 | Branch | PR | Description |
 |---|---|---|
-| `pairing-multi-agent-review` | #269 (draft) | Pairing multi-agent review pipeline |
-| `generic-drafting` | #296 (draft) | Generic (non-security) drafting from audit findings |
-| `eval-setup-isolated-setup-doctor` | — | Eval suite for setup-isolated-setup-doctor |
-| `eval-setup-isolated-setup-install` | — | Eval suite for setup-isolated-setup-install |
-| `eval-setup-isolated-setup-update` | — | Eval suite for setup-isolated-setup-update |
-| `eval-setup-override-upstream` | — | Eval suite for setup-override-upstream |
-| `eval-setup-shared-config-sync` | — | Eval suite for setup-shared-config-sync |
-| `eval-setup` | — | Eval suite for setup |
-| `spec-validator` | — | `tools/spec-validator/` — spec frontmatter + body-section validator |
-| `spec-loop-preflight-checks` | — | Freshness check + branch-name collision guard for the loop |
-| `injection-guard` | — | Prompt-injection defence hardening |
-| `check-headers` | — | License headers as a first-class review category |
-| `issue-fix-workflow` | — | issue-fix-workflow skill updates |
-| `contributor-readiness` | #227 (draft) | contributor-nomination skill + eval |
-| `contributor-activity` | #228 (draft) | contributor-activity-sweep skill + eval |
-| `contributor-onboarding` | #229 (draft) | committer-onboarding skill |
+| `security-reporting-tests` | — | Security reporting tool test suite |
+| `sync-specs-update` | — | Spec content and status alignment (update beat) |
+| `loop-imp` | #467 | Incremental .last-sync marker for the update beat |
 
 ---
 
@@ -72,44 +79,37 @@ a plan item for any of them; the build beat must not re-pick them.
 Priority order. Each maps to one branch and one PR. Branch names are
 slugs, not numbers (numbering implies an order the specs don't carry).
 
-1. **Security reporting — add tool test suite.** `tools/security-tracker-stats-dashboard/`
-   has Python scripts (`render.py`, `fetch_*.py`) but no `tests/`
-   directory. The spec acceptance criterion #3 and its Known Gaps section
-   both require tests here. Add a `tests/` directory with pytest coverage
-   for the fetch/render pipeline. Validation:
+1. **Prompt-injection defence hardening.** Skills that ingest external
+   content — issue bodies, PR descriptions, mail threads — are potential
+   injection surfaces. Audit the highest-risk ingestion skills
+   (`security-issue-import`, `security-issue-import-from-pr`,
+   `security-issue-import-from-md`, `security-issue-import-via-forwarder`)
+   and add explicit injection-resistance guidance (e.g. a
+   `treat-as-data` framing block at the ingest boundary) or a validator
+   rule in `tools/skill-and-tool-validator/` that flags missing
+   data-boundary markers. Validation:
    ```bash
-   uv run --project tools/security-tracker-stats-dashboard --group dev pytest
-   bash -n tools/security-tracker-stats-dashboard/run.sh
-   shellcheck tools/security-tracker-stats-dashboard/run.sh
+   uv run --project tools/skill-and-tool-validator --group dev skill-and-tool-validate
+   uv run --project tools/skill-evals skill-eval tools/skill-evals/evals/security-issue-import/
    ```
-   Spec: [`specs/security-reporting.md`](specs/security-reporting.md).
-   Branch `security-reporting-tests`.
+   Spec: [`specs/security-issue-lifecycle.md`](specs/security-issue-lifecycle.md)
+   (import path); [`specs/meta-and-quality-tooling.md`](specs/meta-and-quality-tooling.md)
+   (validator surface).
+   Branch `injection-guard`.
 
-2. **Agent isolation — Python packaging and test harness.** `tools/agent-isolation/`
-   is shell-only (no `pyproject.toml`, no `tests/`), but the spec's
-   validation command requires `uv run --project tools/agent-isolation
-   --group dev pytest`. Convert the tool to a `uv` Python project, add a
-   `pyproject.toml`, and write tests that verify the sandbox profiles and
-   clean-env wrapper behave correctly. Validation:
+2. **License-header enforcement.** Skills and tools must carry the
+   Apache-2.0 SPDX header (`<!-- SPDX-License-Identifier: Apache-2.0 …
+   -->` for Markdown; `# SPDX-License-Identifier: Apache-2.0` for
+   Python) per repo-wide `AGENTS.md`. Add a check to
+   `tools/skill-and-tool-validator/` that fails when a skill or tool
+   source file is missing the header, so new contributions are caught at
+   validation time rather than in code review. Validation:
    ```bash
-   uv run --project tools/agent-isolation --group dev pytest
+   uv run --project tools/skill-and-tool-validator --group dev skill-and-tool-validate
+   uv run --project tools/skill-and-tool-validator --group dev pytest
    ```
-   Spec: [`specs/agent-isolation-sandbox.md`](specs/agent-isolation-sandbox.md).
-   Branch `agent-isolation-tests`.
-
-3. **Mentoring: good-first-issue authoring skill.** The Mentoring spec
-   names `good-first-issue-author` as proposed (not yet built): a skill
-   that drafts a single net-new good first issue from a supplied known gap
-   or maintainer-named small task (scope, code pointers, contributing-doc
-   links, acceptance criteria, effort estimate), flagged `mode: Mentoring`
-   + `experimental`, and never files it without maintainer confirmation.
-   Ship the skill plus its eval suite as one work item. Validation:
-   ```bash
-   test -d .claude/skills/good-first-issue-author
-   uv run --project tools/skill-validator --group dev skill-validate
-   ```
-   Spec: [`specs/mentoring-mode.md`](specs/mentoring-mode.md).
-   Branch `good-first-issue-author`.
+   Spec: [`specs/meta-and-quality-tooling.md`](specs/meta-and-quality-tooling.md).
+   Branch `check-headers`.
 
 ---
 
@@ -124,3 +124,7 @@ slugs, not numbers (numbering implies an order the specs don't carry).
   it would skip the proof MISSION requires.
 - When a build iteration creates a new skill, its eval suite is part of
   that same work item — not a separate one.
+- **Next plan pass:** the `adapters.md` spec Known Gaps section was not
+  fully read in this pass (only the first 40 lines were sampled). If
+  both remaining work items are built before the next plan beat, reading
+  `adapters.md` in full is the first step to identify additional items.
