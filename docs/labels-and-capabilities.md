@@ -162,6 +162,7 @@ Capabilities for every skill currently in
 | `contributor-activity-sweep` | `capability:stats` |
 | `committer-onboarding` | `capability:stats` |
 | `list-skills` | `capability:stats` |
+| `setup-status` | `capability:stats` + `capability:setup` *(reports the adoption configuration — stats — and delegates reconfiguration to the setup skill)* |
 | `setup` | `capability:setup` |
 | `setup-isolated-setup-install` | `capability:setup` |
 | `setup-isolated-setup-verify` | `capability:setup` |
