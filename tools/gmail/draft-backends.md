@@ -188,6 +188,15 @@ are involved (either backend); always do the per-thread check too.
 
 ## Limitations that apply to both backends
 
+- **Plain text only — never HTML.** Both backends produce plain-text
+  (`text/plain`) drafts, and must keep doing so. `oauth_curl` builds a
+  single `text/plain` part via `EmailMessage.set_content` (its test
+  suite asserts the message stays single-part `text/plain` with no
+  `text/html` alternative). For `claude_ai_mcp`, this is guaranteed by
+  populating only the `body` parameter and **never** `htmlBody` —
+  passing `htmlBody` would add a `text/html` part. The project's
+  correspondence (security replies, relays, advisory text) is plain
+  text by policy; no skill should ever emit an HTML draft.
 - **No update, no delete** on the claude.ai MCP side — see
   [`operations.md` — Hard limitation](operations.md#hard-limitation--no-update-no-delete).
   The `oauth_curl` script could in principle update or delete drafts

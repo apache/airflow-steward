@@ -194,16 +194,25 @@ mcp__claude_ai_Gmail__get_thread(
 )
 # → take messages[-1].id as <reply-to-message-id>
 
-# 2. Create the draft with replyToMessageId set:
+# 2. Create the draft with replyToMessageId set.
+#    Pass `body` (plain text) ONLY — never `htmlBody`. The tool sends
+#    a plain-text message iff `htmlBody` is omitted; supplying it adds
+#    a text/html alternative, which the project never wants.
 mcp__claude_ai_Gmail__create_draft(
   subject='Re: <root subject of the inbound message>',
   to=['<primary>'],
   cc=['<security-list>', ...],
-  body='<body>',
+  body='<body>',                # plain text only
   replyToMessageId='<reply-to-message-id>',
+  # htmlBody=...                # DO NOT SET — would make the draft HTML
 )
 ```
 
+- **Plain text only — never set `htmlBody`.** The `create_draft` tool
+  produces a plain-text message when only `body` is supplied; passing
+  `htmlBody` (or `body` + `htmlBody`) creates a `text/html` part. The
+  project's outbound mail is always plain text, so only ever populate
+  `body`.
 - **`replyToMessageId` is the message ID of the latest message on the
   inbound thread.** Resolve it from `get_thread` rather than guessing
   — Gmail does not accept a `threadId` here.
@@ -249,6 +258,11 @@ backend too — drafts only, never send; subject is always
 ### Hard rules that apply to both backends
 
 - **Never send.**
+- **Plain text only — never HTML.** Every draft is a plain-text
+  (`text/plain`) message. For `claude_ai_mcp`, populate `body` and
+  never `htmlBody`. For `oauth_curl`, the script builds a single
+  `text/plain` part via `EmailMessage.set_content` (asserted by its
+  test suite). Do not introduce an HTML body in either backend.
 - **Subject is always `Re: <root subject>`**, never fabricated.
 - **Run `pii-reveal` before passing the body to the create-draft
   call.** If the draft body carries any third-party identifiers

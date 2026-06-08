@@ -68,6 +68,34 @@ def test_build_mime_sets_basic_headers():
     assert msg.get_content().rstrip() == "Body content."
 
 
+def test_build_mime_is_plain_text_not_html():
+    """The built message must be single-part ``text/plain`` — never HTML.
+
+    The project sends plain-text mail only. ``build_mime`` uses
+    ``EmailMessage.set_content(str)``, which yields a single
+    ``text/plain`` part with no ``text/html`` alternative. This guards
+    against a regression that would introduce an HTML body (e.g. a
+    stray ``add_alternative`` / ``set_content(subtype="html")``).
+    """
+    raw = build_mime(
+        from_addr="me@example.com",
+        to=["a@example.com"],
+        cc=[],
+        bcc=[],
+        subject="Plain",
+        body="Just text, no markup.",
+        in_reply_to=None,
+        references=None,
+    )
+    msg = parse_built_message(raw)
+    assert msg.get_content_type() == "text/plain"
+    assert not msg.is_multipart()
+    # No HTML part anywhere in the tree.
+    assert all(part.get_content_type() != "text/html" for part in msg.walk())
+    # The raw RFC822 bytes carry no HTML content-type header either.
+    assert b"text/html" not in raw
+
+
 def test_build_mime_joins_multiple_recipients():
     raw = build_mime(
         from_addr="me@example.com",

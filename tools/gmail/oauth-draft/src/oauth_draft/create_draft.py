@@ -136,6 +136,12 @@ def build_mime(
         msg["In-Reply-To"] = in_reply_to
     if references:
         msg["References"] = references
+    # Plain text only — by design. ``set_content(str)`` produces a
+    # single ``text/plain; charset="utf-8"`` part with no ``text/html``
+    # alternative. The project's outbound mail is always plain text:
+    # never call ``add_alternative`` / ``set_content(..., subtype="html")``
+    # here, and never attach an HTML body. (The test suite asserts the
+    # built message stays single-part text/plain.)
     msg.set_content(body)
     return bytes(msg)
 
