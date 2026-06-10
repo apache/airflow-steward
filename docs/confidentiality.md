@@ -1,3 +1,13 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [Confidentiality — drafting elaboration](#confidentiality--drafting-elaboration)
+  - [Sharing a tracker URL with someone who cannot access it](#sharing-a-tracker-url-with-someone-who-cannot-access-it)
+  - [Where the tracker URLs are routinely OK to use](#where-the-tracker-urls-are-routinely-ok-to-use)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 <!-- SPDX-License-Identifier: Apache-2.0
      https://www.apache.org/licenses/LICENSE-2.0 -->
 

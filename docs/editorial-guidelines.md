@@ -1,3 +1,26 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [Editorial guidelines](#editorial-guidelines)
+  - [Tone: polite but firm — no room to wiggle](#tone-polite-but-firm--no-room-to-wiggle)
+  - [Brevity: emails state facts, not context](#brevity-emails-state-facts-not-context)
+  - [Threading: drafts stay on the inbound Gmail thread](#threading-drafts-stay-on-the-inbound-gmail-thread)
+  - [ASF-security-relay reports: a special case for drafting](#asf-security-relay-reports-a-special-case-for-drafting)
+  - [Point reporters to the project's Security Model, don't re-explain it](#point-reporters-to-the-projects-security-model-dont-re-explain-it)
+  - [Reporter claims about dependencies: conditional language only](#reporter-claims-about-dependencies-conditional-language-only)
+  - [Linking CVEs](#linking-cves)
+    - [Reporter emails: CVE ID only, never the ASF CVE-tool URL](#reporter-emails-cve-id-only-never-the-asf-cve-tool-url)
+  - [Linking tracker issues and PRs](#linking-tracker-issues-and-prs)
+    - [On markdown surfaces](#on-markdown-surfaces)
+    - [On terminal surfaces](#on-terminal-surfaces)
+    - [Confidentiality applies to *contents*, not to identifiers](#confidentiality-applies-to-contents-not-to-identifiers)
+    - [Editing rules](#editing-rules)
+  - [Mentioning project maintainers and security-team members](#mentioning-project-maintainers-and-security-team-members)
+  - [Other editorial guidelines](#other-editorial-guidelines)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 <!-- SPDX-License-Identifier: Apache-2.0
      https://www.apache.org/licenses/LICENSE-2.0 -->
 
