@@ -12,9 +12,7 @@
   - [Commit and PR conventions](#commit-and-pr-conventions)
   - [Labeling issues, PRs, tools, and documentation](#labeling-issues-prs-tools-and-documentation)
   - [Confidentiality of the tracker repository](#confidentiality-of-the-tracker-repository)
-    - [Sharing a tracker URL with someone who cannot access it](#sharing-a-tracker-url-with-someone-who-cannot-access-it)
     - [What public surfaces still must not contain](#what-public-surfaces-still-must-not-contain)
-    - [Where the URLs are routinely OK to use](#where-the-urls-are-routinely-ok-to-use)
     - [Other ASF projects — never name or describe their vulnerabilities](#other-asf-projects--never-name-or-describe-their-vulnerabilities)
   - [Privacy-LLM — what data goes through which model](#privacy-llm--what-data-goes-through-which-model)
   - [Assessing reports](#assessing-reports)
@@ -22,21 +20,12 @@
     - [CVE references must never point at non-public mailing-list threads](#cve-references-must-never-point-at-non-public-mailing-list-threads)
   - [Writing and editing documentation](#writing-and-editing-documentation)
     - [Tone: polite but firm — no room to wiggle](#tone-polite-but-firm--no-room-to-wiggle)
-    - [Brevity: emails state facts, not context](#brevity-emails-state-facts-not-context)
-    - [Threading: drafts stay on the inbound Gmail thread](#threading-drafts-stay-on-the-inbound-gmail-thread)
-    - [ASF-security-relay reports: a special case for drafting](#asf-security-relay-reports-a-special-case-for-drafting)
-    - [Point reporters to the project's Security Model, don't re-explain it](#point-reporters-to-the-projects-security-model-dont-re-explain-it)
-    - [Reporter claims about dependencies: conditional language only](#reporter-claims-about-dependencies-conditional-language-only)
     - [Linking CVEs](#linking-cves)
     - [Linking tracker issues and PRs](#linking-tracker-issues-and-prs)
     - [Mentioning project maintainers and security-team members](#mentioning-project-maintainers-and-security-team-members)
-    - [Other editorial guidelines](#other-editorial-guidelines)
   - [Reusable skills](#reusable-skills)
   - [Keeping evals and mode-economics in sync](#keeping-evals-and-mode-economics-in-sync)
     - [When the rule fires](#when-the-rule-fires)
-    - [Running evals](#running-evals)
-    - [Agent-run self-eval](#agent-run-self-eval)
-    - [Updating mode economics](#updating-mode-economics)
   - [Before submitting](#before-submitting)
   - [References](#references)
 
@@ -99,7 +88,7 @@ Repo-root files:
 - [`projects/_template/`](projects/_template/) — bootstrap scaffold for a new adopter's `<project-config>/`.
 - [`tools/<name>/`](tools/) — tool adapters (GitHub operations, issue-template schema, project-board GraphQL, …) for the external tools the skills invoke.
 - [`skills/<name>/SKILL.md`](skills/) — the agentic workflows.
-- `.agents/skills/magpie-<name>/`, `.claude/skills/magpie-<name>/`, and `.github/skills/magpie-<name>/` — committed symlinks. This repo **self-adopts**: `/magpie-setup` with `method:local` links every skill source canonically at `.agents/skills/magpie-<name>` → `../../skills/<name>/` (the path shared by Codex, Cursor, Gemini CLI, Copilot, …), and gives every other agent dir (`.claude/skills/` for Claude Code, `.github/skills/` for GitHub's skill loader) a relay symlink `magpie-<name>` → `../../.agents/skills/magpie-<name>` so the framework's own skills are callable from any harness while developing the framework (see [`skills/setup/adopt.md`](skills/setup/adopt.md) → "Local self-adoption"). The symlinks are committed because their targets are in-repo and always resolve; no snapshot, lock, or remote fetch is involved.
+- `.agents/skills/magpie-<name>/`, `.claude/skills/magpie-<name>/`, `.github/skills/magpie-<name>/` — committed symlinks created by this repo's self-adoption (`/magpie-setup method:local`) so the framework's own skills are callable from any harness while developing it; targets are in-repo so no snapshot or remote fetch is involved. Mechanics: [`skills/setup/adopt.md`](skills/setup/adopt.md) → "Local self-adoption".
 
 There is no source code to build or test in this framework
 repository itself. Adopting projects may include project-specific
@@ -239,24 +228,19 @@ reviewed PR authored by a tracker-repo collaborator.
 
 ## Per-project and per-user configuration
 
-Two configuration layers tell the skills how this working tree is set
-up.
+Two configuration layers tell the skills how this working tree is set up.
 
-**Project layer — shared, checked in.** Each adopting project keeps
-its project-specific configuration in a `<project-config>/` directory
-in their tracker repository, alongside the gitignored framework
-snapshot at `.apache-magpie/` (which `setup` manages and
-which carries no adopter-specific content). The framework refers
-to the project-config directory via the `<project-config>`
-placeholder; the concrete path is the adopter's choice (the
-[`projects/_template/`](projects/_template/) scaffold is the
-starting point an adopter copies in). The directory contains:
+**Project layer — shared, checked in.** Each adopting project keeps its
+project-specific configuration in a `<project-config>/` directory in its
+tracker repository, alongside the gitignored framework snapshot at
+`.apache-magpie/`. The concrete path is the adopter's choice; the
+[`projects/_template/`](projects/_template/) scaffold is the starting
+point an adopter copies in. The directory contains:
 
 ```text
 <project-config>/                # adopter chooses path; committed
-├── project.md                   # project manifest — identity, repos,
-│                                # mailing lists, CVE tooling, links to
-│                                # the sibling files below
+├── project.md                   # manifest — identity, repos, mailing
+│                                # lists, CVE tooling, links to siblings
 ├── canned-responses.md          # reporter-facing reply templates
 ├── release-trains.md            # release-manager + security-team rosters
 ├── security-model.md            # project's security policy
@@ -269,105 +253,86 @@ starting point an adopter copies in). The directory contains:
 └── user.md                      # gitignored — per-user
 ```
 
-The project manifest (`<project-config>/project.md`) is the load-bearing
-file: it carries identity, repositories, mailing lists, tools enabled,
-CVE-tooling references, and pointers to the other files. Use the
-[`projects/_template/`](projects/_template/) directory in this
-repository as the bootstrap scaffold when adopting the framework for
-a new project.
+`<project-config>/project.md` is the load-bearing file: identity,
+repositories, mailing lists, tools enabled, CVE-tooling references, and
+pointers to the other files. Use
+[`projects/_template/`](projects/_template/) as the bootstrap scaffold.
 
 **User layer — personal, gitignored.** Each triager keeps their own
-`user.md` (copied from `<project-config>/user.md.example`) declaring
-their identity, PMC status, per-capability tool picks, and local
-environment paths (e.g. the local `<upstream>` clone location).
-Skills read this file at Step 0 pre-flight and skip the
-corresponding prompts when a field is set. Fields that are unset
-fall back to runtime prompts — nothing is broken if `user.md` is
-missing; it is an opt-in convenience.
+`user.md` (copied from `user.md.example`) declaring identity, PMC
+status, per-capability tool picks, and local paths (e.g. the local
+`<upstream>` clone). Skills read it at Step 0 pre-flight and skip the
+matching prompts when a field is set; unset fields fall back to runtime
+prompts, so a missing `user.md` breaks nothing — it is opt-in
+convenience.
 
 ### `user.md` resolution order
 
-The file can live in **one of three locations**. Skills resolve in
-this order, **first match wins**:
+The file can live in one of three locations. Skills resolve in this
+order, **first match wins** — do **not** merge across locations:
 
 | # | Location | When to use |
 |---|---|---|
-| 1 | Path in `$APACHE_STEWARD_USER_CONFIG` (env var) | Power-user / CI / isolated test setups that need to point at a specific config without touching disk conventions. Wins over both defaults below. |
-| 2 | `~/.config/apache-magpie/user.md` | **Recommended default for new adopters.** Per-user, OS-conventional. One file shared across every worktree of every adopter project on the machine — so the operator has one identity-and-tool-picks config, not one per tracker repo and not one per worktree. |
-| 3 | `<project-config>/user.md` | Per-project fallback, kept for backward compatibility with adopters who set up `user.md` inside their tracker repo before `~/.config/apache-magpie/` existed as the canonical location. Future adopters should prefer (2); existing adopters keep working without action. |
+| 1 | Path in `$APACHE_STEWARD_USER_CONFIG` (env var) | Power-user / CI / isolated test setups that need a specific config. Wins over both defaults below. |
+| 2 | `~/.config/apache-magpie/user.md` | **Recommended default.** One per-user, OS-conventional file shared across every worktree of every adopter project on the machine. |
+| 3 | `<project-config>/user.md` | Per-project fallback for adopters who set up `user.md` inside their tracker repo before `~/.config/apache-magpie/` existed. Future adopters should prefer (2). |
 
-Skills must consult locations (1) → (2) → (3) and use the first
-file that exists. Do **not** merge across locations; the first
-match is authoritative. When this document or a skill says
-*"`user.md`"* without qualification, it means *the resolved file*
-per the order above. The legacy phrasing
-*"`<project-config>/user.md`"* refers to location (3); read it as
-*"… or whichever location wins per the resolution order"*.
-
-The cross-worktree story falls out of (2): every worktree of every
-adopter resolves to the same `~/.config/apache-magpie/user.md`,
-so per-user fields (apache_id, GitHub handle, PMC status, local
-clone path) stay coherent without symlinks, pre-commit hooks, or
-per-worktree bootstrap. The framework does **not** itself manage
-the file — adopters create / edit it directly. See
-[`setup/adopt.md`](skills/setup/adopt.md)
-for the recommended one-time setup.
+When this document or a skill says *"`user.md`"* unqualified, it means
+*the resolved file* per the order above; the legacy phrasing
+*"`<project-config>/user.md`"* is location (3), read as "… or whichever
+location wins". The cross-worktree story falls out of (2): every
+worktree resolves to the same file, so per-user fields (apache_id,
+GitHub handle, PMC status, local clone path) stay coherent without
+symlinks or per-worktree bootstrap. The framework does not manage the
+file — adopters create / edit it directly; see
+[`setup/adopt.md`](skills/setup/adopt.md).
 
 When this document (or any skill) says *"the tracker repo"*, *"the
-upstream repo"*, *"the security list"*, *"the canned responses"*,
-it means the value declared in `<project-config>/project.md` and
-its sibling files. When it says *"the user's GitHub handle"*, *"PMC
-status"*, *"the local upstream clone"*, it means the value in the
-resolved `user.md`. When a fact is truly project-agnostic (a
-lifecycle rule, a confidentiality principle, a brevity rule), it
-lives in this file or in [`README.md`](README.md).
+security list"*, *"the canned responses"*, it means the value declared
+in `<project-config>/project.md` and its siblings. *"The user's GitHub
+handle"*, *"PMC status"*, *"the local upstream clone"* mean the value in
+the resolved `user.md`. Truly project-agnostic facts (a lifecycle rule,
+a confidentiality principle, a brevity rule) live in this file or in
+[`README.md`](README.md).
 
 ### Placeholder convention used in skill files
 
 Skill files, tool-adapter docs, and this file use a small set of
-substitution placeholders instead of baking in one project's
-concrete values. Agents reading a skill must resolve these against
-the active configuration before executing any command:
+substitution placeholders instead of baking in one project's concrete
+values. Agents reading a skill must resolve these against the active
+configuration before executing any command:
 
 | Placeholder | Resolves to | Source |
 |---|---|---|
-| `<project-config>` | The adopting project's config directory in its tracker repo (path is adopter's choice; alongside the gitignored `.apache-magpie/` snapshot, not inside it). Bootstrapped from `projects/_template/`. | Filesystem convention. |
-| `<framework>` | The framework's root — i.e. this repository. In adopting projects, `.apache-magpie/` (the gitignored snapshot path managed by `setup`); in framework standalone, `.` (the repository root). Used in `uv run` and other invocations that need to address the framework's `tools/<name>/` subtrees from a path the agent can resolve at the agent's current `cwd`. | Filesystem convention. |
-| `<tracker>` | The GitHub slug of the (security) tracker repo (example: `airflow-s/airflow-s` for the Apache Airflow security team). | `<project-config>/project.md` → `tracker_repo` |
-| `<upstream>` | The GitHub slug of the upstream codebase the fixes land in (example: `apache/airflow`). | `<project-config>/project.md` → `upstream_repo` |
+| `<project-config>` | The adopting project's config directory in its tracker repo (alongside the gitignored `.apache-magpie/` snapshot, not inside it). Bootstrapped from `projects/_template/`. | Filesystem convention. |
+| `<framework>` | The framework root — `.apache-magpie/` (the gitignored snapshot) in adopting projects, `.` in framework standalone. Used in `uv run` and other invocations that address the framework's `tools/<name>/` subtrees. | Filesystem convention. |
+| `<tracker>` | GitHub slug of the (security) tracker repo (example: `airflow-s/airflow-s`). | `<project-config>/project.md` → `tracker_repo` |
+| `<upstream>` | GitHub slug of the upstream codebase the fixes land in (example: `apache/airflow`). | `<project-config>/project.md` → `upstream_repo` |
 | `<security-list>` | The project's security mailing list (example: `security@airflow.apache.org`). | `<project-config>/project.md` → `mailing_lists.security` |
-| `<issue-tracker>` | URL of the project's general-issue tracker, distinct from the security tracker (example: `https://issues.apache.org/jira` for JIRA-based projects). | `<project-config>/issue-tracker-config.md` → `url` |
-| `<issue-tracker-project>` | Project key within the issue tracker (example: `FOO` for a JIRA project, or `owner/repo` for GitHub Issues). | `<project-config>/issue-tracker-config.md` → `project_key` |
+| `<issue-tracker>` | URL of the project's general-issue tracker, distinct from the security tracker. | `<project-config>/issue-tracker-config.md` → `url` |
+| `<issue-tracker-project>` | Project key within the issue tracker (JIRA key or `owner/repo`). | `<project-config>/issue-tracker-config.md` → `project_key` |
 | `<runtime>` | Recipe for invoking the project's runtime on a single source file. | `<project-config>/runtime-invocation.md` |
-| `<default-branch>` | The upstream repo's default branch (example: `master` for projects still using the older default, `main` for newer projects). | `<project-config>/project.md` → `upstream_default_branch` |
+| `<default-branch>` | The upstream repo's default branch (`master` or `main`). | `<project-config>/project.md` → `upstream_default_branch` |
 | `<N>` | An issue or PR number. | The user's input to the skill |
 | `<CVE-ID>` | A CVE identifier of the form `CVE-YYYY-NNNNN`. | Per-tracker |
 
-Do not invent new placeholders; if a skill needs a value that isn't
-on the list above, thread it in via the project manifest or the user
-config rather than reaching for a fresh convention.
-
-Concretely: in a bash snippet, `gh issue view <N> --repo <tracker>`
-means *"before running this, substitute `<tracker>` for the value in
-`<project-config>/project.md` → `tracker_repo`"*. In a markdown
-link, `[…](../../../<project-config>/canned-responses.md)` means
-*"replace `<project-config>/` with the path to the adopter's
-`.apache-magpie/` directory and then follow the link"*. Writing the
-literal value directly (e.g. `<tracker>`) in a skill is a
-refactor bug — skills must stay project-agnostic so swapping
-projects is a config change, not a code change.
+Do not invent new placeholders; thread a needed value in via the project
+manifest or the user config rather than reaching for a fresh convention.
+Concretely, `gh issue view <N> --repo <tracker>` means "substitute
+`<tracker>` for `<project-config>/project.md` → `tracker_repo` before
+running this". Writing a literal project value directly into a skill is a
+refactor bug — skills must stay project-agnostic so swapping projects is
+a config change, not a code change.
 
 ## Local setup
 
-**`prek install` MUST be run before any other work in this
-repository — including the first commit on a fresh clone.** This
-repository uses [`prek`](https://github.com/j178/prek) (a fast,
-Rust-based drop-in replacement for `pre-commit`) to run pre-commit
-hooks that keep the documentation consistent — regenerating the
-`doctoc` tables of contents, stripping trailing whitespace,
-checking line endings, blocking accidentally committed secrets,
-and running the per-sub-tool `ruff` / `mypy` / `pytest` quality
-gates. The hook configuration lives in
+**`prek install` MUST be run before any other work in this repository —
+including the first commit on a fresh clone.** This repo uses
+[`prek`](https://github.com/j178/prek) (a fast, Rust-based drop-in
+replacement for `pre-commit`) to run the hooks that keep documentation
+consistent — regenerating `doctoc` TOCs, stripping trailing whitespace,
+checking line endings, blocking committed secrets, and the per-sub-tool
+`ruff` / `mypy` / `pytest` quality gates. Config:
 [`.pre-commit-config.yaml`](.pre-commit-config.yaml).
 
 ```bash
@@ -375,91 +340,56 @@ uv tool install prek   # or: pipx install prek
 prek install           # installs the git hook into .git/hooks/pre-commit
 ```
 
-**Verify before every commit (agents and humans alike).** Before
-preparing any `git commit` — including the first commit on a
-fresh clone — confirm `.git/hooks/pre-commit` exists. If it does
-not, run `prek install` immediately; do **not** proceed to the
-commit step before the hook is in place. The CI re-runs the same
-hooks against every push (`prek` workflow at
-[`.github/workflows/`](.github/workflows/)) and rejects any commit
-whose contents do not match the hook's output, so a missing local
-hook silently turns into a CI failure on push. The pre-flight
-check is one line:
+**Verify the hook before every commit** (agents and humans alike); CI
+re-runs the same hooks against every push and rejects any commit whose
+contents do not match the hook's output, so a missing local hook
+silently becomes a CI failure. The pre-flight check is one line:
 
 ```bash
 test -x .git/hooks/pre-commit || prek install
 ```
 
-Run the hooks on demand:
+**Before opening or updating a PR, run `prek run --all-files`** (or
+`prek run --from-ref <base>` against the PR's base branch) as a hard
+pre-flight gate. The commit hook only sees the files in that commit, so
+issues in files committed earlier on the branch can slip past it; a
+whole-tree run mirrors CI and surfaces those locally. If a hook modifies
+files (e.g. `doctoc` regenerating a TOC), the commit is aborted —
+re-stage and commit again. **Do not bypass the hooks with
+`--no-verify`**; fix the underlying issue or update the hook config in
+the same PR.
 
-```bash
-prek run --all-files                 # run all hooks against every file
-prek run doctoc --all-files          # only regenerate TOCs
-prek run --from-ref airflow-s        # run against everything changed vs the base branch
-```
+**Keep the framework snapshot in sync with the project's pin.** The
+framework lives at `<adopter-tracker>/.apache-magpie/` as a gitignored
+snapshot that [`setup`](skills/setup/SKILL.md) manages; the project's
+pinned version is the committed `.apache-magpie.lock`. Every skill
+compares the per-machine `.apache-magpie.local.lock` against the
+committed pin at the top of its run and, on drift, proposes
+`/magpie-setup upgrade`. There is no `git submodule update` step — the
+snapshot mechanism replaces it.
 
-If a hook modifies files (for example, `doctoc` regenerating a
-TOC), the commit is aborted; re-stage the modified files and
-commit again. **Do not bypass the hooks with `--no-verify`** —
-if a hook is failing, fix the underlying issue or update the
-hook configuration in the same PR.
+**Run the agent in the credential-isolation setup.** The skills operate
+against pre-disclosure CVE content; running an `SKILL.md`-aware agent
+with default-permissive access to `~/`, env vars, and arbitrary network
+egress is a real exfiltration risk. See
+[`docs/setup/secure-agent-setup.md`](docs/setup/secure-agent-setup.md)
+for the layered defence the framework dogfoods (sandbox + tool
+permissions + clean-env wrapper, system tools pinned with a 7-day
+upstream cooldown).
 
-**Before opening or updating a pull request, run
-`prek run --all-files` (or `prek run --from-ref <base>` against
-the PR's base branch) as a hard pre-flight gate.** The
-`prek install` git hook fires on each `git commit`, but only
-against the files in that commit — issues in files committed
-earlier on the branch (or files the current commit didn't
-touch) can slip past it. A whole-tree `prek run` mirrors what
-CI executes and surfaces those regressions locally before the
-PR round-trip, instead of after a CI failure that costs a
-round-trip and a reviewer's attention on a mechanical fix.
-
-**Keep the framework snapshot in sync with the project's pin.**
-The framework lives at `<adopter-tracker>/.apache-magpie/` as a
-**gitignored snapshot** that
-[`setup`](skills/setup/SKILL.md) manages
-(see [Repository purpose](#repository-purpose) above). The
-project's pinned framework version is recorded in the committed
-`.apache-magpie.lock`; the snapshot itself is fetched on first
-adoption and refreshed by `/magpie-setup upgrade`. Every
-framework skill compares the gitignored `.apache-magpie.local.lock`
-(per-machine fetch) against the committed `.apache-magpie.lock`
-(project pin) at the top of its run; on drift, the skill surfaces
-the gap and proposes `/magpie-setup upgrade`. There is **no**
-`git submodule update` step — the snapshot mechanism replaces
-that entirely.
-
-**Run the agent in the credential-isolation setup.** The skills
-operate against pre-disclosure CVE content; running Claude Code (or
-another `SKILL.md`-aware agent) with default-permissive access to
-`~/`, env vars, and arbitrary network egress is a real exfiltration
-risk. See [`docs/setup/secure-agent-setup.md`](docs/setup/secure-agent-setup.md) for the
-layered defence the framework dogfoods (`.claude/settings.json`
-sandbox + tool permissions + clean-env wrapper, with system tools
-pinned per-tool with a 7-day default upstream cooldown).
-
-**Tool credentials live under `$HOME`, never in the project tree.**
-Any persistent token, API key, OAuth refresh token, or session
-cookie a framework tool needs goes under a well-known home-directory
-path — `~/.config/apache-magpie/<tool>` for tools the framework
-owns, or whatever upstream convention the third-party tool already
-uses. The existing exemplars: Gmail OAuth at
-`~/.config/apache-magpie/gmail-oauth.json` (see
-[`tools/gmail/oauth-draft/src/oauth_draft/credentials.py`](tools/gmail/oauth-draft/src/oauth_draft/credentials.py)),
-PonyMail session cookie at `~/.ponymail-mcp/session.json`, GitHub
-auth via `gh auth` (`~/.config/gh/`). Two reasons this is
-non-negotiable: (1) the standard sandbox
-([`docs/setup/secure-agent-setup.md`](docs/setup/secure-agent-setup.md))
-denies reads on home-dir credential paths, so an in-tree credential
-silently bypasses that boundary — every credential read becomes an
-explicit, visible sandbox-bypass moment instead of a silent in-tree
-file slurp; (2) one credential file serves every clone / worktree /
-project, not re-acquired per checkout. New tool integrations MUST
-follow the pattern. If a credential is found in-tree (legacy,
-copy-paste from upstream docs, generated to a temp scratch path),
-relocate it to a home-dir path and update the tool to read from
-there — never leave it in place "because it's already there".
+**Tool credentials live under `$HOME`, never in the project tree.** Any
+persistent token, API key, OAuth refresh token, or session cookie a
+framework tool needs goes under a well-known home-directory path —
+`~/.config/apache-magpie/<tool>` for framework-owned tools, or the
+third-party tool's own convention (Gmail OAuth at
+`~/.config/apache-magpie/gmail-oauth.json`, PonyMail session cookie at
+`~/.ponymail-mcp/session.json`, GitHub via `gh auth` under
+`~/.config/gh/`). Two reasons this is non-negotiable: the standard
+sandbox denies reads on home-dir credential paths, so an in-tree
+credential silently bypasses that boundary; and one home-dir file serves
+every clone / worktree, not re-acquired per checkout. New integrations
+MUST follow the pattern — if a credential is found in-tree, relocate it
+to a home-dir path and update the tool to read from there.
 
 ## Commit and PR conventions
 
@@ -517,41 +447,22 @@ the skill-to-capability and tool-to-capability maps — lives in
 [`docs/labels-and-capabilities.md`](docs/labels-and-capabilities.md).
 Read that page once; treat it as the source of truth.
 
-**Rules:**
+**Rules** (full taxonomy and per-target details in
+[`docs/labels-and-capabilities.md`](docs/labels-and-capabilities.md)):
 
-- When opening an **issue** on this repository, apply at least one
-  `area:*` and one `capability:*` label. Apply every capability the
-  issue spans — do not collapse to a single "primary" if the issue
-  genuinely covers multiple lifecycle phases.
-- When opening a **pull request**, same: `area:*` + every applicable
-  `capability:*`. Match the capabilities the change is *implementing*,
-  not the file paths it touches.
-- When adding a new **tool** under `tools/`, declare its capabilities
-  in the first paragraph of the tool's README using
-  `**Capability:** capability:NAME` (or `capability:NAME + capability:NAME`
-  when two apply). A tool is pure substrate by default
-  (`capability:setup`); if it grows to encode a specific lifecycle
-  phase as a first-class feature, add that capability too and explain
-  the dual role in the README.
-- When adding a new **skill** under `skills/`, declare the
-  capability in the skill's frontmatter — a single string for
-  single-capability skills, a YAML list for multi-capability skills:
-
-  ```yaml
-  capability: capability:triage
-  # or
-  capability:
-    - capability:intake
-    - capability:reconciliation
-  ```
-
-  The [`write-skill`](skills/write-skill/SKILL.md) skill
-  prompts for this on every new-skill scaffold.
-- When adding a new **doc** under `docs/`, link to
-  [`docs/labels-and-capabilities.md`](docs/labels-and-capabilities.md)
-  and name the capability the doc is about in its first paragraph
-  *if* the doc is capability-specific. Cross-cutting docs
-  (`MISSION.md`, top-level READMEs) need no capability marker.
+- **Issues and PRs** get at least one `area:*` and every applicable
+  `capability:*` — match the capabilities the change *implements*, not
+  the file paths it touches; do not collapse multi-phase work to a single
+  "primary".
+- **New tools** declare their capabilities in the first paragraph of the
+  tool README (`**Capability:** capability:NAME`); a tool is
+  `capability:setup` substrate by default.
+- **New skills** declare the capability in frontmatter (a string, or a
+  YAML list for multi-capability skills); [`write-skill`](skills/write-skill/SKILL.md)
+  prompts for it on every scaffold.
+- **New docs** link to the taxonomy doc and name their capability in the
+  first paragraph if capability-specific; cross-cutting docs need no
+  marker.
 
 The taxonomy applies to *this framework repository*. Skills that create
 issues or PRs on an **adopter's tracker** (e.g. `security-issue-import`,
@@ -592,8 +503,8 @@ round-tripping through ASF tooling.
      advisory, those values stay internal;
    - screenshots or excerpts of the tracker's GitHub UI;
    - the ASF CVE-tool URL (`https://cveprocess.apache.org/cve5/...`)
-     — OAuth-gated and dead weight to non-PMC viewers; see the
-     dedicated *Reporter emails: CVE ID only* subsection below.
+     — OAuth-gated and dead weight to non-PMC viewers; see
+     [`docs/editorial-guidelines.md`](docs/editorial-guidelines.md#reporter-emails-cve-id-only-never-the-asf-cve-tool-url).
 
 3. **Security framing of a public PR is embargoed until the
    advisory ships.** The fact that a specific public PR is a
@@ -607,24 +518,6 @@ round-tripping through ASF tooling.
    security fix prior to disclosure. After the advisory ships,
    both layers are public.
 
-### Sharing a tracker URL with someone who cannot access it
-
-When the recipient is an external reporter, a public-PR reviewer
-who is not on the security team, or any other audience without
-read access to `<tracker>`, **pair the URL with a one-line note**
-that the link is an identifier only:
-
-> Tracking this internally as
-> `https://github.com/<tracker>/issues/NNN` (private — you will not
-> be able to view the page; included as a stable identifier so we
-> both reference the same issue across messages).
-
-Wording is not load-bearing; the load-bearing element is that the
-recipient knows the link will 404 for them and that this is
-expected. The note can be omitted on surfaces where every viewer
-is a security-team member (the tracker itself, `<security-list>`
-threads restricted to the team, internal docs, rollup entries).
-
 ### What public surfaces still must not contain
 
 - **The CVE ID**, before the advisory has been sent. Even with the
@@ -637,29 +530,17 @@ threads restricted to the team, internal docs, rollup entries).
 - **Internal severity / CWE / affected-versions assessments**
   before they are published in the CVE record / advisory.
 - **The ASF CVE-tool URL** (`cveprocess.apache.org/cve5/...`) — see
-  the *Reporter emails: CVE ID only* subsection below; the same
-  rule extends to every external surface.
+  [`docs/editorial-guidelines.md`](docs/editorial-guidelines.md#reporter-emails-cve-id-only-never-the-asf-cve-tool-url);
+  the same rule extends to every external surface.
 - **Other ASF projects' vulnerabilities** — see the dedicated
   subsection further down.
 
-### Where the URLs are routinely OK to use
-
-- **Reporter emails** — *may* include the tracker URL in any status
-  update, paired with the explanatory note above. This makes
-  cross-message threading much cleaner for the reporter and gives
-  them a stable identifier to file the report under.
-- **Public `<upstream>` PR descriptions and commit messages** —
-  *may* include the tracker URL as a cross-reference, **so long as
-  the surrounding text does not characterise the PR as a security
-  fix** (no CVE ID, no *"vulnerability"*, no *"security advisory"*
-  framing). The URL alone is opaque to non-team viewers.
-- **Public CVE records and archived advisories** — the tracker URL
-  may appear in `references[]` once the advisory ships. For
-  records still in DRAFT / REVIEW state it stays internal-only.
-- **`gh issue comment` calls inside the tracker repository** — fine,
-  they land on private issues.
-- **`<security-list>` private mail threads** — fine.
-- **`<private-list>` PMC escalation mails** — fine.
+When drafting reporter-facing or public text, the two how-to
+elaborations — how to pair an unreachable tracker URL with the
+identifier-only note, and exactly which surfaces the tracker URL is
+routinely OK on (reporter emails, public PR cross-references, shipped
+advisory `references[]`, internal team channels) — live in
+[`docs/confidentiality.md`](docs/confidentiality.md).
 
 When editing or generating any text destined for a public audience,
 the load-bearing scrub is for **content** that came from the
@@ -712,19 +593,14 @@ This applies **even when**:
 - the reporter themselves linked to the other project's advisory in
   their mail.
 
-**Why:** every ASF project operates its own CNA process under its
-own security team. Content about project X's in-flight or
-historical vulnerability is project X's private information, not
-this project's, and copying it into our tracker effectively re-publishes
-it via screenshots, excerpts pasted into advisories, timeline
-clippings, or future scrapes. Cross-project correlations also
-reveal investigation patterns, reporter behaviour, and triage-team
-attention that the other project's team may not have chosen to
-share with us. The fact that we learned something via a shared
-channel (`security@apache.org`, a cross-project Gmail thread)
-grants us exactly as much licence to broadcast it as the sender
-intended — which is almost always *"none beyond the conversation
-we're in right now"*.
+**Why:** every ASF project runs its own CNA process; content about
+project X's vulnerability is project X's private information, and copying
+it into our tracker effectively re-publishes it (via screenshots,
+excerpts pasted into advisories, timeline clippings, or future scrapes)
+and reveals cross-project investigation patterns the other team may not
+have chosen to share. Learning something via a shared channel
+(`security@apache.org`, a cross-project Gmail thread) grants no licence to
+broadcast it beyond the conversation it arrived in.
 
 **What to do instead.** Keep cross-project observations in the
 channel they arrived on:
@@ -778,53 +654,41 @@ Setup recipes for the supported variants are in
 Three rules every skill follows:
 
 **Third-party PII in `<security-list>` reports gets redacted —
-the reporter's own identity does not.** The reporter sent the
-mail to `<security-list>` and is operationally known to the
-security team (the team replies to them, credits them in the
-CVE, and references them across the tracker discussion). Their
-name, email, phone, etc. flow through the agent's context as-is.
-**What gets redacted** is PII the reporter discloses about
-*other people* — third-party researchers they collaborated with,
-victims they observed the bug affecting, named individuals
-called out in the body — replaced with hash-prefixed identifiers
-(`N-a3f9d2`, `E-b8c247`, …). **Exception:** if the named
-individual is already a collaborator on the `<tracker>` repo
-(resolved via `gh api repos/<tracker>/collaborators`), their
-identity is already public/known by their collaborator status
-and is **not** redacted — there is no privacy gain from masking
-them. The mapping from identifier to real value lives at
-`~/.config/apache-magpie/pii-mapping.json` (per the home-dir
-credentials rule in [Local setup](#local-setup)) and is never
-sent to any LLM. Reveal-to-real-name happens only at the
-outbound boundary, when a draft is being assembled. The contract
-is in [`tools/privacy-llm/pii.md`](tools/privacy-llm/pii.md).
+the reporter's own identity does not.** The reporter is operationally
+known to the team (replied to, credited in the CVE, referenced across the
+tracker discussion), so their name / email / phone flow through context
+as-is. **What gets redacted** is PII the reporter discloses about *other
+people* — collaborators, victims, named individuals in the body —
+replaced with hash-prefixed identifiers (`N-a3f9d2`, `E-b8c247`, …).
+**Exception:** someone already a `<tracker>` collaborator (resolved via
+`gh api repos/<tracker>/collaborators`) is **not** redacted. The
+identifier↔value mapping lives at
+`~/.config/apache-magpie/pii-mapping.json` (per the home-dir credentials
+rule in [Local setup](#local-setup)), is never sent to any LLM, and is
+revealed only at the outbound boundary. Contract:
+[`tools/privacy-llm/pii.md`](tools/privacy-llm/pii.md).
 
 **`<private-list>` content never reaches a non-approved LLM.**
-PMC-private foundation list content (the project's
-`<private-list>` and any other PMC-private list the security
-team reads) is wholly private — body and PII alike. Skills that
-may read this content run a Step 0 pre-flight gate: if any LLM
-in the active stack is not in the approved-model registry, the
-skill stops. The default-approved set is Claude Code itself,
-anything at `*.apache.org`, local-only inference (Ollama / vLLM
-on `127.0.0.1`), and air-gapped on-prem endpoints. Everything
-else (AWS Bedrock, direct Anthropic API, Vertex, OpenAI, …) is
-opt-in, declared explicitly in `<project-config>/privacy-llm.md`
-with a data-residency contract link and a PMC-member approval
-line. The contract is in
+PMC-private foundation list content (the `<private-list>` and any other
+PMC-private list the team reads) is wholly private — body and PII alike.
+Skills that may read it run a Step 0 pre-flight gate that **stops the
+skill if any LLM in the active stack is not in the approved-model
+registry**. The default-approved set is Claude Code itself, anything at
+`*.apache.org`, local-only inference (Ollama / vLLM on `127.0.0.1`), and
+air-gapped on-prem endpoints; everything else (AWS Bedrock, direct
+Anthropic API, Vertex, OpenAI, …) is opt-in, declared explicitly in
+`<project-config>/privacy-llm.md` with a data-residency contract link and
+a PMC-member approval line. Contract:
 [`tools/privacy-llm/models.md`](tools/privacy-llm/models.md).
 
-**Adding a new LLM hop is a deliberate act, not an emergent one.**
-The pre-flight gate is conservative: any single unapproved entry
-in the active stack stops the skill. This makes it impossible
-for a skill to silently grow a second LLM dependency without the
-adopter's security team approving it in
-`<project-config>/privacy-llm.md`. When a skill needs to
-delegate to another LLM (a summarizer for long mail threads, a
-classifier, an outbound moderation step), the adopter wires the
-endpoint per the appropriate variant in
-[`docs/setup/privacy-llm.md`](docs/setup/privacy-llm.md) **before**
-the skill that uses it runs.
+**Adding a new LLM hop is a deliberate act, not an emergent one.** The
+gate is conservative — a single unapproved entry stops the skill — so a
+skill cannot silently grow a second LLM dependency without the adopter's
+security team approving it in `<project-config>/privacy-llm.md`. When a
+skill needs to delegate to another LLM (a summariser, classifier, or
+outbound moderation step), the adopter wires the endpoint per
+[`docs/setup/privacy-llm.md`](docs/setup/privacy-llm.md) **before** the
+skill that uses it runs.
 
 **Status — provisional pending ASF Legal.** The default-approved
 list above reflects the framework maintainer's working position;
@@ -852,16 +716,10 @@ informational background only.** Do not:
 The adopting project's security team scores every accepted vulnerability independently,
 as part of the CVE-allocation step, using the same CVSS version and vector
 conventions for every CVE the project ships. The independent score is the **only**
-score that ends up in the CVE record and the public advisory. Reasons:
-
-- reporter scores are frequently inflated (*"High"* or *"Critical"* is the
-  default for many report templates, regardless of actual exploitability in
-  the project's deployment);
-- reporters typically do not know the project's security model and therefore
-  misjudge which capabilities are in-scope for a CVE in the first place;
-- propagating the reporter's score creates an implicit contract with them — if
-  we later revise it downward, they feel the rug has been pulled, and the
-  revision becomes a negotiation instead of an assessment.
+score that ends up in the CVE record and the public advisory. (Reporter scores
+are frequently inflated, often misjudge what is in scope under the project's
+security model, and propagating one creates an implicit contract that makes any
+later downward revision a negotiation rather than an assessment.)
 
 Practical consequences:
 
@@ -884,642 +742,113 @@ attaches alongside.
 
 ### CVE references must never point at non-public mailing-list threads
 
-When populating the CVE record's `references[]` array (via the
-`generate-cve-json` script or directly in the project's CVE-tool
-UI), **never tag a URL as `vendor-advisory` if the URL points to a
-non-publicly archived list**. The project's mailing lists fall into
-two groups — see
+When populating the CVE record's `references[]` (via `generate-cve-json`
+or directly in the CVE-tool UI), **never tag a URL as `vendor-advisory`
+if it points to a non-publicly archived list.** For ASF projects the
+public-archived lists (users / dev / announce / commits on
+`lists.apache.org`) are valid `vendor-advisory` targets; the private
+`<security-list>` and `<private-list>` produce `lists.apache.org/thread/<id>`
+URLs that look identical but 404 for everyone outside the team and must
+**never** appear in the public record. See
 [`<project-config>/project.md → Mailing lists`](<project-config>/project.md#mailing-lists)
-for the concrete list membership and the public / private marking:
+for the public / private marking.
 
-- **Publicly archived** (for ASF projects, on `lists.apache.org`):
-  users list, dev list, announce list, commits list. Thread URLs on
-  these lists resolve correctly for the whole world and are the
-  right target for a `vendor-advisory` reference on the public CVE
-  record.
-- **Private**, not publicly archived: the project's `<security-list>`
-  and `<private-list>`. For ASF projects these produce
-  `lists.apache.org/thread/<id>` URLs that look identical in shape
-  to public-list URLs but 404 for everyone outside the security
-  team. They must **never** appear in the public CVE record.
-
-Concretely, the issue template has two separate fields for this:
-
-- The *"Security mailing list thread"* field is the **internal**
-  reference for the security team: it holds the URL (or Gmail
-  thread ID) of the original `<security-list>` thread so triagers
-  can navigate back to the report. It is expected to 404 for anyone
-  outside the security team. Keep whatever the reporter /
-  team-member put there — do **not** scrub it during sync.
-- The *"Public advisory URL"* field holds the archive URL on the
-  project's public users-list archive once the public advisory has
-  been sent (Step 13 of the process). This is the URL that ends up
-  as the `vendor-advisory` reference on the public CVE record.
-  Before the advisory is sent the field stays empty; the
-  `security-issue-sync` skill scans the users-list archive for the
-  CVE ID and proposes populating the field automatically once the
-  advisory lands.
-
-The `generate-cve-json` script enforces this split:
-
-- It **never** pulls URLs from the *"Security mailing list thread"*
-  field into `references[]`. That field is private by construction
-  and stays in the issue for team navigation only.
-- It **does** pull URLs from the *"Public advisory URL"* field
-  automatically and tags them as `vendor-advisory`. The
-  `--advisory-url` CLI flag still exists for ad-hoc overrides but
-  in the normal flow the release manager populates the body field
-  once, and every re-run of the generator picks it up.
-
-Putting it differently: if a reader clicks a `vendor-advisory` link on
-the public CVE record and gets a 404, the CVE record is broken.
-Avoid shipping broken CVE records.
+The issue template separates the two cleanly: the *"Security mailing list
+thread"* field is the team's internal back-reference (expected to 404
+externally — **do not scrub it during sync**), while the *"Public
+advisory URL"* field holds the public users-list archive URL that becomes
+the `vendor-advisory` reference once the advisory ships.
+`generate-cve-json` enforces the split automatically — it never pulls the
+internal field into `references[]` and does pull the public-advisory
+field; mechanics in
+[`tools/cve-tool-vulnogram/`](tools/cve-tool-vulnogram/). A
+`vendor-advisory` link that 404s is a broken CVE record.
 
 ## Writing and editing documentation
 
-The documents in this repository are short and opinionated. When editing them, prefer small,
-targeted improvements over rewrites, and preserve the existing structure (including the
-`doctoc`-generated tables of contents) unless the change is explicitly about structure.
+Documents here are short and opinionated. Prefer small, targeted edits
+over rewrites; preserve the existing structure and the `doctoc` TOC
+markers (if you rename a heading, update its TOC entry in the same
+change). Use em dashes sparingly; do not add emojis.
+
+The full editorial playbook — reporter-facing tone, email brevity,
+Gmail threading, ASF-security-relay drafting, the "point to the
+Security Model, don't re-explain it" rule, dependency-claim phrasing,
+and the CVE / tracker-issue / PR link formats — lives in
+[`docs/editorial-guidelines.md`](docs/editorial-guidelines.md).
+**Load that file before drafting or editing any reporter-facing or
+tracker-facing text.** The load-bearing rules each external surface
+references are summarised below.
 
 ### Tone: polite but firm — no room to wiggle
 
-The canned responses in
-[`<project-config>/canned-responses.md`](<project-config>/canned-responses.md)
-are the public face of the security team. They are often sent to reporters
-whose submissions have been assessed as invalid or out of scope. The tone
-must be:
-
-1. **Polite and professional.** Thank the reporter, acknowledge the intent, stay neutral.
-2. **Firm and unambiguous.** State the outcome as a decision, not as a negotiation. The response
-   is an expectation, not a suggestion.
-3. **Free of accusation, sarcasm, and condescension.** Never imply the reporter "didn't bother
-   to read", never say things like "Two reasons indicate that you did not", never tell them to
-   "digest" the security model. These phrasings leave bad taste and, worse, invite argument.
-4. **Free of hedging.** Avoid phrases like "feel absolutely free", "we would appreciate if you
-   stopped", or "we would kindly ask you to consider" — they weaken the message and imply the
-   expectation is optional. Prefer "please do not use this address for such requests" or "we are
-   unable to treat this as a security issue unless…".
-
-Concrete phrasing patterns that work well:
-
-- Lead with: *"Thank you for the report."* Then state the outcome.
-- State the decision in plain terms: *"We do not consider this a vulnerability."* / *"We cannot
-  accept this report."* / *"This is explicitly out of scope for our security process."*
-- Anchor the decision in an authoritative document, not in the responder's opinion:
-  *"… is documented in our Security Model under '…': <link>."*
-- When describing consequences of repeated policy violations, use passive, factual language:
-  *"Accounts that repeatedly send reports which do not meet the policy are added to a deny list."*
-  Do not threaten.
-- End with a constructive alternative where one exists: *"We would welcome a PR through the
-  regular contribution process."*
-
-### Brevity: emails state facts, not context
-
-Every outbound email drafted by a skill — status updates to reporters,
-escalation messages to `<private-list>`, relay requests to
-PMC members, communications to the ASF security team (`cve-managers@`,
-`security@apache.org`) — must be **short and factual**. The recipient
-already has the context; the point of the message is to deliver new
-information.
-
-**Baseline shape.** A status-update email to a reporter should fit in
-three short paragraphs or less:
-
-1. One sentence stating **what changed** (CVE allocated, fix PR
-   opened, advisory sent, etc.).
-2. One sentence stating **what comes next** and roughly when (e.g.
-   *"The advisory will be sent once the fix ships, currently expected
-   with the next patch release."*).
-3. The relevant **artifact URLs** on their own line(s) — CVE tool
-   link, PR URL, advisory archive URL — per the linking rules in
-   [Linking CVEs](#linking-cves) and
-   [Linking tracker issues and PRs](#linking-tracker-issues-and-prs).
-   Gmail autolinks bare URLs; do not use markdown or shorthand.
-
-That is the entire body. No re-introduction of the vulnerability, no
-recap of earlier messages on the same thread, no explanation of the
-handling process, no speculation about severity or timelines beyond
-the single forward-looking sentence in paragraph 2.
-
-**Emails to the ASF security team are even shorter.** The ASF CVE
-managers and the ASF security team already know the project's
-process, the Vulnogram tool, and the CVE-5 schema. A message to
-them is a **request or a fact**, not a briefing:
-
-- Lead with the ask or the fact in one sentence (*"Please push the
-  attached credit correction to cve.org for CVE-YYYY-NNNNN."*).
-- Include only the minimum artifact the recipient needs to act (the
-  CVE ID, the corrected JSON, the archive URL) — one link, maybe two.
-- Do **not** restate the vulnerability, the project's release train,
-  or the history of the ticket.
-- Do **not** explain why the ASF team's action is needed when their
-  role in the process is already established (e.g. pushing to cve.org,
-  allocating a CVE from a PMC-gated form).
-
-**What to omit in every drafted email, reporter or otherwise:**
-
-- The vulnerability description or attack narrative — the recipient
-  read it in the previous message on the thread or knows it from the
-  tracker.
-- A recap of earlier status updates ("As you know, we confirmed
-  validity on X and allocated the CVE on Y…").
-- Security-model paraphrasing — link to the chapter, do not
-  re-explain (per
-  [Point reporters to the project's Security Model, don't re-explain it](#point-reporters-to-the-projects-security-model-dont-re-explain-it)).
-- Inflated closings ("We greatly appreciate your continued
-  patience…"). A plain *"Thanks,"* / *"Regards,"* is enough.
-- Any open question that was already asked on the thread and is
-  still awaiting a reply (see the "Do not re-ask" rule in the
-  `security-issue-sync` skill — pinging twice gets us blocklisted).
-
-**Exception: the initial receipt-of-confirmation reply.** The first
-message the security team sends to a new reporter, drafted by the
-`security-issue-import` skill, uses the *"Confirmation of receiving
-the report"* canned response from
-[`<project-config>/canned-responses.md`](<project-config>/canned-responses.md)
-**verbatim**. That template is longer because it introduces the process
-to a reporter who has not yet seen it and carries the credit-preference
-question; leave it alone and do not trim it per this brevity rule.
-
-Everything else — every follow-up, every status update, every relay
-to a PMC member, every message to the ASF security team — falls
-under this rule.
-
-### Threading: drafts stay on the inbound Gmail thread
-
-Every drafted email that relates to a tracking issue **should**
-attach to the original inbound Gmail thread. On the default
-`claude_ai_mcp` backend, that means resolving the thread's latest
-message ID (via `get_thread`) and passing it to `create_draft` as
-`replyToMessageId`; on the opt-in `oauth_curl` backend it means
-passing the `threadId` to `oauth-draft-create --thread-id`. The
-pragmatic fallback — when the inbound thread cannot be resolved —
-is to omit the thread-attachment parameter and create the draft
-with the matching `Re: <root subject>` line, which most clients
-still thread by subject. The full rule (when each path applies,
-when to stop instead, how to surface the degraded threading in the
-skill's proposal) lives in
-[`tools/gmail/threading.md`](tools/gmail/threading.md).
-
-### ASF-security-relay reports: a special case for drafting
-
-Some reports reach the project's security list via the ASF security
-team (from `security@apache.org`, or a personal `@apache.org` address
-of an ASF-security-team member) rather than from the external reporter
-directly. The drafting rules for that case — different `To:`, same
-threading behaviour (attach to the inbound thread, fall back to the
-inbound subject when the thread cannot be resolved), terse body — live in
-[`tools/gmail/asf-relay.md`](tools/gmail/asf-relay.md). The detection
-signals the `security-issue-import` skill uses to classify a candidate
-as a relay live in that skill's Step 3.
-
-### Point reporters to the project's Security Model, don't re-explain it
-
-The project's Security Model is the authoritative source for what is and
-is not considered a security vulnerability. Canned responses must link
-directly to the relevant chapter instead of paraphrasing it. Paraphrases
-drift over time and create a second source of truth that has to be
-maintained.
-
-The authoritative URL and known-useful anchors for the currently active
-project live in
-[`<project-config>/security-model.md`](<project-config>/security-model.md).
-When adding a new canned response, identify the matching chapter in the
-Security Model first. If no chapter covers the case, that is a signal
-the Security Model should be updated upstream (in the project's source
-repository) rather than duplicated in the canned responses.
-
-### Reporter claims about dependencies: conditional language only
-
-When a reporter says the vulnerability they found lives in **one of
-the project's dependencies** (a third-party library, a transitive
-package, an upstream tool the project bundles), drafted replies
-must **not adopt the claim as fact**. The project's security team
-has no authority to confirm a vulnerability in code it does not
-maintain — that judgement belongs to the dependency's own
-maintainers and CNAs.
-
-Use **conditional phrasing** in every reply that touches the
-claim:
-
-- ✗ *"Thanks for finding this vulnerability in `<library>`."* —
-  endorses the claim.
-- ✗ *"We've confirmed the issue in `<library>` is exploitable
-  through our usage."* — endorses the claim plus a downstream
-  consequence.
-- ✓ *"Thanks for the report. We're forwarding your finding to
-  `<library>`'s maintainers; if confirmed there, we will reassess
-  whether our usage exposes it."*
-- ✓ *"We will track the upstream report. Once `<library>` issues
-  an advisory, we will evaluate the impact on our deployment."*
-
-Why this matters:
-
-- The reporter can screenshot or forward a confirmation in our
-  voice as evidence of an unconfirmed vulnerability in a
-  third-party project — pressuring its maintainers and damaging
-  relationships the project depends on.
-- A wrong endorsement (the dependency maintainers disagree, or
-  the behaviour turns out to be intentional / not exploitable as
-  described) becomes a public correction the team has to retract.
-- We may not have the deployment context to know whether the
-  claimed primitive is reachable in our usage at all. A
-  conditional reply is honest about that.
-
-This rule pairs with
-[Reporter-supplied CVSS scores are informational only — never propagate them](#reporter-supplied-cvss-scores-are-informational-only--never-propagate-them):
-the team independently assesses anything that ends up attributed
-to the project's voice. Dependency claims are the same shape — a
-position from the reporter the team has not yet evaluated.
-
-When the report turns out to describe a real vulnerability in the
-project's **own** code that *happens to involve* a dependency
-(e.g. the project calls the dependency's API in a way that
-exposes a primitive), this rule no longer applies — that finding
-is the project's and the reply can state it plainly per the
-brevity rule above.
+Canned responses and reporter replies must be polite and professional,
+firm and unambiguous (state the outcome as a decision, not a
+negotiation), and free of accusation, sarcasm, condescension, and
+hedging. Anchor every decision in an authoritative document, not the
+responder's opinion. Full phrasing patterns:
+[`docs/editorial-guidelines.md`](docs/editorial-guidelines.md#tone-polite-but-firm--no-room-to-wiggle).
 
 ### Linking CVEs
 
-Whenever a CVE ID appears in text this repository produces — status
-comments on `<tracker>` issues, proposals from the
-`security-issue-sync` skill, recap messages, canned-response drafts
-to reporters, internal notes — render it as a **clickable link**,
-not as bare text. The canonical link is the adopting project's CVE-tool
-record URL, which any security team member can click through to the
-live CVE record we control:
-
-```text
-https://cveprocess.apache.org/cve5/<CVE-ID>
-```
-
-Example:
-
-> [`CVE-2026-40690`](https://cveprocess.apache.org/cve5/CVE-2026-40690)
-
-For CVEs that have already been **published** (the advisory has been sent
-to `<users-list>`, the issue carries `vendor-advisory`, and the
-CVE record is visible on public databases), additionally link to the public
-`cve.org` / MITRE record so non-security-team readers can see the public
-description without needing access to the ASF tool:
-
-```text
-https://www.cve.org/CVERecord?id=<CVE-ID>
-```
-
-A published CVE should appear with both links, for example:
-
-> `CVE-2025-50213` ([ASF](https://cveprocess.apache.org/cve5/CVE-2025-50213),
-> [cve.org](https://www.cve.org/CVERecord?id=CVE-2025-50213))
-
-`https://nvd.nist.gov/vuln/detail/<CVE-ID>` is an acceptable alternative to
-`cve.org` once NVD has scored the record. Before publication, `cve.org`
-shows the CVE as RESERVED with no details — skip the public link in that
-case and link only to the ASF tool.
-
-**Confidentiality**, as a cross-reference to the
-[Confidentiality of the tracker repository](#confidentiality-of-the-tracker-repository)
-section above:
-
-- CVE-tool links are fine inside `<tracker>` private comments, in
-  rollup entries, in skill proposals, and in notes the security team
-  reads — every one of those surfaces is viewed by collaborators
-  who can authenticate against the ASF CVE tool.
-- **Reporter emails never carry the CVE-tool URL** — see the
-  subsection immediately below.
-- Public `<upstream>` PR descriptions, public mailing-list posts,
-  and any other public surface **must not** link to the CVE tool
-  before the advisory is sent — doing so implies the existence of
-  the private tracking issue. Once the advisory is public, link
-  only to `cve.org` (or NVD), never to the CVE tool.
-
-When editing an existing document that contains a bare `CVE-YYYY-NNNNN`
-string, convert it to the linked form in the same edit — **except**
-in reporter-facing email drafts, which follow the rule below.
-
-#### Reporter emails: CVE ID only, never the ASF CVE-tool URL
-
-Emails drafted to a reporter on `<security-list>` — receipt-of-
-confirmation replies, status updates, advisory notifications, credit
-corrections, CVE-publication notifications — **must not** contain the
-ASF CVE-tool URL (`https://cveprocess.apache.org/cve5/<CVE-ID>`).
-
-**Why:**
-
-- The ASF CVE tool is gated behind ASF OAuth. An external reporter
-  clicking that URL gets a login page they cannot resolve; the link is
-  dead weight at best and confusing at worst.
-- The tool is internal security-team infrastructure. Putting its URL in
-  front of an external party exposes internal tooling that the reporter
-  has no reason to see, and invites questions about the record that the
-  team would prefer to answer on its own cadence.
-- The CVE ID alone is the public identifier. Once the record publishes
-  on `cve.org`, the reporter can look it up there. Before publication,
-  no external database has details, and the CVE ID as text is exactly
-  the right amount of information for the reporter to file or cross-
-  reference.
-
-**How to reference a CVE in a reporter email:**
-
-- **Before publication** (CVE is `RESERVED` on `cve.org`): write the
-  CVE ID as plain inline text, e.g. *"… allocated CVE-2026-40690 for
-  this issue …"*. Do not add a URL of any kind. Most email clients
-  do not autolink `CVE-YYYY-NNNNN`, which is the intended behaviour —
-  the reporter reads the ID, not a clickable link.
-- **After publication** (advisory has been sent, CVE is visible on
-  `cve.org`): the `cve.org` URL is acceptable if a clickable
-  reference is worth including, e.g.
-  `https://www.cve.org/CVERecord?id=CVE-2026-40690`. This is still
-  optional — the CVE ID as plain text remains sufficient and is
-  often cleaner.
-- **Never** include `cveprocess.apache.org/cve5/<CVE-ID>` (or any
-  other ASF CVE-tool URL) in the email body, quoted excerpt,
-  footer, signature, or forwarded context. If a prior draft in the
-  thread contained the URL, do not repeat it in the follow-up.
-
-**Self-check before creating the Gmail draft:** grep the draft body
-for the literal strings `cveprocess.apache.org` and
-`cveprocess.apache.org/cve5/`; if either appears, remove the URL and
-leave the bare CVE ID. The tracker-internal surfaces that the sync
-and other skills write to (rollup entries, status comments, proposal
-summaries) continue to link the ASF CVE-tool record as before —
-this rule is specific to the outbound-reporter-email surface.
+Render every CVE ID as a clickable link, never bare text. Internal
+surfaces link the ASF CVE-tool record
+(`https://cveprocess.apache.org/cve5/<CVE-ID>`); add the public
+`cve.org` / NVD link once the advisory has shipped. **Reporter emails
+never carry the ASF CVE-tool URL** — use the bare CVE ID before
+publication, the `cve.org` URL after. Full rules and confidentiality
+cross-references:
+[`docs/editorial-guidelines.md`](docs/editorial-guidelines.md#linking-cves).
 
 ### Linking tracker issues and PRs
 
-Whenever a reference to a `<tracker>` issue, pull request, comment,
-or discussion appears in text this repository produces — sync / fix
-skill proposals, status comments on the private issue itself, recap
-messages, internal notes, `SKILL.md` files — the reference must be
-**one click away** in whatever surface it lands on. Bare `#NNN` or
-`<tracker>#NNN` with no link wrapper of any kind is never
-acceptable.
-
-The URL formats are:
-
-```text
-https://github.com/<tracker>/issues/<N>
-https://github.com/<tracker>/pull/<N>
-https://github.com/<tracker>/issues/<N>#issuecomment-<C>
-https://github.com/<tracker>/milestone/<N>
-```
-
-#### On markdown surfaces
-
-Tracker comments, PR / issue bodies, README files, draft email text
-destined for the `<security-list>` Gmail thread, `SKILL.md` files,
-and any other markdown-rendered destination get the **markdown link
-form**:
-
-> [`<tracker>#221`](https://github.com/<tracker>/issues/221)
-
-or, when the repository is already obvious from context (for example
-inside a comment on `<tracker>#221` itself):
-
-> [`#221`](https://github.com/<tracker>/issues/221)
-
-Link both the number *and* any referenced comment / review by using
-the per-comment anchor:
-
-> [`<tracker>#216 — issuecomment-4252393493`](https://github.com/<tracker>/issues/216#issuecomment-4252393493)
-
-#### On terminal surfaces
-
-CLI proposal previews, drill-in screens, hand-back artefacts, recap
-output, session summaries, and any other terminal-bound output get
-**OSC 8 hyperlink escape sequences** — the visible text stays the
-short form (`<tracker>#NNN` or `#NNN`), the URL is wrapped invisibly
-so modern terminals make the short text clickable:
-
-```text
-\e]8;;https://github.com/<tracker>/issues/221\e\\<tracker>#221\e]8;;\e\\
-```
-
-Terminals that honour OSC 8 today: **iTerm2, Kitty, GNOME Terminal,
-WezTerm, Windows Terminal, Alacritty**, and most other modern
-terminal emulators. When OSC 8 is unsupported (CI logs, `less`
-without `-R`, dumb terminals, plain captures), fall back to printing
-the bare URL on the same line after the number:
-
-```text
-<tracker>#221  https://github.com/<tracker>/issues/221
-```
-
-In Python, the OSC 8 wrapper is one helper away:
-
-```python
-def osc8(text: str, url: str) -> str:
-    return f"\033]8;;{url}\033\\{text}\033]8;;\033\\"
-
-print(osc8("<tracker>#221", "https://github.com/<tracker>/issues/221"))
-```
-
-Equivalent helpers exist in Bash (`printf '\e]8;;%s\e\\%s\e]8;;\e\\' "$url" "$text"`)
-and other languages — embed one wherever the skill prints user-visible
-text.
-
-#### Confidentiality applies to *contents*, not to identifiers
-
-See the
-[Confidentiality of the tracker repository](#confidentiality-of-the-tracker-repository)
-section above. The rendered tracker links — markdown or OSC 8 form
-— are stable identifiers that may appear on public surfaces (public
-`<upstream>` PRs, reporter emails, advisory references). What still
-must not appear publicly is the *contents* the link points at —
-comment quotes, labels, body excerpts, severity assessments — and,
-before the advisory ships, the security framing of the change. The
-scrubbing grep the `security-issue-fix` skill runs before pushing
-anything public flags content leaks (CVE IDs, *"vulnerability"*,
-*"security fix"* phrasing, verbatim tracker quotes); a bare tracker
-URL or `#NNN` reference on its own does not trigger the scrub.
-
-#### Editing rules
-
-When editing an existing document in this repo that contains a bare
-`#NNN` or `<tracker>#NNN`, convert it to the appropriate clickable
-form for that document's surface in the same edit. Skill-generated
-output (sync proposals, issue comments, email drafts to reporters
-on the `<security-list>` thread, terminal previews shown before a
-post, recap output) must emit the linked form from the start —
-bare references are a miss.
-
-**Self-check before emitting**: grep the text for bare `#\d+`
-tokens that aren't already inside a markdown link, a raw
-`https://...` URL, or an OSC 8 wrapper (`\033]8;;`), and convert
-any match to the appropriate clickable form for the target
-surface.
+Every reference to a `<tracker>` issue, PR, comment, or discussion must
+be one click away — markdown links on markdown surfaces, OSC 8 escape
+sequences on terminals. Bare `#NNN` or `<tracker>#NNN` with no link
+wrapper is never acceptable. Identifiers are public-safe; the
+*contents* they point at are not (see
+[Confidentiality of the tracker repository](#confidentiality-of-the-tracker-repository)).
+Full URL formats and self-check:
+[`docs/editorial-guidelines.md`](docs/editorial-guidelines.md#linking-tracker-issues-and-prs).
 
 ### Mentioning project maintainers and security-team members
 
-When writing text that lands on a GitHub issue or PR and refers to a
-specific project maintainer, committer, release manager, or security-
-team member, **use the person's GitHub handle with the leading `@` so
-GitHub notifies them**. Plain-text names do not fire notifications,
-and the whole point of mentioning the person is usually that they own
-the next step or are the right reviewer. Agent-generated status
-comments, PR bodies, sync recaps, fix-PR follow-up comments, and
-draft-advisory text should all follow the rule.
-
-The project-specific roster rules (who the rule applies to, which
-surfaces it applies to, public-surface caveats tied to this project's
-confidentiality constraints, how external reporters are handled) live
-in
-[`<project-config>/naming-conventions.md`](<project-config>/naming-conventions.md#mentioning-airflow-maintainers-and-security-team-members).
-The authoritative roster and the release-manager rotation list live in
-[`<project-config>/release-trains.md`](<project-config>/release-trains.md).
-
-The security-issue-sync and security-issue-fix skills should render
-every maintainer / security-team / release-manager reference in the
-status comments they post as an `@` handle. Before publishing a status
-comment, the skills must grep for names of known people and flag any
-bare-name occurrence to the user.
-
-### Other editorial guidelines
-
-- Project-specific naming rules (e.g. acronym casing,
-  contributor-base size phrasing, project-name capitalisation
-  conventions) live in
-  [`<project-config>/naming-conventions.md`](<project-config>/naming-conventions.md).
-- Use em dashes (`—`) sparingly; prefer shorter sentences to dash-heavy ones.
-- Preserve the `doctoc` TOC markers at the top of each document. If you rename a heading, update
-  the corresponding TOC entry in the same change.
-- Do not add emojis.
+In text that lands on a GitHub issue or PR, refer to a maintainer,
+committer, release manager, or security-team member by their GitHub
+`@handle` so GitHub notifies them; grep for bare names before posting
+and flag any to the user. Roster and public-surface caveats live in
+[`<project-config>/naming-conventions.md`](<project-config>/naming-conventions.md#mentioning-airflow-maintainers-and-security-team-members),
+[`<project-config>/release-trains.md`](<project-config>/release-trains.md),
+and
+[`docs/editorial-guidelines.md`](docs/editorial-guidelines.md#mentioning-project-maintainers-and-security-team-members).
 
 ## Reusable skills
 
 Reusable, agent-friendly task definitions live under
-[`skills/`](skills/). Each skill is a plain Markdown file with
-YAML frontmatter, so it can be picked up by Claude Code, GitHub Copilot, and any
-other agent that follows the emerging skill convention. When a new recurring
-task is automated, add it as a skill rather than burying the instructions in a
-commit message or an ad-hoc comment.
+[`skills/`](skills/). Each skill is a plain Markdown file with YAML
+frontmatter, so it can be picked up by Claude Code, GitHub Copilot, and
+any other agent that follows the emerging skill convention. When a new
+recurring task is automated, add it as a skill rather than burying the
+instructions in a commit message or an ad-hoc comment.
 
-Currently available:
+The security pipeline, in process order (read each skill's `SKILL.md`
+for its full contract):
 
-- [`security-issue-import`](skills/security-issue-import/SKILL.md) —
-  the on-ramp of the process. Scans `<security-list>` for threads
-  that have not yet been copied into `<tracker>` as tracking issues,
-  classifies each candidate (real report vs. automated-scan / consolidated /
-  media / spam), extracts the issue-template fields from the root email, and —
-  after user confirmation — creates one tracker per valid report plus a Gmail
-  draft of the receipt-of-confirmation reply (from
-  [`<project-config>/canned-responses.md`](<project-config>/canned-responses.md),
-  including the credit-preference question). Deduplicates against existing
-  tracker bodies by searching for the
-  Gmail `threadId`. This is Step 2 of the handling process in
-  [`README.md`](README.md) and the first skill a triager runs in a morning
-  sweep.
-- [`security-issue-triage`](skills/security-issue-triage/SKILL.md) —
-  the initial-triage discussion-starter that runs **between**
-  `security-issue-import` and the rest of the workflow. For each open
-  tracker carrying `needs triage`, reads body + comments, applies the
-  project's Security Model framing, and — on user confirmation — posts
-  a standalone top-level **triage-proposal comment** that classifies
-  the candidate disposition into one of six classes (`VALID` →
-  `security-cve-allocate`, `DEFENSE-IN-DEPTH` → public PR for
-  hardening, `INFO-ONLY` / `INVALID` → `security-issue-invalidate`,
-  `PROBABLE-DUP` → `security-issue-deduplicate`, `FIX-ALREADY-PUBLIC`
-  → reporter verifies the cited public PR, then
-  `security-issue-invalidate` if confirmed) and `@`-mentions 2-3
-  security-team members per scope for input. **Read-only on tracker
-  state** — never flips `needs triage` to a scope label, never closes,
-  never allocates a CVE; the valid/invalid decision belongs to team
-  consensus, this skill opens the discussion that produces it.
-  Supports a `--retriage` mode for re-litigating passed-triage
-  decisions when substantive new comment activity lands. This is
-  Step 3 of the handling process in [`README.md`](README.md).
-- [`security-issue-deduplicate`](skills/security-issue-deduplicate/SKILL.md) —
-  merges two tracking issues that describe the same root-cause
-  vulnerability discovered independently by different reporters. Copies
-  the dropped tracker's body verbatim into the kept tracker as a
-  *"Second independent report"* section, concatenates the reporters'
-  credit lines and mailing-list thread references, regenerates the kept
-  tracker's CVE JSON attachment so both finders land in `credits[]`, and
-  closes the dropped tracker with the `duplicate` label. Refuses to
-  operate across different scope labels (those require a scope split
-  via `security-issue-sync`, not a dedupe). Typically invoked after
-  `security-issue-import` Step 2a surfaces a STRONG GHSA-ID match with
-  an existing tracker.
-- [`security-issue-sync`](skills/security-issue-sync/SKILL.md) —
-  reconciles a security issue with its GitHub discussion, its
-  `<security-list>` mail thread, and any fixing PRs; proposes label,
-  milestone, field, and draft-email updates; and prompts the user to confirm each
-  change before applying it. Points the user at
-  [`security-cve-allocate`](skills/security-cve-allocate/SKILL.md) when a CVE is
-  needed. **At the end of every run** it also invokes
-  [`generate-cve-json`](tools/cve-tool-vulnogram/generate-cve-json/SKILL.md) with
-  `--attach` to refresh the CVE JSON attachment on the tracking issue (auto-
-  resolving `--remediation-developer` from the first <upstream> PR author
-  in the *PR with the fix* body field), so the attached JSON stays in
-  lock-step with the issue body. Skipped only when no CVE has been allocated
-  yet, or when the issue has been closed as invalid / not-CVE-worthy / duplicate.
-- [`security-cve-allocate`](skills/security-cve-allocate/SKILL.md) — walks the
-  user through allocating a CVE via the adopting project's CVE-tool
-  allocation form (URL + tool declared in
-  `<project-config>/project.md → CVE tooling`).
-  **The allocation itself is PMC-gated** — only the adopting project's
-  PMC members can submit the form. The skill asks up front whether
-  the user is on the PMC (reading
-  `config/user.md → role_flags.pmc_member` when set); if not, it
-  reshapes the recipe into a `@`-mention relay message the triager
-  forwards to a PMC member (on the tracker or on the
-  `<security-list>` thread). Either way it reads the tracking issue,
-  strips the project-specific redundant prefixes from the title (per
-  `<project-config>/title-normalization.md`) to produce a
-  CVE-ready title for the allocation form, and — once the allocated
-  `CVE-YYYY-NNNNN` ID is pasted back — updates the tracker in one
-  coordinated pass: fills in
-  the *CVE tool link* body field, adds the `cve allocated` label, posts
-  a collapsed status-change comment, regenerates the CVE JSON attachment
-  in the body via `generate-cve-json --attach`, and (when relevant)
-  drafts a reporter status update on the original mail thread. **Always
-  hands off to `security-issue-sync`** at the end so the allocation-
-  triggered changes are reconciled with the milestone, assignee, fix-PR
-  state, and reporter-thread state in one continuous flow.
-- [`security-issue-fix`](skills/security-issue-fix/SKILL.md) — runs
-  `security-issue-sync` first, then analyses the issue discussion to decide
-  whether the reported problem is easily fixable (clear consensus, small scope,
-  known location). If it is, proposes an implementation plan, writes the change
-  in the user's local `<upstream>` clone (path from
-  `config/user.md → environment.upstream_clone`), runs local checks and
-  tests, and opens a public PR via `gh pr create --web`. Every public
-  surface (commit message, branch name, PR title, PR body,
-  newsfragment) is scrubbed for CVE / the tracker repo slug (for this
-  tree, the substring `airflow-s`) / `vulnerability` / `security fix`
-  leakage before being written or pushed. Updates the `<tracker>`
-  tracking issue with the new PR link afterwards.
-- [`generate-cve-json`](tools/cve-tool-vulnogram/generate-cve-json/SKILL.md) — generates
-  a paste-ready CVE 5.x JSON record from a tracking issue, matching the shape
-  Vulnogram exports (`containers.cna` with `affected`, `descriptions` + HTML
-  `supportingMedia`, `problemTypes` with `type: "CWE"`, `metrics.other`,
-  tagged `references`, `providerMetadata.orgId`, `cveMetadata` envelope). A
-  deterministic `uv run` script — [the `generate-cve-json` project](tools/cve-tool-vulnogram/generate-cve-json/) —
-  parses the issue's template fields (multiple credits on separate lines,
-  multiple reference URLs, `>= X, < Y` version ranges), writes the JSON to a
-  file, and prints the Vulnogram `#json` paste URL for the CVE. The
-  project's CVE-tool URL and any tracker-repo URLs (`<tracker>`) are
-  filtered out of `references[]` before serialising.
+- [`security-issue-import`](skills/security-issue-import/SKILL.md) — scans `<security-list>` for threads not yet tracked, classifies each, extracts the issue-template fields, and creates trackers plus a receipt-of-confirmation Gmail draft. Step 2 of [`README.md`](README.md).
+- [`security-issue-triage`](skills/security-issue-triage/SKILL.md) — posts a top-level triage-proposal comment classifying the disposition into one of six classes and `@`-mentioning team members; **read-only on tracker state**. Step 3; supports `--retriage`.
+- [`security-issue-deduplicate`](skills/security-issue-deduplicate/SKILL.md) — merges two trackers describing the same root cause, concatenates the reporters' credits, regenerates the CVE JSON, and closes the dropped tracker `duplicate`; refuses to operate across scope labels.
+- [`security-issue-sync`](skills/security-issue-sync/SKILL.md) — reconciles an issue with its GitHub discussion, mail thread, and fixing PRs; proposes label / milestone / field / draft-email updates and refreshes the CVE JSON attachment at the end of every run.
+- [`security-cve-allocate`](skills/security-cve-allocate/SKILL.md) — walks the user through the PMC-gated CVE-allocation form (or reshapes it into a relay message for a non-PMC user), normalises the title, updates the tracker in one pass, and hands off to `security-issue-sync`.
+- [`security-issue-fix`](skills/security-issue-fix/SKILL.md) — runs `security-issue-sync`, then (when the fix is clear and small) writes the change in the local `<upstream>` clone, runs checks, and opens a scrubbed public PR via `gh pr create --web`; every public surface is scrubbed for CVE / tracker-slug / `vulnerability` / `security fix` leakage.
+- [`generate-cve-json`](tools/cve-tool-vulnogram/generate-cve-json/SKILL.md) — deterministic `uv run` script that emits a paste-ready CVE 5.x JSON record (Vulnogram shape) from a tracking issue, filtering the CVE-tool and `<tracker>` URLs out of `references[]`.
 
 When adding a new skill:
 
 - place it under `skills/<skill-name>/SKILL.md`;
 - start with YAML frontmatter containing `name`, `description`, and `when_to_use`;
-- make every state-changing action a *proposal* that requires explicit user
-  confirmation before it runs;
+- make every state-changing action a *proposal* that requires explicit user confirmation before it runs;
 - avoid agent-specific syntax so the skill remains portable across tools;
-- **write an eval suite for the skill.** Every skill ships with a
-  behavioural eval under
-  [`tools/skill-evals/evals/<skill-name>/`](tools/skill-evals/) that
-  exercises each pipeline step with fixture cases and pins the expected
-  structured output — the same shape as the existing suites
-  (`security-issue-import`, `issue-triage`, …). Evals are not optional
-  polish: an LLM-driven skill's behaviour is a distribution, and the eval
-  is how a reviewer (and CI) confirms a change did not regress it. Run a
-  suite with
-  `uv run --project tools/skill-evals skill-eval tools/skill-evals/evals/<skill-name>/`;
-  see [`tools/skill-evals/README.md`](tools/skill-evals/README.md) for the
-  layout (`step-*/fixtures/case-*`). A skill PR without a matching eval
-  suite is incomplete.
+- **ship a behavioural eval suite** under [`tools/skill-evals/evals/<skill-name>/`](tools/skill-evals/) — see [Keeping evals and mode-economics in sync](#keeping-evals-and-mode-economics-in-sync). The [`write-skill`](skills/write-skill/SKILL.md) skill prompts for the capability frontmatter on every new-skill scaffold. A skill PR without a matching eval suite is incomplete.
 
 ## Keeping evals and mode-economics in sync
 
@@ -1528,156 +857,37 @@ follow-up actions are part of the change, not optional polish:
 
 1. **Run the affected skill's eval suite** to confirm the prompts the
    harness extracts from `SKILL.md` still produce the expected
-   structured output.
-2. **Update [`docs/mode-economics.md`](docs/mode-economics.md)** if
-   the change materially shifts the per-invocation token shape — a
-   new step that loads substantial context, a removed read path, a
-   new skill entirely.
+   structured output. The harness, run recipes (print mode and `--cli`
+   mode), agent self-eval, and cross-model guidance all live in
+   [`tools/skill-evals/README.md`](tools/skill-evals/README.md).
+   Self-eval — the authoring model grading itself — is a smoke test for
+   the cheap failure class (invalid JSON, missing fields, off-spec
+   shape, fixture / prompt drift) and is worth running on every change;
+   run a **cross-model pass** for substantive changes (new steps, prompt
+   restructures, behaviour changes that cross a classification
+   boundary).
+2. **Update [`docs/mode-economics.md`](docs/mode-economics.md)** if the
+   change materially shifts the per-invocation token shape — a new step
+   that loads substantial context, a removed read path, a new skill.
+   That doc is hand-maintained and documents its own re-estimation
+   anchors; pure prose / link / typo edits need no update.
 
-Both signals catch the same class of regression: a skill that
-silently starts producing different output (eval failure) or a skill
-that silently became materially more expensive to run (cost-table
-drift). The eval suite is the unit test; the mode-economics table is
-the performance budget.
+Both signals catch the same class of regression: a skill that silently
+starts producing different output (eval failure) or that silently became
+materially more expensive to run (cost-table drift).
 
 ### When the rule fires
 
 | You touched | Run evals for | Update mode-economics if |
 |---|---|---|
 | `skills/<skill>/SKILL.md`, an extracted step subdoc, or any prompt material a step's `step-config.json` extracts | That skill's suite under `tools/skill-evals/evals/<skill>/` | The change adds or removes a step, alters a context-heavy read, or restructures the call catalogue |
-| `tools/<adapter>/` docs or operation catalogues that skills load (e.g. `tools/github/operations.md`, `tools/gmail/operations.md`, `tools/ponymail/operations.md`) | Every skill that names this adapter in its prerequisites or step bodies — `grep -l <adapter-path> skills/*/SKILL.md` to enumerate | A new operation enlarges a typical skill's loaded context, or a removed one shrinks it |
+| `tools/<adapter>/` docs or operation catalogues that skills load (e.g. `tools/github/operations.md`, `tools/gmail/operations.md`) | Every skill naming this adapter in its prerequisites or step bodies — `grep -l <adapter-path> skills/*/SKILL.md` to enumerate | A new operation enlarges a typical skill's loaded context, or a removed one shrinks it |
 | Pure prose edits (typo / clarification / link fix) with no behavioural impact on the model's output | No eval rerun required | No update required |
 
-If you are unsure whether your change is "behavioural" or
-"prose-only", re-run the affected eval suite anyway — it is cheap
-and protects against the false-negative case where a "clarification"
-actually changes how the model responds.
-
-### Running evals
-
-The harness lives in [`tools/skill-evals/`](tools/skill-evals/)
-(full README at
-[`tools/skill-evals/README.md`](tools/skill-evals/README.md)).
-It is pure-stdlib Python ≥ 3.10 — no third-party dependencies, no
-API key required, no build step. Two modes:
-
-- **Print mode (default)** — emits the system prompt, user prompt,
-  and expected JSON per case. The operator pastes into the model
-  under test and diffs the response against `expected.json`
-  manually.
-- **`--cli` mode** — pipes the constructed prompt through a shell
-  command (any LLM CLI that reads stdin and writes stdout works),
-  extracts the JSON the model produced, and reports
-  `PASS` / `FAIL` / `MANUAL` / `ERROR` per case. Exits non-zero on
-  any `FAIL` or `ERROR`. `MANUAL` is reserved for structural
-  expected.json files (top-level `has_*` flags / `mention_*`
-  lists); those still print prompts for manual review.
-
-```bash
-# Print mode — paste prompts into the model under test
-PYTHONPATH=tools/skill-evals/src python3 -m skill_evals.runner \
-    tools/skill-evals/evals/<skill-name>/
-
-# Single case (print mode)
-PYTHONPATH=tools/skill-evals/src python3 -m skill_evals.runner \
-    tools/skill-evals/evals/<skill-name>/<step-name>/fixtures/case-N-<name>
-
-# Automated mode — run against Claude Code (or any LLM CLI)
-PYTHONPATH=tools/skill-evals/src python3 -m skill_evals.runner --cli "claude -p" \
-    tools/skill-evals/evals/<skill-name>/
-
-# Add --verbose to also print prompts + model stdout per case
-PYTHONPATH=tools/skill-evals/src python3 -m skill_evals.runner --cli "claude -p" -v \
-    tools/skill-evals/evals/<skill-name>/<step-name>/fixtures/
-```
-
-Budget guidance:
-
-- **Single step rewrite** — run that step's cases plus one
-  representative case from any other step whose prompt the change
-  touched indirectly.
-- **Whole-skill restructure** — run the full suite.
-- **Tool-adapter doc edit** — for each affected skill, run the step
-  whose prompt body changed (per the `step-config.json` heading)
-  plus the step that triggers the adapter call.
-
-When the change adds behaviour worth covering — a new step, a new
-edge case the existing fixtures do not hit, a new prompt-injection
-shape the skill should defend against — add a fixture under the
-relevant step's `fixtures/` directory: `case-N-<name>/` containing
-`report.md` (mock tool outputs) + `expected.json` (ground-truth
-model output). The README's *Structure* and *Adversarial cases*
-sections walk through the layout.
-
-### Agent-run self-eval
-
-The agent making the change can run the suite in-session in either
-mode:
-
-- **Self-eval via `--cli`** — point the runner at a CLI that invokes
-  the same model class authoring the change (e.g.
-  `--cli "claude -p"`). The runner handles prompt construction,
-  invocation, JSON extraction, and comparison automatically; the
-  agent reads the per-case `PASS` / `FAIL` / `MANUAL` / `ERROR`
-  summary and the non-zero exit code.
-- **Self-eval via print mode** — run the runner without `--cli` to
-  print prompts, then act as the model under test using **only**
-  the printed system + user prompts as input. Do not re-read the
-  `SKILL.md`, source files, or any other context the runner did not
-  include — the eval's value is in catching prompt-vs-output
-  mismatches, which only works when the model under test sees only
-  the eval-constructed input. Diff the produced JSON against
-  `expected.json`: JSON equality for exact-match cases; per-flag
-  check for composition cases that use boolean flags
-  (`has_security_model_quote`, `has_bare_issue_numbers`) or
-  membership lists (`mention_handles`).
-
-**Self-eval is a smoke test, not a regression check.** The same
-model that just authored the change is now grading whether the
-change is correct, so subtle biases the change introduced may go
-undetected. Self-eval catches the cheap failure class — invalid
-JSON, missing fields, off-spec output shape, fixture / prompt
-drift — and is worth running on every skill or adapter change.
-
-For substantive changes (new steps, prompt restructures, behaviour
-changes that cross a class boundary like Triage classification
-thresholds or injection-defence wording), also run a **cross-model
-pass**: a human pastes the prompts into a different model class than
-the one that authored the change, and diffs that output against
-`expected.json` independently. This catches the self-confirmation
-bias that self-eval cannot.
-
-### Updating mode economics
-
-[`docs/mode-economics.md`](docs/mode-economics.md) is hand-maintained
-— it is the indicative cost budget per skill per invocation, not a
-generated artefact. After a change that moves the per-invocation
-envelope:
-
-1. Find the row for the modified skill under
-   [§ Per-mode token shape](docs/mode-economics.md#per-mode-token-shape).
-2. Re-estimate using the anchors at the top of the doc
-   ([§ What "tokens" means here](docs/mode-economics.md#what-tokens-means-here)):
-   ~530 tokens per 400-word report body, ~5 000 per medium PR diff,
-   3 000–8 000 per typical mail thread, plus the `SKILL.md`
-   overhead. For an exact `SKILL.md` token count, run
-   `cl100k_base` tokenisation against the file; or apply the
-   doc's existing small / typical / large bands as an
-   order-of-magnitude estimate.
-3. Adjust the **high end** of the existing range when the change
-   adds context; adjust the **low end** when the change removes one
-   (rare). Update the *Primary cost driver* / *Notes* column if the
-   new driver is qualitatively different from the old one.
-
-For a brand-new skill, add a row under the correct mode section
-(Triage / Mentoring / Drafting / Pairing) with a token range, a
-one-line invocation description, and the primary cost driver. Use
-a neighbouring skill of similar shape as the anchor for the range.
-
-For documentation-only changes that do not touch the skill's reads
-or prompt body — a typo fix, a link update, a clarifying paragraph
-that does not change what the model is asked to produce —
-`mode-economics.md` does not need an update.
+If you are unsure whether a change is "behavioural" or "prose-only",
+re-run the affected eval suite anyway — it is cheap and protects against
+the false-negative case where a "clarification" actually changes how the
+model responds.
 
 ## Before submitting
 
@@ -1701,13 +911,9 @@ that does not change what the model is asked to produce —
   heading no longer exists. They are the most common breakage after
   any refactor that moved a section between files or renamed a
   heading. Re-write the link to point at the new location; do not
-  silence it with an ignore-pattern.
-
-  If your local lychee is v0.24+ (the example config in
-  `.lychee.toml` pins the v0.23 schema), replace
-  `include_fragments = true` with `include_fragments = "anchor-only"`
-  before running, or invoke directly:
-  `lychee --include-fragments=anchor-only --no-progress <paths>`.
+  silence it with an ignore-pattern. (On lychee v0.24+, the v0.23
+  `include_fragments = true` in `.lychee.toml` becomes
+  `include_fragments = "anchor-only"`.)
 
 - Verify that links to the project's Security Model use an anchor that
   exists on the current stable version (adopting project's anchors:
@@ -1725,7 +931,6 @@ that does not change what the model is asked to produce —
 - `.apache-magpie-overrides/user.md` — per-user configuration (PMC status, local clone paths, optional tool backends) scaffolded during adoption.
 - [`<project-config>/project.md`](<project-config>/project.md) — the adopting project's manifest (identity, repositories, mailing lists, tools enabled, CVE tooling, GitHub project board + issue-template field declarations).
 - `.apache-magpie-overrides/` — adopter-specific overrides and per-user config committed in the adopter repo.
-- [`<project-config>/project.md`](<project-config>/project.md) — the adopting project's manifest (identity, repositories, mailing lists, tools enabled, CVE tooling, GitHub project board + issue-template field declarations).
 - [`<project-config>/`](projects/_template/) — other project-specific files (canned responses, release trains, security model, scope labels, milestones, title-normalization, fix workflow, naming conventions).
 - [`tools/github/`](tools/github/) — GitHub tool adapter: `tool.md` (overview), `operations.md` (`gh` CLI / API catalogue), `issue-template.md` (body-field schema), `labels.md` (lifecycle-label taxonomy), `project-board.md` (Projects V2 GraphQL).
 - [`tools/gmail/`](tools/gmail/) — Gmail tool adapter: `tool.md` (overview), `operations.md` (MCP catalogue + no-update limitation), `threading.md` (prefer-`threadId`-else-subject-fallback rule), `asf-relay.md` (ASF-security-relay drafting), `search-queries.md` (query templates), `ponymail-archive.md` (ASF PonyMail URL construction).

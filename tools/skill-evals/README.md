@@ -175,6 +175,15 @@ comparison is a self-eval pass — useful as a smoke test for prompt /
 output-shape regressions, but weaker than a cross-model run. For
 substantive changes, also run against a different model class.
 
+**Print-mode self-eval discipline.** When self-evaluating in print mode
+(no `--cli`) — acting as the model under test yourself — use **only** the
+printed system + user prompts as input. Do not re-read the `SKILL.md`,
+source files, or any other context the runner did not include: the eval's
+value is in catching prompt-vs-output mismatches, which only works when
+the model under test sees exactly what the eval constructed. Diff the
+produced JSON against `expected.json` (JSON equality for exact-match
+cases; per-flag / per-membership checks for composition cases).
+
 ### Case tags
 
 Cases can opt into runner filters with a `case-meta.json` file next to

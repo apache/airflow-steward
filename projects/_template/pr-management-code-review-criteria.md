@@ -108,7 +108,7 @@ adds.
 | Generated files | `<docs-base-url>/<doc-path>#generated-files` |
 | AI-generated code signals | `<docs-base-url>/<doc-path>#ai-generated-code-signals` |
 | Quality signals to check | `<docs-base-url>/<doc-path>#quality-signals-to-check` |
-| Commits and PRs (newsfragments, commit messages, tracking issues) | `<docs-base-url>/AGENTS.md#commits-and-prs` |
+| Commits and PRs (newsfragments, commit messages, tracking issues) | `<docs-base-url>/AGENTS.md#commit-and-pr-conventions` |
 | Security model | `<docs-base-url>/AGENTS.md#security-model` |
 | Third-party license compliance | `https://www.apache.org/legal/resolved.html` |
 | Applying the Apache licence | `https://www.apache.org/legal/apply-license.html` |
