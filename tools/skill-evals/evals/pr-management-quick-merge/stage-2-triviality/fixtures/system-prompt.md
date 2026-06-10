@@ -73,4 +73,12 @@ Return ONLY valid JSON:
   or `null` when `disposition == "candidate"`.
 - Check deny-list (2c) before allow-list (2b) — a file matching both
   deny and allow is denied.
+- `reason` is one concise sentence. For any `candidate`, it must confirm the
+  deny-list was checked and matched nothing (e.g. "no deny-list match"), since
+  deny-before-allow is the load-bearing rule (Golden rule 3) and the
+  attestation has to show it was applied. When the candidate is **mixed-tier**
+  (some files match only Tier A globs and at least one matches a Tier B
+  glob), the sentence must also state the tier-resolution conclusion
+  explicitly (e.g. "mixed Tier A + Tier B → Tier B overall"), not only the
+  per-file evidence.
 - Do not include any text outside the JSON object.

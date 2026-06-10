@@ -111,7 +111,7 @@ Classify each candidate by the live `(mergeable, mergeable_state)` pair:
 | `mergeable == true`, `mergeable_state ∈ {clean, has_hooks}` | **Ready to merge.** Surface in the *ready* bucket with the merge command. |
 | `mergeable == true`, `mergeable_state ∈ {unstable, behind}` | **Ready to merge.** `unstable` is a *non-required* check still running/failed (G2/G3 already proved every required check green); `behind` is a stale-but-clean branch GitHub fast-forwards. Surface in *ready*; note the state. |
 | `mergeable == true`, `mergeable_state == blocked` | **Needs your approval, then merge.** The branch merges cleanly but branch protection withholds it — and since Stage 1 proved CI green and no changes-requested, the withheld requirement is the **required review**: the PR lacks a qualifying committer approval. Surface in the *approval* bucket and route to the [`[A]pprove`](SKILL.md#step-3b--optional-approve-action) action. **This is the skill's primary case — most ready PRs sit here — not a drop.** |
-| `mergeable == false` **or** `mergeable_state == dirty` | **Conflict → drop** (`gate:G5-conflict`). |
+| `mergeable == false` **or** `mergeable_state == dirty` | **Conflict → drop** (`gate:G5-conflict`). The recorded `reason` must name the next action that clears it — the contributor must rebase / resolve the conflict — not only that a conflict exists. |
 | `mergeable == null` / `mergeable_state == unknown` (even after the live call) | **Still computing → drop this run** (`gate:G5-unknown`), conservative per Golden rule 4. It settles and qualifies next run. |
 
 The `blocked` row is the load-bearing change. A ready PR that is trivial,
@@ -142,6 +142,12 @@ every file matches a Tier A *or* Tier B glob and at least one matches a Tier B
 glob. (A pure-docs PR is Tier A; a docs + test PR is Tier B; a test-only PR is
 Tier B.) `tier:A` on the command line restricts to Tier A only.
 
+For a **mixed-tier** candidate — some files matching only Tier A globs and at
+least one matching a Tier B glob — the candidate's one-sentence `reason` must
+state the tier-resolution conclusion explicitly (e.g. "mixed Tier A + Tier B →
+Tier B overall"), not just the per-file evidence, so the recorded rationale
+matches the assigned `tier`.
+
 Tiers drive **ordering and an honesty signal**, not the gate — both tiers are
 surfaced by default. The maintainer reads every diff regardless; the tier tells
 them how hard to look (Tier A is usually a glance; Tier B warrants reading the
@@ -156,7 +162,10 @@ assertions).
 - Use `**` for any-depth, `*` for single-segment. Matching is case-sensitive on
   the path, case-insensitive on the extension only where the config glob says so.
 - **Deny is evaluated before allow and wins.** A path that matches both a deny
-  glob and an allow glob is denied.
+  glob and an allow glob is denied. A surviving candidate's `reason` must
+  confirm the deny-list was checked and matched nothing (e.g. "no deny-list
+  match"), so the attestation shows this load-bearing rule was applied, not
+  only that the allow-list matched.
 - A path that matches **neither** list → `path-unmatched` → PR dropped
   (Golden rule 4: unknown paths are not assumed safe).
 

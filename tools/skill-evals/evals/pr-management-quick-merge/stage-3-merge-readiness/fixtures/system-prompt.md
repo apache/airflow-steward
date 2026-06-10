@@ -36,5 +36,9 @@ Return ONLY valid JSON:
 
 - `drop_reason` is one of `gate:G5-conflict`, `gate:G5-unknown`,
   or `null` when `bucket != "drop"`.
-- `reason` is one concise sentence naming the classification outcome.
+- `reason` is one concise sentence naming the classification outcome. For a
+  `gate:G5-conflict` drop on a genuine merge conflict
+  (`mergeable=false` / `mergeable_state=dirty`), the sentence must also name
+  the next action that clears it — the contributor must rebase / resolve the
+  conflict — not only that a conflict exists.
 - Do not include any text outside the JSON object.
