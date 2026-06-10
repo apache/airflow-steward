@@ -314,6 +314,75 @@ A bordered panel at the bottom explaining all the colours, columns, and computed
 
 ---
 
+## Ready-for-review queue split (by why-waiting)
+
+A required analytic panel (rendered as 4 coloured hero cards **and** a
+multi-line age timeline — panels 4 and 7 in [`export.md`](export.md)).
+It answers the question the bare "Ready for review = N" number cannot:
+**of the PRs that cleared triage, why is each still sitting there?**
+
+Scope the panel to the **non-maintainer** ready PRs only (maintainer-
+authored PRs carry the `ready` label too but are out of triage scope —
+they self-manage; exclude the handful and say so). For each ready PR,
+classify into exactly one sub-state from its `reviewDecision` plus
+maintainer engagement:
+
+| Sub-state | Colour | Rule |
+|---|---|---|
+| **Never reviewed** | red `#da3633` | no formal maintainer review **and** no non-triage maintainer comment — nobody has looked yet |
+| **Discussed, no decision** | blue `#388bfd` | `reviewDecision = REVIEW_REQUIRED`/none but a maintainer left a `COMMENTED` review or a real (non-triage-marker) comment |
+| **Changes requested** | amber `#d29922` | `reviewDecision = CHANGES_REQUESTED` — really the author's court; mislabeled `ready` |
+| **Approved (awaiting merge)** | green `#2ea043` | `reviewDecision = APPROVED` — review done, just needs a merge |
+
+Render the cards in that order; render the timeline with **x = age,
+oldest bucket on the LEFT** (`>12w … 0-2w` left→right, so it reads
+past→present). The signal to surface: if the red "never reviewed" line
+**climbs toward the newest bucket**, the `ready` label is being applied
+faster than anyone reviews — a *first-review gap* distinct from the
+*decision/merge gap* (discussed + approved). Quantify both in the
+caption.
+
+This split is the highest-value reframe in the dashboard: "review-bound"
+is rarely one problem — it is usually a large first-review backlog plus a
+smaller decision/merge tail, and the two need different responses.
+
+## Drafts & closes attribution by person
+
+A required panel showing **who actually does the draft-conversions and
+the closes**, over the cutoff window, split by whether the action was a
+**triage action** (actor ≠ the PR author — a maintainer acting on
+someone else's PR) or an **author self-action**, and naming each
+maintainer's share.
+
+Hard requirements for correctness (these are the traps that produce
+wrong numbers — all learned the hard way):
+
+- **Count from timeline events, not comment text.** Draft-conversions
+  come from `CONVERT_TO_DRAFT_EVENT` timeline items; closes from
+  `CLOSED_EVENT` actors. Detecting them by parsing comment bodies (e.g.
+  "Converting to draft") undercounts badly — the `comments(last:N)`
+  window drops older markers, and stale-close templates don't carry the
+  triage marker at all.
+- **Exclude bot-authored and backport PRs** before attributing. Bot
+  authors (`*bot`, `github-actions`, `dependabot`) and backport PRs
+  (`baseRefName ≠ main`, or a `[v*-test]` / `[*-stable]` title) are
+  release-branch housekeeping, not contributor triage — including them
+  inflates "maintainer closes" with bot/backport cleanup. State how many
+  were removed.
+- **Triage vs author = actor ≠ author.** Define "triage process" as an
+  action taken by someone other than the PR author; "author" as a
+  self-action. Derive the maintainer set from who comments as
+  `OWNER`/`MEMBER`/`COLLABORATOR` in the fetched data — do not hardcode a
+  committer list.
+
+Surface per-person shares (e.g. "@X did 72% of triage drafts",
+"@Y closed 60% of contributor PRs"). Single-maintainer concentration is
+the actionable finding: a deterministic action concentrated on one
+person (drafting) is a prime automation candidate; a judgment action
+concentrated on one person (closing) is a bus-factor to spread.
+
+---
+
 ## Recommendation rules
 
 The "What needs attention" panel is built from this fixed rule set, evaluated in order. Each rule that fires produces one entry in the panel.

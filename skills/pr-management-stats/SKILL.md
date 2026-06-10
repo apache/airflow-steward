@@ -333,6 +333,35 @@ Render the maintainer dashboard per the layout in [`render.md#dashboard-layout`]
 
 The dashboard is **HTML by default** so the colour-coded hero cards, action priority bars, and velocity bars render correctly. A Markdown fallback (and a Rich terminal-tables variant for the detailed-tables section only) is produced when the maintainer passes `markdown` or `tables-only`. See [`render.md`](render.md) for the full layout, the colour scheme, and the recommendation rule definitions.
 
+Two analytic panels are **required** in addition to the eleven above and
+are specified in [`render.md`](render.md):
+
+- **Ready-for-review queue split (by why-waiting)** — the `ready` queue
+  broken into never-reviewed / discussed-no-decision / changes-requested /
+  approved, as 4 coloured hero cards plus an age timeline (oldest bucket on
+  the left). See [`render.md#ready-for-review-queue-split-by-why-waiting`](render.md#ready-for-review-queue-split-by-why-waiting).
+- **Drafts & closes attribution by person** — who does the
+  draft-conversions and closes, triage-action (actor ≠ author) vs
+  author-self, with per-maintainer shares; counted from timeline events,
+  bots/backports excluded. See [`render.md#drafts--closes-attribution-by-person`](render.md#drafts--closes-attribution-by-person).
+
+---
+
+## Step 7 — Publish the dashboard (always)
+
+Every stats run ends by publishing the HTML dashboard to a **secret
+GitHub gist** and returning the `gistpreview.github.io` URL. This is not
+optional and not behind a flag — see [`export.md`](export.md) for the
+full contract (stable per-repo gist id, in-place `PATCH` updates, the
+`dry-run` / no-`gist`-scope fallbacks, and the mandatory data-integrity
+caveats for the 1000-result Search cap).
+
+The published dashboard is the single canonical export format; it
+replaces any earlier "render inline only" behaviour so a maintainer's
+dashboards are directly comparable across days at a stable URL. The
+inline terminal/markdown render is still emitted for the in-session read;
+the gist is the durable, shareable artefact.
+
 ---
 
 ## What this skill does NOT do
