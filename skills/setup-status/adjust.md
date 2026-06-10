@@ -14,6 +14,11 @@ runs it.
 
 ## Step A — Detect the deltas
 
+**Short-circuit first:** if `no_adjust` is set, the adjust flow is
+skipped entirely — return `offer_adjustments: false` with empty
+`deltas` and `delegated_commands`, and run no detection at all.
+Only when `no_adjust` is unset do you evaluate the table below.
+
 From the collected JSON, surface each of these that applies:
 
 | Delta | Signal in the JSON |
@@ -29,7 +34,7 @@ Order the offers most → least impactful (drift and dangling links
 before optional family additions). If no delta applies, say the
 adoption is fully wired and stop — do not invent work.
 
-## Step B — Map each delta to a `/magpie-setup` command
+### Map each delta to a `/magpie-setup` command
 
 | Adjustment | Delegated command |
 |---|---|
@@ -61,7 +66,18 @@ user wants the `issue` family as well:
 /magpie-setup adopt skill-families:security,pr-management,issue
 ```
 
-## Step C — Confirm, then delegate
+**Two hard rules when building these commands:**
+
+- **Never use a `--target` / per-item flag.** Re-wiring an
+  unwired target (one that is `present` with `magpie_count == 0`)
+  uses the same `agents:<full set>` form — include the unwired
+  target id in the set, do not pass it alone.
+- **Collapse same-flag changes into one command.** Multiple
+  absent families produce a *single* `skill-families:` command
+  listing the full union, never one command per family. Likewise
+  for multiple targets under `agents:`.
+
+## Step B — Confirm, then delegate
 
 1. Present the proposed change as a single line: *what* changes
    and *which* `/magpie-setup` command runs.

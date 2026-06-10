@@ -221,6 +221,13 @@ evals/
 
 The runner resolves the system prompt in order: `step-config.json` → `system-prompt.md` → error. When `step-config.json` is present the system prompt is assembled at run time by extracting the relevant section directly from the skill's `SKILL.md` and appending `output-spec.md`. This means a change to `SKILL.md` is immediately reflected in the prompt — if the change would cause the model to produce different output, the test fails.
 
+**Anchor `step_heading` at the section that holds the decision rules — only that one section is sent.** `extract_skill_section` returns a single section: from the named heading down to the next heading of the same or higher level (fenced code is skipped). Nothing from sibling or parent sections reaches the model. A step that must emit a field whose rules live elsewhere will see the model guess, not follow the skill. Practical consequences:
+
+- Point `step_heading` at the heading whose body actually contains the rules for the fields in `output-spec.md`, not at the step where the work happens to occur. A "decide the command from the invocation flags" step belongs on the `## Inputs` section (where the flag table lives), not on `## Step 1 — Render …`.
+- To pull a rule into the extracted window, nest it *under* the anchor as a deeper heading (`###` beneath a `##`); it is included until the next same-or-higher heading. A peer `##` section is excluded.
+- Rules that gate the whole step (e.g. a `--no-adjust` short-circuit) must live inside the extracted section, not in an intro paragraph above the first heading — intros above the anchor are not extracted.
+- Symptom of a misanchored step: the model fails a decision field consistently while the skill prose looks correct, because that prose was never in the prompt.
+
 ## How mocking works
 
 External tool calls (GitHub CLI, Gmail MCP, canned-response scan, cross-reference search) are never executed during evals. Their outputs are pre-rendered as structured text inside each case's `report.md` and injected into the user turn as "mock responses." The system prompt instructs the model to treat this content as untrusted input data.
