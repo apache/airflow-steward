@@ -48,9 +48,11 @@ from __future__ import annotations
 import argparse
 import html
 import json
+import re
+import subprocess
 import sys
 from collections import defaultdict
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 # Sibling-module import — see the module docstring's "Design" note. Resolves
@@ -69,6 +71,7 @@ from reference import (
     compute_weekly_velocity,
     fetch_codeowners,
     fetch_ready_pr_files,
+    is_backport,
     is_bot,
     paginated_search,
     parse_iso,
@@ -92,6 +95,19 @@ C_BG = "#0d1117"
 C_PANEL = "#161b22"
 C_BORDER = "#30363d"
 C_FG = "#c9d1d9"
+
+# Ready-for-review split colours (render.md § Ready-for-review queue split).
+# These are deliberately distinct from the generic palette so the four
+# why-waiting sub-states keep the same hues across the hero cards and the
+# age-timeline line chart.
+C_SPLIT_NEVER = "#da3633"  # never reviewed (red)
+C_SPLIT_DISCUSSED = "#388bfd"  # discussed, no decision (blue)
+C_SPLIT_CHANGES = "#d29922"  # changes requested (amber)
+C_SPLIT_APPROVED = "#2ea043"  # approved, awaiting merge (green)
+
+# Age buckets for the ready-split timeline, newest → oldest. The timeline
+# chart reverses these so the x-axis reads oldest-on-left (past → present).
+READY_AGE_BUCKETS = ["0-2w", "2-4w", "4-8w", "8-12w", ">12w"]
 
 # Distinct palette for multi-area line charts (top-areas). The pressure-band
 # colours (red/amber/grey) repeat across areas and are visually
@@ -949,6 +965,214 @@ def compute_triager_activity(open_prs, closed_prs, weeks, ctx):
     return rows[:15]
 
 
+def _ready_age_bucket(age_days):
+    """Map a PR age in days to one of the READY_AGE_BUCKETS labels."""
+    if age_days <= 14:
+        return "0-2w"
+    if age_days <= 28:
+        return "2-4w"
+    if age_days <= 56:
+        return "4-8w"
+    if age_days <= 84:
+        return "8-12w"
+    return ">12w"
+
+
+def _has_maintainer_discussion(pr, ctx):
+    """True if a maintainer left a COMMENTED review OR a real (non-triage-marker)
+    maintainer comment on the PR.
+
+    The triage marker is excluded so the templated quality-criteria comment does
+    not, on its own, count as a human "discussion" — that distinguishes
+    `discussed-no-decision` from `never-reviewed`.
+    """
+    marker = ctx["triage_marker"]
+    for c in (pr.get("comments", {}) or {}).get("nodes", []) or []:
+        if c.get("authorAssociation") not in COLLAB_ASSOCIATIONS:
+            continue
+        login = (c.get("author") or {}).get("login")
+        if is_bot(login):
+            continue
+        if marker in (c.get("body") or ""):
+            continue
+        return True
+    for r in (pr.get("latestReviews", {}) or {}).get("nodes", []) or []:
+        login = (r.get("author") or {}).get("login")
+        if r.get("state") == "COMMENTED" and login and not is_bot(login):
+            return True
+    return False
+
+
+def compute_ready_split(open_prs, ctx):
+    """Ready-for-review queue split by why-waiting (render.md § Ready-for-review
+    queue split).
+
+    Scope: NON-maintainer ready PRs only (collaborator/maintainer-authored ready
+    PRs self-manage and are excluded — their count is reported separately as
+    ``excluded_maintainer``). Each ready contributor PR is classified into exactly
+    one of four sub-states from ``reviewDecision`` plus maintainer engagement, and
+    bucketed by age for the timeline.
+
+    Returns a dict with per-sub-state counts, the per-bucket age timeline (one
+    list per sub-state, ordered oldest→newest per READY_AGE_BUCKETS reversed at
+    render time), the total scoped count, and the excluded maintainer count.
+    """
+    counts = {
+        "never-reviewed": 0,
+        "discussed-no-decision": 0,
+        "changes-requested": 0,
+        "approved": 0,
+    }
+    # bucket_label -> sub-state -> count
+    timeline = {b: dict.fromkeys(counts, 0) for b in READY_AGE_BUCKETS}
+    total = 0
+    excluded_maintainer = 0
+    for pr in open_prs:
+        if not pr.get("_has_ready"):
+            continue
+        if pr.get("_is_collab") or is_bot(pr.get("_author")):
+            excluded_maintainer += 1
+            continue
+        decision = pr.get("_review_decision")
+        if decision == "CHANGES_REQUESTED":
+            sub = "changes-requested"
+        elif decision == "APPROVED":
+            sub = "approved"
+        elif _has_maintainer_discussion(pr, ctx):
+            sub = "discussed-no-decision"
+        else:
+            sub = "never-reviewed"
+        counts[sub] += 1
+        total += 1
+        bucket = _ready_age_bucket(pr.get("_age_days", 0))
+        timeline[bucket][sub] += 1
+    return {
+        "counts": counts,
+        "timeline": timeline,
+        "total": total,
+        "excluded_maintainer": excluded_maintainer,
+    }
+
+
+def _maintainer_logins(open_prs, closed_prs):
+    """Derive the maintainer set from who commented as OWNER/MEMBER/COLLABORATOR
+    in the fetched data (render.md: do not hardcode a committer list)."""
+    maintainers = set()
+    for pr in open_prs + closed_prs:
+        for c in (pr.get("comments", {}) or {}).get("nodes", []) or []:
+            if c.get("authorAssociation") not in COLLAB_ASSOCIATIONS:
+                continue
+            login = (c.get("author") or {}).get("login")
+            if login and not is_bot(login):
+                maintainers.add(login)
+    return maintainers
+
+
+def compute_attribution(open_prs, closed_prs, ctx):
+    """Drafts & closes attribution by person (render.md § Drafts & closes
+    attribution by person).
+
+    Counts draft-conversions (from ``CONVERT_TO_DRAFT_EVENT`` timeline actors on
+    open PRs) and closes (from ``CLOSED_EVENT`` actors on closed-unmerged PRs)
+    over the cutoff window. Bot-authored and backport PRs are EXCLUDED before
+    attributing. Each action is split into "triage" (actor != PR author) and
+    "author self" (actor == author). Per-maintainer shares are computed over the
+    maintainer set derived from the fetched comment data.
+
+    Returns a dict keyed by action ("drafts", "closes") plus ``maintainers`` and
+    ``excluded`` accounting.
+    """
+    maintainers = _maintainer_logins(open_prs, closed_prs)
+    cutoff = ctx["cutoff"]
+
+    def _new_action():
+        return {
+            "total": 0,
+            "triage": 0,
+            "author": 0,
+            "by_person": defaultdict(int),
+            "by_person_triage": defaultdict(int),
+        }
+
+    drafts = _new_action()
+    closes = _new_action()
+    excluded = {"bot": 0, "backport": 0}
+
+    # Draft-conversions — CONVERT_TO_DRAFT_EVENT actors on the open-PR set.
+    for pr in open_prs:
+        author = pr.get("_author")
+        if is_bot(author):
+            excluded["bot"] += 1
+            continue
+        if pr.get("_is_backport"):
+            excluded["backport"] += 1
+            continue
+        for ev in (pr.get("timelineItems", {}) or {}).get("nodes", []) or []:
+            # Attribute only genuine draft-conversion events. The open-PR
+            # timeline also returns LabeledEvent / ReadyForReviewEvent nodes
+            # (same actor+createdAt shape), so gate strictly on __typename.
+            if ev.get("__typename") != "ConvertToDraftEvent":
+                continue
+            actor = (ev.get("actor") or {}).get("login")
+            at = parse_iso(ev.get("createdAt"))
+            if not actor or not at or at < cutoff:
+                continue
+            drafts["total"] += 1
+            if actor == author:
+                drafts["author"] += 1
+                drafts["by_person"][actor] += 1
+            else:
+                drafts["triage"] += 1
+                drafts["by_person"][actor] += 1
+                drafts["by_person_triage"][actor] += 1
+
+    # Closes — CLOSED_EVENT actors on closed-unmerged PRs.
+    for pr in closed_prs:
+        if pr.get("merged"):
+            continue
+        author = pr.get("_author") or (pr.get("author") or {}).get("login")
+        if is_bot(author):
+            excluded["bot"] += 1
+            continue
+        if is_backport(pr):
+            excluded["backport"] += 1
+            continue
+        ca = parse_iso(pr.get("closedAt"))
+        if ca and ca < cutoff:
+            continue
+        actor = None
+        for ev in (pr.get("timelineItems", {}) or {}).get("nodes", []) or []:
+            a = (ev.get("actor") or {}).get("login")
+            if a:
+                actor = a
+        if not actor:
+            continue
+        closes["total"] += 1
+        if actor == author:
+            closes["author"] += 1
+            closes["by_person"][actor] += 1
+        else:
+            closes["triage"] += 1
+            closes["by_person"][actor] += 1
+            closes["by_person_triage"][actor] += 1
+
+    def _finalise(action):
+        action["by_person"] = dict(
+            sorted(action["by_person"].items(), key=lambda x: -x[1])
+        )
+        action["by_person_triage"] = dict(
+            sorted(action["by_person_triage"].items(), key=lambda x: -x[1])
+        )
+        return action
+
+    return {
+        "drafts": _finalise(drafts),
+        "closes": _finalise(closes),
+        "maintainers": sorted(maintainers),
+        "excluded": excluded,
+    }
+
+
 def compute_table_final_state(closed_prs, area_prefix, ctx):
     """Table 1 — triaged closed PRs grouped by area, since cutoff."""
     by_area = defaultdict(
@@ -1578,6 +1802,156 @@ def render_triager_activity(rows, weeks):
     return "".join(out)
 
 
+def render_ready_split(split):
+    """4 coloured hero cards + an age timeline line chart (x-axis oldest-LEFT).
+
+    render.md § Ready-for-review queue split: cards in order never-reviewed (red)
+    / discussed (blue) / changes-requested (amber) / approved (green); the
+    timeline reverses READY_AGE_BUCKETS so the oldest bucket (>12w) is on the
+    LEFT and the newest (0-2w) on the right, reading past → present.
+    """
+    counts = split["counts"]
+    total = split["total"]
+    excluded = split["excluded_maintainer"]
+    if total == 0:
+        return (
+            "<h2>Ready-for-review queue split (by why-waiting)</h2>"
+            f'<div class="caveat">No non-maintainer ready PRs to classify'
+            f'{f" ({excluded} maintainer-authored ready PRs excluded)" if excluded else ""}.</div>'
+        )
+    cards = [
+        {"big": counts["never-reviewed"], "sub": "Never reviewed", "colour": C_SPLIT_NEVER},
+        {"big": counts["discussed-no-decision"], "sub": "Discussed, no decision", "colour": C_SPLIT_DISCUSSED},
+        {"big": counts["changes-requested"], "sub": "Changes requested", "colour": C_SPLIT_CHANGES},
+        {"big": counts["approved"], "sub": "Approved (awaiting merge)", "colour": C_SPLIT_APPROVED},
+    ]
+    cards_html = "".join(
+        f'<div class="card"><div class="big" style="color:{c["colour"]}">{c["big"]}</div>'
+        f'<div class="sub">{c["sub"]}</div></div>'
+        for c in cards
+    )
+
+    # Timeline: reverse the newest→oldest buckets so oldest (>12w) is on the LEFT.
+    ordered_buckets = list(reversed(READY_AGE_BUCKETS))
+    timeline = split["timeline"]
+    series = [
+        {
+            "label": "never-reviewed",
+            "values": [timeline[b]["never-reviewed"] for b in ordered_buckets],
+            "colour": C_SPLIT_NEVER,
+        },
+        {
+            "label": "discussed",
+            "values": [timeline[b]["discussed-no-decision"] for b in ordered_buckets],
+            "colour": C_SPLIT_DISCUSSED,
+        },
+        {
+            "label": "changes-req",
+            "values": [timeline[b]["changes-requested"] for b in ordered_buckets],
+            "colour": C_SPLIT_CHANGES,
+        },
+        {
+            "label": "approved",
+            "values": [timeline[b]["approved"] for b in ordered_buckets],
+            "colour": C_SPLIT_APPROVED,
+        },
+    ]
+    chart = svg_line_chart(series, x_labels=ordered_buckets, y_label="ready PRs")
+
+    first_review_gap = counts["never-reviewed"]
+    decision_gap = counts["discussed-no-decision"] + counts["approved"]
+    excluded_note = (
+        f" {excluded} maintainer-authored ready PRs excluded." if excluded else ""
+    )
+    return (
+        "<h2>Ready-for-review queue split (by why-waiting)</h2>"
+        f'<div class="funnel" style="grid-template-columns:repeat(4,1fr)">{cards_html}</div>'
+        "<h3>Ready-for-review timeline (age, oldest → newest)</h3>"
+        + chart
+        + f'<div class="caveat">{total} non-maintainer ready PRs.{excluded_note} '
+        f'<span style="color:{C_SPLIT_NEVER}">First-review gap</span> '
+        f'(never reviewed): {first_review_gap}. '
+        f'Decision/merge gap (discussed + approved): {decision_gap}. '
+        "A red line climbing toward the newest (right) bucket means the ready "
+        "label is applied faster than anyone reviews.</div>"
+    )
+
+
+def render_attribution(attribution):
+    """Drafts & closes attribution table (render.md § Drafts & closes by person).
+
+    Per action (drafts, closes): total / by-triage / by-author / each maintainer's
+    share; plus a per-person closing-stats breakdown.
+    """
+    drafts = attribution["drafts"]
+    closes = attribution["closes"]
+    excluded = attribution["excluded"]
+    maintainers = set(attribution["maintainers"])
+
+    def _shares(action):
+        """Per-maintainer triage share rows, sorted desc."""
+        rows = []
+        triage_total = action["triage"]
+        for login, n in action["by_person_triage"].items():
+            if login not in maintainers:
+                continue
+            rows.append((login, n, pct(n, triage_total)))
+        return rows
+
+    def _share_str(action):
+        rows = _shares(action)
+        if not rows:
+            return '<span class="grey">—</span>'
+        return ", ".join(
+            f'@{esc(login)} {share}%' for login, _, share in rows[:5]
+        )
+
+    out = ["<h2>Drafts &amp; closes attribution by person</h2>"]
+    out.append(
+        '<div class="caveat">Draft-conversions from CONVERT_TO_DRAFT_EVENT actors; '
+        "closes from CLOSED_EVENT actors on closed-unmerged PRs. "
+        '<strong>Triage</strong> = actor &ne; PR author; '
+        "<strong>author self</strong> = actor == author. "
+        f'Excluded before attributing: {excluded["bot"]} bot-authored, '
+        f'{excluded["backport"]} backport.</div>'
+    )
+    out.append("<table>")
+    out.append(
+        "<tr><th>Action</th><th>Total</th><th>By triage</th><th>By author</th>"
+        "<th>Per-maintainer triage share</th></tr>"
+    )
+    for label, action in (("Drafts", drafts), ("Closes", closes)):
+        out.append(
+            f'<tr><td>{label}</td>'
+            f'<td>{action["total"]}</td>'
+            f'<td class="magenta">{action["triage"]}</td>'
+            f'<td class="grey">{action["author"]}</td>'
+            f'<td style="text-align:left">{_share_str(action)}</td></tr>'
+        )
+    out.append("</table>")
+
+    # Per-person closing stats breakdown.
+    out.append("<h3>Closing stats by person</h3>")
+    if not closes["by_person"]:
+        out.append('<div class="caveat">No closes attributed in the window.</div>')
+    else:
+        out.append("<table>")
+        out.append(
+            "<tr><th>Person</th><th>Closes (total)</th><th>As triage</th>"
+            "<th>% of all closes</th></tr>"
+        )
+        for login, n in closes["by_person"].items():
+            triage_n = closes["by_person_triage"].get(login, 0)
+            out.append(
+                f'<tr><td>@{esc(login)}</td>'
+                f'<td>{n}</td>'
+                f'<td class="magenta">{triage_n}</td>'
+                f'<td class="grey">{pct(n, closes["total"])}%</td></tr>'
+            )
+        out.append("</table>")
+    return "".join(out)
+
+
 def render_detailed_tables(table1, table2, cutoff, repo):
     # Table 1
     t1 = [
@@ -1669,6 +2043,8 @@ def render_dashboard(
     table_final,
     table_open,
     recent_drafts,
+    ready_split,
+    attribution,
     lag_warning=False,
     partial_fetch=False,
 ):
@@ -1688,6 +2064,7 @@ def render_dashboard(
             weeks=ctx["weeks"],
             ctx=ctx,
         ),
+        render_attribution(attribution),
         render_closure_velocity(weekly, ctx["weeks"]),
         render_opened_vs_closed(opened_vs_closed, ctx["weeks"]),
         render_ready_trend(ready_trend, ctx["weeks"]),
@@ -1695,12 +2072,110 @@ def render_dashboard(
         render_pressure(pressure, ctx["area_prefix"]),
         render_codeowners(codeowners_rows, hero["ready"]),
         render_funnel(funnel),
+        render_ready_split(ready_split),
         render_triager_activity(triager_activity, ctx["weeks"]),
         render_detailed_tables(table_final, table_open, ctx["cutoff"], ctx["repo"]),
         render_summary(hero, recent_drafts),
         "</body></html>",
     ]
     return "\n".join(sections)
+
+
+# ============================================================
+# Gist publication (export.md — always-publish contract)
+# ============================================================
+
+SESSION_STATE_FILE = ".apache-magpie.session-state.json"
+
+
+def _find_repo_root(start=None):
+    """Walk up from ``start`` (default: cwd) to the nearest dir containing a
+    ``.git`` entry; fall back to cwd if none is found. The session-state file
+    lives at the adopter repo root per export.md."""
+    cur = Path(start or Path.cwd()).resolve()
+    for parent in (cur, *cur.parents):
+        if (parent / ".git").exists():
+            return parent
+    return cur
+
+
+def _session_state_path():
+    return _find_repo_root() / SESSION_STATE_FILE
+
+
+def read_stats_gist_id():
+    """Return the stored ``stats_gist_id`` from the session-state file, or None."""
+    path = _session_state_path()
+    if not path.exists():
+        return None
+    try:
+        data = json.loads(path.read_text())
+    except (json.JSONDecodeError, OSError):
+        return None
+    gid = data.get("stats_gist_id")
+    return gid or None
+
+
+def store_stats_gist_id(gist_id):
+    """Persist ``stats_gist_id`` into the session-state file (merging, not
+    clobbering other keys)."""
+    path = _session_state_path()
+    data = {}
+    if path.exists():
+        try:
+            data = json.loads(path.read_text())
+        except (json.JSONDecodeError, OSError):
+            data = {}
+    data["stats_gist_id"] = gist_id
+    path.write_text(json.dumps(data, indent=2) + "\n")
+
+
+def gist_scope_available():
+    """True if `gh auth status` reports the `gist` token scope (export.md
+    fallback: warn + skip publish when it is missing)."""
+    r = subprocess.run(
+        ["gh", "auth", "status"], capture_output=True, text=True
+    )
+    out = (r.stdout or "") + (r.stderr or "")
+    return "gist" in out.lower()
+
+
+def publish_gist(html_path, repo, *, gist_id=None):
+    """Publish (or update) the dashboard as a SECRET gist; return the gist id.
+
+    If ``gist_id`` is given, PATCH that gist's ``dashboard.html`` file in place
+    (keeps the URL stable across runs — export.md "stable identity"). Otherwise
+    create a new secret gist with ``gh gist create`` and return the new id.
+    """
+    html_path = Path(html_path)
+    if gist_id:
+        payload = json.dumps(
+            {"files": {"dashboard.html": {"content": html_path.read_text()}}}
+        )
+        r = subprocess.run(
+            ["gh", "api", "-X", "PATCH", f"gists/{gist_id}", "--input", "-"],
+            input=payload,
+            capture_output=True,
+            text=True,
+        )
+        if r.returncode != 0:
+            print(f"  gist PATCH failed: {r.stderr[:200]}", file=sys.stderr)
+            return None
+        return gist_id
+    # First run — create a new secret gist (gh gist create defaults to secret).
+    r = subprocess.run(
+        [
+            "gh", "gist", "create", str(html_path),
+            "--desc", f"{repo} — PR Backlog Dashboard ({date.today()})",
+        ],
+        capture_output=True,
+        text=True,
+    )
+    if r.returncode != 0:
+        print(f"  gist create failed: {r.stderr[:200]}", file=sys.stderr)
+        return None
+    m = re.search(r"[0-9a-f]{20,}", r.stdout)
+    return m.group(0) if m else None
 
 
 # ============================================================
@@ -1721,6 +2196,18 @@ def main():
     ap.add_argument("--ready-label", default=DEFAULT_READY_LABEL)
     ap.add_argument("--area-prefix", default=DEFAULT_AREA_PREFIX)
     ap.add_argument("--page-size", type=int, default=30)
+    ap.add_argument(
+        "--no-publish",
+        action="store_true",
+        help="write the HTML locally but skip publishing it to a gist "
+        "(export.md: publishing is otherwise always-on).",
+    )
+    ap.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="compute + render inline only; skip the gist publish (alias of "
+        "--no-publish for the always-publish contract).",
+    )
     args = ap.parse_args()
 
     now = datetime.now(timezone.utc)
@@ -1823,6 +2310,8 @@ def main():
     )
     table_final = compute_table_final_state(closed_prs, args.area_prefix, ctx)
     table_open = compute_table_still_open(open_prs, args.area_prefix)
+    ready_split = compute_ready_split(open_prs, ctx)
+    attribution = compute_attribution(open_prs, closed_prs, ctx)
     codeowners_rows = (
         compute_codeowners_panel(open_prs, files_per_pr, codeowners)
         if codeowners
@@ -1865,6 +2354,8 @@ def main():
         table_final=table_final,
         table_open=table_open,
         recent_drafts=recent_drafts,
+        ready_split=ready_split,
+        attribution=attribution,
         partial_fetch=fetch_status["partial"],
     )
 
@@ -1913,6 +2404,38 @@ def main():
 
     print(f"\nDashboard written to {out_path}", file=sys.stderr)
     print(f"Intermediate state written to {side}", file=sys.stderr)
+
+    # ---- Always publish to a secret gist (export.md), unless opted out ----
+    if args.no_publish or args.dry_run:
+        print(
+            "Publish skipped (--no-publish/--dry-run). Local HTML at "
+            f"{out_path}.",
+            file=sys.stderr,
+        )
+    elif not gist_scope_available():
+        print(
+            "WARNING: `gh auth status` token lacks the `gist` scope — skipping "
+            f"gist publish. Open the local HTML at {out_path} instead, or run "
+            "`gh auth refresh -s gist` and re-run.",
+            file=sys.stderr,
+        )
+    else:
+        gist_id = read_stats_gist_id()
+        new_id = publish_gist(out_path, args.repo, gist_id=gist_id)
+        if new_id:
+            if new_id != gist_id:
+                store_stats_gist_id(new_id)
+            preview = f"https://gistpreview.github.io/?{new_id}"
+            print(f"\nRendered (browser): {preview}", file=sys.stderr)
+            print(f"Raw gist:           https://gist.github.com/{args.viewer}/{new_id}",
+                  file=sys.stderr)
+            print(preview)
+        else:
+            print(
+                f"WARNING: gist publish failed — local HTML at {out_path}.",
+                file=sys.stderr,
+            )
+
     print(json.dumps({k: intermediates[k] for k in (
         "open_count", "closed_count", "ready_count",
         "untriaged_count", "untriaged_4w_count", "engaged_count",

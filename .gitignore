@@ -22,6 +22,12 @@ logs
 .github/skills/*
 !/.github/skills/magpie-*
 
+# Local per-adopter framework state (triage session-history gist id,
+# stats dashboard gist id, …). Written by the pr-management skills at the
+# repo root; never committed (see skills/pr-management-stats/export.md and
+# skills/pr-management-triage/session-history.md).
+/.apache-magpie.session-state.json
+
 # macOS
 .DS_Store
 .AppleDouble

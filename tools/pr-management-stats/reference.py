@@ -95,6 +95,28 @@ def is_bot(login):
     return login.endswith("[bot]") or login in BOT_LOGINS
 
 
+# Backport / release-branch PR titles, e.g. "[v3-1-test] ..." or "[2-10-stable] ...".
+# These are release-branch housekeeping, not contributor triage; they are
+# excluded from the drafts-&-closes attribution panel (see render.md
+# § Drafts & closes attribution by person).
+BACKPORT_TITLE_RE = re.compile(r"^\s*\[.*(test|stable)\]", re.IGNORECASE)
+
+
+def is_backport(pr):
+    """True if a PR targets a non-main branch or carries a backport title.
+
+    A PR is a backport when its base branch is not ``main`` (``baseRefName`` is
+    present and != "main") OR its title matches the ``[v*-test]`` / ``[*-stable]``
+    pattern. A missing ``baseRefName`` is treated as non-backport (we cannot
+    prove otherwise from the fetched data, so default to including the PR).
+    """
+    base = pr.get("baseRefName")
+    if base and base != "main":
+        return True
+    title = pr.get("title") or ""
+    return bool(BACKPORT_TITLE_RE.match(title))
+
+
 # --------------------------------------------------------------------------
 # GraphQL templates — keep parity with .claude/skills/pr-management-stats/fetch.md
 # --------------------------------------------------------------------------
@@ -108,6 +130,7 @@ query($q: String!, $first: Int!, $after: String) {
       ... on PullRequest {
         number title isDraft createdAt updatedAt
         author { login __typename } authorAssociation
+        baseRefName reviewDecision
         labels(first: 20) { nodes { name } }
         commits(last: 1) { nodes { commit { committedDate } } }
         comments(last: 25) {
@@ -126,6 +149,7 @@ query($q: String!, $first: Int!, $after: String) {
         }
         timelineItems(last: 50, itemTypes: [LABELED_EVENT, READY_FOR_REVIEW_EVENT, CONVERT_TO_DRAFT_EVENT]) {
           nodes {
+            __typename
             ... on LabeledEvent { createdAt actor { login } label { name } }
             ... on ReadyForReviewEvent { createdAt actor { login } }
             ... on ConvertToDraftEvent { createdAt actor { login } }
@@ -147,9 +171,13 @@ query($q: String!, $first: Int!, $after: String) {
       ... on PullRequest {
         number title isDraft createdAt closedAt mergedAt merged state
         author { login __typename } authorAssociation
+        baseRefName
         labels(first: 20) { nodes { name } }
         comments(last: 25) {
           nodes { author { login __typename } authorAssociation createdAt body }
+        }
+        timelineItems(itemTypes: [CLOSED_EVENT], last: 1) {
+          nodes { ... on ClosedEvent { actor { login } } }
         }
       }
     }
@@ -304,6 +332,9 @@ def classify(pr, ctx, *, partial=False):
     assoc = pr.get("authorAssociation", "?")
     pr["_author"] = author
     pr["_assoc"] = assoc
+    pr["_base_ref"] = pr.get("baseRefName")
+    pr["_review_decision"] = pr.get("reviewDecision")
+    pr["_is_backport"] = is_backport(pr)
     pr["_is_collab"] = assoc in COLLAB_ASSOCIATIONS
     pr["_is_contrib"] = (not pr["_is_collab"]) and (not is_bot(author))
     labels = [l["name"] for l in pr["labels"]["nodes"]]
