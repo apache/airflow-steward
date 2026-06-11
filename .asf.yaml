@@ -156,11 +156,13 @@ github:
           - "zizmor"
           # Pre-commit (prek) — static checks across the repo.
           - "prek"
-          # Lychee — link checker. Runs on every PR (no path
-          # filter), so it gates merge on link rot introduced in
-          # the PR. The daily schedule run still catches drift on
-          # files the PR did not touch.
-          - "lychee"
+          # NOTE: `lychee` (the link checker) is intentionally NOT a
+          # required context. It is being converted from the
+          # standalone `link-check.yml` workflow into a `prek` hook;
+          # de-requiring it here first lets that conversion PR merge
+          # without being blocked on a `lychee` status that will stop
+          # posting once `link-check.yml` is removed. lychee still
+          # runs (and gates via `prek`) once the conversion lands.
           # Per-project pytest matrix from tests.yml. Required via
           # the single `tests-ok` umbrella job rather than the
           # individual `pytest (<project>)` matrix entries — branch
