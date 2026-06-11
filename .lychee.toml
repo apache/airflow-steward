@@ -1,9 +1,13 @@
 # Lychee link checker config for apache/airflow-steward.
 #
-# Validates every link in markdown / rst / .md.j2 files:
+# Runs in OFFLINE mode (see `offline` below): validates only *local*
+# references in markdown / rst / .md.j2 files:
 #   * cross-file file existence — `[text](other.md)`
 #   * cross-file fragments     — `[text](other.md#anchor)`
-#   * external URLs            — HTTP 2xx
+#   * same-file fragments      — `[text](#anchor)`
+# External `http(s)://` URLs are intentionally NOT fetched — see the
+# `offline` note below for why. Remote-link liveness is not checked
+# anywhere; the link check exists to keep in-repo references intact.
 #
 # Run via prek (locally and in CI) as the `lychee` hook in
 # `.pre-commit-config.yaml` — prek installs lychee itself, so no local
@@ -20,6 +24,22 @@
 # against a directly-installed lychee >= 0.24, not the old pinned
 # `lychee-action`. The v0.23.x boolean form (`true`) no longer parses.
 include_fragments = "anchor-only"
+
+# Offline mode — check only local file/anchor references, never fetch
+# remote URLs. Two reasons:
+#   1. Scope: this hook's job is in-repo reference integrity, not
+#      external-link liveness (which is flaky and rate-limited — note
+#      the long `exclude` list of ASF infra hosts below that existed
+#      purely to tame online checking).
+#   2. Sandbox compatibility: the cargo/brew lychee links macOS
+#      SecureTransport (`native-tls`), whose TLS handshake fails
+#      through the secure-agent sandbox's CONNECT proxy on macOS 26
+#      (`OSStatus -26276`) even though certs are valid. Offline mode
+#      makes no network calls, so the hook passes cleanly in-sandbox.
+# The network-related settings below (timeout / retry / accept /
+# exclude / cache) are dormant while offline = true, kept for
+# reference / a future opt-in online check.
+offline = true
 
 # Concurrency cap — kept moderate to avoid being rate-limited by GitHub.
 max_concurrency = 14

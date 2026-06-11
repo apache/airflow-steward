@@ -355,6 +355,18 @@ below, annotated.
 {
   "sandbox": {
     "enabled": true,
+    // The `lychee` link-check hook runs in OFFLINE mode (`offline =
+    // true` in `.lychee.toml`): it validates only local cross-file and
+    // anchor references and never fetches remote URLs, so it makes no
+    // network calls and needs no in-sandbox TLS at runtime. This
+    // sidesteps a macOS-26 issue where the sandbox's CONNECT proxy is
+    // incompatible with SecureTransport (the `native-tls` stack the
+    // cargo/brew lychee links): online link checks fail every external
+    // URL with `OSStatus -26276` even though the certs are valid and
+    // `enableWeakerNetworkIsolation` is set. Building lychee still
+    // needs the rust toolchain (see the `~/.rustup`/`~/.cargo` +
+    // `*.crates.io`/`static.rust-lang.org` entries below); only its
+    // *runtime* network use is eliminated.
     "filesystem": {
       "denyRead": ["~/"],          // default-deny the entire home dir for Bash subprocesses
       "allowRead": [
@@ -364,6 +376,8 @@ below, annotated.
         "~/.config/gh/",              // gh CLI auth (token in hosts.yml)
         "~/.cache/",                  // dev tool caches (uv HTTP cache, prek logs, ruff/mypy caches)
         "~/.local/share/uv/",         // uv's tool venvs (prek, etc.)
+        "~/.rustup/",                 // rustup toolchains (the `lychee` rust hook builds against them)
+        "~/.cargo/",                  // cargo registry + the lychee binary the rust hook installs
         "~/.local/bin/",              // uv-installed tool entry points
         "~/.config/apache-magpie/",  // Gmail OAuth refresh token (oauth-draft tool)
         "~/.gnupg/",                  // gpg keys (commit signing)
@@ -371,7 +385,9 @@ below, annotated.
       ],
       "allowWrite": [
         "~/.cache/",                  // uv lock files, prek log + state, ruff/mypy caches
-        "~/.local/share/uv/"          // uv's tool venvs (prek installs new hook envs here)
+        "~/.local/share/uv/",         // uv's tool venvs (prek installs new hook envs here)
+        "~/.rustup/",                 // rustup writes settings.toml + downloaded toolchains (first run of the `lychee` rust hook)
+        "~/.cargo/"                   // cargo registry cache + the compiled lychee binary
       ]
     },
     "network": {
@@ -382,12 +398,16 @@ below, annotated.
         "lists.apache.org", "dist.apache.org", "downloads.apache.org", "archive.apache.org",
         "cveprocess.apache.org", "cve.org", "www.cve.org", "cveawg.mitre.org",
         "oauth2.googleapis.com", "gmail.googleapis.com",
-        // Added with the `lychee` link-check prek hook: the hosts the
-        // framework's own docs link to (so lychee passes in-sandbox)
-        // plus `*.crates.io` (so the rust hook can `cargo install` lychee).
-        "*.crates.io", "*.apache.org", "*.anthropic.com", "*.claude.com",
-        "*.mitre.org", "*.nist.gov", "*.github.io", "gist.github.com",
-        "astral.sh", "json.schemastore.org", "lychee.cli.rs", "sdkman.io"
+        // `*.crates.io` + `static.rust-lang.org` let the `lychee` rust
+        // hook bootstrap a rustup toolchain and `cargo install` lychee
+        // on first run (rustup downloads the toolchain from
+        // static.rust-lang.org; crate deps come from crates.io). These
+        // are the ONLY hosts lychee needs: it runs offline (see
+        // `.lychee.toml`), so it never fetches the external URLs the
+        // docs link to — the wildcard link-target hosts that used to
+        // live here (`*.apache.org`, `*.nist.gov`, `lychee.cli.rs`, …)
+        // were removed when the hook went offline.
+        "*.crates.io", "static.rust-lang.org"
       ],
       // Lets native-TLS CLI tools (lychee — and, per the schema, gh /
       // gcloud / terraform) verify TLS through the sandbox's
