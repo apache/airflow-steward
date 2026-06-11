@@ -82,3 +82,7 @@ done
 
 - `experimental` overall — adapter coverage varies; a new adopter system
   (e.g. GitLab, a different mail backend) is a gap the plan pass records.
+- Adapters cover the *system-swap* case; the broader audit of residual
+  ASF coupling across the catalogue, and the capability-flag mechanism for
+  workflow branches that no adapter resolves, live in
+  [project-agnosticism.md](project-agnosticism.md).

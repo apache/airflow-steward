@@ -37,6 +37,7 @@ Start with [`overview.md`](overview.md), then:
   [`cve-tooling.md`](cve-tooling.md),
   [`adoption-and-setup.md`](adoption-and-setup.md),
   [`adapters.md`](adapters.md),
+  [`project-agnosticism.md`](project-agnosticism.md),
   [`meta-and-quality-tooling.md`](meta-and-quality-tooling.md),
   [`security-reporting.md`](security-reporting.md).
 

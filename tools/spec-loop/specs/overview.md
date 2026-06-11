@@ -52,6 +52,7 @@ Each mode is an independently toggleable set of skills. Maturity mirrors
 | Security reporting & dashboards | [security-reporting.md](security-reporting.md) |
 | Adoption & setup | [adoption-and-setup.md](adoption-and-setup.md) |
 | Adapters (Gmail / PonyMail / Jira / GitHub / mail-source / forwarder-relay / mail-archive / github-body-field / github-rollup) | [adapters.md](adapters.md) |
+| Project-agnosticism (de-ASF coupling) | [project-agnosticism.md](project-agnosticism.md) |
 | Meta & quality tooling | [meta-and-quality-tooling.md](meta-and-quality-tooling.md) |
 
 ## The non-negotiables every area inherits
