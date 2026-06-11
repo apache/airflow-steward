@@ -82,8 +82,6 @@
       "Edit(.claude/settings.local.json)",
       "Write(.claude/settings.json)",
       "Write(.claude/settings.local.json)",
-      "MultiEdit(.claude/settings.json)",
-      "MultiEdit(.claude/settings.local.json)",
       "Bash(curl *)",
       "Bash(wget *)",
       "Bash(aws *)",
