@@ -30,6 +30,7 @@ from skill_and_tool_validator import (
     _PRIVACY_EXTERNAL_CONTENT_MODES,
     ALL_CATEGORIES,
     ALLOWED_MODES,
+    EVAL_COVERAGE_CATEGORY,
     FORBIDDEN_PATTERNS,
     GH_LIST_CATEGORY,
     HARD_CATEGORIES,
@@ -61,6 +62,7 @@ from skill_and_tool_validator import (
     run_validation,
     slugify,
     validate_capability_sync,
+    validate_eval_coverage,
     validate_frontmatter,
     validate_gh_list_limit,
     validate_injection_guard,
@@ -2399,3 +2401,84 @@ class TestValidateCapabilitySync:
         # The parenthetical capability:reconciliation must NOT be flagged as a doc-side declared capability;
         # the row's authoritative capability is just intake, which matches the live skill.
         assert violations == [], [v.message for v in violations]
+
+
+# ---------------------------------------------------------------------------
+# Eval-coverage check
+# ---------------------------------------------------------------------------
+
+
+class TestValidateEvalCoverage:
+    """Tests for validate_eval_coverage (check #9 — SOFT)."""
+
+    def _make_skill(self, root: Path, slug: str) -> None:
+        skill_dir = root / "skills" / slug
+        skill_dir.mkdir(parents=True, exist_ok=True)
+        (skill_dir / "SKILL.md").write_text(
+            f"---\nname: magpie-{slug}\ndescription: test\ncapability: capability:triage\nlicense: Apache-2.0\n---\n"
+        )
+
+    def _make_eval(self, root: Path, slug: str) -> None:
+        eval_dir = root / "tools" / "skill-evals" / "evals" / slug
+        eval_dir.mkdir(parents=True, exist_ok=True)
+        (eval_dir / "README.md").write_text(f"# {slug} evals\n")
+
+    def test_skill_with_matching_eval_passes(self, tmp_path: Path) -> None:
+        self._make_skill(tmp_path, "issue-triage")
+        self._make_eval(tmp_path, "issue-triage")
+        violations = list(validate_eval_coverage(tmp_path))
+        assert violations == []
+
+    def test_skill_without_eval_yields_soft_violation(self, tmp_path: Path) -> None:
+        self._make_skill(tmp_path, "new-skill")
+        # No matching eval directory.
+        violations = list(validate_eval_coverage(tmp_path))
+        assert len(violations) == 1
+        v = violations[0]
+        assert v.category == EVAL_COVERAGE_CATEGORY
+        assert "new-skill" in v.message
+        assert "tools/skill-evals/evals/new-skill/" in v.message
+
+    def test_multiple_skills_some_missing_evals(self, tmp_path: Path) -> None:
+        self._make_skill(tmp_path, "alpha")
+        self._make_skill(tmp_path, "beta")
+        self._make_skill(tmp_path, "gamma")
+        self._make_eval(tmp_path, "alpha")
+        # beta and gamma have no evals.
+        violations = list(validate_eval_coverage(tmp_path))
+        assert len(violations) == 2
+        slugs = {v.path.parent.name for v in violations}
+        assert slugs == {"beta", "gamma"}
+        assert all(v.category == EVAL_COVERAGE_CATEGORY for v in violations)
+
+    def test_no_skills_dir_returns_no_violations(self, tmp_path: Path) -> None:
+        # skills/ does not exist at all.
+        violations = list(validate_eval_coverage(tmp_path))
+        assert violations == []
+
+    def test_no_evals_dir_all_skills_flagged(self, tmp_path: Path) -> None:
+        self._make_skill(tmp_path, "alpha")
+        self._make_skill(tmp_path, "beta")
+        # tools/skill-evals/evals/ does not exist.
+        violations = list(validate_eval_coverage(tmp_path))
+        assert len(violations) == 2
+        assert all(v.category == EVAL_COVERAGE_CATEGORY for v in violations)
+
+    def test_eval_coverage_is_soft_category(self) -> None:
+        assert EVAL_COVERAGE_CATEGORY in SOFT_CATEGORIES
+        assert EVAL_COVERAGE_CATEGORY not in ALL_CATEGORIES - SOFT_CATEGORIES
+
+    def test_violation_path_points_to_skill_md(self, tmp_path: Path) -> None:
+        self._make_skill(tmp_path, "orphan")
+        violations = list(validate_eval_coverage(tmp_path))
+        assert len(violations) == 1
+        assert violations[0].path.name == "SKILL.md"
+        assert violations[0].path.parent.name == "orphan"
+
+    def test_non_directory_entries_in_skills_are_skipped(self, tmp_path: Path) -> None:
+        skills_dir = tmp_path / "skills"
+        skills_dir.mkdir(parents=True)
+        # A plain file (not a directory) must not be treated as a skill.
+        (skills_dir / "README.md").write_text("# skills\n")
+        violations = list(validate_eval_coverage(tmp_path))
+        assert violations == []

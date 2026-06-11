@@ -17,7 +17,7 @@
 
 """Validate framework skill definitions.
 
-This module validates eight aspects of every skill under
+This module validates nine aspects of every skill under
 skills/:
 
 1. YAML frontmatter — every SKILL.md must have a valid frontmatter
@@ -49,6 +49,11 @@ skills/:
    Apache Software Foundation license preamble.  Skill ``.md`` files
    declare their license via the required ``license:`` frontmatter key
    (checked by aspect 1), so they need no separate header.
+9. Eval-coverage (SOFT) — every skill directory under ``skills/``
+   must have a matching behavioural eval suite under
+   ``tools/skill-evals/evals/<slug>/``.  Missing suites are
+   advisories so in-flight eval PRs do not block the gate while
+   their branches are pending review.
 
 SOFT categories surface as advisory warnings (stderr) without
 failing the run unless ``--strict`` is passed.
@@ -74,6 +79,7 @@ from pathlib import Path
 SKILLS_DIR = Path("skills")
 TOOLS_DIR = Path("tools")
 DOCS_DIR = Path("docs")
+SKILL_EVALS_DIR = Path("tools/skill-evals/evals")
 PROJECTS_TEMPLATE_DIR = Path("projects/_template")
 
 # Categories for the tool-validator block. Both HARD by default — every
@@ -89,6 +95,8 @@ TOOL_CAPABILITY_RE = re.compile(r"^\*\*Capability:\*\*[ \t]+(.+)$", re.MULTILINE
 # with live skill frontmatter + tool README declarations.
 DOCS_LABELS_AND_CAPABILITIES = Path("docs/labels-and-capabilities.md")
 CAPABILITY_SYNC_CATEGORY = "capability-sync"
+# Eval-coverage check: every skill must have a matching eval suite.
+EVAL_COVERAGE_CATEGORY = "eval-coverage"
 _SKILL_TABLE_HEADER = "## Capability to skill map"
 _TOOL_TABLE_HEADER = "## Capability to tool map"
 # Tokens like `capability:setup`. Optional backticks around the token.
@@ -262,6 +270,7 @@ SOFT_CATEGORIES: frozenset[str] = frozenset(
         GH_LIST_CATEGORY,
         PRIVACY_CATEGORY,
         LOWERCASE_F_FIELD_CATEGORY,
+        EVAL_COVERAGE_CATEGORY,
     }
 )
 HARD_CATEGORIES: frozenset[str] = frozenset(
@@ -1728,6 +1737,40 @@ def collect_doc_files(root: Path | None = None) -> set[Path]:
     return files
 
 
+# ---------------------------------------------------------------------------
+# Eval-coverage check (check #9, SOFT)
+# ---------------------------------------------------------------------------
+
+
+def validate_eval_coverage(root: Path | None = None) -> Iterable[Violation]:
+    """Warn when a skill directory has no matching eval suite.
+
+    Every skill under skills/ must have a behavioural eval suite under
+    tools/skill-evals/evals/<slug>/.  Missing suites surface as SOFT
+    advisories so in-flight eval PRs do not fail the gate while their
+    branches are pending review.
+    """
+    repo_root = root or find_repo_root()
+    skills_base = repo_root / SKILLS_DIR
+    evals_base = repo_root / SKILL_EVALS_DIR
+    if not skills_base.exists():
+        return
+    eval_slugs: set[str] = set()
+    if evals_base.exists():
+        eval_slugs = {p.name for p in evals_base.iterdir() if p.is_dir()}
+    for skill_dir in sorted(skills_base.iterdir()):
+        if not skill_dir.is_dir():
+            continue
+        slug = skill_dir.name
+        if slug not in eval_slugs:
+            yield Violation(
+                skill_dir / "SKILL.md",
+                None,
+                f"eval-coverage: no eval suite at tools/skill-evals/evals/{slug}/ — add one before shipping",
+                category=EVAL_COVERAGE_CATEGORY,
+            )
+
+
 def run_validation(root: Path | None = None) -> list[Violation]:
     """Run the full validation suite and return all violations."""
     repo_root = root or find_repo_root()
@@ -1773,6 +1816,9 @@ def run_validation(root: Path | None = None) -> list[Violation]:
 
     # Capability-sync check: the doc tables and the source must agree.
     violations.extend(validate_capability_sync(repo_root))
+
+    # Eval-coverage check: every skill must have a matching eval suite.
+    violations.extend(validate_eval_coverage(repo_root))
 
     return violations
 
