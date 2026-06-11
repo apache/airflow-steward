@@ -399,6 +399,11 @@ to a home-dir path and update the tool to read from there.
   contributions. This applies without exception, including to commits
   prepared by an agent on the user's behalf in this framework repository
   itself. **Re-read this rule before preparing every `git commit`.**
+  When the framework's secure setup is installed, this is **also
+  enforced deterministically** by the agent-guard `PreToolUse` hook
+  (the `commit-trailer` guard), which blocks any `git commit` whose
+  message contains a `Co-Authored-By:` trailer — see
+  [`tools/agent-guard`](tools/agent-guard/README.md).
   Use a `Generated-by:` trailer instead. The form is:
 
   ```text

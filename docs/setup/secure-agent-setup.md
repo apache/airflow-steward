@@ -25,11 +25,15 @@
     - [Install (user-scope)](#install-user-scope)
     - [Verify](#verify)
     - [Trade-offs](#trade-offs)
+  - [Agent-guard deterministic guard hook](#agent-guard-deterministic-guard-hook)
+    - [Extensible — any skill can contribute a guard](#extensible--any-skill-can-contribute-a-guard)
+    - [Install (user-scope)](#install-user-scope-1)
+    - [Verify](#verify-1)
   - [Sandbox-error hint hook](#sandbox-error-hint-hook)
     - [Why install it](#why-install-it)
     - [Why install it user-scope, not project-scope](#why-install-it-user-scope-not-project-scope-1)
-    - [Install (user-scope)](#install-user-scope-1)
-    - [Verify](#verify-1)
+    - [Install (user-scope)](#install-user-scope-2)
+    - [Verify](#verify-2)
     - [Trade-offs](#trade-offs-1)
   - [Sandbox-state status line](#sandbox-state-status-line)
   - [Waiting-for-input terminal tint](#waiting-for-input-terminal-tint)
@@ -933,6 +937,95 @@ entirely) should produce no output and `exit=0`.
   until the regex is updated. Re-run the verification snippet after
   every Claude Code upgrade — same cadence as the
   [Verification](#verification) section below.
+
+## Agent-guard deterministic guard hook
+
+A `PreToolUse` hook that, unlike the bypass-visibility hook above,
+**blocks** (not just annotates) a small set of `gh`/`git` commands
+that would violate a hard framework rule — protections that must not
+depend on the model remembering a `SKILL.md` instruction. The engine
+and its bundled guards live in
+[`tools/agent-guard`](../../tools/agent-guard/README.md):
+
+- **mention** — never `@`-ping anyone but the PR/issue author in an
+  author-directed `gh pr comment` / `gh issue comment`, and never
+  `@`-mention anyone in a `gh pr edit --body` (the silent "fold"
+  channel).
+- **commit-trailer** — never let a `git commit` carry a
+  `Co-Authored-By:` trailer (use `Generated-by:`).
+- **mark-ready** — never add `ready for maintainer review` while the
+  PR head SHA has GitHub Actions runs awaiting approval.
+- **security-language** — never put a CVE id / security-fix language
+  in a public `gh pr create|edit` title or body.
+- **empty-rebase** — never force-push a branch with no commits over
+  its base (an empty push to a PR head auto-closes it and revokes
+  write).
+
+Each guard is overridable per command by a visible inline env
+assignment (`STEWARD_ALLOW_MENTIONS=1 gh pr comment …`, etc.) or
+disabled wholesale with `STEWARD_GUARD_OFF=1` — the deny message
+names the override. The dispatcher is stdlib-only and invoked as
+`python3 …/agent-guard.py`, fast-pathing everything that is not a
+`gh` / `git` command.
+
+### Extensible — any skill can contribute a guard
+
+The hook is **wired once**. Additional guards are discovered at
+runtime from the `guards.d` directory next to the script (plus any
+dir in `$STEWARD_GUARD_DIRS`). A skill contributes a guard by
+shipping one import-free `*.py` file that defines `guard(ctx)` (and
+an optional `TRIGGERS` list) — **no `settings.json` change**. The
+setup skills sync `guards.d` from the snapshot, so a new bundled or
+skill-contributed guard activates on the next `/magpie-setup` /
+`setup-isolated-setup-update`. See the
+[tool README](../../tools/agent-guard/README.md) for the contract and
+`guards.d/no_verify_commit.py` for the template.
+
+### Install (user-scope)
+
+```bash
+mkdir -p ~/.claude/scripts/guards.d
+cp /path/to/airflow-steward/tools/agent-guard/src/agent_guard/__init__.py \
+    ~/.claude/scripts/agent-guard.py
+cp /path/to/airflow-steward/tools/agent-guard/src/agent_guard/guards.d/*.py \
+    ~/.claude/scripts/guards.d/
+chmod +x ~/.claude/scripts/agent-guard.py
+```
+
+Then wire it into `~/.claude/settings.json` (project-scope
+`.claude/settings.json` works too) under `PreToolUse`, matched on
+`Bash` — append to an existing `Bash` matcher's `hooks` array if one
+is already present (e.g. the bypass-visibility hook):
+
+```jsonc
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$HOME/.claude/scripts/agent-guard.py\"",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+### Verify
+
+```bash
+echo '{"tool_name":"Bash","tool_input":{"command":"gh pr edit 5 --body \"@alice hi\""}}' \
+    | python3 ~/.claude/scripts/agent-guard.py
+```
+
+Expected: a JSON object with `permissionDecision: "deny"` and a
+reason mentioning the `mention` guard. A plain command
+(`{"tool_input":{"command":"ls"}}`) produces no output and `exit=0`.
 
 ## Sandbox-error hint hook
 

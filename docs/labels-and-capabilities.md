@@ -179,6 +179,7 @@ Tools under [`tools/`](../tools/). Tools with two values (separated by
 
 | Tool | Capability / capabilities | Role |
 |---|---|---|
+| [`tools/agent-guard`](../tools/agent-guard/) | `capability:setup` | Deterministic `PreToolUse` guard dispatcher: blocks `gh`/`git` commands that would ping maintainers, carry a `Co-Authored-By` trailer, mark-ready prematurely, leak security language publicly, or empty a PR via force-push. Extensible — skills contribute guards via `guards.d` |
 | [`tools/agent-isolation`](../tools/agent-isolation/) | `capability:setup` | Secure-agent sandbox helpers |
 | [`tools/apache-projects`](../tools/apache-projects/) | `capability:stats` + `capability:intake` | ASF project-metadata substrate (`apache/comdev` `apache-projects-mcp`); read-only `projects.apache.org/json` rosters / people / releases. Backs `contributor-nomination` and the security roster-resolution paths; tracked at `main`, not pinned |
 | [`tools/cve-org`](../tools/cve-org/) | `capability:resolve` + `capability:intake` | Publishes to CVE.org *(resolve)* and records the resulting CVE state back into the tracker *(intake)* |

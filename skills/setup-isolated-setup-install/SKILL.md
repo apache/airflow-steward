@@ -96,7 +96,14 @@ Drift severity:
   desired merge against the existing file and asks for explicit
   approval before writing. Re-installs / partial-state recoveries
   are common — the skill must not blow away an unrelated
-  pre-existing hook or `permissions.ask` rule.
+  pre-existing hook or `permissions.ask` rule. The desired merge
+  **includes the agent-guard `hooks.PreToolUse` entry** (matcher
+  `Bash`, command running the user-scope `~/.claude/scripts/agent-guard.py`)
+  — the deterministic guard from
+  [`tools/agent-guard`](../../tools/agent-guard/README.md). Install
+  the script + its `guards.d` alongside the other user-scope
+  scripts (Step P), wire the `PreToolUse` entry once, and preserve
+  any pre-existing `hooks` entries.
 - **Stop on the first failure.** If a step fails (manifest read
   fails, framework path wrong, an existing file conflicts in a way
   the user has not yet decided about), stop and report. Do not
@@ -118,7 +125,8 @@ Before walking any install step, confirm with the user:
    have a clone, walk them through `git clone` first.
 3. **Fresh install or re-install.** For a re-install on a partial
    existing state, the skill must enumerate the existing wiring
-   (project settings.json, user settings.json, hooks dir,
+   (project settings.json, user settings.json, hooks dir, the
+   agent-guard `hooks.PreToolUse` entry + `~/.claude/scripts/agent-guard.py`,
    shell rc) before any merge so the user knows what is being
    preserved vs replaced.
 4. **Sync repo (optional).** Whether the user maintains a

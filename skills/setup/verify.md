@@ -303,6 +303,28 @@ Two sub-checks on `<repo-root>/.git/hooks/post-checkout`:
      remediation, no operator prompt needed; the sync
      pass overwrites silently.
 
+### 8a. agent-guard PreToolUse hook installed and wired
+
+Three sub-checks for the deterministic guard
+([`tools/agent-guard`](../../tools/agent-guard/README.md)):
+
+1. **Script present + matches the snapshot.** `<repo-root>/.claude/hooks/agent-guard.py`
+   exists and its content matches the snapshot's
+   `tools/agent-guard/src/agent_guard/__init__.py`.
+   - ⚠ / ✗ on missing / stale — remediation is `/magpie-setup`
+     (adopt or upgrade), whose sync pass re-installs it.
+2. **`guards.d` present.** `<repo-root>/.claude/hooks/guards.d/`
+   exists and its bundled guards match the snapshot. Extra
+   skill-contributed `*.py` here are expected — only flag
+   *missing bundled* guards or stale copies.
+3. **Hook wired in settings.json.** `<repo-root>/.claude/settings.json`
+   has a `hooks.PreToolUse` entry (matcher `Bash`) whose command
+   runs `agent-guard.py`.
+   - ⚠ if missing — the script is present but not active; print
+     the one-time wiring snippet (see
+     [`adopt.md` Step 12](adopt.md#step-12--post-install-sync--worktree-propagation--sandbox-allowlist--sanity-check))
+     for the maintainer to apply (settings.json is agent-edit-denied).
+
 ### 8b. Sandbox-allowlist coverage of the current worktree
 
 Defensive cross-check for

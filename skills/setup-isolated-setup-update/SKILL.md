@@ -153,12 +153,25 @@ Walk each:
    re-install path for each is
    [`setup-isolated-setup-install`](../setup-isolated-setup-install/SKILL.md)
    re-run on the affected Step P sub-step.
+
+   Also diff the agent-guard hook the same way:
+   `~/.claude/scripts/agent-guard.py` against the framework's
+   `tools/agent-guard/src/agent_guard/__init__.py`, and the
+   `~/.claude/scripts/guards.d/` directory against the bundled
+   `tools/agent-guard/src/agent_guard/guards.d/` (extra
+   skill-contributed `*.py` are expected; flag only missing
+   bundled guards or stale copies). A new bundled guard appearing
+   in the framework but absent from the user's `guards.d` is the
+   most common drift once the hook is wired — re-syncing `guards.d`
+   activates it with **no `settings.json` change**.
 4. **Settings.json shape drift.** Diff the user's project
    `.claude/settings.json` against the framework's dogfooded
    one — the framework occasionally adds new `denyRead` paths
    (a credential type the team newly cares about), new
    `allowedDomains` entries, new `permissions.deny` patterns
-   for newly-discovered exfiltration paths. Report new entries
+   for newly-discovered exfiltration paths, **or the agent-guard
+   `hooks.PreToolUse` entry** (matcher `Bash`) if the user wired
+   the secure setup before the guard shipped. Report new entries
    the user does not have; do not auto-merge.
 5. **comdev MCP checkouts (`ponymail`, `apache-projects`).** These
    ASF MCP servers are installed from a local `apache/comdev`

@@ -12,6 +12,7 @@ exclude-newer-span = "P7D"
 
 [manifest]
 members = [
+    "agent-guard",
     "agent-isolation",
     "apache-steward",
     "checker",
@@ -32,6 +33,11 @@ members = [
     "spec-validator",
     "vulnogram-api",
 ]
+
+[[package]]
+name = "agent-guard"
+version = "0.1.0"
+source = { editable = "tools/agent-guard" }
 
 [[package]]
 name = "agent-isolation"
@@ -364,7 +370,7 @@ requires-dist = [{ name = "proxy-py", specifier = ">=2.4,<3" }]
 dev = [
     { name = "mypy", specifier = ">=1.11" },
     { name = "pytest", specifier = ">=8.0" },
-    { name = "ruff", specifier = ">=0.15.15" },
+    { name = "ruff", specifier = ">=0.6" },
 ]
 
 [[package]]

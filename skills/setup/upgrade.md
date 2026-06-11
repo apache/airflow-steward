@@ -384,6 +384,14 @@ rather than pulls in via symlink. Examples:
 
 - `<repo-root>/.git/hooks/post-checkout` (the worktree-aware
   hook installed during adoption).
+- `<repo-root>/.claude/hooks/agent-guard.py` and the
+  `<repo-root>/.claude/hooks/guards.d/` directory (the
+  deterministic `PreToolUse` guard dispatcher and its bundled
+  guards — see [`adopt.md` Step 12](adopt.md#step-12--post-install-sync--worktree-propagation--sandbox-allowlist--sanity-check)
+  and [`tools/agent-guard`](../../tools/agent-guard/README.md)).
+  Re-syncing `guards.d` is also how newly-added skill-contributed
+  guards reach an already-adopted repo — the `settings.json`
+  `hooks.PreToolUse` wiring is unchanged.
 - Any future hook or local config the framework adds.
 
 These can drift independently of the snapshot — an

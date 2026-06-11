@@ -182,6 +182,13 @@ so the REST check is not required there — but the subsequent
 sweep that promotes the PR via `mark-ready` runs the check
 exactly as documented above.
 Implementation recipe: [`actions.md#mark-ready`](actions.md).
+This rule is **also enforced deterministically** by the
+agent-guard `PreToolUse` hook (the `mark-ready` guard) when the
+framework's secure setup is installed — it blocks the
+`--add-label "ready for maintainer review"` command if the head
+SHA still has `action_required` runs, independently of whether
+the skill remembered to check. See
+[`tools/agent-guard`](../../tools/agent-guard/README.md).
 
 **Golden rule 2 — propose in groups, fall back to per-PR.** The
 typical triage pass finds many PRs that need the same action
@@ -363,7 +370,12 @@ Two consequences the implementation MUST honour:
 - **The folded block carries no `@`-mention.** A body edit that
   introduces a fresh `@`-mention can itself notify; reference the
   author as a backtick-quoted login instead. The no-`@`-mention
-  rule is what makes the fold silent.
+  rule is what makes the fold silent. When the framework's secure
+  setup is installed, this is **enforced deterministically** by the
+  agent-guard `PreToolUse` hook (the `mention` guard): any
+  `@`-mention in a `gh pr edit --body` is blocked, and an
+  author-directed `gh pr comment` may only `@`-mention the PR
+  author — see [`tools/agent-guard`](../../tools/agent-guard/README.md).
 - **Pings still notify.** `review-nudge`, `reviewer-ping`,
   `request-author-confirmation`, `security-language`,
   `suspicious-changes`, and stale-sweep notices always post a

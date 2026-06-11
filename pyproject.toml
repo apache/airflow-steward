@@ -94,6 +94,7 @@ package = false
 # file.
 [tool.uv.workspace]
 members = [
+  "tools/agent-guard",
   "tools/agent-isolation",
   "tools/egress-gateway",
   "tools/cve-tool-vulnogram/generate-cve-json",
