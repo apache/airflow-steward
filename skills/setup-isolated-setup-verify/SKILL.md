@@ -4,10 +4,9 @@ description: |
   Walk the verification checklist for the framework's secure
   agent setup and report ✓ done / ✗ missing / ⚠ partial for
   each check, with concrete evidence (file paths, command
-  output, version strings). Coverage: settings.json wiring,
-  claude-iso sourced, pinned tool versions, denial commands,
-  and the comdev MCP checkout (on `main`, current).
-  Read-only — never modifies anything.
+  output, version strings). Covers nine checks across
+  settings wiring, installed tool versions, and sandbox
+  configuration. Read-only — never modifies anything.
 when_to_use: |
   Invoke when the user says "verify my secure setup", "is my
   secure config done?", "check that the secure agent setup is
@@ -116,7 +115,8 @@ The canonical list lives in
 Walk each in order:
 
 1. Project `.claude/settings.json` shape — `sandbox.enabled: true`,
-   `permissions.deny`, `permissions.ask`, `sandbox.network.allowedDomains`.
+   `permissions.deny`, `permissions.ask`, `sandbox.network.allowedDomains`,
+   and the `sandbox.filesystem` allowlist (`allowRead`/`allowWrite`).
 2. User-scope `~/.claude/settings.json` wiring — `PreToolUse`
    `Bash` matcher → `sandbox-bypass-warn.sh`, `PostToolUse`
    `Bash` matcher → `sandbox-error-hint.sh`, `statusLine` →

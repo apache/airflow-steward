@@ -3,7 +3,7 @@
   "follow_up": [
     {
       "skill": "sandbox-add-project-root.sh --all-worktrees",
-      "reason": "check 8 — project root missing from .claude/settings.local.json for both worktrees; helper script is installed"
+      "reason": "check 8 — project root missing from .claude/settings.local.json for both worktrees, so the live .git/HEAD read failed; helper script is installed, run sandbox-add-project-root.sh --all-worktrees"
     }
   ]
 }

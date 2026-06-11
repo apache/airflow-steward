@@ -1747,8 +1747,9 @@ below and report ✓ done / ✗ missing / ⚠ partial, with the evidence
 
 1. Project `.claude/settings.json` exists and has
    `sandbox.enabled: true`, the `permissions.deny` block, the
-   `permissions.ask` block, and the
-   `sandbox.network.allowedDomains` block.
+   `permissions.ask` block, the
+   `sandbox.network.allowedDomains` block, and the
+   `sandbox.filesystem` allowlist (`allowRead`/`allowWrite`).
 2. User-scope `~/.claude/settings.json` has the `PreToolUse`
    `Bash` matcher wired to a `sandbox-bypass-warn.sh` command
    and the `statusLine` command set to `sandbox-status-line.sh`.
