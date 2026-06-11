@@ -17,7 +17,7 @@
 
 """Validate framework skill definitions.
 
-This module validates nine aspects of every skill under
+This module validates ten aspects of every skill under
 skills/:
 
 1. YAML frontmatter — every SKILL.md must have a valid frontmatter
@@ -54,6 +54,12 @@ skills/:
    ``tools/skill-evals/evals/<slug>/``.  Missing suites are
    advisories so in-flight eval PRs do not block the gate while
    their branches are pending review.
+10. ASF-coupling advisory lint (SOFT) — flags ASF-coupled tokens in
+    skill bodies (e.g. svn commands, announce@apache.org, Vulnogram
+    URLs, bare PMC/ICLA/incubator) that a non-ASF adopter cannot
+    satisfy without editing the skill.  Each hit is tagged with a
+    remedy class (placeholder / adapter / capability-flag).  Never
+    fails the run — advisory only.
 
 SOFT categories surface as advisory warnings (stderr) without
 failing the run unless ``--strict`` is passed.
@@ -258,6 +264,10 @@ NAME_CONVENTION_CATEGORY = "name_convention"
 # License-header check: every skill .md and non-trivial tool Python file must
 # carry the Apache-2.0 SPDX identifier or the full ASF preamble.
 LICENSE_HEADER_CATEGORY = "license_header"
+# SOFT advisory: ASF-coupled tokens that a non-ASF adopter cannot satisfy without
+# editing the skill body.  Each hit is tagged with a remedy class so maintainers
+# know how to generalise it.  Never fails the run.
+ASF_COUPLING_CATEGORY = "asf_coupling"
 
 # The `magpie-` namespace prefix every installed framework skill carries.
 SKILL_NAME_PREFIX = "magpie-"
@@ -271,6 +281,7 @@ SOFT_CATEGORIES: frozenset[str] = frozenset(
         PRIVACY_CATEGORY,
         LOWERCASE_F_FIELD_CATEGORY,
         EVAL_COVERAGE_CATEGORY,
+        ASF_COUPLING_CATEGORY,
     }
 )
 HARD_CATEGORIES: frozenset[str] = frozenset(
@@ -1688,6 +1699,124 @@ def collect_skill_dirs(root: Path | None = None) -> set[Path]:
 
 
 # ---------------------------------------------------------------------------
+# ASF-coupling advisory lint (project-agnosticism check)
+# ---------------------------------------------------------------------------
+
+# Tiered ASF-coupled token patterns.  Each entry is:
+#   (compiled regex, confidence level, remedy class, advisory note)
+# Two tiers:
+#   high — almost never legitimate in a non-ASF adopter's workflow.
+#   low  — common in ASF prose but may appear in examples or config docs.
+_ASF_COUPLING_PATTERNS: list[tuple[re.Pattern[str], str, str, str]] = [
+    # High-confidence: very unlikely to appear legitimately outside ASF workflows
+    (
+        re.compile(r"\bsvn\s+(?:mv|commit|co|checkout|add|delete|rm)\b"),
+        "high",
+        "adapter",
+        "svn command — use release-dist-backend capability flag or a distribution adapter",
+    ),
+    (
+        re.compile(r"\bannounce@apache\.org\b"),
+        "high",
+        "capability-flag",
+        "hardcoded announce@apache.org — use <announce-list> placeholder or release-announce-backend flag",
+    ),
+    (
+        re.compile(r"\bdist/(?:dev|release)/"),
+        "high",
+        "capability-flag",
+        "ASF dist tree path — use release-dist-backend capability flag",
+    ),
+    (
+        re.compile(r"https?://vulnogram\.github\.io"),
+        "high",
+        "capability-flag",
+        "Vulnogram URL — use <cve-tool-url> placeholder or cve-tool capability flag",
+    ),
+    # Low-confidence: may appear legitimately in ASF-default prose, examples,
+    # or in lines that already carry a placeholder/flag guard.
+    (
+        re.compile(r"\bPMC\b"),
+        "low",
+        "placeholder",
+        "bare 'PMC' — consider <governance-body> placeholder for non-ASF adopters",
+    ),
+    (
+        re.compile(r"\bICLA\b"),
+        "low",
+        "capability-flag",
+        "ICLA mention — use contributor-intake-mechanism flag (ICLA vs DCO vs none)",
+    ),
+    (
+        re.compile(r"\bincubator\b", re.IGNORECASE),
+        "low",
+        "placeholder",
+        "incubator mention — use <project-stage> placeholder or lifecycle capability flag",
+    ),
+]
+
+# Inline markers that indicate a line already names or guards the ASF coupling,
+# so it should not be flagged again.  Applied in addition to INLINE_ALLOW_MARKERS.
+_ASF_COUPLING_ALLOW_MARKERS: tuple[str, ...] = (
+    # Existing capability-flag names that already generalise the coupling
+    "release-dist-backend",
+    "release_dist_backend",
+    "release-announce-backend",
+    "release_announce_backend",
+    "release_approval_mechanism",
+    "release-approval-mechanism",
+    "contributor-intake-mechanism",
+    "contributor_intake_mechanism",
+    "cve-tool",
+    # Placeholder forms that already generalise the coupling
+    "<announce-list>",
+    "<governance-body>",
+    "<project-stage>",
+    "<cve-tool",
+    # Phrases that explicitly name the ASF default profile context
+    "ASF default",
+    "ASF profile",
+    "ASF adopter",
+    "asf-default",
+)
+
+
+def validate_asf_coupling(path: Path, text: str) -> Iterable[Violation]:
+    """Flag ASF-coupled tokens in skill bodies as advisory hints.
+
+    SOFT — advisory only; surfaces on stderr, never fails the run.  Each
+    hit is tagged with a confidence level and a remedy class (placeholder /
+    adapter / capability-flag) so maintainers know how to generalise the
+    coupling without regressing the ASF default profile.
+
+    Reuses the existing ALLOWLIST_PATHS and INLINE_ALLOW_MARKERS machinery
+    from validate_placeholders.  Additional _ASF_COUPLING_ALLOW_MARKERS
+    cover lines that already name the generalisation mechanism.
+    """
+    if is_path_allowlisted(path):
+        return
+
+    lines = text.splitlines()
+    for line_no, line in enumerate(lines, start=1):
+        # Shared allowlist markers (e.g., "e.g.", "example:") already cover
+        # intentional explanatory mentions.
+        if line_has_inline_allow_marker(line):
+            continue
+        # ASF-coupling-specific markers: line already names the guard mechanism.
+        if any(marker in line for marker in _ASF_COUPLING_ALLOW_MARKERS):
+            continue
+        for pattern, confidence, remedy, note in _ASF_COUPLING_PATTERNS:
+            m = pattern.search(line)
+            if m:
+                yield Violation(
+                    path,
+                    line_no,
+                    f"asf-coupling [{confidence}] remedy:{remedy} — {note} (matched: {m.group()!r})",
+                    category=ASF_COUPLING_CATEGORY,
+                )
+
+
+# ---------------------------------------------------------------------------
 # gh list --limit check
 # ---------------------------------------------------------------------------
 
@@ -1794,6 +1923,7 @@ def run_validation(root: Path | None = None) -> list[Violation]:
             violations.extend(validate_principle_compliance(path, text))
             violations.extend(validate_privacy_patterns(path, text))
             violations.extend(validate_trigger_preservation(path, text, repo_root=repo_root))
+            violations.extend(validate_asf_coupling(path, text))
 
         # All skill files get link + placeholder + security-pattern checks
         violations.extend(validate_links(path, text, skill_dirs, doc_files))
@@ -1885,6 +2015,7 @@ def main(argv: list[str] | None = None) -> int:
 
 _SOFT_RULE_PREFIXES: tuple[str, ...] = (
     "action-inventory",
+    "asf-coupling",
     "chain-handoff",
     "criteria-source",
     "distinct-from",

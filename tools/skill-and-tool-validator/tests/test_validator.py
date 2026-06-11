@@ -30,6 +30,7 @@ from skill_and_tool_validator import (
     _PRIVACY_EXTERNAL_CONTENT_MODES,
     ALL_CATEGORIES,
     ALLOWED_MODES,
+    ASF_COUPLING_CATEGORY,
     EVAL_COVERAGE_CATEGORY,
     FORBIDDEN_PATTERNS,
     GH_LIST_CATEGORY,
@@ -61,6 +62,7 @@ from skill_and_tool_validator import (
     resolve_link,
     run_validation,
     slugify,
+    validate_asf_coupling,
     validate_capability_sync,
     validate_eval_coverage,
     validate_frontmatter,
@@ -2193,6 +2195,154 @@ def _make_tools_root(tmp_path: Path) -> Path:
     (root / "tools").mkdir(parents=True)
     (root / "skills").mkdir(parents=True)
     return root
+
+
+class TestValidateAsfCoupling:
+    """Tests for the SOFT ASF-coupling advisory lint."""
+
+    def _skill(self, body: str) -> str:
+        """Wrap body in a minimal valid SKILL.md."""
+        return (
+            "---\n"
+            "name: magpie-test\n"
+            "description: Test skill.\n"
+            "license: Apache-2.0\n"
+            "capability: capability:triage\n"
+            "---\n" + body
+        )
+
+    # --- High-confidence patterns ---
+
+    def test_svn_commit_flagged(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        violations = list(validate_asf_coupling(path, self._skill("Run `svn commit -m 'release'`\n")))
+        assert any(v.category == ASF_COUPLING_CATEGORY for v in violations)
+        assert any("svn" in v.message for v in violations)
+
+    def test_svn_mv_flagged(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        violations = list(validate_asf_coupling(path, self._skill("Run `svn mv dev/ release/`\n")))
+        assert any(v.category == ASF_COUPLING_CATEGORY and "high" in v.message for v in violations)
+
+    def test_announce_at_apache_flagged(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        violations = list(validate_asf_coupling(path, self._skill("Send mail to announce@apache.org\n")))
+        assert any(v.category == ASF_COUPLING_CATEGORY and "high" in v.message for v in violations)
+
+    def test_dist_dev_path_flagged(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        violations = list(validate_asf_coupling(path, self._skill("Upload to dist/dev/myproject\n")))
+        assert any(v.category == ASF_COUPLING_CATEGORY and "high" in v.message for v in violations)
+
+    def test_vulnogram_url_flagged(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        violations = list(
+            validate_asf_coupling(path, self._skill("Open https://vulnogram.github.io to file the CVE.\n"))
+        )
+        assert any(v.category == ASF_COUPLING_CATEGORY and "high" in v.message for v in violations)
+
+    # --- Low-confidence patterns ---
+
+    def test_bare_pmc_flagged(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        violations = list(validate_asf_coupling(path, self._skill("The PMC votes on this release.\n")))
+        assert any(v.category == ASF_COUPLING_CATEGORY and "low" in v.message for v in violations)
+
+    def test_icla_flagged(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        violations = list(validate_asf_coupling(path, self._skill("Contributor must sign the ICLA first.\n")))
+        assert any(v.category == ASF_COUPLING_CATEGORY and "low" in v.message for v in violations)
+
+    def test_incubator_flagged(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        violations = list(validate_asf_coupling(path, self._skill("This project is in the Incubator.\n")))
+        assert any(v.category == ASF_COUPLING_CATEGORY and "low" in v.message for v in violations)
+
+    # --- Remedy classes are reported ---
+
+    def test_remedy_class_in_message(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        violations = list(validate_asf_coupling(path, self._skill("Run `svn co https://...\n")))
+        coupling = [v for v in violations if v.category == ASF_COUPLING_CATEGORY]
+        assert coupling
+        assert "remedy:" in coupling[0].message
+
+    # --- Allowlisted paths are skipped ---
+
+    def test_allowlisted_path_skipped(self, tmp_path: Path) -> None:
+        """Files under projects/_template/ must not be flagged."""
+        template_dir = tmp_path / "projects" / "_template"
+        template_dir.mkdir(parents=True)
+        path = template_dir / "release-management-config.md"
+        violations = list(validate_asf_coupling(path, "Upload to dist/dev/myproject\n"))
+        assert all(v.category != ASF_COUPLING_CATEGORY for v in violations)
+
+    # --- Inline allow markers suppress the hit ---
+
+    def test_eg_marker_suppresses(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        # "e.g." is an INLINE_ALLOW_MARKER — the line should be skipped.
+        violations = list(
+            validate_asf_coupling(
+                path,
+                self._skill("e.g. for ASF use announce@apache.org as the announce list\n"),
+            )
+        )
+        assert all(v.category != ASF_COUPLING_CATEGORY for v in violations)
+
+    def test_example_marker_suppresses(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        violations = list(
+            validate_asf_coupling(
+                path,
+                self._skill("example: PMC votes on this — replace with <governance-body>\n"),
+            )
+        )
+        assert all(v.category != ASF_COUPLING_CATEGORY for v in violations)
+
+    # --- ASF-coupling-specific allow markers suppress the hit ---
+
+    def test_capability_flag_allow_marker_suppresses(self, tmp_path: Path) -> None:
+        """A line that already names release-dist-backend should not be re-flagged."""
+        path = tmp_path / "SKILL.md"
+        violations = list(
+            validate_asf_coupling(
+                path,
+                self._skill("If release-dist-backend is 'svn', run `svn commit` to publish.\n"),
+            )
+        )
+        assert all(v.category != ASF_COUPLING_CATEGORY for v in violations)
+
+    def test_asf_default_allow_marker_suppresses(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        violations = list(
+            validate_asf_coupling(
+                path,
+                self._skill("ASF default: send mail to announce@apache.org.\n"),
+            )
+        )
+        assert all(v.category != ASF_COUPLING_CATEGORY for v in violations)
+
+    # --- Category membership ---
+
+    def test_category_is_soft(self) -> None:
+        assert ASF_COUPLING_CATEGORY in SOFT_CATEGORIES
+
+    def test_category_in_all_categories(self) -> None:
+        assert ASF_COUPLING_CATEGORY in ALL_CATEGORIES
+
+    # --- Clean skill produces no violations ---
+
+    def test_clean_skill_no_violations(self, tmp_path: Path) -> None:
+        path = tmp_path / "SKILL.md"
+        clean_body = (
+            "## Workflow\n\n"
+            "1. Propose release to the <governance-body>.\n"
+            "2. Upload artifacts to <dist-path>.\n"
+            "3. Send the vote email to <announce-list>.\n"
+        )
+        violations = list(validate_asf_coupling(path, self._skill(clean_body)))
+        assert all(v.category != ASF_COUPLING_CATEGORY for v in violations)
 
 
 class TestValidateTools:
