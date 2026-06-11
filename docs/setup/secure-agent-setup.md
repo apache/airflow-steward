@@ -1305,23 +1305,39 @@ elsewhere. The framework ships
 [`tools/agent-isolation/claude-term-bg.sh`](../../tools/agent-isolation/claude-term-bg.sh)
 to make a **calm baseline the normal state and tint the background
 only when Claude genuinely wants you to act** — never while it is
-working. The model is two states, wired across five hooks:
+working, and never when it merely *finished* a turn and is idle
+until you start the next thing. Those last two look identical at the
+`Stop` event, so the model leans on three "Claude is asking you for
+something" signals (two exact, one heuristic), wired across six
+hooks:
 
 | Moment | Hook → action | Background |
 |---|---|---|
-| Turn finished — your turn to respond | `Stop` → `wait` | tinted (muted indigo `#2a1a3a`) |
+| Turn ended on a genuine question/request | `Stop` → `stop` | tinted (muted indigo `#2a1a3a`) |
+| Turn ended on a completion ("Done.") | `Stop` → `stop` | calm |
+| Structured question posed | `PreToolUse` (matcher `AskUserQuestion`) → `wait` | tinted |
 | Blocked on a permission prompt | `Notification` → `notify` | tinted |
-| Actively working (running a tool) | `PreToolUse` → `reset` | calm |
-| Fresh/idle session, plain idle ping | `SessionStart` / `Notification` → `reset`/`notify` | calm |
-| You submit a reply | `UserPromptSubmit` → `reset` | calm |
+| Actively working / you just acted | `PostToolUse` (matcher `*`) → `reset` | calm |
+| Plain 60-second idle ping | `Notification` → `notify` (no-op) | unchanged |
+| Fresh session, or you submit a reply | `SessionStart` / `UserPromptSubmit` → `reset` | calm |
 
-Three details make the model behave:
+Four details make the model behave:
 
-- **`PreToolUse` → `reset`** fires on every tool call, so the moment
-  Claude resumes work — including right after you approve a
-  permission prompt that had tinted the screen — it returns to calm.
-  Without it, an approved-permission tint would linger until the
-  turn ended.
+- **`Stop` → `stop`** is the only non-exact signal. It reads the
+  last assistant text message from the session transcript (the path
+  arrives on stdin in the `Stop` payload) and tints only when that
+  message ends as a question (`…?`) or with a strong trailing
+  request ("want me to", "would you like", "should I", "OK to",
+  "your call", …); a statement-shaped completion stays calm. Needs
+  `python3`/`python` on `PATH`; if absent, `stop` defaults to calm
+  and only the two exact signals tint.
+- **`PostToolUse` → `reset`** (not `PreToolUse`) clears the "you
+  just acted" tint. `PreToolUse` fires *before* the permission
+  prompt is shown, so it cannot clear a tint the prompt itself
+  sets; `PostToolUse` fires *after* the tool completes — the moment
+  your approval lets work resume — so it is what returns the screen
+  to calm. `PreToolUse` is reserved for the `AskUserQuestion` →
+  `wait` tint.
 - **`SessionStart` → `reset`** clears any tint a *previous* session
   left behind (OSC background changes persist in the terminal
   across processes, so a session closed mid-wait would otherwise
@@ -1330,8 +1346,10 @@ Three details make the model behave:
 - **`Notification` → `notify`** is selective: the same hook fires
   both for permission prompts *and* the plain 60-second idle ping,
   so the script reads the notification payload on stdin and tints
-  only when the message is a permission/attention prompt; an idle
-  session stays calm.
+  only for a permission/attention prompt. The idle ping is a
+  deliberate **no-op** (not a reset) — otherwise a turn that ended
+  on a genuine question, tinted by `stop`, would silently go calm
+  after a minute.
 
 **Two mechanics make this work** (both are easy to get wrong):
 
@@ -1364,21 +1382,26 @@ cp /path/to/airflow-steward/tools/agent-isolation/claude-term-bg.sh \
 chmod +x ~/.claude/scripts/claude-term-bg.sh
 ```
 
-Wire it into `~/.claude/settings.json` under four hook events. If
+Wire it into `~/.claude/settings.json` under six hook events. If
 you already have hooks on any of these events, add the command as
 an extra entry rather than replacing the existing array. The
-`CLAUDE_RESET_BG=#000000` prefix makes the calm state a
-deterministic black (recommended — it sidesteps the OSC-111 reset
-gap described above); drop it to fall back to profile-default
-reset.
+`PreToolUse` entry uses the `AskUserQuestion` matcher (not `*`), so
+it tints only on a structured question; `PostToolUse` carries the
+general `reset`. The `CLAUDE_RESET_BG=#000000` prefix makes the
+calm state a deterministic black (recommended — it sidesteps the
+OSC-111 reset gap described above); drop it to fall back to
+profile-default reset.
 
 ```jsonc
 {
   "hooks": {
     "Stop": [
-      { "hooks": [ { "type": "command", "command": "~/.claude/scripts/claude-term-bg.sh wait" } ] }
+      { "hooks": [ { "type": "command", "command": "CLAUDE_RESET_BG=#000000 ~/.claude/scripts/claude-term-bg.sh stop" } ] }
     ],
     "PreToolUse": [
+      { "matcher": "AskUserQuestion", "hooks": [ { "type": "command", "command": "~/.claude/scripts/claude-term-bg.sh wait" } ] }
+    ],
+    "PostToolUse": [
       { "matcher": "*", "hooks": [ { "type": "command", "command": "CLAUDE_RESET_BG=#000000 ~/.claude/scripts/claude-term-bg.sh reset" } ] }
     ],
     "UserPromptSubmit": [
@@ -1817,11 +1840,13 @@ Then walk through:
    on me (a pure quality-of-life signal, no security effect).
    **Default no.** Only if I say yes: copy
    `<airflow-steward>/tools/agent-isolation/claude-term-bg.sh`
-   into `~/.claude/scripts/` and `chmod +x` it, then add five
+   into `~/.claude/scripts/` and `chmod +x` it, then add six
    hooks to `~/.claude/settings.json`, merging into any existing
-   arrays on those events — `Stop` → `claude-term-bg.sh wait`;
-   `UserPromptSubmit`, `SessionStart`, and `PreToolUse` (matcher
-   `*`) → `claude-term-bg.sh reset`; and `Notification` →
+   arrays on those events — `Stop` → `claude-term-bg.sh stop`
+   (heuristic tint on a question/request, calm on a completion);
+   `PreToolUse` (matcher `AskUserQuestion`) → `claude-term-bg.sh
+   wait`; `UserPromptSubmit`, `SessionStart`, and `PostToolUse`
+   (matcher `*`) → `claude-term-bg.sh reset`; and `Notification` →
    `claude-term-bg.sh notify`. Ask whether I want the calm state
    to be a deterministic black (prefix the reset/notify commands
    with `CLAUDE_RESET_BG=#000000`) or the terminal's profile
