@@ -15,6 +15,10 @@
 # specific language governing permissions and limitations
 # under the License.
 
+"""Engine + bundled-guard tests. The relocated skill-owned guards (mention,
+mark-ready, security-language) are tested in test_skill_guards.py through the
+same discovery path a real adopter uses."""
+
 import json
 
 import pytest
@@ -26,12 +30,13 @@ import agent_guard
 def _clear_env(monkeypatch):
     for name in (
         "STEWARD_GUARD_OFF",
-        "STEWARD_ALLOW_MENTIONS",
+        "STEWARD_GUARD_DIRS",
         "STEWARD_ALLOW_COAUTHOR",
+        "STEWARD_ALLOW_EMPTY_PUSH",
+        "STEWARD_ALLOW_NO_VERIFY",
+        "STEWARD_ALLOW_MENTIONS",
         "STEWARD_ALLOW_MARK_READY",
         "STEWARD_ALLOW_SECURITY_LANG",
-        "STEWARD_ALLOW_EMPTY_PUSH",
-        "STEWARD_READY_LABEL",
     ):
         monkeypatch.delenv(name, raising=False)
 
@@ -46,7 +51,7 @@ def fake_run(handler):
 
 
 # --------------------------------------------------------------------------- #
-# find_mentions / strip_code
+# find_mentions / strip_code (shared helper, stays in the engine)
 # --------------------------------------------------------------------------- #
 
 
@@ -67,78 +72,7 @@ def test_find_mentions(text, expected):
 
 
 # --------------------------------------------------------------------------- #
-# mention guard
-# --------------------------------------------------------------------------- #
-
-
-def test_mention_author_allowed(monkeypatch):
-    monkeypatch.setattr(agent_guard, "_run", fake_run(lambda a: "alice"))
-    assert dispatch('gh pr comment 5 --body "@alice thanks for the fix"') is None
-
-
-def test_mention_non_author_denied(monkeypatch):
-    monkeypatch.setattr(agent_guard, "_run", fake_run(lambda a: "alice"))
-    reason = dispatch('gh pr comment 5 --body "@bob please review"')
-    assert reason and "bob" in reason and "mention" in reason
-
-
-def test_mention_mixed_denies_only_non_author(monkeypatch):
-    monkeypatch.setattr(agent_guard, "_run", fake_run(lambda a: "alice"))
-    reason = dispatch('gh pr comment 5 --body "@alice @bob done"')
-    assert reason and "bob" in reason and "alice" not in reason.split("refusing")[-1]
-
-
-def test_mention_issue_comment(monkeypatch):
-    monkeypatch.setattr(agent_guard, "_run", fake_run(lambda a: "alice"))
-    assert dispatch('gh issue comment 9 --body "@bob ping"') is not None
-
-
-def test_fold_any_mention_denied():
-    # No author lookup needed for a pr-edit body.
-    reason = dispatch('gh pr edit 5 --body "@alice heads up"')
-    assert reason and "fold" in reason
-
-
-def test_fold_clean_allowed():
-    assert dispatch('gh pr edit 5 --body "rebased onto main, fixed conflicts"') is None
-
-
-def test_fold_backtick_login_allowed():
-    assert dispatch('gh pr edit 5 --body "see `alice` review"') is None
-
-
-def test_mention_body_file(monkeypatch, tmp_path):
-    monkeypatch.setattr(agent_guard, "_run", fake_run(lambda a: "alice"))
-    body = tmp_path / "b.md"
-    body.write_text("@bob please look", encoding="utf-8")
-    assert dispatch(f"gh pr comment 5 --body-file {body}") is not None
-
-
-def test_mention_no_mention_no_lookup(monkeypatch):
-    def boom(args):
-        raise AssertionError("should not shell out when no mention present")
-
-    monkeypatch.setattr(agent_guard, "_run", fake_run(boom))
-    assert dispatch('gh pr comment 5 --body "thanks, looks good"') is None
-
-
-def test_mention_author_unresolved_fails_closed(monkeypatch):
-    monkeypatch.setattr(agent_guard, "_run", fake_run(lambda a: None))
-    reason = dispatch('gh pr comment 5 --body "@bob hi"')
-    assert reason and "could not be verified" in reason
-
-
-def test_mention_override(monkeypatch):
-    monkeypatch.setattr(agent_guard, "_run", fake_run(lambda a: "alice"))
-    assert dispatch('STEWARD_ALLOW_MENTIONS=1 gh pr comment 5 --body "@bob ping"') is None
-
-
-def test_global_off(monkeypatch):
-    assert dispatch('STEWARD_GUARD_OFF=1 gh pr edit 5 --body "@alice @bob"') is None
-
-
-# --------------------------------------------------------------------------- #
-# commit-trailer guard
+# commit-trailer guard (bundled)
 # --------------------------------------------------------------------------- #
 
 
@@ -160,81 +94,7 @@ def test_commit_coauthor_override():
 
 
 # --------------------------------------------------------------------------- #
-# mark-ready guard
-# --------------------------------------------------------------------------- #
-
-
-def _mark_ready_handler(pending):
-    def handler(args):
-        if "headRefOid" in args:
-            return "deadbeefcafebabe1234"
-        if any("actions/runs" in a for a in args):
-            return pending
-        return None
-
-    return handler
-
-
-def test_mark_ready_pending_denied(monkeypatch):
-    monkeypatch.setattr(agent_guard, "_run", fake_run(_mark_ready_handler("2")))
-    reason = dispatch('gh pr edit 5 --repo o/r --add-label "ready for maintainer review"')
-    assert reason and "awaiting approval" in reason
-
-
-def test_mark_ready_clean_allowed(monkeypatch):
-    monkeypatch.setattr(agent_guard, "_run", fake_run(_mark_ready_handler("0")))
-    assert dispatch('gh pr edit 5 --repo o/r --add-label "ready for maintainer review"') is None
-
-
-def test_mark_ready_other_label_allowed(monkeypatch):
-    def boom(args):
-        raise AssertionError("no lookup for an unrelated label")
-
-    monkeypatch.setattr(agent_guard, "_run", fake_run(boom))
-    assert dispatch('gh pr edit 5 --repo o/r --add-label "area:scheduler"') is None
-
-
-def test_mark_ready_failopen_when_head_unknown(monkeypatch):
-    monkeypatch.setattr(agent_guard, "_run", fake_run(lambda a: None))
-    assert dispatch('gh pr edit 5 --repo o/r --add-label "ready for maintainer review"') is None
-
-
-def test_mark_ready_override(monkeypatch):
-    monkeypatch.setattr(agent_guard, "_run", fake_run(_mark_ready_handler("3")))
-    cmd = 'STEWARD_ALLOW_MARK_READY=1 gh pr edit 5 --repo o/r --add-label "ready for maintainer review"'
-    assert dispatch(cmd) is None
-
-
-# --------------------------------------------------------------------------- #
-# security-language guard
-# --------------------------------------------------------------------------- #
-
-
-def test_security_cve_in_pr_create_denied():
-    reason = dispatch('gh pr create --title "Fix CVE-2026-1234" --body "patch"')
-    assert reason and "security" in reason.lower()
-
-
-def test_security_keyword_in_pr_body_denied():
-    assert dispatch('gh pr create --title "fix" --body "patches a SQL injection"') is not None
-
-
-def test_security_clean_pr_create_allowed():
-    assert dispatch('gh pr create --title "Add retry policy" --body "implements AIP-105"') is None
-
-
-def test_security_language_in_comment_allowed():
-    # Comments are NOT in scope (avoids colliding with the triage security warning).
-    assert dispatch('gh pr comment 5 --body "this looks like a SQL injection risk"') is None
-
-
-def test_security_override():
-    cmd = 'STEWARD_ALLOW_SECURITY_LANG=1 gh pr create --title "Fix CVE-2026-1234" --body "x"'
-    assert dispatch(cmd) is None
-
-
-# --------------------------------------------------------------------------- #
-# empty-rebase guard
+# empty-rebase guard (bundled)
 # --------------------------------------------------------------------------- #
 
 
@@ -283,6 +143,57 @@ def test_empty_rebase_override(monkeypatch):
 
 
 # --------------------------------------------------------------------------- #
+# bundled example contributed guard (guards.d/no_verify_commit.py)
+# --------------------------------------------------------------------------- #
+
+
+def test_bundled_no_verify_guard_discovered():
+    reason = dispatch('git commit -m "x" --no-verify')
+    assert reason and "no-verify" in reason
+
+
+def test_no_verify_override():
+    assert dispatch('STEWARD_ALLOW_NO_VERIFY=1 git commit -n -m "x"') is None
+
+
+def test_plain_commit_not_blocked_by_no_verify_guard():
+    assert dispatch('git commit -m "ordinary commit"') is None
+
+
+# --------------------------------------------------------------------------- #
+# contributed-guard discovery
+# --------------------------------------------------------------------------- #
+
+
+def test_contributed_guard_from_env_dir(monkeypatch, tmp_path):
+    gdir = tmp_path / "guards.d"
+    gdir.mkdir()
+    (gdir / "block_merge_admin.py").write_text(
+        'TRIGGERS = ["gh"]\n'
+        "def guard(ctx):\n"
+        "    sub = ctx.gh_subcommand()\n"
+        "    if sub == ('pr', 'merge') and any(t in ('--admin',) for t in ctx.argv):\n"
+        "        if ctx.override('STEWARD_ALLOW_ADMIN_MERGE'):\n"
+        "            return None\n"
+        "        return 'contributed[admin-merge]: refusing gh pr merge --admin'\n"
+        "    return None\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("STEWARD_GUARD_DIRS", str(gdir))
+    assert dispatch("gh pr merge 5 --admin") is not None
+    assert dispatch("STEWARD_ALLOW_ADMIN_MERGE=1 gh pr merge 5 --admin") is None
+    assert dispatch("gh pr view 5 --json title") is None
+
+
+def test_broken_contributed_guard_fails_open(monkeypatch, tmp_path):
+    gdir = tmp_path / "guards.d"
+    gdir.mkdir()
+    (gdir / "broken.py").write_text("this is not valid python !!!", encoding="utf-8")
+    monkeypatch.setenv("STEWARD_GUARD_DIRS", str(gdir))
+    assert dispatch("gh pr view 5") is None
+
+
+# --------------------------------------------------------------------------- #
 # dispatch / fast path / compound commands
 # --------------------------------------------------------------------------- #
 
@@ -302,14 +213,17 @@ def test_fast_path_allows(command):
     assert dispatch(command) is None
 
 
-def test_compound_command_guarded(monkeypatch):
-    monkeypatch.setattr(agent_guard, "_run", fake_run(lambda a: "alice"))
-    assert dispatch('cd /tmp && gh pr comment 5 --body "@bob hi"') is not None
+def test_compound_command_guarded():
+    # The commit-trailer guard (bundled) fires on the second segment.
+    assert dispatch('cd /tmp && git commit -m "x\nCo-Authored-By: a"') is not None
 
 
 def test_malformed_command_allows():
-    # Unbalanced quotes -> cannot tokenise -> allow (never break the shell).
     assert dispatch('gh pr comment 5 --body "oops') is None
+
+
+def test_global_off(monkeypatch):
+    assert dispatch('STEWARD_GUARD_OFF=1 git commit -m "x\nCo-Authored-By: a"') is None
 
 
 # --------------------------------------------------------------------------- #
@@ -318,11 +232,13 @@ def test_malformed_command_allows():
 
 
 def test_main_emits_deny(monkeypatch, capsys):
-    event = {"tool_name": "Bash", "tool_input": {"command": 'gh pr edit 5 --body "@bob"'}}
+    event = {
+        "tool_name": "Bash",
+        "tool_input": {"command": 'git commit -m "x\nCo-Authored-By: a"'},
+    }
     monkeypatch.setattr("sys.stdin", _Stdin(json.dumps(event)))
     rc = agent_guard.main()
-    out = capsys.readouterr().out
-    payload = json.loads(out)
+    payload = json.loads(capsys.readouterr().out)
     assert rc == 0
     assert payload["hookSpecificOutput"]["permissionDecision"] == "deny"
 
@@ -330,8 +246,7 @@ def test_main_emits_deny(monkeypatch, capsys):
 def test_main_allows_non_bash(monkeypatch, capsys):
     event = {"tool_name": "Read", "tool_input": {"file_path": "x"}}
     monkeypatch.setattr("sys.stdin", _Stdin(json.dumps(event)))
-    rc = agent_guard.main()
-    assert rc == 0
+    assert agent_guard.main() == 0
     assert capsys.readouterr().out == ""
 
 
@@ -339,58 +254,6 @@ def test_main_allows_malformed_stdin(monkeypatch, capsys):
     monkeypatch.setattr("sys.stdin", _Stdin("not json"))
     assert agent_guard.main() == 0
     assert capsys.readouterr().out == ""
-
-
-# --------------------------------------------------------------------------- #
-# contributed-guard discovery
-# --------------------------------------------------------------------------- #
-
-
-def test_bundled_no_verify_guard_discovered():
-    # The bundled example guard in src/agent_guard/guards.d is auto-discovered
-    # from the default sibling dir — no env needed.
-    reason = dispatch('git commit -m "x" --no-verify')
-    assert reason and "no-verify" in reason
-
-
-def test_no_verify_override():
-    assert dispatch('STEWARD_ALLOW_NO_VERIFY=1 git commit -n -m "x"') is None
-
-
-def test_plain_commit_not_blocked_by_no_verify_guard():
-    assert dispatch('git commit -m "ordinary commit"') is None
-
-
-def test_contributed_guard_from_env_dir(monkeypatch, tmp_path):
-    # A skill contributes a guard by dropping a file in a guards.d dir; pointing
-    # STEWARD_GUARD_DIRS at it wires it in with no change to settings.json.
-    gdir = tmp_path / "guards.d"
-    gdir.mkdir()
-    (gdir / "block_merge_admin.py").write_text(
-        'TRIGGERS = ["gh"]\n'
-        "def guard(ctx):\n"
-        "    sub = ctx.gh_subcommand()\n"
-        "    if sub == ('pr', 'merge') and any(t in ('--admin',) for t in ctx.argv):\n"
-        "        if ctx.override('STEWARD_ALLOW_ADMIN_MERGE'):\n"
-        "            return None\n"
-        "        return 'contributed[admin-merge]: refusing gh pr merge --admin'\n"
-        "    return None\n",
-        encoding="utf-8",
-    )
-    monkeypatch.setenv("STEWARD_GUARD_DIRS", str(gdir))
-    assert dispatch("gh pr merge 5 --admin") is not None
-    assert dispatch("STEWARD_ALLOW_ADMIN_MERGE=1 gh pr merge 5 --admin") is None
-    # Unrelated gh command is unaffected by the contributed guard.
-    assert dispatch("gh pr view 5 --json title") is None
-
-
-def test_broken_contributed_guard_fails_open(monkeypatch, tmp_path):
-    gdir = tmp_path / "guards.d"
-    gdir.mkdir()
-    (gdir / "broken.py").write_text("this is not valid python !!!", encoding="utf-8")
-    monkeypatch.setenv("STEWARD_GUARD_DIRS", str(gdir))
-    # A guard file that cannot import must never break the shell.
-    assert dispatch("gh pr view 5") is None
 
 
 # Convenience wrapper so each test reads cleanly.

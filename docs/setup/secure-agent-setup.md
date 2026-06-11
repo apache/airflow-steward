@@ -944,22 +944,23 @@ A `PreToolUse` hook that, unlike the bypass-visibility hook above,
 **blocks** (not just annotates) a small set of `gh`/`git` commands
 that would violate a hard framework rule — protections that must not
 depend on the model remembering a `SKILL.md` instruction. The engine
-and its bundled guards live in
-[`tools/agent-guard`](../../tools/agent-guard/README.md):
+lives in [`tools/agent-guard`](../../tools/agent-guard/README.md) and
+ships two **bundled** (universal `git` hygiene) guards:
 
-- **mention** — never `@`-ping anyone but the PR/issue author in an
-  author-directed `gh pr comment` / `gh issue comment`, and never
-  `@`-mention anyone in a `gh pr edit --body` (the silent "fold"
-  channel).
 - **commit-trailer** — never let a `git commit` carry a
   `Co-Authored-By:` trailer (use `Generated-by:`).
-- **mark-ready** — never add `ready for maintainer review` while the
-  PR head SHA has GitHub Actions runs awaiting approval.
-- **security-language** — never put a CVE id / security-fix language
-  in a public `gh pr create|edit` title or body.
 - **empty-rebase** — never force-push a branch with no commits over
   its base (an empty push to a PR head auto-closes it and revokes
   write).
+
+The domain-specific guards are **owned by the skills that need them**
+and discovered the same way (below) — `skills/pr-management-triage/guards/`
+ships **mention** (never `@`-ping a non-author in an author-directed
+`gh pr comment`/`gh issue comment`; never `@`-mention anyone in a
+`gh pr edit --body` fold) and **mark-ready** (never add `ready for
+maintainer review` while CI awaits approval); `skills/security-issue-fix/guards/`
+ships **security-language** (no CVE / security-fix wording in a public
+`gh pr create|edit` title/body).
 
 Each guard is overridable per command by a visible inline env
 assignment (`STEWARD_ALLOW_MENTIONS=1 gh pr comment …`, etc.) or
@@ -987,8 +988,11 @@ skill-contributed guard activates on the next `/magpie-setup` /
 mkdir -p ~/.claude/scripts/guards.d
 cp /path/to/airflow-steward/tools/agent-guard/src/agent_guard/__init__.py \
     ~/.claude/scripts/agent-guard.py
+# Bundled (universal) guards…
 cp /path/to/airflow-steward/tools/agent-guard/src/agent_guard/guards.d/*.py \
     ~/.claude/scripts/guards.d/
+# …plus every skill-owned guard (mention, mark-ready, security-language, …)
+cp /path/to/airflow-steward/skills/*/guards/*.py ~/.claude/scripts/guards.d/ 2>/dev/null || true
 chmod +x ~/.claude/scripts/agent-guard.py
 ```
 

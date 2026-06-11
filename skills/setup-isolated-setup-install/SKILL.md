@@ -101,9 +101,13 @@ Drift severity:
   `Bash`, command running the user-scope `~/.claude/scripts/agent-guard.py`)
   — the deterministic guard from
   [`tools/agent-guard`](../../tools/agent-guard/README.md). Install
-  the script + its `guards.d` alongside the other user-scope
-  scripts (Step P), wire the `PreToolUse` entry once, and preserve
-  any pre-existing `hooks` entries.
+  the script as `~/.claude/scripts/agent-guard.py` and populate
+  `~/.claude/scripts/guards.d/` from both the engine's bundled
+  `guards.d/*.py` and every skill-owned `skills/*/guards/*.py`
+  (so skill-owned guards like `mention` / `mark-ready` are active),
+  alongside the other user-scope scripts (Step P); wire the
+  `PreToolUse` entry once, and preserve any pre-existing `hooks`
+  entries.
 - **Stop on the first failure.** If a step fails (manifest read
   fails, framework path wrong, an existing file conflicts in a way
   the user has not yet decided about), stop and report. Do not

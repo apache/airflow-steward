@@ -386,12 +386,14 @@ rather than pulls in via symlink. Examples:
   hook installed during adoption).
 - `<repo-root>/.claude/hooks/agent-guard.py` and the
   `<repo-root>/.claude/hooks/guards.d/` directory (the
-  deterministic `PreToolUse` guard dispatcher and its bundled
-  guards — see [`adopt.md` Step 12](adopt.md#step-12--post-install-sync--worktree-propagation--sandbox-allowlist--sanity-check)
+  deterministic `PreToolUse` guard dispatcher and its guards — see
+  [`adopt.md` Step 12](adopt.md#step-12--post-install-sync--worktree-propagation--sandbox-allowlist--sanity-check)
   and [`tools/agent-guard`](../../tools/agent-guard/README.md)).
-  Re-syncing `guards.d` is also how newly-added skill-contributed
-  guards reach an already-adopted repo — the `settings.json`
-  `hooks.PreToolUse` wiring is unchanged.
+  `guards.d/` is populated from **both** the engine's bundled
+  `guards.d/*.py` **and** every skill-owned `skills/*/guards/*.py`
+  in the snapshot. Re-syncing it is how a new skill — or a skill
+  that newly adds a guard — reaches an already-adopted repo; the
+  `settings.json` `hooks.PreToolUse` wiring is unchanged.
 - Any future hook or local config the framework adds.
 
 These can drift independently of the snapshot — an

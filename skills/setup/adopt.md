@@ -1092,11 +1092,17 @@ Four passes, in this order:
    - Copy the single self-contained script
      `tools/agent-guard/src/agent_guard/__init__.py` (from the
      snapshot) to `<repo-root>/.claude/hooks/agent-guard.py`, and
-     mirror the bundled `tools/agent-guard/src/agent_guard/guards.d/`
-     into `<repo-root>/.claude/hooks/guards.d/`. The dispatcher
-     auto-discovers guards from the `guards.d` sibling of the
-     script — that is how a skill contributes a guard without any
-     re-wiring (see the tool README).
+     populate `<repo-root>/.claude/hooks/guards.d/` from **two**
+     snapshot sources: the engine's bundled
+     `tools/agent-guard/src/agent_guard/guards.d/*.py`, **and every
+     skill-owned guard** — `skills/*/guards/*.py` (e.g. the
+     `pr-management-triage` `mention` + `mark-ready` guards, the
+     `security-issue-fix` `security-language` guard). Collecting all
+     of them into the single `guards.d` is what lets each skill own
+     its own deterministic guard while the hook is wired only once.
+     The dispatcher auto-discovers every `*.py` in the `guards.d`
+     sibling of the script — adding a skill (or a skill adding a
+     guard) needs no re-wiring, only this re-sync (see the tool README).
    - **Wire the hook once** in `.claude/settings.json` under
      `hooks.PreToolUse` (matcher `Bash`). Because the committed
      `.claude/settings.json` is agent-edit-denied, **surface the

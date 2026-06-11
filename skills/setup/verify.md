@@ -313,10 +313,14 @@ Three sub-checks for the deterministic guard
    `tools/agent-guard/src/agent_guard/__init__.py`.
    - ⚠ / ✗ on missing / stale — remediation is `/magpie-setup`
      (adopt or upgrade), whose sync pass re-installs it.
-2. **`guards.d` present.** `<repo-root>/.claude/hooks/guards.d/`
-   exists and its bundled guards match the snapshot. Extra
-   skill-contributed `*.py` here are expected — only flag
-   *missing bundled* guards or stale copies.
+2. **`guards.d` populated.** `<repo-root>/.claude/hooks/guards.d/`
+   exists and contains every guard the snapshot ships — the
+   engine's bundled `guards.d/*.py` **and** each skill-owned
+   `skills/*/guards/*.py` (e.g. `mention`, `mark_ready`,
+   `security_language`). Flag a *missing* expected guard or a stale
+   copy; extra locally-added `*.py` are fine. A missing skill guard
+   means that skill's deterministic protection is silently inactive
+   — remediation is `/magpie-setup` (adopt/upgrade), which re-collects.
 3. **Hook wired in settings.json.** `<repo-root>/.claude/settings.json`
    has a `hooks.PreToolUse` entry (matcher `Bash`) whose command
    runs `agent-guard.py`.

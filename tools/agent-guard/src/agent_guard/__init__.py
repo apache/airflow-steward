@@ -19,20 +19,20 @@
 
 Reads a Claude Code ``PreToolUse`` hook event on stdin, inspects the ``Bash``
 command, and **denies** the ones that would violate a hard framework rule
-that should never depend on the model remembering a SKILL.md instruction:
+that should never depend on the model remembering a SKILL.md instruction.
 
-1. **mention** — never ``@``-ping anyone other than the PR/issue author in an
-   author-directed comment, and never ``@``-mention anyone in a PR-body edit
-   (the silent "fold" channel). Mirrors the denoise change (PR #491).
-2. **commit-trailer** — never let a ``git commit`` carry a ``Co-Authored-By:``
+The engine ships two **bundled** guards — the universal ``git`` hygiene rules
+that apply to every project:
+
+1. **commit-trailer** — never let a ``git commit`` carry a ``Co-Authored-By:``
    trailer (AGENTS.md: agents use ``Generated-by:``, never co-author).
-3. **mark-ready** — never add the "ready for maintainer review" label while the
-   PR head SHA still has GitHub Actions runs awaiting approval
-   (pr-management-triage Golden rule 1b).
-4. **security-language** — never put a CVE id or security-fix language in a
-   public PR title/body (security-issue-fix public-PR scrubbing rule).
-5. **empty-rebase** — never force-push a branch that has no commits over its
+2. **empty-rebase** — never force-push a branch that has no commits over its
    base (an empty push to a PR head auto-closes the PR and revokes write).
+
+Domain-specific guards are **owned and contributed by the skills that need
+them** via the discovery mechanism below — e.g. the ``mention`` and
+``mark-ready`` guards live in ``skills/pr-management-triage/guards/`` and the
+``security-language`` guard in ``skills/security-issue-fix/guards/``.
 
 The hook fires on *every* ``Bash`` call, so this module is **stdlib-only** and
 meant to be invoked directly as ``python3 .../agent_guard/__init__.py`` — never
@@ -44,8 +44,8 @@ maintainer can consciously proceed (``STEWARD_ALLOW_MENTIONS=1 gh pr comment …
 or disable the whole dispatcher (``STEWARD_GUARD_OFF=1``). Overrides are read
 from the command string itself (and from the hook's own environment).
 
-**Contributing guards.** The five above are *bundled* guards. Any skill can add
-its own deterministic guard **without re-wiring the hook**: drop an import-free
+**Contributing guards.** Beyond the two bundled guards, any skill adds its own
+deterministic guard **without re-wiring the hook**: drop an import-free
 ``*.py`` file into a discovered ``guards.d`` directory (the ``guards.d`` sibling
 of this script, plus any dir in ``$STEWARD_GUARD_DIRS``) that defines a
 module-level ``guard(ctx)`` returning a deny string or ``None`` — see
@@ -86,32 +86,6 @@ MENTION_RE = re.compile(r"(?<![\w.@])@([A-Za-z0-9](?:[A-Za-z0-9-]{0,38})(?:/[A-Z
 # inside them into notifications, so we strip them before scanning.
 _FENCED_RE = re.compile(r"```.*?```", re.DOTALL)
 _INLINE_CODE_RE = re.compile(r"`[^`\n]*`")
-
-CVE_RE = re.compile(r"\bCVE-\d{4}-\d{3,}\b", re.IGNORECASE)
-
-# Security-fix language that must not appear in a PUBLIC pr title/body before a
-# CVE is announced. A curated subset of the canonical list in
-# tools/skill-and-tool-validator (security_pattern check) — kept deliberately
-# narrow to limit false positives on the PR-create/edit surface.
-SECURITY_KEYWORDS = (
-    "sql injection",
-    "xss",
-    "csrf",
-    "ssrf",
-    "remote code execution",
-    "arbitrary code execution",
-    "path traversal",
-    "directory traversal",
-    "privilege escalation",
-    "auth bypass",
-    "authentication bypass",
-    "buffer overflow",
-    "heap overflow",
-    "use-after-free",
-    "security vulnerability",
-    "security fix",
-    "exploitable",
-)
 
 GUARD_TIMEOUT = 10  # seconds for any subprocess (gh / git) a guard shells out to.
 
@@ -272,68 +246,6 @@ def _repo_flag(argv: list[str]) -> list[str]:
 # --------------------------------------------------------------------------- #
 
 
-def guard_mention(seg: Segment, cwd: str | None) -> str | None:
-    sub = gh_subcommand(seg.argv)
-    if sub is None:
-        return None
-    group, name = sub
-    is_pr_body_edit = (
-        group == "pr"
-        and name == "edit"
-        and (
-            _opt_value(seg.argv, "-b", "--body") is not None
-            or _opt_value(seg.argv, "-F", "--body-file") is not None
-        )
-    )
-    is_comment = (group == "pr" and name == "comment") or (group == "issue" and name == "comment")
-    if not (is_pr_body_edit or is_comment):
-        return None
-
-    body = gh_body_text(seg.argv, include_title=False, read_files=True)
-    mentions = find_mentions(body)
-    if not mentions:
-        return None
-    if seg.override("STEWARD_ALLOW_MENTIONS"):
-        return None
-
-    if is_pr_body_edit:
-        return (
-            "agent-guard[mention]: a `gh pr edit --body` (the silent PR-description "
-            f"'fold' channel) must not @-mention anyone — found {sorted(set(mentions))}. "
-            "Editing a PR body should never ping; reference logins as backticked "
-            "`login`, not @login. Override (rare): prefix STEWARD_ALLOW_MENTIONS=1."
-        )
-
-    # Comment channel: only the PR/issue author may be @-mentioned.
-    sub_index = seg.argv.index(name)
-    target = _positional_target(seg.argv, sub_index)
-    view = "pr" if group == "pr" else "issue"
-    author = None
-    if target:
-        author = _run(
-            ["gh", view, "view", target, *_repo_flag(seg.argv), "--json", "author", "--jq", ".author.login"],
-            cwd=cwd,
-        )
-    if not author:
-        return (
-            "agent-guard[mention]: this author-directed comment @-mentions "
-            f"{sorted(set(mentions))} but the PR/issue author could not be verified, "
-            "so the guard cannot confirm none of them are maintainers. Re-run once the "
-            "author is known, drop the @-mentions (use backticked `login`), or override "
-            "with STEWARD_ALLOW_MENTIONS=1 if the ping is intentional."
-        )
-    author_l = author.lower()
-    offenders = sorted({m for m in mentions if m != author_l})
-    if offenders:
-        return (
-            "agent-guard[mention]: an author-directed comment may only @-mention the "
-            f"author (`{author}`); refusing to ping {offenders}. Reference other people "
-            "as backticked `login` (no @) so they are not notified, or override with "
-            "STEWARD_ALLOW_MENTIONS=1 for a deliberate ping."
-        )
-    return None
-
-
 def guard_commit_trailer(seg: Segment, cwd: str | None) -> str | None:
     if seg.argv[:2] != ["git", "commit"]:
         return None
@@ -347,79 +259,6 @@ def guard_commit_trailer(seg: Segment, cwd: str | None) -> str | None:
         "'Generated-by: <agent name and version>' trailer instead and remove the "
         "Co-Authored-By line. Override (not for AI co-authorship): STEWARD_ALLOW_COAUTHOR=1."
     )
-
-
-def guard_mark_ready(seg: Segment, cwd: str | None) -> str | None:
-    sub = gh_subcommand(seg.argv)
-    if sub != ("pr", "edit"):
-        return None
-    label = _opt_value(seg.argv, "", "--add-label")
-    ready = os.environ.get(READY_LABEL_ENV, DEFAULT_READY_LABEL)
-    if not label or label.strip().lower() != ready.strip().lower():
-        return None
-    if seg.override("STEWARD_ALLOW_MARK_READY"):
-        return None
-
-    sub_index = seg.argv.index("edit")
-    target = _positional_target(seg.argv, sub_index)
-    if not target:
-        return None  # fail-open: cannot identify the PR.
-    repo = _opt_value(seg.argv, "-R", "--repo")
-    head = _run(
-        ["gh", "pr", "view", target, *_repo_flag(seg.argv), "--json", "headRefOid", "--jq", ".headRefOid"],
-        cwd=cwd,
-    )
-    if not repo:
-        repo = _run(
-            ["gh", "repo", "view", "--json", "nameWithOwner", "--jq", ".nameWithOwner"],
-            cwd=cwd,
-        )
-    if not head or not repo:
-        return None  # fail-open: cannot run the authoritative check.
-    pending = _run(
-        [
-            "gh",
-            "api",
-            f"repos/{repo}/actions/runs?head_sha={head}&per_page=20",
-            "--jq",
-            '[.workflow_runs[] | select(.conclusion == "action_required")] | length',
-        ],
-        cwd=cwd,
-    )
-    if pending and pending.isdigit() and int(pending) > 0:
-        return (
-            f"agent-guard[mark-ready]: PR has {pending} GitHub Actions run(s) awaiting "
-            f"approval at head {head[:7]}; adding '{ready}' now is premature (Golden rule "
-            "1b) — the real CI has not run. Approve/await the workflow first. Override: "
-            "STEWARD_ALLOW_MARK_READY=1."
-        )
-    return None
-
-
-def guard_security_language(seg: Segment, cwd: str | None) -> str | None:
-    sub = gh_subcommand(seg.argv)
-    if sub not in (("pr", "create"), ("pr", "edit")):
-        return None
-    text = gh_body_text(seg.argv, include_title=True, read_files=True)
-    if not text:
-        return None
-    if seg.override("STEWARD_ALLOW_SECURITY_LANG"):
-        return None
-    lowered = text.lower()
-    hits: list[str] = []
-    cve = CVE_RE.search(text)
-    if cve:
-        hits.append(cve.group(0))
-    hits.extend(kw for kw in SECURITY_KEYWORDS if kw in lowered)
-    if hits:
-        return (
-            "agent-guard[security-language]: this public PR title/body contains "
-            f"security-fix language {sorted(set(hits))}. Per the ASF process, the "
-            "security nature of a fix must not appear in public content before the CVE "
-            "is announced — neutralise the wording. If disclosure is already public, "
-            "override with STEWARD_ALLOW_SECURITY_LANG=1."
-        )
-    return None
 
 
 def guard_empty_rebase(seg: Segment, cwd: str | None) -> str | None:
@@ -462,14 +301,16 @@ def guard_empty_rebase(seg: Segment, cwd: str | None) -> str | None:
     return None
 
 
-# The framework's bundled guards. Skills contribute MORE without editing this
-# file or re-wiring the hook — see "Contributing guards" below.
+# The framework's bundled guards — the universal `git` hygiene rules that apply
+# to every project regardless of which skills are installed. Domain-specific
+# guards are owned and contributed by the skills that need them (e.g. the
+# mention + mark-ready guards live in `skills/pr-management-triage/guards/`, the
+# security-language guard in `skills/security-issue-fix/guards/`); they are
+# discovered at runtime from `guards.d` without editing this file or re-wiring
+# the hook — see "Contributing guards" below.
 BUILTIN_GUARDS: tuple[Callable[[Segment, str | None], str | None], ...] = (
     guard_commit_trailer,
     guard_empty_rebase,
-    guard_security_language,
-    guard_mention,
-    guard_mark_ready,
 )
 
 # Only commands in these families are inspected; everything else takes the

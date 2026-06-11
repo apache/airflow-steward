@@ -6,6 +6,7 @@
   - [Guards](#guards)
   - [Per-command overrides](#per-command-overrides)
   - [Wiring](#wiring)
+  - [Contributing guards](#contributing-guards)
   - [Tests](#tests)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -29,13 +30,22 @@ few milliseconds for any command that is not a guarded `gh` / `git commit` /
 
 ## Guards
 
+**Bundled** (shipped with the engine — universal `git` hygiene, on for every
+project):
+
 | Guard | Blocks | Rule it enforces |
 |---|---|---|
-| `mention` | `gh pr comment` / `gh issue comment` that `@`-mentions anyone other than the PR/issue author; **any** `@`-mention in `gh pr edit --body[-file]` (the silent "fold" channel) | denoise: author-directed feedback never pings maintainers; body edits stay silent |
 | `commit-trailer` | `git commit` whose message contains `Co-Authored-By:` | AGENTS.md: agents use a `Generated-by:` trailer, never co-author |
-| `mark-ready` | adding the `ready for maintainer review` label while the PR head SHA has GitHub Actions runs awaiting approval | pr-management-triage Golden rule 1b |
-| `security-language` | a CVE id or security-fix language in a **public** `gh pr create` / `gh pr edit` title/body (not comments) | security-issue-fix public-PR scrubbing |
 | `empty-rebase` | `git push --force[-with-lease]` of a branch with 0 commits over its base | an empty push to a PR head auto-closes it + revokes write |
+
+**Skill-owned** (each lives in its skill's `guards/` dir, discovered the same
+way — see [Contributing guards](#contributing-guards)):
+
+| Guard | Owner skill | Blocks | Rule it enforces |
+|---|---|---|---|
+| `mention` | `pr-management-triage` | `gh pr comment` / `gh issue comment` that `@`-mentions anyone other than the PR/issue author; **any** `@`-mention in `gh pr edit --body[-file]` | denoise: author-directed feedback never pings maintainers; body edits stay silent |
+| `mark-ready` | `pr-management-triage` | adding `ready for maintainer review` while the PR head SHA has GitHub Actions runs awaiting approval | Golden rule 1b |
+| `security-language` | `security-issue-fix` | a CVE id / security-fix language in a **public** `gh pr create`/`gh pr edit` title/body (not comments) | public-PR scrubbing |
 
 A denied command is **not** posted/run; the model is shown the reason and the
 deterministic fix (e.g. "use a backtick `` `login` `` instead of `@login`").
@@ -82,6 +92,31 @@ into the adopter tree (`.claude/hooks/agent-guard.py`) and into the user-scope
 secure setup (`~/.claude/scripts/agent-guard.py`); `/magpie-setup upgrade`,
 `verify`, and the `setup-isolated-setup-install` / `…-update` skills keep it and
 the settings.json entry in sync. See those skills for the exact steps.
+
+## Contributing guards
+
+The hook is **wired once**. Beyond the two bundled guards, additional guards are
+discovered at runtime from every `*.py` in a `guards.d` directory — the
+`guards.d` sibling of the running script, plus any directory listed in
+`$STEWARD_GUARD_DIRS` (colon-separated). **No `settings.json` change is needed to
+add a guard.**
+
+A skill owns its guards by shipping them under `skills/<skill>/guards/*.py`;
+`/magpie-setup` collects every `skills/*/guards/*.py` (plus the engine's bundled
+`guards.d`) into the adopter's `.claude/hooks/guards.d/` (and the user-scope
+`~/.claude/scripts/guards.d/`). A guard file is **import-free** — it defines:
+
+- `TRIGGERS` — optional list of command families to pre-filter on (`"gh"`,
+  `"git:commit"`, `"git:push"`, …); omit to run on every guarded command.
+- `guard(ctx)` — returns a deny-reason string to block, or `None` to allow.
+  `ctx` is the `GuardContext`: `ctx.argv`, `ctx.raw`, `ctx.override(*names)`,
+  `ctx.gh_subcommand()`, `ctx.opt(short, long)`, `ctx.gh_body(...)`,
+  `ctx.mentions(text)`, `ctx.positional_after(token)`, `ctx.repo_flag()`,
+  `ctx.run(args)`, `ctx.ready_label`.
+
+A guard file that fails to import is skipped (a broken contribution never breaks
+the shell). See `guards.d/no_verify_commit.py` for the template, and
+`skills/pr-management-triage/guards/` for real examples.
 
 ## Tests
 

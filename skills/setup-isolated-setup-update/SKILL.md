@@ -157,13 +157,15 @@ Walk each:
    Also diff the agent-guard hook the same way:
    `~/.claude/scripts/agent-guard.py` against the framework's
    `tools/agent-guard/src/agent_guard/__init__.py`, and the
-   `~/.claude/scripts/guards.d/` directory against the bundled
-   `tools/agent-guard/src/agent_guard/guards.d/` (extra
-   skill-contributed `*.py` are expected; flag only missing
-   bundled guards or stale copies). A new bundled guard appearing
-   in the framework but absent from the user's `guards.d` is the
-   most common drift once the hook is wired — re-syncing `guards.d`
-   activates it with **no `settings.json` change**.
+   `~/.claude/scripts/guards.d/` directory against the union of the
+   engine's bundled `tools/agent-guard/src/agent_guard/guards.d/`
+   **and** every skill-owned `skills/*/guards/*.py` (extra
+   locally-added `*.py` are expected; flag only missing
+   framework/skill guards or stale copies). A new skill guard (or a
+   skill newly adding one) appearing in the framework but absent
+   from the user's `guards.d` is the most common drift once the hook
+   is wired — re-syncing `guards.d` activates it with **no
+   `settings.json` change**.
 4. **Settings.json shape drift.** Diff the user's project
    `.claude/settings.json` against the framework's dogfooded
    one — the framework occasionally adds new `denyRead` paths
