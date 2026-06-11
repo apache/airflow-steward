@@ -1185,6 +1185,78 @@ description>"*. Strip `Re:` / `Fwd:` / `[SECURITY]` prefixes.
 
 ---
 
+## Step 4a — Preliminary reject-class triage
+
+**Run this on EVERY surviving candidate, mandatorily — including
+candidates that read as clean `Report`s headed for default-import.**
+Most security teams maintain a documented set of "we already know
+these are not vulnerabilities" patterns: the out-of-scope shapes their
+Security Model carves out, written up as the reusable negative replies
+in
+[`<project-config>/canned-responses.md`](../../<project-config>/canned-responses.md).
+When a *plain* instance of one lands on `<security-list>`, importing it
+as `Needs triage` and then closing it days later wastes triage
+capacity and leaves the reporter with a stale disposition. This step
+catches the plainly-clear cases at import time so the Step 5 proposal
+can recommend the canned rejection instead of the default import — the
+default-to-import bias (Golden rule 1) still governs everything
+ambiguous.
+
+**The check is the project's reject-pattern taxonomy, not a fixed
+list.** Read the *reject-pattern taxonomy* declared in
+[`<project-config>/canned-responses.md`](../../<project-config>/canned-responses.md)
+(each canned-response heading is one pattern, with its "when it
+applies" trust-boundary / Security-Model anchor). For each surviving
+candidate, compare the full extracted body against that taxonomy and
+emit exactly one of three outcomes, **always reported in the Step 5
+proposal**:
+
+- **`reject-with-canned <pattern>`** — the report *plainly* fits one
+  taxonomy pattern (or an [Step 2b](#step-2b--search-gmail-for-prior-rejections-of-similar-reports)
+  closed-invalid / prior-rejection precedent hit). The proposal line
+  for this candidate must name the canned-response pattern verbatim,
+  quote the 1–2 sentences of the report that fit it, and cite the
+  trust-boundary / Security-Model anchor the rejection rests on.
+- **`hold-for-human-review`** — borderline: the reporter explicitly
+  claims a path that *could* escape the carve-out (e.g. a
+  non-Dag-author / unauthenticated route to a sink the taxonomy
+  normally treats as trusted-input-only), or the body could not be
+  fully retrieved. Surface the ambiguity; make no default
+  recommendation; the user decides in Step 6.
+- **explicit no-match** — a one-line *"reject-class check: no match
+  against the canned-response taxonomy or the Step 2b
+  closed-invalid / prior-rejection precedents"*.
+
+**Never skip the check to save time, and never present a candidate as
+a plain default-import without having run it.** A silent skip is
+exactly the miss this step exists to prevent — it costs a user
+round-trip (*"is this one we normally reject?"*) the check is meant to
+pre-empt.
+
+**Confidence discipline.** Flag `reject-with-canned` **only when the
+report plainly fits** the pattern; everything borderline routes to
+`hold-for-human-review`, never to a default reject. This matches the
+skill's standing *"wrongly-rejected is worse than wrongly-imported"*
+bias (Golden rule 1) — the step short-circuits only the unambiguous
+cases.
+
+**On user confirm.** A confirmed `reject-with-canned` candidate
+follows the existing `NN:reject-with-canned <name>` path (Step 5 /
+Step 6 / the *rejection means no tracker, ever* Golden rule): **no
+tracker is created**, and a Gmail draft using the named canned
+response is queued on the originating thread. The audit trail lives on
+the Gmail thread and the `canned-responses.md` precedent; the absence
+of a tracker is the disposition. A confirmed `hold-for-human-review`
+candidate falls back to whatever the user picks (import / skip /
+reject-with-canned) in Step 6.
+
+This step and the [Step 2b](#step-2b--search-gmail-for-prior-rejections-of-similar-reports)
+cross-check are complementary: the taxonomy match here is *"this shape
+is out of scope by the Security Model"*; the Step 2b scan is *"we
+already rejected this exact thing"*. Apply both on every candidate.
+
+---
+
 ## Step 5 — Propose the imports
 
 Present all candidates as a single numbered proposal grouped by class:
@@ -1195,9 +1267,14 @@ Present all candidates as a single numbered proposal grouped by class:
   preview, and a one-line *"unless you say otherwise, this lands as a
   new tracker in `Needs triage` with the receipt-of-confirmation reply
   drafted to the reporter"*. Surface any Step 2a fuzzy-duplicate
-  matches (`STRONG`/`MEDIUM`/`WEAK`) and any classification ambiguity
-  inline so the user can scan-then-override; do **not** pose them as
-  open questions that gate the import.
+  matches (`STRONG`/`MEDIUM`/`WEAK`), the
+  [Step 4a](#step-4a--preliminary-reject-class-triage) reject-class
+  verdict (`reject-with-canned <pattern>` / `hold-for-human-review` /
+  explicit no-match), and any classification ambiguity inline so the
+  user can scan-then-override; do **not** pose them as open questions
+  that gate the import. A `reject-with-canned` verdict flips this
+  candidate's recommended default from import to the canned rejection
+  (still overridable in Step 6).
 - **Candidates not to import** (class `automated-scanner`,
   `consolidated-multi-issue`, `media-request`, `spam`,
   `cross-thread-followup`, `fix-already-public`): show the class,

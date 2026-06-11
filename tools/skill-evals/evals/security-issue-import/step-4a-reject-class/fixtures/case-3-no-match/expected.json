@@ -1,0 +1,7 @@
+{
+  "verdict": "no-match",
+  "canned_response_name": null,
+  "quoted_fit": null,
+  "security_model_anchor": null,
+  "reason": "Stored XSS by a low-privilege editor firing in a higher-privilege admin's session crosses a privilege boundary; attacker != victim, so not self-XSS, and no taxonomy pattern applies. Proceeds to default-import."
+}

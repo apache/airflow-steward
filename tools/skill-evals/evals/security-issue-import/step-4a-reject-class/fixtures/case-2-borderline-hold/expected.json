@@ -1,0 +1,7 @@
+{
+  "verdict": "hold-for-human-review",
+  "canned_response_name": null,
+  "quoted_fit": null,
+  "security_model_anchor": null,
+  "reason": "Reporter explicitly claims a non-DAG-author path (REST API trigger conf reachable by a can_create-DagRun role) to the SQL sink, which could escape the Dag-author carve-out. Borderline -> hold; the user decides in Step 6."
+}

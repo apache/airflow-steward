@@ -1,0 +1,7 @@
+{
+  "verdict": "reject-with-canned",
+  "canned_response_name": "When someone claims Dag author-provided \"user input\" is dangerous",
+  "quoted_fit": "A DAG author can pass an unsanitised string into PostgresOperator(sql=...) ... A malicious DAG author could run arbitrary SQL.",
+  "security_model_anchor": "Dag authors already have arbitrary code execution on the worker; a Dag author reaching a SQL sink is not a privilege-boundary crossing.",
+  "reason": "Sink is reachable only via DAG-author-controlled input; reporter names no non-DAG-author role, so this plainly fits the taxonomy pattern."
+}

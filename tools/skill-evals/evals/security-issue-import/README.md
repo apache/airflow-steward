@@ -122,6 +122,22 @@ Key rules under test:
 
 ---
 
+## Step 4a — Reject-class triage (`step-4a-reject-class`)
+
+Runs the **mandatory** preliminary reject-class check on every surviving
+candidate against the project's reject-pattern taxonomy (the
+`canned-responses.md` headings, supplied as mock data). Emits exactly one of
+`reject-with-canned` / `hold-for-human-review` / `no-match`. Enforces the
+confidence discipline: borderline never auto-rejects.
+
+| Case | Scenario | Expected verdict |
+|------|----------|-----------------|
+| `case-1-plain-reject` | SQL injection reachable only via a DAG-author-controlled Variable; reporter names no non-author role. | `reject-with-canned`, correct taxonomy heading + anchor |
+| `case-2-borderline-hold` | Same SQL sink, but reporter explicitly claims a non-author path (REST API trigger conf reachable by a `can_create DagRun` role). | `hold-for-human-review` — could escape the carve-out |
+| `case-3-no-match` | Stored XSS by a low-privilege editor firing in an admin's session (attacker ≠ victim). | `no-match`, proceeds to default-import |
+
+---
+
 ## Step 5 — Propose (`step-5-propose`)
 
 Composes the tracker body draft and the Gmail receipt reply draft for each
