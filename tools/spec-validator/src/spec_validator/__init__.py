@@ -31,6 +31,10 @@ Checks every .md file that carries a YAML frontmatter block:
 8. SPDX license header — every spec file must carry the Apache-2.0 SPDX
    identifier (``<!-- SPDX-License-Identifier: Apache-2.0``) before the
    opening ``---`` frontmatter delimiter.
+9. Validation-path existence — every filesystem path referenced by a
+   shell pattern (``--project``, ``--directory``, ``bash -n``,
+   ``shellcheck``, ``test -f``) in a Validation code block must exist
+   under the repository root. Catches stale paths after renames.
 
 Files without frontmatter (README.md, overview.md) are skipped silently.
 
@@ -76,6 +80,23 @@ DEFAULT_SPEC_DIR = Path("tools/spec-loop/specs")
 _HTML_COMMENT_RE = re.compile(r"<!--[\s\S]*?-->")
 _FENCED_CODE_RE = re.compile(r"^ {0,3}```[\s\S]*?^ {0,3}```", re.MULTILINE)
 _YAML_BLOCK_SCALAR_HEADERS: frozenset[str] = frozenset({"|", ">", "|-", "|+", ">-", ">+"})
+
+# ---------------------------------------------------------------------------
+# Validation-path check constants (check #8)
+# ---------------------------------------------------------------------------
+
+# Patterns that extract filesystem paths from shell validation commands.
+# Each tuple is (compiled regex with one capturing group, human-readable label).
+_VALIDATION_PATH_EXTRACTORS: list[tuple[re.Pattern[str], str]] = [
+    (re.compile(r"--(?:project|directory)\s+(\S+)"), "uv --project/--directory"),
+    (re.compile(r"\bbash\s+-n\s+(\S+)"), "bash -n"),
+    (re.compile(r"\bshellcheck\s+(\S+)"), "shellcheck"),
+    (re.compile(r"\btest\s+-f\s+(\S+)"), "test -f"),
+]
+
+# Characters that mark a captured path as a shell variable or placeholder token
+# and should be silently skipped by the path-existence check.
+_PATH_SKIP_CHARS: tuple[str, ...] = ("$", "<")
 
 
 # ---------------------------------------------------------------------------
@@ -293,7 +314,7 @@ def validate_body(path: Path, text: str) -> list[Violation]:
 
 
 # ---------------------------------------------------------------------------
-# SPDX header validation
+# SPDX header validation (check #8)
 # ---------------------------------------------------------------------------
 
 
@@ -322,16 +343,96 @@ def validate_spdx_header(path: Path, text: str) -> list[Violation]:
 
 
 # ---------------------------------------------------------------------------
+# Validation-path existence check (check #9)
+# ---------------------------------------------------------------------------
+
+
+def _join_line_continuations(text: str) -> str:
+    r"""Join shell line-continuations (trailing ``\``) into single logical lines."""
+    return re.sub(r"\\\n\s*", " ", text)
+
+
+def find_repo_root(start: Path | None = None) -> Path:
+    """Walk up from *start* (or CWD) to find the repository root.
+
+    Uses the presence of a ``tools/`` directory as the canonical marker.
+    Falls back to the starting path when no such ancestor is found.
+    """
+    cur = (start or Path.cwd()).resolve()
+    for candidate in (cur, *cur.parents):
+        if (candidate / "tools").is_dir():
+            return candidate
+    return cur
+
+
+def validate_validation_paths(path: Path, text: str, repo_root: Path | None = None) -> list[Violation]:
+    """Check that filesystem paths in ## Validation code blocks exist on disk.
+
+    Extracts path arguments from these shell patterns inside fenced code
+    blocks of the ``## Validation`` section:
+
+    - ``uv run --project <path>`` and ``uv run --directory <path>``
+    - ``bash -n <file>``
+    - ``shellcheck <file>``
+    - ``test -f <file>``
+
+    Paths containing ``$`` (shell variables) or ``<`` (placeholder tokens)
+    are silently skipped. Bare tokens without a ``/`` are also skipped.
+    Relative paths are resolved against the repository root.
+    """
+    if parse_frontmatter(text) is None:
+        return []  # Not a spec file
+
+    section_body = get_section_body(text, "Validation")
+    if not section_body:
+        return []
+
+    root = repo_root or find_repo_root(path.parent)
+    violations: list[Violation] = []
+
+    for block_match in _FENCED_CODE_RE.finditer(section_body):
+        block_text = _join_line_continuations(block_match.group())
+        for pattern, label in _VALIDATION_PATH_EXTRACTORS:
+            for m in pattern.finditer(block_text):
+                raw = m.group(1).rstrip(";\\|&")
+                if not raw:
+                    continue
+                # Skip shell variables and placeholder tokens
+                if any(skip in raw for skip in _PATH_SKIP_CHARS):
+                    continue
+                # Skip bare command names without a path separator
+                if "/" not in raw:
+                    continue
+                target = Path(raw) if Path(raw).is_absolute() else root / raw
+                if not target.exists():
+                    violations.append(
+                        Violation(
+                            path,
+                            None,
+                            f"validation command references missing path: {raw!r} "
+                            f"(pattern: {label}; resolved to {target})",
+                        )
+                    )
+
+    return violations
+
+
+# ---------------------------------------------------------------------------
 # Orchestrator
 # ---------------------------------------------------------------------------
 
 
-def validate_file(path: Path) -> list[Violation]:
+def validate_file(path: Path, repo_root: Path | None = None) -> list[Violation]:
     try:
         text = path.read_text(encoding="utf-8")
     except OSError as exc:
         return [Violation(path, None, f"cannot read file: {exc}")]
-    return validate_spdx_header(path, text) + validate_frontmatter(path, text) + validate_body(path, text)
+    return (
+        validate_spdx_header(path, text)
+        + validate_frontmatter(path, text)
+        + validate_body(path, text)
+        + validate_validation_paths(path, text, repo_root=repo_root)
+    )
 
 
 def collect_spec_files(target: Path) -> list[Path]:
@@ -341,10 +442,11 @@ def collect_spec_files(target: Path) -> list[Path]:
     return sorted(target.rglob("*.md"))
 
 
-def run_validation(target: Path) -> list[Violation]:
+def run_validation(target: Path, repo_root: Path | None = None) -> list[Violation]:
+    root = repo_root or find_repo_root(target)
     violations: list[Violation] = []
     for path in collect_spec_files(target):
-        violations.extend(validate_file(path))
+        violations.extend(validate_file(path, repo_root=root))
     return violations
 
 

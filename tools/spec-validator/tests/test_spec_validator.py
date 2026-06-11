@@ -31,6 +31,7 @@ from spec_validator import (
     REQUIRED_SECTIONS,
     SPDX_MARKER,
     extract_section_headings,
+    find_repo_root,
     get_section_body,
     has_acceptance_items,
     main,
@@ -39,6 +40,7 @@ from spec_validator import (
     validate_body,
     validate_frontmatter,
     validate_spdx_header,
+    validate_validation_paths,
     validation_has_code_block,
 )
 
@@ -85,7 +87,7 @@ _VALID_SPEC = textwrap.dedent("""\
     ## Validation
 
     ```bash
-    uv run --project tools/example --group dev pytest
+    pytest
     ```
 
     ## Known gaps
@@ -127,6 +129,25 @@ def _make_spec(*, status: str = "stable", spdx: bool = True, **overrides: str) -
     fm = "\n".join(fm_lines)
     header = f"<!-- {SPDX_MARKER}\n     https://www.apache.org/licenses/LICENSE-2.0 -->\n\n" if spdx else ""
     return f"{header}---\n{fm}\n---\n\n# Test spec\n\n{body_sections}\n"
+
+
+def _make_spec_with_validation(cmd: str) -> str:
+    """Build a minimal valid spec with a custom Validation command."""
+    body_sections = "\n\n".join(f"## {s}\n\nContent." for s in REQUIRED_SECTIONS)
+    body_sections = body_sections.replace(
+        "## Validation\n\nContent.",
+        f"## Validation\n\n```bash\n{cmd}\n```",
+    )
+    fm = (
+        "title: Test spec\n"
+        "status: stable\n"
+        "kind: feature\n"
+        "mode: Triage\n"
+        "source: MISSION.md\n"
+        "acceptance:\n"
+        "  - One criterion.\n"
+    )
+    return f"---\n{fm}---\n\n# Test spec\n\n{body_sections}\n"
 
 
 # ---------------------------------------------------------------------------
@@ -444,6 +465,144 @@ class TestRunValidation:
         assert rc == 1
         captured = capsys.readouterr()
         assert "violation" in captured.out
+
+
+# ---------------------------------------------------------------------------
+# Validation-path check (check #8)
+# ---------------------------------------------------------------------------
+
+
+class TestValidateValidationPaths:
+    """Tests for check #8: paths in ## Validation code blocks must exist."""
+
+    def test_existing_project_path_no_violation(self, tmp_path: Path) -> None:
+        (tmp_path / "tools" / "my-tool").mkdir(parents=True)
+        spec = _make_spec_with_validation("uv run --project tools/my-tool --group dev pytest")
+        violations = validate_validation_paths(Path("specs/test.md"), spec, repo_root=tmp_path)
+        assert violations == []
+
+    def test_missing_project_path_violation(self, tmp_path: Path) -> None:
+        spec = _make_spec_with_validation("uv run --project tools/nonexistent --group dev pytest")
+        violations = validate_validation_paths(Path("specs/test.md"), spec, repo_root=tmp_path)
+        assert len(violations) == 1
+        assert "tools/nonexistent" in violations[0].message
+
+    def test_shell_variable_skipped(self, tmp_path: Path) -> None:
+        spec = _make_spec_with_validation(
+            "for t in a b; do uv run --project tools/$t --group dev pytest; done"
+        )
+        violations = validate_validation_paths(Path("specs/test.md"), spec, repo_root=tmp_path)
+        assert violations == []
+
+    def test_placeholder_token_skipped(self, tmp_path: Path) -> None:
+        spec = _make_spec_with_validation("uv run --project tools/<tool-name> --group dev pytest")
+        violations = validate_validation_paths(Path("specs/test.md"), spec, repo_root=tmp_path)
+        assert violations == []
+
+    def test_bare_command_skipped(self, tmp_path: Path) -> None:
+        # "pytest" alone has no "/" — not a path
+        spec = _make_spec_with_validation("pytest")
+        violations = validate_validation_paths(Path("specs/test.md"), spec, repo_root=tmp_path)
+        assert violations == []
+
+    def test_bash_n_existing_file_no_violation(self, tmp_path: Path) -> None:
+        script = tmp_path / "tools" / "run.sh"
+        script.parent.mkdir(parents=True)
+        script.touch()
+        spec = _make_spec_with_validation("bash -n tools/run.sh")
+        violations = validate_validation_paths(Path("specs/test.md"), spec, repo_root=tmp_path)
+        assert violations == []
+
+    def test_bash_n_missing_file_violation(self, tmp_path: Path) -> None:
+        spec = _make_spec_with_validation("bash -n tools/run.sh")
+        violations = validate_validation_paths(Path("specs/test.md"), spec, repo_root=tmp_path)
+        assert len(violations) == 1
+        assert "tools/run.sh" in violations[0].message
+        assert "bash -n" in violations[0].message
+
+    def test_shellcheck_missing_file_violation(self, tmp_path: Path) -> None:
+        spec = _make_spec_with_validation("shellcheck tools/run.sh")
+        violations = validate_validation_paths(Path("specs/test.md"), spec, repo_root=tmp_path)
+        assert len(violations) == 1
+        assert "tools/run.sh" in violations[0].message
+
+    def test_shellcheck_existing_file_no_violation(self, tmp_path: Path) -> None:
+        script = tmp_path / "tools" / "run.sh"
+        script.parent.mkdir(parents=True)
+        script.touch()
+        spec = _make_spec_with_validation("shellcheck tools/run.sh")
+        violations = validate_validation_paths(Path("specs/test.md"), spec, repo_root=tmp_path)
+        assert violations == []
+
+    def test_test_f_existing_file_no_violation(self, tmp_path: Path) -> None:
+        readme = tmp_path / "docs" / "setup" / "README.md"
+        readme.parent.mkdir(parents=True)
+        readme.touch()
+        spec = _make_spec_with_validation("test -f docs/setup/README.md")
+        violations = validate_validation_paths(Path("specs/test.md"), spec, repo_root=tmp_path)
+        assert violations == []
+
+    def test_test_f_missing_file_violation(self, tmp_path: Path) -> None:
+        spec = _make_spec_with_validation("test -f docs/setup/README.md")
+        violations = validate_validation_paths(Path("specs/test.md"), spec, repo_root=tmp_path)
+        assert len(violations) == 1
+        assert "docs/setup/README.md" in violations[0].message
+
+    def test_no_frontmatter_skipped(self, tmp_path: Path) -> None:
+        text = "# No frontmatter\n\n## Validation\n\n```bash\nuv run --project tools/nonexistent\n```\n"
+        violations = validate_validation_paths(Path("test.md"), text, repo_root=tmp_path)
+        assert violations == []
+
+    def test_uv_directory_pattern(self, tmp_path: Path) -> None:
+        (tmp_path / "tools" / "my-tool").mkdir(parents=True)
+        spec = _make_spec_with_validation("uv run --directory tools/my-tool pytest")
+        violations = validate_validation_paths(Path("specs/test.md"), spec, repo_root=tmp_path)
+        assert violations == []
+
+    def test_uv_directory_missing_violation(self, tmp_path: Path) -> None:
+        spec = _make_spec_with_validation("uv run --directory tools/gone pytest")
+        violations = validate_validation_paths(Path("specs/test.md"), spec, repo_root=tmp_path)
+        assert len(violations) == 1
+        assert "tools/gone" in violations[0].message
+
+    def test_line_continuation_joined(self, tmp_path: Path) -> None:
+        (tmp_path / "tools" / "my-tool").mkdir(parents=True)
+        spec = _make_spec_with_validation("uv run --project tools/my-tool \\\n  --group dev pytest")
+        violations = validate_validation_paths(Path("specs/test.md"), spec, repo_root=tmp_path)
+        assert violations == []
+
+    def test_multiple_missing_paths(self, tmp_path: Path) -> None:
+        spec = _make_spec_with_validation(
+            "uv run --project tools/foo --group dev pytest\nbash -n tools/foo/run.sh"
+        )
+        violations = validate_validation_paths(Path("specs/test.md"), spec, repo_root=tmp_path)
+        assert len(violations) == 2
+
+
+# ---------------------------------------------------------------------------
+# find_repo_root
+# ---------------------------------------------------------------------------
+
+
+class TestFindRepoRoot:
+    def test_finds_tools_dir(self, tmp_path: Path) -> None:
+        (tmp_path / "tools").mkdir()
+        result = find_repo_root(tmp_path)
+        assert result == tmp_path
+
+    def test_walks_up_to_tools_dir(self, tmp_path: Path) -> None:
+        (tmp_path / "tools").mkdir()
+        child = tmp_path / "tools" / "spec-loop" / "specs"
+        child.mkdir(parents=True)
+        result = find_repo_root(child)
+        assert result == tmp_path
+
+    def test_falls_back_to_start_when_no_tools(self, tmp_path: Path) -> None:
+        isolated = tmp_path / "isolated"
+        isolated.mkdir()
+        result = find_repo_root(isolated)
+        # Should fall back — does not raise; returns some ancestor
+        assert isinstance(result, Path)
 
 
 # ---------------------------------------------------------------------------

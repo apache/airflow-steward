@@ -100,7 +100,7 @@ a project can offer a first-time contributor.
 
 ```bash
 test -f docs/mentoring/spec.md
-test -f .claude/skills/good-first-issue-author/SKILL.md
+test -f .claude/skills/magpie-good-first-issue-author/SKILL.md
 uv run --project tools/skill-and-tool-validator --group dev skill-and-tool-validate
 uv run --project tools/skill-evals skill-eval tools/skill-evals/evals/good-first-issue-author/
 ```
