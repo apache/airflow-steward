@@ -1,0 +1,20 @@
+Planning issue: apache/airflow#45010 (open, labelled `promoted`, title "Release Apache Airflow 2.11.0")
+Planning issue body excerpt:
+  Promote timestamp: 2026-06-11 09:45 UTC
+  dist/release URL: https://dist.apache.org/repos/dist/release/airflow/2.11.0/
+  Download Page: https://airflow.apache.org/docs/apache-airflow/2.11.0/installation/installing-from-pypi.html
+  Changelog: https://github.com/apache/airflow/blob/2.11.0/CHANGELOG.md
+
+release-management-config.md:
+  release_announce_backend: announce-list
+  announce_list: announce@apache.org
+  announce_cc_lists: dev@airflow.apache.org, users@airflow.apache.org
+  announce_subject_template: "[ANNOUNCE] Apache Airflow <version> released"
+  site_repo: apache/airflow-site
+  keys_file_url: https://dist.apache.org/repos/dist/release/airflow/KEYS
+
+Current UTC time: 2026-06-11 10:15 UTC
+Note: only 30 minutes have elapsed since the promote timestamp (09:45 UTC).
+The one-hour gate has NOT yet cleared; it clears at 10:45 UTC.
+--skip-promote-wait was NOT passed.
+--non-asf was NOT passed.
