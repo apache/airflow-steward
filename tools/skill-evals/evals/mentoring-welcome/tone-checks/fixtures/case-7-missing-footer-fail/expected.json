@@ -1,5 +1,4 @@
 {
   "result": "hard_fail",
-  "rule": 5,
-  "offending_text": "comment does not end with <ai_attribution_footer>"
+  "rule": 5
 }

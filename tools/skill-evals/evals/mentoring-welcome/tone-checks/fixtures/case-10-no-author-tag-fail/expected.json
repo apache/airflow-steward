@@ -1,5 +1,4 @@
 {
   "result": "hard_fail",
-  "rule": 6,
-  "offending_text": "@<author> appears zero times"
+  "rule": 6
 }

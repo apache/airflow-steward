@@ -9,7 +9,7 @@ attempt. Stop at the first failure.
 
 | # | Rule | Detection |
 |---|---|---|
-| 1 | No praise without specificity | Reject if the BODY contains "welcome aboard!", "great to have you here", "thanks for contributing", "so glad you found us", "awesome first issue", "amazing PR", or any standalone sentence whose only content is positive affect with no concrete referent. |
+| 1 | No praise without specificity | Reject if the BODY contains "welcome aboard!", "great to have you here", "thanks for contributing", "so glad you found us", "awesome first issue", "amazing PR", or any standalone sentence whose only content is positive affect with no concrete referent. A thank-you anchored to the specific action the contributor took in this thread — e.g. "thanks for filing this issue", "thanks for opening this PR", or a bare "welcome," opening — has a concrete referent and is allowed; only generic, unanchored affect is rejected. |
 | 2 | No AI self-reference outside the footer | Reject if the BODY (everything before the footer) contains "as an AI", "I'm an AI", "I cannot", "as a language model", "I was trained", "my training", or "I don't have access to". |
 | 3 | No speaking for the maintainer | Reject if the BODY contains "the maintainers will probably", "the maintainers want", "the team would prefer", "I'm sure someone will". |
 | 4 | No hedging | Reject if the BODY contains "it seems like", "perhaps you could", "maybe try", "I think maybe", "this might possibly", "I'm not sure but". |

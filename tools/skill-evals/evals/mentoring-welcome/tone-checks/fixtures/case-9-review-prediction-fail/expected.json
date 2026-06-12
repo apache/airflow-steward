@@ -1,5 +1,4 @@
 {
   "result": "hard_fail",
-  "rule": 7,
-  "offending_text": "This looks good to merge"
+  "rule": 7
 }

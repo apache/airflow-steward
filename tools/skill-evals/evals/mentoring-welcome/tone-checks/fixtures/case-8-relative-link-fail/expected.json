@@ -1,5 +1,4 @@
 {
   "result": "hard_fail",
-  "rule": 8,
-  "offending_text": "contributing-docs/README.rst"
+  "rule": 8
 }
