@@ -114,6 +114,11 @@ cat >> .gitignore <<'GITIGNORE'
 # detect drift.
 /.apache-magpie.local.lock
 
+# Byte-compiled artefacts emitted when framework skill scripts run
+# from this checkout. Non-anchored so they match at any depth.
+__pycache__/
+*.pyc
+
 # Framework-skill symlinks created by /magpie-setup. One uniform
 # block per skills dir you use: the `magpie-*` glob ignores them
 # all (their targets are the gitignored snapshot, so they would
