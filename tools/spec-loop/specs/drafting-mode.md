@@ -37,6 +37,10 @@ merges its own work.
 - `issue-fix-workflow` (experimental) — drafts a fix for a triaged
   general-issue; **does not** open the PR on autopilot, hands back a
   branch + commits + test results for the human to push.
+- `audit-finding-fix` (experimental) — drafts a fix for a finding from
+  an audit tool (ruff, mypy, security scanner); parses the finding
+  report, implements the smallest fix, scope-checks the diff, and hands
+  back a commit for the human to push.
 - `tools/dev` — shared local-check helpers.
 
 ## Behaviour & contract
@@ -51,8 +55,8 @@ merges its own work.
 
 ## Out of scope
 
-- Generic Drafting beyond security + general-issue (lint fixes, audit-
-  tool findings, doc holes at scale) — `proposed`, not yet built.
+- Generic Drafting beyond the three shipped families (lint fixes at
+  scale, doc holes at scale) — `proposed`, not yet built.
 - Merging, releasing, or pushing without a human.
 
 ## Acceptance criteria
@@ -69,5 +73,9 @@ uv run --project tools/skill-and-tool-validator --group dev skill-and-tool-valid
 
 ## Known gaps
 
-- Generic (non-security, non-issue) Drafting from audit-tool findings is
-  `proposed`. Only `security-issue-fix` is stable today.
+- Three drafting skills are now shipped: `security-issue-fix` (stable),
+  `issue-fix-workflow` (experimental), and `audit-finding-fix`
+  (experimental). The remaining `proposed` surface is generic drafting at
+  scale (lint-fix batches, doc-hole sweeps) — not yet planned.
+- No drafting skill covers doc-hole or large-scale lint-fix batch work;
+  those remain out of scope until a family spec is written.
