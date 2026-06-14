@@ -122,14 +122,17 @@ uv run --project tools/skill-and-tool-validator --group dev skill-and-tool-valid
 
 ## Known gaps
 
-- **No `release-*` skill code exists yet.** The family is `proposed`,
-  designed docs-first (mirroring Mentoring). All ten skills land in
-  follow-up PRs, each flagged `experimental`. The plan pass turns each
-  un-implemented skill in the `docs/release-management/` table into a work
-  item.
-- **No eval suites exist** under `tools/skill-evals/evals/release-*/`;
-  each skill needs one per the per-skill-eval convention before it can
-  graduate from `experimental`.
+- **`release-verify-rc` shipped** — read-only RC pre-flight skill
+  (Step 6) landed with eval suite (13 cases across 6 steps); status
+  updated to `experimental`.
+- **Nine `release-*` skills remain unimplemented** (`release-prepare`,
+  `release-keys-sync`, `release-rc-cut`, `release-vote-draft`,
+  `release-vote-tally`, `release-promote`, `release-announce-draft`,
+  `release-archive-sweep`, `release-audit-report`; `release-announce-draft`
+  landed earlier, `release-vote-draft` and `release-vote-tally` are
+  in-flight on local branches). The plan pass turns each
+  un-implemented skill in the `docs/release-management/` table into a
+  work item.
 - **Health-evidence promotion criteria are unmeasured.** No adopter has
   cut a release through the family yet, so the RM/binding-voter evidence
   window that would justify default-on or a state-changing lane has no
