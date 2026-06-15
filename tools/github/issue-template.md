@@ -56,7 +56,7 @@ The generic lifecycle refers to fields by these roles:
 | `issue-description` | dedupe | import | The verbatim inbound report; private to the security team. |
 | `public-summary` | CVE JSON generator | release manager (Step 13) | Sanitised one-paragraph public summary for the advisory. |
 | `affected-versions` | CVE JSON generator, sync | sync proposes, user confirms | The `>= X, < Y` range that populates CVE 5.x `affected[]`. |
-| `security-thread` | dedupe, sync (reporter-notification lookup) | import | Private pointer to the inbound mail thread. **Never** exported to the public CVE record. |
+| `security-thread` | dedupe, sync (reporter-notification lookup) | import | Private pointer to the inbound mail thread — the Gmail `threadId`, any PonyMail archive URL, and the root `Message-ID` (archive-independent message handle; backtick-wrapped). **Never** exported to the public CVE record. |
 | `public-advisory-url` | CVE JSON generator, sync (gates close) | sync (Step 14) | Public archive URL; tagged `vendor-advisory` in `references[]`. |
 | `reporter-credit` | CVE JSON generator | import (placeholder), sync (after reporter confirms) | Credit line as the reporter wants to appear in the public advisory. |
 | `pr-with-fix` | sync, CVE JSON generator | fix, sync | URL of the merged `<upstream>` PR. |
