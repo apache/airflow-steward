@@ -7,6 +7,7 @@
   - [Read](#read)
     - [Search threads](#search-threads)
     - [Get thread](#get-thread)
+    - [Get the root `Message-ID` of a thread](#get-the-root-message-id-of-a-thread)
   - [Write — drafts only, never send](#write--drafts-only-never-send)
     - [Drafting backends](#drafting-backends)
     - [Create draft — `claude_ai_mcp` backend](#create-draft--claude_ai_mcp-backend)
@@ -150,6 +151,49 @@ returned envelope carries the reporter's `From:` header (which
 is not redacted under the contract) and routing fields, no
 free-form body content. The protocol applies once an actual
 body is fetched.
+
+### Get the root `Message-ID` of a thread
+
+> [!IMPORTANT]
+> The claude.ai Gmail MCP does **not** expose the RFC-5322
+> `Message-ID:` header. The "message IDs" the `get_thread` envelope
+> returns are Gmail's *opaque per-message IDs* (the value passed to
+> `replyToMessageId`), which only resolve inside the one mailbox that
+> holds the thread. The `Message-ID:` header — the archive-independent
+> identifier the reporter's MUA stamped, and the value the ASF
+> PonyMail archive hashes its permalinks on — is reachable only via
+> the Gmail REST API or the PonyMail archive.
+
+`security-issue-import` records the inbound report's root `Message-ID`
+in the *Security mailing list thread* tracker field (alongside the
+Gmail `threadId` and any PonyMail URL) so the message stays locatable
+even from an account that never received the Gmail copy. Resolve it by
+backend:
+
+- **PonyMail backend (ASF default primary read path).** The archive
+  is keyed on `Message-ID`; `mcp__ponymail__get_email` and
+  `mcp__ponymail__search_list` results carry it directly — no extra
+  fetch needed.
+- **Gmail backend (claude.ai MCP).** Use the `oauth-draft-message-id`
+  console script, which reuses the same OAuth credentials as
+  `oauth-draft-create` and queries
+  `threads.get?format=metadata&metadataHeaders=Message-ID`:
+
+  ```bash
+  uv run --project tools/gmail/oauth-draft \
+    oauth-draft-message-id <threadId> [<threadId> ...]
+  # → one TSV line per thread: <threadId>\t<message-id>
+  # → or --json for a {threadId: message-id} object
+  ```
+
+  See [`oauth-draft/README.md`](oauth-draft/README.md) for setup. The
+  script prints the `Message-ID` of the thread's **root**
+  (chronologically first) message — the inbound report. A thread with
+  no resolvable header prints an empty value and still exits 0.
+
+When recording the value in a tracker field, **backtick-wrap it** —
+a bare `<...@...>` renders as an HTML tag on GitHub and the
+identifier vanishes from the rendered issue.
 
 ## Write — drafts only, never send
 
