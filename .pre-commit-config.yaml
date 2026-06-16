@@ -98,7 +98,7 @@ repos:
   # the hook never silently rewrites files; CI surfaces typos as
   # errors instead.
   - repo: https://github.com/crate-ci/typos
-    rev: v1.47.0
+    rev: v1.47.2
     hooks:
       - id: typos
         name: typos
