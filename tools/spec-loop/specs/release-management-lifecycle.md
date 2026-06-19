@@ -55,11 +55,15 @@ code lands.
   `projects/_template/release-build.md`, `projects/_template/pmc-roster.md`,
   `projects/_template/site-repo.md`, and the shared
   `projects/_template/release-trains.md`.
-- Skills (all `proposed`, none implemented yet): `release-prepare`,
-  `release-keys-sync`, `release-rc-cut`, `release-verify-rc`,
-  `release-vote-draft`, `release-vote-tally`, `release-promote`,
-  `release-announce-draft`, `release-archive-sweep`,
-  `release-audit-report`.
+- Skills: `release-announce-draft` is now implemented (`experimental`,
+  `mode: Drafting`): drafts the `[ANNOUNCE]` email body and proposes
+  the site-bump PR for a promoted release (Step 11). Enforces the
+  one-hour promote-wait gate, `@apache.org` address reminder, Download
+  Page link constraint, and no-send / no-auto-merge boundaries.
+  The remaining nine skills (`release-prepare`, `release-keys-sync`,
+  `release-rc-cut`, `release-verify-rc`, `release-vote-draft`,
+  `release-vote-tally`, `release-promote`, `release-archive-sweep`,
+  `release-audit-report`) are still `proposed`, none implemented yet.
 - Adapters it will read/draft through: `tools/github`, `tools/ponymail`
   (vote threads), `tools/gmail` (announce/vote drafts), plus the project's
   `svn` dist tree as a distribution backend.
@@ -117,20 +121,18 @@ code lands.
 test -f docs/release-management/spec.md
 test -f docs/release-management/process.md
 test -f projects/_template/release-management-config.md
+test -f .claude/skills/magpie-release-announce-draft/SKILL.md
 uv run --project tools/skill-and-tool-validator --group dev skill-and-tool-validate
+uv run --project tools/skill-evals skill-eval tools/skill-evals/evals/release-announce-draft/
 ```
 
 ## Known gaps
 
-- **No `release-*` skill code exists yet.** The family is `proposed`,
-  designed docs-first (mirroring Mentoring). All ten skills land in
-  follow-up PRs, each flagged `experimental`. The plan pass turns each
-  un-implemented skill in the `docs/release-management/` table into a work
-  item.
-- **No eval suites exist** under `tools/skill-evals/evals/release-*/`;
-  each skill needs one per the per-skill-eval convention before it can
-  graduate from `experimental`.
+- **Only `release-announce-draft` has shipped (Step 11).** The
+  remaining nine skills are `proposed`, designed docs-first. The plan
+  pass turns each un-implemented skill in the `docs/release-management/`
+  table into a work item.
 - **Health-evidence promotion criteria are unmeasured.** No adopter has
-  cut a release through the family yet, so the RM/binding-voter evidence
-  window that would justify default-on or a state-changing lane has no
-  data behind it.
+  cut a full release through the family yet, so the RM/binding-voter
+  evidence window that would justify default-on or a state-changing lane
+  has no data behind it.
