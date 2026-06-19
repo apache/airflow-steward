@@ -803,6 +803,20 @@ name = "spec-validator"
 version = "0.1.0"
 source = { editable = "tools/spec-validator" }
 
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+    { name = "ruff" },
+]
+
+[package.metadata]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pytest", specifier = ">=8.0" },
+    { name = "ruff", specifier = ">=0.4" },
+]
+
 [[package]]
 name = "typing-extensions"
 version = "4.15.0"
