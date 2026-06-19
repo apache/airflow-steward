@@ -31,8 +31,8 @@ Each mode is an independently toggleable set of skills. Maturity mirrors
 | Mode | Spec | Maturity |
 |---|---|---|
 | Triage | [triage-mode.md](triage-mode.md) | stable (security) / experimental (PR, issue, contributor-nomination) |
-| Mentoring | [mentoring-mode.md](mentoring-mode.md) | experimental (2 skills) |
-| Drafting | [drafting-mode.md](drafting-mode.md) | stable (security) / experimental (issue, audit-finding-fix) |
+| Mentoring | [mentoring-mode.md](mentoring-mode.md) | experimental (3 skills) |
+| Drafting | [drafting-mode.md](drafting-mode.md) | stable (security) / experimental (issue, audit-finding-fix, release-announce-draft) |
 | Pairing | [pairing-mode.md](pairing-mode.md) | experimental (2 skills) |
 
 > **Auto-merge** is the fifth MISSION mode but is deliberately **off** by

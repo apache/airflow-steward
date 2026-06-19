@@ -32,8 +32,9 @@ trustworthy as it grows.
 ## Where it lives
 
 - `tools/skill-and-tool-validator/` — validates `SKILL.md` frontmatter (required
-  `name`, `description`, `license`) and tool definitions, internal link integrity, and
-  placeholder conventions. CLI: `skill-and-tool-validate`.
+  `name`, `description`, `license`) and tool definitions, internal link integrity,
+  placeholder conventions, license headers on tool Python files, and eval-coverage
+  (soft check: warns when a skill has no eval suite). CLI: `skill-and-tool-validate`.
 - `tools/skill-evals/` — harness for measuring skill behaviour.
 - `tools/sandbox-lint/` — lints the sandbox/permissions configuration.
 - `tools/dashboard-generator/` — read-only HTML dashboards over campaign
@@ -44,7 +45,10 @@ trustworthy as it grows.
   build iterations to mechanically select the next work item.
 - `tools/spec-validator/` — validates spec-loop spec frontmatter
   (required keys, valid `status`/`kind`/`mode` values, body-section
-  presence); the spec-side counterpart to `skill-and-tool-validator`.
+  presence, `Known gaps` section required in functional specs,
+  SPDX-License-Identifier header, Validation code block present,
+  filesystem paths in Validation blocks must exist under repo root);
+  the spec-side counterpart to `skill-and-tool-validator`.
 - Skills: `write-skill` (author/update a skill), `optimize-skill`
   (restructure an existing skill or sweep a set: split oversized
   `SKILL.md`, lift project-specific values into placeholders, harden
