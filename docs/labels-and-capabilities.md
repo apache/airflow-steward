@@ -163,6 +163,7 @@ Capabilities for every skill currently in
 | `release-keys-sync` | `capability:resolve` *(drafts the KEYS file diff and paste-ready `svn` command sequence to add the RM's public key; validates key strength against the ASF floor)* |
 | `release-rc-cut` | `capability:resolve` *(emits the paste-ready tag, build, sign, checksum, and staging command sequences for an RC)* |
 | `release-vote-draft` | `capability:resolve` *(drafts the `[VOTE]` email and planning-issue comment that advance the release to the vote stage)* |
+| `release-archive-sweep` | `capability:resolve` *(scans the dist area and proposes the command set to move past-retention releases to the archive)* |
 | `security-cve-allocate` | `capability:resolve` |
 | `security-issue-invalidate` | `capability:resolve` |
 | `security-issue-deduplicate` | `capability:resolve` |
