@@ -1,0 +1,26 @@
+{
+  "has_gh_release_create": {
+    "field": "staging_commands",
+    "type": "regex",
+    "pattern": "gh release create",
+    "flags": ""
+  },
+  "has_draft_flag": {
+    "field": "staging_commands",
+    "type": "regex",
+    "pattern": "--draft",
+    "flags": ""
+  },
+  "has_prerelease_flag": {
+    "field": "staging_commands",
+    "type": "regex",
+    "pattern": "--prerelease|--pre-release",
+    "flags": "i"
+  },
+  "has_gh_release_upload": {
+    "field": "staging_commands",
+    "type": "regex",
+    "pattern": "gh release upload",
+    "flags": ""
+  }
+}

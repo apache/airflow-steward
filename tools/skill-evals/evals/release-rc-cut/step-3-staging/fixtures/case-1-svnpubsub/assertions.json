@@ -1,0 +1,21 @@
+{
+  "has_svn_import": {
+    "field": "staging_commands",
+    "type": "regex",
+    "pattern": "svn import",
+    "flags": ""
+  },
+  "staging_url_contains_dist_dev": {
+    "field": "staging_url",
+    "type": "regex",
+    "pattern": "dist/dev/",
+    "flags": ""
+  },
+  "commands_not_dist_release": {
+    "field": "staging_commands",
+    "type": "regex",
+    "pattern": "dist/release/",
+    "flags": "",
+    "negate": true
+  }
+}

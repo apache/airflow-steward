@@ -1,0 +1,8 @@
+{
+  "has_sha256sum": {
+    "field": "section_4_checksum_commands",
+    "type": "regex",
+    "pattern": "sha256sum",
+    "flags": ""
+  }
+}

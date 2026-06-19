@@ -1,0 +1,26 @@
+{
+  "has_source_release_signed": {
+    "field": "section_3_sign_commands",
+    "type": "regex",
+    "pattern": "source-release\\.zip",
+    "flags": ""
+  },
+  "has_bin_tarball_signed": {
+    "field": "section_3_sign_commands",
+    "type": "regex",
+    "pattern": "bin\\.tar\\.gz",
+    "flags": ""
+  },
+  "has_source_checksum": {
+    "field": "section_4_checksum_commands",
+    "type": "regex",
+    "pattern": "source-release\\.zip",
+    "flags": ""
+  },
+  "has_bin_checksum": {
+    "field": "section_4_checksum_commands",
+    "type": "regex",
+    "pattern": "bin\\.tar\\.gz",
+    "flags": ""
+  }
+}
