@@ -30,6 +30,12 @@
     "pattern": "sha512sum",
     "flags": ""
   },
+  "has_sha256sum": {
+    "field": "section_4_checksum_commands",
+    "type": "regex",
+    "pattern": "sha256sum",
+    "flags": ""
+  },
   "has_no_md5sum": {
     "field": "section_4_checksum_commands",
     "type": "regex",

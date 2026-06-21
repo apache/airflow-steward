@@ -17,16 +17,16 @@ Behavioral evals for the `release-rc-cut` skill.
 
 ```bash
 # All cases
-uv run --project tools/skill-evals skill-eval \
-    tools/skill-evals/evals/release-rc-cut/
+uv run --directory tools/skill-evals skill-eval --cli "claude -p" \
+    evals/release-rc-cut/
 
 # Single suite
-uv run --project tools/skill-evals skill-eval \
-    tools/skill-evals/evals/release-rc-cut/step-0-preflight/fixtures/
+uv run --directory tools/skill-evals skill-eval --cli "claude -p" \
+    evals/release-rc-cut/step-0-preflight/fixtures/
 
 # Single case
-uv run --project tools/skill-evals skill-eval \
-    tools/skill-evals/evals/release-rc-cut/step-0-preflight/fixtures/case-1-clean-pass
+uv run --directory tools/skill-evals skill-eval --cli "claude -p" \
+    evals/release-rc-cut/step-0-preflight/fixtures/case-1-clean-pass
 ```
 
 ## Grading the command-output steps (`assertions.json`)
@@ -38,10 +38,20 @@ to a predicate, so `--cli` mode grades these cases automatically.
 
 Predicate types used: `regex` (deterministic pattern match on a field),
 `field_true` (boolean field must be `true`), and `judge` (one-line
-yes/no rubric piped to the grader CLI for semantic properties).
+yes/no rubric piped to the grader CLI for semantic properties). A
+predicate may add `"negate": true` to assert the *absence* of a match
+(e.g. `has_no_passphrase_arg`, `has_no_md5sum`, `has_no_sha1sum`).
+
+Assertions are read only from each suite's `fixtures/assertions.json`;
+per-case `assertions.json` files are ignored, so every `has_*` key a
+case asserts must be defined at the suite level.
 
 Decision fields (`verdict`, `backend`, `proposed`, …) are still compared
-exactly.
+exactly. `section_2_build_command` is graded semantically instead (via
+`step-2-tag-build-sign/fixtures/grading-schema.json`), because the model
+may emit the configured build command bare or wrapped with the spec's
+`# Run at the release tag <version>-<rcN>` comment header — both are
+correct, so exact match would be brittle.
 
 ## Adversarial case
 
