@@ -34,7 +34,7 @@
   "has_expiry_warning": {
     "field": "keyserver_upload_reminder",
     "type": "regex",
-    "pattern": "expir|renew|extend|soon",
+    "pattern": "expir\\w*\\s+(on|in|within|by)|in\\s+\\d+\\s+days?|extend\\w*\\s+the\\s+key|renew\\w*\\s+the\\s+key|before\\s+\\w+\\s+expir",
     "flags": "i"
   }
 }
