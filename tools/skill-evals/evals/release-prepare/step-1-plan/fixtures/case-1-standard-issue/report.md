@@ -16,6 +16,7 @@ Merged PR set since 2.10.3 on apache/airflow main branch (12 PRs):
   #48550 "Add rate limiting to the REST API" (labels: kind/improvement) merged 2026-06-05
 
 release-management-config.md:
+  product_name: Apache Airflow
   release_planning_issue_template: (not set; use default template)
 
 Draft the planning issue body and title. Propose it to the RM — do not

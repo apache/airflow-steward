@@ -16,18 +16,22 @@ Behavioral evals for the `release-prepare` skill.
 
 ## Run
 
+Paths are relative to `tools/skill-evals` (the `--directory`). The
+`--cli` flag is required — without it the prose cases report `MANUAL`
+instead of being graded.
+
 ```bash
 # All cases
-uv run --project tools/skill-evals skill-eval \
-    tools/skill-evals/evals/release-prepare/
+uv run --directory tools/skill-evals skill-eval --cli "claude -p" \
+    evals/release-prepare/
 
 # Single suite
-uv run --project tools/skill-evals skill-eval \
-    tools/skill-evals/evals/release-prepare/step-0-preflight/fixtures/
+uv run --directory tools/skill-evals skill-eval --cli "claude -p" \
+    evals/release-prepare/step-0-preflight/fixtures/
 
 # Single case
-uv run --project tools/skill-evals skill-eval \
-    tools/skill-evals/evals/release-prepare/step-0-preflight/fixtures/case-1-clean-pass
+uv run --directory tools/skill-evals skill-eval --cli "claude -p" \
+    evals/release-prepare/step-0-preflight/fixtures/case-1-clean-pass
 ```
 
 ## Grading prose steps (`assertions.json`)
