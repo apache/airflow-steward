@@ -787,7 +787,12 @@ No label is added — the conversion itself is the signal.
 
 *(`stale-ready-label-close` — close a label-flagged PR after author silence + bitrot)*
 
-Used by [Sweep 4b](stale-sweeps.md#4b--branch-rotted--propose-close).
+Retained for a maintainer's **explicit, manual** close of a long-dead
+`ready` PR. [Sweep 4](stale-sweeps.md#persistent-bitrot--hand-back-do-not-close)
+no longer auto-closes on bitrot — it hands the branch back to the author
+(`stale-ready-label-strip`); a PR that then stays abandoned is retired
+by [Sweep 2](stale-sweeps.md#sweep-2--inactive-open-prs) (inactive →
+draft).
 
 ```markdown
 @<author> This PR has had no author response for <days_since_maintainer> days since the last maintainer comment, and the branch now has <bitrot_signal>. Closing to keep the queue clean.
@@ -801,6 +806,35 @@ When you're ready to resume, please rebase onto the current `<base>` branch, add
 `merge conflicts with <base>`, `failing CI and merge conflicts with <base>`},
 keyed off `statusCheckRollup.state == FAILURE` and
 `mergeable == CONFLICTING`.
+
+---
+
+## Stale ready-label strip
+
+*(`stale-ready-label-strip` — audit marker posted when [Sweep 4 Step B](stale-sweeps.md#step-b--court-disposition) hands a PR back to its author)*
+
+Posted on **every** `ready for maintainer review` strip — the label is
+never removed silently. It records what was stripped, why (the
+author-court reason), and the next move, so the strip is auditable and
+the author knows exactly what re-qualifies the PR. When the author-court
+action is itself a comment (`ping` / `request-author-confirmation`),
+fold that action into this same comment rather than posting twice.
+
+```markdown
+@<author> I've removed the `ready for maintainer review` label because the next step here is yours: <strip_reason>. It'll go back into the maintainer queue automatically once that's done — no need to re-add the label by hand. Next move: <next_move>. There is no rush.
+
+<ai_attribution_footer>
+```
+
+`<strip_reason>` ∈ {`merge conflicts with <base>`, `failing checks that
+need a code fix`, `unresolved review thread(s) from <reviewers> awaiting
+your reply`, `a maintainer asked you to confirm the PR is ready`}.
+`<next_move>` is the concrete author action (e.g. "rebase onto
+`<base>`", "address the unresolved threads", "fix the failing static
+checks", "reply to confirm readiness"). This template is **not** used
+when the next move is a maintainer's (workflow approval, CI rerun,
+branch update, re-review, or merge of an already-approved PR) — those
+keep the label.
 
 ---
 

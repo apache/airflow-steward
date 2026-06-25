@@ -734,3 +734,49 @@ frustrated; do not add to the frustration. Concrete rules:
 The full surface area is the templates in
 [`classify-and-act.md#reason-template-rules`](classify-and-act.md#reason-template-rules).
 Anything beyond that is drift.
+
+---
+
+## Sweep 4 — court-based ready-label strip
+
+`ready for maintainer review` means **the ball is in the maintainers'
+court**. Sweep 4 once read staleness as guilt: a healthy stale PR was
+stripped (4a), a rotted one was closed (4b). That is backwards. A
+healthy, author-silent ready PR — especially one a committer has
+already approved and that is mergeable — is waiting on *us* to review
+or merge; stripping its label de-queues a PR that is ready to land. A
+rotted branch is the author's to rebase; jumping straight to `close`
+throws away recoverable work.
+
+So the disposition is now a single question — *whose move is next?* —
+answered by re-classifying the PR live against the decision table:
+
+- **Maintainer's move** (review, merge, workflow approval, CI rerun,
+  branch update) → keep the label; perform the maintainer-side action
+  where there is one. The PR is exactly where it belongs.
+- **Author's move** (rebase a conflict, fix a code / static failure,
+  address unresolved threads, confirm readiness) → strip the label to
+  hand the PR back, post the author-facing action in the *same* pass,
+  and leave an audit marker.
+
+Two failures this fixes, both seen in the wild:
+
+1. **`COLLABORATOR` ≠ committer.** GitHub returns `COLLABORATOR` for
+   read- and triage-role accounts. Treating that association as
+   "maintainer" let a read-only router's comment satisfy the old
+   "author silent after a maintainer comment" trigger, and an approved,
+   mergeable PR was stripped. Maintainer status is now committer-team
+   membership or `write`+ permission, resolved live for the small set
+   of load-bearing decisions (see
+   [`classify-and-act.md#maintainer-activity`](classify-and-act.md#maintainer-activity)).
+2. **Silent strips.** Removing a public label with no comment reads as
+   an unexplained yank — a stripped PR once drew a public "why was this
+   removed?" with no trace to answer it. Every strip now carries the
+   [`stale-ready-label-strip`](comment-templates.md#stale-ready-label-strip)
+   audit marker naming the author-court reason and the next move.
+
+Handing rotted branches back rather than closing them keeps the close
+decision where it belongs — a maintainer's explicit call, or the
+existing inactivity sweep ([Sweep 2](stale-sweeps.md#sweep-2--inactive-open-prs))
+that retires genuinely abandoned PRs after four weeks. Sweep 4 no
+longer closes anything.

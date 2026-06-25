@@ -668,10 +668,14 @@ through every interactive group from Step 3 (or supplied
 - convert non-draft PRs with >4 weeks of no activity to draft
 - convert workflow-approval PRs with >4 weeks of no activity
   to draft
-- on PRs labeled `ready for maintainer review` whose author
-  has been silent ≥ 7 days after a maintainer comment,
-  strip the label (4a — branch healthy) or propose `close`
-  (4b — red CI or merge conflicts). See
+- on PRs labeled `ready for maintainer review` that have gone
+  quiet ≥ 7 days, re-classify live and act by *whose court the
+  ball is in*: keep the label when the next move is a
+  maintainer's (review, merge, workflow approval, CI rerun,
+  branch update); strip it (with an audit marker, plus the
+  author-facing action in the same pass) only when the next
+  move is the author's (conflict, code fix, unresolved threads,
+  readiness confirmation). See
   [`stale-sweeps.md#sweep-4--stale-ready-for-review-label`](stale-sweeps.md#sweep-4--stale-ready-for-review-label).
 - on PRs holding a pending author-confirmation request
   (first leg of row 14c) whose author has been silent ≥ 7

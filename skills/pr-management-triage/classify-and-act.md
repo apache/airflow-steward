@@ -144,7 +144,13 @@ Action verbs are defined in [`actions.md`](actions.md).
   NOT strip the label: those classify the regression as
   transient (flaky CI, missing base merge, reviewer hasn't
   responded) and the label is still informative if the
-  follow-up succeeds.
+  follow-up succeeds. This is the same *whose-court-is-the-
+  ball-in* test [Sweep 4](stale-sweeps.md#step-b--court-disposition)
+  applies to *stale* ready PRs — strip when the next move is the
+  author's, keep when it is a maintainer's. What separates this
+  rule (a *fresh* regression: ping and keep, give it a beat) from
+  Sweep 4 (the same thread unaddressed ≥ 7 days: strip and hand
+  back) is staleness, not court.
 
   **Exception — merit-discussion-in-flight.** If
   [`merit_discussion_thread_present`](#merit_discussion_thread_present)
@@ -192,6 +198,34 @@ Action verbs are defined in [`actions.md`](actions.md).
 
 Compound predicates referenced from the decision table. Defined
 once here so the table rows stay short and unambiguous.
+
+### Maintainer activity
+
+"Maintainer" — for `last_maintainer_comment_at`, F5a (author-cooldown),
+F5b (maintainer-to-maintainer ping), and the Sweep-4 court
+disposition — means a member of the `committers_team` (see
+[`<project-config>/pr-management-config.md`](../../projects/_template/pr-management-config.md))
+**or** an account with repo permission `write` / `maintain` / `admin`.
+
+It is **not** `authorAssociation ∈ {COLLABORATOR, MEMBER, OWNER}` on its
+own. GitHub returns `COLLABORATOR` for any *triage*- or *read*-role
+collaborator, not just committers, so keying maintainer status off the
+association alone treats a read-only router's comment as maintainer
+activity — the failure that de-queued an approved, mergeable PR in
+[Sweep 4](stale-sweeps.md#maintainer-detection--committer-not-authorassociation).
+`authorAssociation` remains a cheap *first* filter (a `NONE`/`FIRST_TIME*`
+association is never a maintainer), but a `COLLABORATOR` hit that is
+**load-bearing for a strip / close / cooldown** must be confirmed live:
+
+```bash
+gh api repos/<upstream>/collaborators/<login>/permission --jq .permission   # write | maintain | admin
+# or: gh api orgs/<org>/teams/<committers-team-slug>/memberships/<login> --jq .state  # active
+```
+
+The live check is invoked only for the small set of load-bearing
+decisions (a Sweep-4 candidate, an F5a/F5b comment that would suppress a
+ping), not for every PR in the batch, so it adds no per-PR cost to the
+main sweep.
 
 ### `has_deterministic_signal`
 
