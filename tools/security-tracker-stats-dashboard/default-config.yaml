@@ -27,7 +27,7 @@ upstream_repo: apache/airflow   # null -> skip c_prc/c_prm/c_rel charts and the 
                                 # value. Override in the overlay if the renderer should chart a different repo (or null).
 
 milestones:
-  - date: 2026-04-20
+  - date: 2026-04-13
     label: skill adoption
 
 # Tracker scope labels — the project's "what does this affect" axis.
