@@ -562,6 +562,7 @@ REJECTION_BACKFILL_RE = re.compile(
 REJECTION_DATE_RE = re.compile(r'^\s*date:\s*(\d{4})-(\d{2})-(\d{2})\s*$', re.M)
 
 rejections_by_b = defaultdict(int)   # bucket label -> dated rejection count
+rejections_dated = []                # every dated rejection datetime (in + out of range)
 rejections_dated_total = 0
 rejections_backfill_total = 0
 
@@ -592,6 +593,7 @@ for li in ledger_issues:
                                 int(dm.group(3)), tzinfo=dt.timezone.utc)
             except ValueError:
                 continue
+            rejections_dated.append(d)
             cb = bucket_of(d)
             if cb < buckets[0] or cb > buckets[-1]:
                 # Dated outside the chart range — still count in the
@@ -833,6 +835,22 @@ for bi, b in enumerate(buckets):
     cum_opened[bi] = op
     cum_closed[bi] = cl
 
+# --- cumulative rejected + reported (opened + rejected) ------------
+# Mirror the cumulative-opened computation exactly: at each bucket end,
+# count every rejection dated on or before it (so rejections that predate
+# the chart window are baselined in, just as pre-window trackers are in
+# cum_opened). rejections_dated / rejections_backfill_total come from the
+# ledger parse above; both are empty/0 when the stat is disabled, so
+# cum_reported degrades to exactly cum_opened. Any legacy undated backfill
+# lump still seeds a flat baseline. "reported" = trackers opened + rejected.
+cum_rejected = []
+for b in buckets:
+    be = bucket_end(*b)
+    ts = NOW if be > NOW else be
+    cum_rejected.append(
+        rejections_backfill_total + sum(1 for rd in rejections_dated if rd <= ts))
+cum_reported = [o + r for o, r in zip(cum_opened, cum_rejected)]
+
 # --- Opened-in-bucket vs untriaged-at-bucket-end ------------------
 
 opened_in_b = [0] * n_buckets
@@ -847,6 +865,11 @@ for i in issues:
         continue
     bi = buckets.index(cb)
     opened_in_b[bi] += 1
+
+# Per-bucket reported = trackers opened in the bucket + reports rejected in
+# the same bucket (rejected_series). Equals opened_in_b when the rejections
+# stat is disabled, so the trace is only drawn when the stat is active.
+reported_in_b = [o + r for o, r in zip(opened_in_b, rejected_series)]
 
 # --- triage / response ---------------------------------------------
 
@@ -1172,6 +1195,38 @@ else:
     rej_cards_html = ''
     rej_chart_js = ''
 
+# Extra cumulative traces (rejected + reported) appended to the c_cum
+# chart. Only emitted when the rejections stat is active; otherwise an
+# empty string leaves the cumulative chart with its original two lines
+# for projects without a ledger. Plain single-brace JS — inserted
+# verbatim into the HTML f-string via {cum_rej_traces}.
+if REJECTIONS_LEDGER_LABEL and (rejections_total or ledger_issues):
+    cum_rej_traces = (
+        ",\n  {x: buckets, y: " + js_array(cum_rejected) +
+        ", name: 'cumulative rejected (no tracker)', type: 'scatter', "
+        "mode: 'lines+markers', connectgaps: true, "
+        "line: {color: '#7f8c8d', dash: 'dot'}},\n"
+        "  {x: buckets, y: " + js_array(cum_reported) +
+        ", name: 'reported (opened + rejected)', type: 'scatter', "
+        "mode: 'lines+markers', connectgaps: true, "
+        "line: {color: '#9467bd', width: 3}}"
+    )
+else:
+    cum_rej_traces = ''
+
+# Extra "reported" trace (opened + rejected per bucket) appended to the
+# opened-vs-untriaged chart. Same activation rule as cum_rej_traces so it
+# is omitted (and the chart keeps its two original lines) when no ledger.
+if REJECTIONS_LEDGER_LABEL and (rejections_total or ledger_issues):
+    rep_ou_trace = (
+        ",\n  {x: buckets, y: " + js_array(reported_in_b) +
+        ", name: 'reported in " + bucket_word + " (opened + rejected)', "
+        "type: 'scatter', mode: 'lines+markers', connectgaps: true, "
+        "line: {color: '#9467bd', width: 3}}"
+    )
+else:
+    rep_ou_trace = ''
+
 
 HTML = f"""<!DOCTYPE html>
 <html lang="en">
@@ -1228,10 +1283,10 @@ Plotly.newPlot('c_open_vs_untriaged', [
     line: {{color: '#1f77b4'}}}},
   {{x: buckets, y: {js_array(untriaged_at_bend)},  name: 'untriaged at {bucket_word}-end',
     type: 'scatter', mode: 'lines+markers', connectgaps: true,
-    line: {{color: '#d62728'}}}}
+    line: {{color: '#d62728'}}}}{rep_ou_trace}
 ], {{
   ...MILESTONES_LAYOUT,
-  title: 'Opened vs. untriaged backlog (per {bucket_word})',
+  title: 'Reported vs. opened vs. untriaged backlog (per {bucket_word})',
   yaxis: {{title: 'count'}},
   legend: {{orientation: 'h'}}
 }});
@@ -1242,10 +1297,10 @@ Plotly.newPlot('c_cum', [
     line: {{color: '#1f77b4'}}, fill: 'tozeroy'}},
   {{x: buckets, y: {js_array(cum_closed)}, name: 'cumulative closed',
     type: 'scatter', mode: 'lines+markers', connectgaps: true,
-    line: {{color: '#2ca02c'}}, fill: 'tozeroy'}}
+    line: {{color: '#2ca02c'}}, fill: 'tozeroy'}}{cum_rej_traces}
 ], {{
   ...MILESTONES_LAYOUT,
-  title: 'Cumulative opened vs. closed (gap = open backlog)',
+  title: 'Cumulative reported (opened + rejected) vs. opened vs. closed (gap = open backlog)',
   yaxis: {{title: 'count'}},
   legend: {{orientation: 'h'}}
 }});
