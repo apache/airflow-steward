@@ -7,6 +7,7 @@
   - [Default output path](#default-output-path)
   - [Cache directory](#cache-directory)
   - [Refresh cadence](#refresh-cadence)
+  - [Rejected-without-tracker ledger](#rejected-without-tracker-ledger)
   - [Example overlay (`security-tracker-stats.yaml`)](#example-overlay-security-tracker-statsyaml)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -73,6 +74,30 @@ this many hours, and proposes a refresh before re-rendering. Lower
 this for fast-moving trackers; raise it for trackers where the
 dashboard is reviewed weekly or monthly.
 
+## Rejected-without-tracker ledger
+
+```yaml
+rejections_ledger_label: rejections-ledger
+```
+
+Lives in the renderer's YAML overlay (the file pointed at by
+`tracker_stats_config:` above), not in `project.md`. Names the label
+on the single open **ledger issue** that records reports the
+`security-issue-import` skill rejected with a canned reply **without
+creating a tracker** — see the *Rejected-without-tracker ledger* note
+in [`project.md`](project.md) for the convention. The renderer
+identifies any issue carrying this label as the ledger, excludes it
+from all tracker classification, and parses its comments for the
+`<!-- rejection v1 -->` / `<!-- rejection-backfill v1 count: N -->`
+markers to produce a *rejected (no tracker)* count (a per-bucket area
+series plus a `<dated> + <historical> = <total>` headline).
+
+Set to `null` to disable the stat entirely (no ledger issue needed).
+The ASF/Airflow default is `rejections-ledger`, matching
+`tracker.labels.rejections_ledger` in `project.md`. To turn the stat
+on, create the open ledger issue, label it, and keep this knob
+pointed at the same label.
+
 ## Example overlay (`security-tracker-stats.yaml`)
 
 A minimal overlay that swaps to quarterly buckets and adds a
@@ -80,6 +105,8 @@ project-specific milestone:
 
 ```yaml
 buckets: quarterly
+
+rejections_ledger_label: rejections-ledger
 
 milestones:
   - date: 2026-04-20

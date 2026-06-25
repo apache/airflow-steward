@@ -365,6 +365,9 @@ MILESTONES = CONFIG.get('milestones') or []
 CATEGORIES_CFG = CONFIG.get('categories') or []
 TRIAGE_KW = CONFIG.get('triage', {}).get('keywords') or []
 BOT_PREFIXES = tuple(CONFIG.get('triage', {}).get('bot_prefixes') or [])
+# Label identifying the "rejected without tracker" ledger issue. When
+# null (or no such issue exists) the rejection stat is omitted / shows 0.
+REJECTIONS_LEDGER_LABEL = CONFIG.get('rejections_ledger_label')
 
 # Distinct category names in the order they FIRST appear in CATEGORIES_CFG
 # (multiple rules can share a name to express disjoint branches of the
@@ -387,11 +390,31 @@ for c in CATEGORIES_CFG:
 # --- Cache load -----------------------------------------------------
 
 with open(f'{ROOT}/issues.json') as f:
-    issues = json.load(f)
+    all_issues = json.load(f)
 with open(f'{ROOT}/roster.txt') as f:
     roster = {ln.strip() for ln in f if ln.strip()}
 with open(f'{ROOT}/issue_extra.json') as f:
     issue_extra = json.load(f)
+
+
+def _issue_label_names(issue):
+    return {(l.get('name') if isinstance(l, dict) else l) for l in (issue.get('labels') or [])}
+
+
+# Partition out the "rejected without tracker" ledger issue(s). The ledger
+# is NOT a security tracker (it carries the rejections-ledger label and not
+# the security-marker label), so it must be excluded from every normal
+# tracker classification / count / median below. We keep the full list
+# (`all_issues`) only for the rejection-comment parse; `issues` is the
+# tracker-only list every downstream loop iterates.
+if REJECTIONS_LEDGER_LABEL:
+    ledger_issues = [i for i in all_issues
+                     if REJECTIONS_LEDGER_LABEL in _issue_label_names(i)]
+    issues = [i for i in all_issues
+              if REJECTIONS_LEDGER_LABEL not in _issue_label_names(i)]
+else:
+    ledger_issues = []
+    issues = list(all_issues)
 
 prs_cache = {}
 if UPSTREAM_REPO:
@@ -507,6 +530,79 @@ n_buckets = len(buckets)
 print(f"earliest createdAt: {earliest.isoformat()} -> starts at {bucket_label(*start_key)}")
 print(f"now: {NOW.isoformat()} -> ends at {bucket_label(*end_key)}")
 print(f"buckets in range ({BUCKETS_MODE}): {n_buckets}")
+
+
+# --- rejected-without-tracker ledger -------------------------------
+#
+# The skill records each report it rejects *without* creating a tracker
+# as a comment on a dedicated ledger issue (labelled
+# REJECTIONS_LEDGER_LABEL). Each rejection comment carries a
+# machine-parseable block:
+#
+#     <!-- rejection v1 -->
+#     date: YYYY-MM-DD
+#     reporter: <email/name>
+#     canned: <slug>
+#     thread: <url-or-threadid>
+#     summary: <one line>
+#
+# A one-time historical backfill is a single comment of the form:
+#
+#     <!-- rejection-backfill v1 count: N -->
+#
+# Dated rejections are bucketed by their `date:` into the same monthly /
+# quarterly axis as the trackers. The backfill count is undated, so we
+# keep it as a separate "historical (pre-ledger)" headline number rather
+# than smearing it across buckets — that keeps the per-bucket series
+# faithful (only real dated rejections appear in it) while still
+# surfacing the historical lump in the summary / HTML header.
+REJECTION_MARKER = '<!-- rejection v1 -->'
+REJECTION_BACKFILL_RE = re.compile(
+    r'<!--\s*rejection-backfill\s+v1\s+count:\s*(\d+)\s*-->', re.I)
+REJECTION_DATE_RE = re.compile(r'^\s*date:\s*(\d{4})-(\d{2})-(\d{2})\s*$', re.M)
+
+rejections_by_b = defaultdict(int)   # bucket label -> dated rejection count
+rejections_dated_total = 0
+rejections_backfill_total = 0
+
+for li in ledger_issues:
+    for c in (li.get('comments') or []):
+        body = c.get('body') or ''
+        # Historical backfill marker (undated lump).
+        for m in REJECTION_BACKFILL_RE.finditer(body):
+            try:
+                rejections_backfill_total += int(m.group(1))
+            except ValueError:
+                continue
+        # Per-entry rejection markers. A single comment may in principle
+        # carry more than one block; count each marker that is followed
+        # by a parseable date line.
+        if REJECTION_MARKER not in body:
+            continue
+        # Split on the marker so a malformed block can't swallow the
+        # date of the next one. The text before the first marker is
+        # discarded (it belongs to no rejection block).
+        for chunk in body.split(REJECTION_MARKER)[1:]:
+            dm = REJECTION_DATE_RE.search(chunk)
+            if not dm:
+                # No / malformed date line — skip this entry defensively.
+                continue
+            try:
+                d = dt.datetime(int(dm.group(1)), int(dm.group(2)),
+                                int(dm.group(3)), tzinfo=dt.timezone.utc)
+            except ValueError:
+                continue
+            cb = bucket_of(d)
+            if cb < buckets[0] or cb > buckets[-1]:
+                # Dated outside the chart range — still count in the
+                # headline total, just not in any visible bucket.
+                rejections_dated_total += 1
+                continue
+            rejections_by_b[bucket_label(*cb)] += 1
+            rejections_dated_total += 1
+
+rejected_series = [rejections_by_b.get(bucket_label(*b), 0) for b in buckets]
+rejections_total = rejections_dated_total + rejections_backfill_total
 
 # Per-issue events
 events_by_n = {}
@@ -933,6 +1029,10 @@ print(f"open_untriaged: {latest('open_untriaged')}, open_triaged: {latest('open_
       f"open_pr_merged: {latest('open_pr_merged')}, closed_other: {latest('closed_other')}")
 print(f"triage median {triage_median}h, mean {triage_mean}h, n={triage_n} "
       f"(fallback={n_fallback_triage}, none={n_no_triage})")
+if REJECTIONS_LEDGER_LABEL:
+    print(f"rejected without tracker: {rejections_dated_total} dated + "
+          f"{rejections_backfill_total} historical = {rejections_total} "
+          f"(ledger issues: {len(ledger_issues)})")
 
 if UPSTREAM_REPO:
     print()
@@ -1043,6 +1143,36 @@ else:
     pr_charts_js = ''
 
 
+# Build the optional "rejected (no tracker)" header banner, chart card,
+# and JS. Omitted entirely when the rejections-ledger stat is disabled
+# (null label) or there is no ledger issue and nothing was parsed.
+if REJECTIONS_LEDGER_LABEL and (rejections_total or ledger_issues):
+    rej_header_html = (
+        '<div class="banner">Reports rejected without a tracker: '
+        f'<strong>{rejections_total}</strong> '
+        f'({rejections_dated_total} dated + {rejections_backfill_total} historical)</div>\n'
+    )
+    rej_cards_html = '<div class="card full"><div id="c_rejected"></div></div>\n'
+    rej_chart_js = (
+        f"Plotly.newPlot('c_rejected', [\n"
+        f"  {{x: buckets, y: {js_array(rejected_series)}, "
+        f"name: 'rejected (no tracker)', type: 'scatter', "
+        f"mode: 'lines+markers', connectgaps: true, line: {{color: '#7f8c8d'}}, "
+        f"fill: 'tozeroy'}}\n"
+        f"], {{\n"
+        f"  ...MILESTONES_LAYOUT,\n"
+        f"  title: 'Reports rejected without a tracker (per {bucket_word}, dated; "
+        f"{rejections_backfill_total} historical pre-ledger not shown)',\n"
+        f"  yaxis: {{title: 'count', rangemode: 'tozero'}},\n"
+        f"  legend: {{orientation: 'h'}}\n"
+        f"}});"
+    )
+else:
+    rej_header_html = ''
+    rej_cards_html = ''
+    rej_chart_js = ''
+
+
 HTML = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1054,16 +1184,18 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; 
 .grid {{ display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }}
 .card {{ border: 1px solid #e0e0e0; border-radius: 8px; padding: 8px; background: #fafafa; }}
 .card.full {{ grid-column: 1 / -1; }}
+.banner {{ border: 1px solid #e0e0e0; border-radius: 8px; padding: 10px 14px; background: #f4f6f6; margin-bottom: 16px; color: #444; }}
 </style>
 </head>
 <body>
 
+{rej_header_html}
 <div class="grid">
 
 <div class="card full"><div id="c_states"></div></div>
 <div class="card full"><div id="c_open_vs_untriaged"></div></div>
 <div class="card full"><div id="c_cum"></div></div>
-<div class="card"><div id="c_triage"></div></div>
+{rej_cards_html}<div class="card"><div id="c_triage"></div></div>
 <div class="card"><div id="c_resp"></div></div>
 {pr_cards_html}
 </div>
@@ -1117,6 +1249,8 @@ Plotly.newPlot('c_cum', [
   yaxis: {{title: 'count'}},
   legend: {{orientation: 'h'}}
 }});
+
+{rej_chart_js}
 
 function meanChart(divId, title, ys, ns, unit, color) {{
   Plotly.newPlot(divId, [{{

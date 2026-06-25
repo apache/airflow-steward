@@ -1864,6 +1864,59 @@ media / cross-thread-followup / fix-already-public):
    [`security-issue-import-from-pr`'s no-outreach rule](../security-issue-import-from-pr/SKILL.md#reporter-credit-policy-for-public-pr-imports);
    revealing that a security report came in about the PR would
    leak private-channel content into a public surface.
+4. **Record the rejection on the rejections ledger** so the
+   tracker-stats dashboard can count it. A reject-without-tracker
+   disposition leaves no tracker, so without this step it is
+   invisible to every stat. After the Gmail draft is created, append
+   a `<!-- rejection v1 -->` comment to the single open issue
+   labelled `rejections-ledger` in `<tracker>`. This applies to
+   **every reject-without-tracker disposition**:
+
+   - `skip NN` with a canned reply,
+     `NN:reject-with-canned <name>`, `NN:reject-with-public-fix
+     <PR-URL>`;
+   - a confirmed `automated-scanner` / `consolidated-multi-issue`
+     / `media-request` canned reply.
+
+   It does **not** apply to `spam` or `cve-tool-bookkeeping` (those
+   are dropped silently — no disposition to record), and it
+   **never** creates a security tracker.
+
+   Resolve the ledger issue number, then append the comment (the
+   `summary` text is attacker-derived, so write it to a tempfile
+   with the Write tool and pass via `-F`, per the injection guard
+   used elsewhere in this skill):
+
+   ```bash
+   LEDGER=$(gh issue list --repo <tracker> --state open \
+     --label rejections-ledger --json number --jq '.[0].number')
+   ```
+
+   *Write tool call:* `file_path: /tmp/rejection-<threadId>.md`,
+   `content:`
+   ```text
+   <!-- rejection v1 -->
+   date: <YYYY-MM-DD>
+   reporter: <reporter email or display name>
+   canned: <canned-response-slug>
+   thread: <Gmail/PonyMail thread URL or threadId>
+   summary: <one-line disposition>
+   ```
+
+   ```bash
+   gh api repos/<tracker>/issues/$LEDGER/comments \
+     -F body=@/tmp/rejection-<threadId>.md --jq '.id'
+   ```
+
+   If the resolution returns no number (no ledger issue exists yet),
+   surface a one-line note in the recap (*"no `rejections-ledger`
+   issue found — rejection not recorded; create the ledger issue to
+   enable the stat"*) and continue — never fall back to creating a
+   tracker. **Note:** closes handled by
+   [`security-issue-invalidate`](../security-issue-invalidate/SKILL.md)
+   are **not** ledger entries — those are *tracked* closes already
+   counted in the dashboard's closed buckets, so adding them here
+   would double-count.
 
 Apply sequentially (not in parallel): one `gh issue create` per
 confirmed candidate, one draft per reply. If any step fails, stop and
@@ -1935,6 +1988,16 @@ before presenting.
   separate commit to the canned-responses file, not in a one-off
   draft. See the *"Canned-response discipline for negative-response
   drafts"* subsection of Step 5.
+- **Record every reject-without-tracker disposition on the
+  `rejections-ledger` issue** (Step 7, non-import path, item 4) so
+  the tracker-stats dashboard can count it — `skip NN` with a canned
+  reply, `NN:reject-with-canned`, `NN:reject-with-public-fix`, and
+  confirmed `automated-scanner` / `consolidated-multi-issue` /
+  `media-request` canned replies. Never for `spam` /
+  `cve-tool-bookkeeping` (dropped silently) and never for closes
+  handled by `security-issue-invalidate` (tracked closes — already
+  counted, recording here would double-count). The ledger comment
+  never creates a tracker.
 - **Never present a draft that contradicts the report.** The
   coherence check in Step 5 is mandatory before a negative-response
   draft appears in the proposal: the draft must accurately
