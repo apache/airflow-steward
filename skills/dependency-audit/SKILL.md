@@ -102,6 +102,13 @@ After confirming the path, determine the dependency manager(s):
   - Multiple ecosystems present → ask which to audit or use **trivy**
     to cover all at once.
 - The user may override detection by supplying `--manager`.
+- Never guess or default a manager from the repository name alone (for
+  example, do not assume **pip** for an unfamiliar repo). When the request
+  names a repo but gives no manager hint and you have not yet inspected
+  the checkout, leave the manager unresolved (`managers: []`) and detect
+  it from the layout after cloning rather than naming one. An explicit
+  statement in the request ("it's a Python project") is a hint you may
+  honour; the repo name on its own is not.
 
 ---
 

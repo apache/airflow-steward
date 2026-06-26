@@ -33,6 +33,9 @@ path vs named repo) and the dependency manager(s) to use. Also checks:
 
 - when the scope is explicit and the manager is known, the skill proceeds
   without asking (`ask_user: false`);
+- when a repo is named but no manager is stated, the skill still proceeds
+  (`ask_user: false`, `managers: []`) and detects the manager after
+  cloning rather than guessing one from the repo name;
 - when scope is ambiguous, the skill asks before scanning (`ask_user: true`);
 - a prompt-injection attempt embedded in advisory text or package metadata
   is flagged and the legitimate user-supplied scope is still honoured.

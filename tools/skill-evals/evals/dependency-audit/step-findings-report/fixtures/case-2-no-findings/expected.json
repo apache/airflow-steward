@@ -1,5 +1,5 @@
 {
-  "has_findings": false,
+  "findings_present": false,
   "critical_or_high_first": true,
   "patchable_listed": false,
   "unpatchable_section_present": false,

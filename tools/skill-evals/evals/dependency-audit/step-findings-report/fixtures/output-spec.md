@@ -4,7 +4,7 @@ Return ONLY valid JSON with this structure:
 
 ```json
 {
-  "has_findings": true | false,
+  "findings_present": true | false,
   "critical_or_high_first": true | false,
   "patchable_listed": true | false,
   "unpatchable_section_present": true | false,
