@@ -15,7 +15,7 @@
 # PR management skill family
 
 Maintainer-facing PR-queue management for projects with a public
-contributor PR queue. Three skills that compose into a complete
+contributor PR queue. Four skills that compose into a complete
 triage + review pass:
 
 1. **Triage** — sweep open PRs, classify against the project's
@@ -29,6 +29,12 @@ triage + review pass:
    time. Reads the diff, applies the project's review criteria,
    drafts an `APPROVE` / `REQUEST_CHANGES` / `COMMENT` review
    with inline comments, posts on confirmation.
+4. **Quick-merge** — express-lane screener for trivial, low-risk
+   PRs (docs, changelog, translations, tests) that pass every
+   quality gate; surfaces ranked candidates with diff summaries
+   and the exact merge command for the maintainer to run. Never
+   merges itself — automated merge is the framework's
+   deliberately-deferred Mode D.
 
 Why a framework skill family? These skills were originally
 maintained inside one ASF project's developer-tooling repo as
@@ -47,6 +53,7 @@ wording, CI-check → doc-URL map, review-criteria source files).
 | [`pr-management-triage`](../../skills/pr-management-triage/SKILL.md) | First-pass triage. Successor to `breeze pr auto-triage`. |
 | [`pr-management-stats`](../../skills/pr-management-stats/SKILL.md) | Read-only summary tables grouped by area label. |
 | [`pr-management-code-review`](../../skills/pr-management-code-review/SKILL.md) | Deep code review, one PR at a time. |
+| [`pr-management-quick-merge`](../../skills/pr-management-quick-merge/SKILL.md) | Express-lane screener for trivial, low-risk PRs in the `ready for maintainer review` queue; surfaces ranked candidates with diff summaries and the exact merge command. Read-only on the queue; the one optional mutation (APPROVE) requires explicit per-PR confirmation. |
 
 ## Adopter contract
 
@@ -55,10 +62,11 @@ the adopter's `<project-config>/` directory:
 
 | File | Used by |
 |---|---|
-| [`pr-management-config.md`](../../projects/_template/pr-management-config.md) | `pr-management-triage`, `pr-management-stats` |
+| [`pr-management-config.md`](../../projects/_template/pr-management-config.md) | `pr-management-triage`, `pr-management-stats`, `pr-management-quick-merge` (Real-CI patterns) |
 | [`pr-management-triage-comment-templates.md`](../../projects/_template/pr-management-triage-comment-templates.md) | `pr-management-triage` |
 | [`pr-management-triage-ci-check-map.md`](../../projects/_template/pr-management-triage-ci-check-map.md) | `pr-management-triage` |
 | [`pr-management-code-review-criteria.md`](../../projects/_template/pr-management-code-review-criteria.md) | `pr-management-code-review` |
+| [`pr-management-quick-merge-config.md`](../../projects/_template/pr-management-quick-merge-config.md) | `pr-management-quick-merge` (thresholds, path globs, merge-command template) |
 
 The skills read project-specific defaults from the `<project-config>/`
 files above. Adopters customise by editing their copy of each
@@ -70,4 +78,4 @@ patterns that motivated the framework (monorepo `<area>/` layout,
 ## Cross-references
 
 - [Top-level README — Adopting the framework](../../README.md#adopting-the-framework) — 3-step bootstrap.
-- [`projects/_template/README.md`](../../projects/_template/README.md) — adopter scaffold index, including the four PR-management config files.
+- [`projects/_template/README.md`](../../projects/_template/README.md) — adopter scaffold index, including the five PR-management config files.
