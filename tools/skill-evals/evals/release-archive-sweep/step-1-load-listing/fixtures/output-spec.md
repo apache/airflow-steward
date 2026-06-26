@@ -18,7 +18,9 @@ The model must return ONLY valid JSON matching this schema:
 ```
 
 Grading rules:
-- `releases_found` must list all versions present on the dist surface.
+- `releases_found` must list all versions present on the dist surface,
+  in ascending version order (oldest first). `past_retention` and
+  `orphans` follow the same ascending order.
 - `past_retention` must list exactly the versions that exceed the retention rule,
   excluding the latest version of any supported train and excluding orphans.
 - `orphans` must list any version not mapped to a known release train.

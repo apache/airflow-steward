@@ -202,6 +202,10 @@ Return ONLY valid JSON with this structure:
 
 Surface the classification table to the RM before proceeding to Step 2.
 
+List `releases_found`, `past_retention`, and `orphans` in ascending
+version order (oldest first) so the output is deterministic and matches
+the archival command order emitted in Step 2.
+
 Return ONLY valid JSON with this structure:
 
 ```json
