@@ -24,12 +24,13 @@
 
 ## Status
 
-Experimental. Two skills shipped:
+Experimental. Three skills shipped:
 
 | Skill | Purpose |
 |---|---|
 | [`pr-management-mentor`](../../skills/pr-management-mentor/SKILL.md) | Draft a teaching-register comment on a single GitHub issue or PR thread. |
 | [`good-first-issue-author`](../../skills/good-first-issue-author/SKILL.md) | Draft a single net-new good first issue from a maintainer-supplied candidate. |
+| [`mentoring-welcome`](../../skills/mentoring-welcome/SKILL.md) | Draft a first-contact orientation comment for a first-time contributor on a newly opened issue or PR. |
 
 This document is the normative Mentoring spec: tone guide, hand-off
 protocol, and adopter contract. The skills implement these conventions;
@@ -210,7 +211,7 @@ fixed in the shipped implementations.
 - [`MISSION.md` § Mentoring](../../MISSION.md#technical-scope) —
   the mode definition + responsible-AI framing.
 - [`docs/modes.md` § Mentoring](../modes.md#mentoring) —
-  current implementation status (experimental, 2 skills shipped).
+  current implementation status (experimental, 3 skills shipped).
 - [`.claude/skills/pr-management-triage/comment-templates.md`](../../skills/pr-management-triage/comment-templates.md) —
   tone-footer convention; `pr-management-mentor` mirrors its
   format with a `mentoring` step token.
