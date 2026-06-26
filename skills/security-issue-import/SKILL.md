@@ -1169,7 +1169,7 @@ here.
 | **The issue description** | The root email body, **verbatim** (preserve paragraphs, PoC code blocks, and any quoted sections). The body is private — the triager will copy it into a public CVE description only after Step 13. |
 | **Short public summary for publish** | Leave `_No response_`. Filled by the release manager at Step 13 in sanitised form. |
 | **Affected versions** | Extract `<product> <version>` / `>= X, < Y` / `<Y` phrases from the body (substitute the adopter's product name — e.g. `Airflow <version>` for the airflow-s adopter). If the reporter gave only a single version they tested on (e.g. `3.1.5`), record that verbatim; the triager can widen the range later. Leave `_No response_` if no version is mentioned. |
-| **Security mailing list thread** | **Keep the private thread handle, and — if possible — also link the PonyMail archive entry.** The full URL-construction recipe (search URL template, month-token format, user-pastes-back flow, Gmail-threadId fallback) lives in [`tools/gmail/ponymail-archive.md`](../../tools/gmail/ponymail-archive.md#use-case--security-issue-import); the adopting project's private-search URL template is declared in [`<project-config>/project.md`](../../<project-config>/project.md#gmail-and-ponymail). Propose the constructed search URL to the user at Step 5, wait for them to paste back the resolved `lists.apache.org/thread/<hash>?<security-list>` URL, and record both the PonyMail URL and the Gmail `threadId` in this field. The URL is **internal-only** — the `generate-cve-json` script will not export it to `references[]` — see the "CVE references must never point at non-public mailing-list threads" section of [`AGENTS.md`](../../AGENTS.md). |
+| **Security mailing list thread** | **Keep the private thread handle, and — if possible — also link the PonyMail archive entry.** The full URL-construction recipe (search URL template, month-token format, user-pastes-back flow, Gmail-threadId fallback) lives in [`tools/gmail/ponymail-archive.md`](../../tools/gmail/ponymail-archive.md#use-case--security-issue-import); the adopting project's private-search URL template is declared in [`<project-config>/project.md`](../../<project-config>/project.md#gmail-and-ponymail). Propose the constructed search URL to the user at Step 5, wait for them to paste back the resolved `lists.apache.org/thread/<hash>?<security-list>` URL, and record the PonyMail URL, the Gmail `threadId`, **and the inbound report's root `Message-ID`** in this field. The root `Message-ID` is the archive-independent handle for the message (a Gmail `threadId` resolves only inside the one mailbox that holds it; the `Message-ID` is what the reporter's MUA stamped and what PonyMail hashes its permalinks on), so it keeps the report locatable even from an account that never received the Gmail copy. Resolve it per backend per [`tools/gmail/operations.md` — Get the root `Message-ID` of a thread](../../tools/gmail/operations.md#get-the-root-message-id-of-a-thread) (PonyMail results carry it directly; on the Gmail backend the claude.ai MCP does **not** expose it, so use the `oauth-draft-message-id` helper). Record it on its own line as ``Root Message-ID: `<id>` `` — **backtick-wrap it**, since a bare `<...@...>` renders as an HTML tag on GitHub. The whole field is **internal-only** — the `generate-cve-json` script will not export it to `references[]` — see the "CVE references must never point at non-public mailing-list threads" section of [`AGENTS.md`](../../AGENTS.md). |
 | **Public advisory URL** | `_No response_`. Populated at Step 14 by `security-issue-sync` once the advisory is archived. |
 | **Reporter credited as** | The reporter's full display name from the email `From:` header (e.g. `Alice Example` from `"Alice Example" <alice@example.com>`). This is a **placeholder** — in direct-reporter mode, the receipt-of-confirmation reply in Step 7 asks the reporter to confirm their preferred credit form. **Apply the [bot/AI credit policy](../../tools/cve-tool-vulnogram/bot-credits-policy.md) before populating** — if the `From:`-header name or address matches the bot detection rule (`*[bot]` suffix, known-bot list, `*-bot`/`*-ai`/`*-agent`/`*-gpt` suffix patterns, `noreply`/`no-reply`/`donotreply` / `security-alerts@` / `notifications@` service sender), **include** the detected name in the field (the CVE JSON generator emits it with `type: "tool"` per the policy's finder-side rule) and surface *"credited as tool: `<name>` (matches bot policy — `<rule>`)"* in Step 5's proposal. Service-sender addresses (noreply / relays) are still suppressed from the field — they are routing artefacts, not identities; extract the real reporter from the email body instead. **In direct-reporter mode**, also fold the policy's *clarification-reply* into the Step 7 receipt-of-confirmation draft, asking whether a human behind the bot/AI handle should be **additionally** credited as finder (the tool credit stands either way). **In via-forwarder mode** (when the optional [`security-issue-import-via-forwarder`](../security-issue-import-via-forwarder/SKILL.md) sub-skill pre-classified the candidate via a registered forwarder adapter — for the ASF adopter this is the `asf-security` adapter — and the other cases enumerated in [`docs/security/forwarder-routing-policy.md`](../../docs/security/forwarder-routing-policy.md#when-does-via-forwarder-mode-apply)), the **standalone** bot-credit clarification draft is suppressed — it is a credit-acceptance confirmation message, which the forwarder cannot meaningfully answer. The credit *question* itself is **not** suppressed: it folds as a single best-effort *"if a human was behind the tool, please pass back their preferred attribution"* line into the Step 7 receipt-of-confirmation draft instead, per the [question-vs-confirmation distinction](../../docs/security/forwarder-routing-policy.md#negative-space--do-not-relay) in the forwarder-routing policy. The same bot-detection rule applies to the forwarder adapter's `extract_credit()` output (the detection runs on the relayed credit string, not on the forwarder's sender address); see [`tools/forwarder-relay/README.md`](../../tools/forwarder-relay/README.md) for the adapter contract. The user can override per the policy doc. |
 | **PR with the fix** | `_No response_`. |
@@ -1620,6 +1620,7 @@ For each confirmed `Report` or forwarder-relayed candidate:
    ### Security mailing list thread
 
    No public archive URL — tracked privately on Gmail thread `<threadId>`.
+   Root Message-ID: `<root-message-id>`
 
    ### Public advisory URL
 
@@ -1863,6 +1864,59 @@ media / cross-thread-followup / fix-already-public):
    [`security-issue-import-from-pr`'s no-outreach rule](../security-issue-import-from-pr/SKILL.md#reporter-credit-policy-for-public-pr-imports);
    revealing that a security report came in about the PR would
    leak private-channel content into a public surface.
+4. **Record the rejection on the rejections ledger** so the
+   tracker-stats dashboard can count it. A reject-without-tracker
+   disposition leaves no tracker, so without this step it is
+   invisible to every stat. After the Gmail draft is created, append
+   a `<!-- rejection v1 -->` comment to the single open issue
+   labelled `rejections-ledger` in `<tracker>`. This applies to
+   **every reject-without-tracker disposition**:
+
+   - `skip NN` with a canned reply,
+     `NN:reject-with-canned <name>`, `NN:reject-with-public-fix
+     <PR-URL>`;
+   - a confirmed `automated-scanner` / `consolidated-multi-issue`
+     / `media-request` canned reply.
+
+   It does **not** apply to `spam` or `cve-tool-bookkeeping` (those
+   are dropped silently — no disposition to record), and it
+   **never** creates a security tracker.
+
+   Resolve the ledger issue number, then append the comment (the
+   `summary` text is attacker-derived, so write it to a tempfile
+   with the Write tool and pass via `-F`, per the injection guard
+   used elsewhere in this skill):
+
+   ```bash
+   LEDGER=$(gh issue list --repo <tracker> --state open \
+     --label rejections-ledger --json number --jq '.[0].number')
+   ```
+
+   *Write tool call:* `file_path: /tmp/rejection-<threadId>.md`,
+   `content:`
+   ```text
+   <!-- rejection v1 -->
+   date: <YYYY-MM-DD>
+   reporter: <reporter email or display name>
+   canned: <canned-response-slug>
+   thread: <Gmail/PonyMail thread URL or threadId>
+   summary: <one-line disposition>
+   ```
+
+   ```bash
+   gh api repos/<tracker>/issues/$LEDGER/comments \
+     -F body=@/tmp/rejection-<threadId>.md --jq '.id'
+   ```
+
+   If the resolution returns no number (no ledger issue exists yet),
+   surface a one-line note in the recap (*"no `rejections-ledger`
+   issue found — rejection not recorded; create the ledger issue to
+   enable the stat"*) and continue — never fall back to creating a
+   tracker. **Note:** closes handled by
+   [`security-issue-invalidate`](../security-issue-invalidate/SKILL.md)
+   are **not** ledger entries — those are *tracked* closes already
+   counted in the dashboard's closed buckets, so adding them here
+   would double-count.
 
 Apply sequentially (not in parallel): one `gh issue create` per
 confirmed candidate, one draft per reply. If any step fails, stop and
@@ -1934,6 +1988,16 @@ before presenting.
   separate commit to the canned-responses file, not in a one-off
   draft. See the *"Canned-response discipline for negative-response
   drafts"* subsection of Step 5.
+- **Record every reject-without-tracker disposition on the
+  `rejections-ledger` issue** (Step 7, non-import path, item 4) so
+  the tracker-stats dashboard can count it — `skip NN` with a canned
+  reply, `NN:reject-with-canned`, `NN:reject-with-public-fix`, and
+  confirmed `automated-scanner` / `consolidated-multi-issue` /
+  `media-request` canned replies. Never for `spam` /
+  `cve-tool-bookkeeping` (dropped silently) and never for closes
+  handled by `security-issue-invalidate` (tracked closes — already
+  counted, recording here would double-count). The ledger comment
+  never creates a tracker.
 - **Never present a draft that contradicts the report.** The
   coherence check in Step 5 is mandatory before a negative-response
   draft appears in the proposal: the draft must accurately

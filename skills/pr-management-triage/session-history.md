@@ -127,8 +127,7 @@ Session block template (Markdown):
 | `close` (stale-sweep 1b) | N | #... |
 | `draft` (stale-sweep 2) | N | #... |
 | `draft` (stale-sweep 3) | N | #... |
-| `strip-ready-label` (stale-sweep 4a) | N | #... |
-| `close` (stale-sweep 4b) | N | #... |
+| `strip-ready-label` (stale-sweep 4, author-court) | N | #... |
 | `ping` (stale-sweep 5) | N | #... |
 | `promote-bot-draft` (Step 0.5) | N | #... |
 | `flag-suspicious` | N | #... |
