@@ -34,8 +34,8 @@ concurrently, which is exactly what the sync needs.
 
    | User input | Resolves to |
    |---|---|
-   | `sync all` | every open issue in `<tracker>` **plus recently-closed trackers still awaiting a post-close cve.org publication check**. Resolve as: `gh issue list --repo <tracker> --state open --limit 100 --json number,title,labels` ∪ `gh issue list --repo <tracker> --state closed --label "announced" --limit 50 --json number,title,labels,closedAt --jq '[.[] \| select(.closedAt > (now - 90*86400 \| todate))]'`. The closed bucket is limited to the last 90 days and to trackers carrying the `announced` label — those are the ones waiting for cve.org propagation + the final reporter notification (see [1g](gather.md#1g-recently-closed-trackers--check-cveorg-publication-state)). Everything else is a no-op on closed issues and is excluded. |
-   | `sync all open` | explicit open-only variant — `gh issue list --repo <tracker> --state open --limit 100 --json number,title,labels`. No closed trackers. Use when you want the classic open-only sweep and nothing else. |
+   | `sync all` | every open issue in `<tracker>` **plus recently-closed trackers still awaiting a post-close cve.org publication check**. Resolve as: `gh issue list --repo <tracker> --state open --limit 100 --json number,title,labels` ∪ `gh issue list --repo <tracker> --state closed --label "announced" --limit 50 --json number,title,labels,closedAt --jq '[.[] \| select(.closedAt > (now - 90*86400 \| todate))]'`, then **drop any issue labelled `rejections-ledger`** (the rejected-without-tracker ledger issue is not a tracker — see note below). The closed bucket is limited to the last 90 days and to trackers carrying the `announced` label — those are the ones waiting for cve.org propagation + the final reporter notification (see [1g](gather.md#1g-recently-closed-trackers--check-cveorg-publication-state)). Everything else is a no-op on closed issues and is excluded. |
+   | `sync all open` | explicit open-only variant — `gh issue list --repo <tracker> --state open --limit 100 --json number,title,labels`, then **drop any issue labelled `rejections-ledger`**. No closed trackers. Use when you want the classic open-only sweep and nothing else. |
    | `sync #212`, `sync 212`, `sync #212, #214, #218`, `sync #212-#218` | the issue number(s) verbatim — no resolution needed. Works on open and closed trackers alike (the closed-issue sub-steps run when the tracker is closed with `announced`). |
    | `sync CVE-2026-40913` or `sync CVE-2026-40913, CVE-2026-40690` | regex-validate each token against `^CVE-\d{4}-\d{4,7}$` first (anything that does not match is a hard error — *never* interpolate an unvalidated free-form string into the search arg, which is in double quotes and would expand `$(...)`); then look up each validated CVE ID with `gh search issues "CVE-YYYY-NNNNN" --repo <tracker> --json number,title,body --jq '.[] | select(.body \| contains("CVE-YYYY-NNNNN")) \| .number'` (match against the body's *CVE tool link* field) and expand. |
    | `sync <free-text>` (e.g. `sync JWT`, `sync KubernetesExecutor`) | title-substring match — run `gh issue list --repo <tracker> --state open --search "<free-text> in:title" --limit 100 --json number,title` and surface the matches back to the user for confirmation before dispatching (title matches are the fuzziest selector — always confirm, never auto-dispatch). |
@@ -58,6 +58,15 @@ concurrently, which is exactly what the sync needs.
 
    When the selector resolves to zero issues, tell the user and stop
    — do not fall back to `sync all`.
+
+   **Exclude the rejections ledger.** The single open issue labelled
+   `rejections-ledger` (the rejected-without-tracker ledger written
+   by `security-issue-import`) is **not** a security tracker — it
+   carries no scope label and holds only rejection-record comments.
+   Drop it from every set-valued selector (`sync all`, `sync all
+   open`, label/title sweeps) so it is never dispatched a sync
+   subagent. An explicitly-named number (`sync #99`) still works if
+   the operator really means it.
 
 1b. **Pre-flight no-op classifier — skip trackers that obviously need no work.**
     Before spawning subagents, do one batched read to fetch lightweight

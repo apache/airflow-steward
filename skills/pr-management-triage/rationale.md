@@ -23,10 +23,11 @@ information — fix it there, do not re-derive from prose here.
 
 ## Pre-filter 5 (active maintainer conversation)
 
-F5a (author-response cooldown) and F5b (maintainer-to-maintainer
-ping) override every signal in the decision table. Two cases,
-same underlying principle: do not let the triage skill talk over
-a human conversation already in progress.
+F5a (author-response cooldown), F5b (maintainer-to-maintainer
+ping), and F5c (author question to a maintainer) override every
+signal in the decision table. Three cases, same underlying
+principle: do not let the triage skill talk over — or pre-empt —
+a human conversation that needs a human's next move.
 
 ### F5a — 72-hour cooldown after a collaborator comment
 
@@ -72,6 +73,45 @@ treated as F5b matches — we cannot cheaply expand team membership
 in the batch query, and the false-positive cost (skipping a PR
 that should have been actioned) is much lower than the false-
 negative cost (talking over a real maintainer call-out).
+
+### F5c — author question to a maintainer unanswered
+
+The mirror image of F5b. F5b is *maintainer → maintainer*; F5c is
+*author → maintainer*. When the author's most recent comment pings
+a maintainer (*"@potiuk I rebased and answered your point — could
+you take another look?"*, or any open question directed at the
+team) and no maintainer has replied since, the PR is waiting on
+**us**, not on the author. The ball is in the maintainers' court.
+
+Without F5c the classifier reads "last comment by author, then
+silence" the same way it reads an abandoned PR, and routes it to an
+author-facing action — ping the author, request readiness
+confirmation, convert to draft, or (via the stale sweeps) close it
+for inactivity. Every one of those is wrong here: the contributor
+already did their part and asked us a question; handing the PR back
+to them, or closing it, tells a contributor who was waiting politely
+that the project dropped their question on the floor. That is the
+single most corrosive contributor experience the skill can produce —
+and it is exactly what happened to a real PR that the triage process
+closed while an open question to the team sat unanswered, later
+reopened by hand with an apology.
+
+The override is deliberately as strong as F5a/F5b — it beats a merge
+conflict and red CI. If the author asked a question *and* CI is red,
+auto-pinging "please fix CI" while ignoring their question is the
+talk-over we are trying to prevent. The maintainer answers, and if a
+CI fix is also needed they say so themselves, in their own voice.
+
+Maintainer status is resolved the same load-bearing way as F5b and
+Sweep 4 — a `COLLABORATOR` mention is confirmed against the
+committers team / repo-permission API before it is trusted, so a
+ping at a read-only collaborator does not falsely park the PR in our
+court. Team mentions are conservatively treated as matches, same as
+F5b. The detection is `@`-mention-based on purpose: "did the author
+ask a question?" is not cheaply decidable, but "did the author ping
+a maintainer with no reply since?" is, and it is the deterministic
+core of the case. A maintainer reading the surfaced PR makes the
+final call on whether an answer is owed.
 
 ---
 
@@ -734,3 +774,49 @@ frustrated; do not add to the frustration. Concrete rules:
 The full surface area is the templates in
 [`classify-and-act.md#reason-template-rules`](classify-and-act.md#reason-template-rules).
 Anything beyond that is drift.
+
+---
+
+## Sweep 4 — court-based ready-label strip
+
+`ready for maintainer review` means **the ball is in the maintainers'
+court**. Sweep 4 once read staleness as guilt: a healthy stale PR was
+stripped (4a), a rotted one was closed (4b). That is backwards. A
+healthy, author-silent ready PR — especially one a committer has
+already approved and that is mergeable — is waiting on *us* to review
+or merge; stripping its label de-queues a PR that is ready to land. A
+rotted branch is the author's to rebase; jumping straight to `close`
+throws away recoverable work.
+
+So the disposition is now a single question — *whose move is next?* —
+answered by re-classifying the PR live against the decision table:
+
+- **Maintainer's move** (review, merge, workflow approval, CI rerun,
+  branch update) → keep the label; perform the maintainer-side action
+  where there is one. The PR is exactly where it belongs.
+- **Author's move** (rebase a conflict, fix a code / static failure,
+  address unresolved threads, confirm readiness) → strip the label to
+  hand the PR back, post the author-facing action in the *same* pass,
+  and leave an audit marker.
+
+Two failures this fixes, both seen in the wild:
+
+1. **`COLLABORATOR` ≠ committer.** GitHub returns `COLLABORATOR` for
+   read- and triage-role accounts. Treating that association as
+   "maintainer" let a read-only router's comment satisfy the old
+   "author silent after a maintainer comment" trigger, and an approved,
+   mergeable PR was stripped. Maintainer status is now committer-team
+   membership or `write`+ permission, resolved live for the small set
+   of load-bearing decisions (see
+   [`classify-and-act.md#maintainer-activity`](classify-and-act.md#maintainer-activity)).
+2. **Silent strips.** Removing a public label with no comment reads as
+   an unexplained yank — a stripped PR once drew a public "why was this
+   removed?" with no trace to answer it. Every strip now carries the
+   [`stale-ready-label-strip`](comment-templates.md#stale-ready-label-strip)
+   audit marker naming the author-court reason and the next move.
+
+Handing rotted branches back rather than closing them keeps the close
+decision where it belongs — a maintainer's explicit call, or the
+existing inactivity sweep ([Sweep 2](stale-sweeps.md#sweep-2--inactive-open-prs))
+that retires genuinely abandoned PRs after four weeks. Sweep 4 no
+longer closes anything.

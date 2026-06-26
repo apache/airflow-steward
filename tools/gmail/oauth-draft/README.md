@@ -33,13 +33,14 @@
 # oauth-draft
 
 Small Python project that talks directly to the Gmail REST API on a
-user-provided OAuth refresh token. Three console scripts:
+user-provided OAuth refresh token. Four console scripts:
 
 | Console script | Purpose |
 |---|---|
 | `oauth-draft-setup` | One-time interactive OAuth consent flow that writes the credentials JSON. |
 | `oauth-draft-create` | Create a Gmail draft with `threadId` attachment. (As of the `replyToMessageId` parameter on the claude.ai Gmail MCP `create_draft`, the MCP can also produce thread-attached drafts — see [`../draft-backends.md`](../draft-backends.md). This script remains useful when you have a `threadId` on hand and would rather skip the extra `get_thread` round-trip the MCP path requires, and is the only path that lets the skills delete drafts via the Gmail API afterwards.) |
 | `oauth-draft-mark-read` | Bulk-modify Gmail threads matching a search query (default: mark as read by removing the `UNREAD` label). No MCP equivalent today. |
+| `oauth-draft-message-id` | Resolve the root RFC-5322 `Message-ID` header of one or more threads (`threads.get?format=metadata`). No MCP equivalent — the claude.ai Gmail MCP `get_thread` surfaces only Gmail's opaque per-message IDs, never the `Message-ID:` header. `security-issue-import` records the result in the *Security mailing list thread* tracker field. |
 
 The **strongly preferred** drafting backend is this `oauth_curl` tool:
 the claude.ai Gmail MCP `create_draft` silently rewrites embedded URLs
@@ -85,10 +86,15 @@ uv run --project <framework>/tools/gmail/oauth-draft oauth-draft-mark-read \
 # Add --execute after reviewing the dry-run output
 uv run --project <framework>/tools/gmail/oauth-draft oauth-draft-mark-read \
   --query 'label:apache-security in:spam is:unread' --execute
+
+# Resolve the root Message-ID of one or more threads (TSV, or --json)
+uv run --project <framework>/tools/gmail/oauth-draft oauth-draft-message-id \
+  19e9d09a31ff6bdd 19dda947a5d6ca88
 ```
 
 Per-flag help: `oauth-draft-create --help`,
-`oauth-draft-mark-read --help`, `oauth-draft-setup --help`.
+`oauth-draft-mark-read --help`, `oauth-draft-message-id --help`,
+`oauth-draft-setup --help`.
 
 ## Setup — one-time
 

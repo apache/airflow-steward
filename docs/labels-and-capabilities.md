@@ -154,6 +154,7 @@ Capabilities for every skill currently in
 | `security-issue-sync` | `capability:intake` *(+ `capability:reconciliation` once [#337](https://github.com/apache/airflow-steward/issues/337) lands the ASF-dashboard step)* |
 | `setup-shared-config-sync` | `capability:intake` + `capability:setup` *(reconciles user-scope config to a sync repo; the act is intake, the subject is setup)* |
 | `release-announce-draft` | `capability:resolve` *(drafts the `[ANNOUNCE]` email and opens the site-bump PR that complete the release lifecycle)* |
+| `release-promote` | `capability:resolve` *(emits the backend-shaped promotion command set that moves a passed-vote RC to the release distribution area; never runs the command itself)* |
 | `security-cve-allocate` | `capability:resolve` |
 | `security-issue-invalidate` | `capability:resolve` |
 | `security-issue-deduplicate` | `capability:resolve` |

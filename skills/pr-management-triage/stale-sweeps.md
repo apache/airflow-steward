@@ -81,6 +81,34 @@ cases (a PR updated mid-session) don't shift.
 
 ---
 
+## Maintainer-court guard (applies to every sweep)
+
+A PR satisfying
+[`author_question_to_maintainer_unanswered`](classify-and-act.md#author_question_to_maintainer_unanswered)
+— the author's most recent comment `@`-mentions a maintainer (or
+the committers team) and no maintainer has replied since — is in
+the **maintainers' court**: the next move is a maintainer
+answering, not anything the author owes. Every sweep below honours
+it:
+
+- **Sweeps 1–3** (close / convert-to-draft for staleness) **skip
+  it.** A PR is not "abandoned by the author" while the author is
+  waiting on *us*; closing or drafting it for inactivity punishes
+  the contributor for maintainer silence. This is the exact
+  failure that closed a real PR after the triage process missed an
+  open question to the team.
+- **Sweep 4** keeps the `ready for maintainer review` label (see
+  [Step B](#step-b--court-disposition)) — the label *means* "ball
+  in the maintainers' court", which is precisely true here.
+
+Inactivity timers (`updated_at`-based) do **not** override this
+guard; only a maintainer reply — which flips the PR out of the
+precondition — does. The guard is the stale-sweep counterpart of
+pre-filter [F5c](classify-and-act.md#pre-filters), which removes
+the same PRs from the *interactive* flow.
+
+---
+
 ## Sweep 1 — Stale drafts
 
 Two sub-cases, both resulting in `close`:
@@ -186,10 +214,27 @@ Same as Sweep 2 — simple `[A]ll`.
 
 ## Sweep 4 — Stale ready-for-review label
 
-When a PR carries `ready for maintainer review` and the author
-has been silent for ≥ 7 days after a maintainer comment, branch
-health splits the disposition: 4a strips the label; 4b proposes
-`close`.
+`ready for maintainer review` means **the ball is in the maintainers'
+court**. When a PR has carried the label for ≥ 7 days and gone quiet,
+this sweep asks one question — *whose move is next?* — and acts on the
+answer:
+
+- **The next move is a maintainer's** (review, merge, workflow
+  approval, CI rerun, branch update) → the label is **correct**. Leave
+  it on; the PR is exactly where it belongs in the queue.
+- **The next move is the author's** (resolve a conflict, fix a code /
+  static failure, address an unresolved review thread, confirm
+  readiness) → strip the label to hand the PR back, **and** post that
+  author-facing action in the same pass.
+
+The label is **never** stripped silently, and **never** stripped from a
+PR a maintainer simply has not gotten to yet. Author silence alone is
+not a strip trigger; only author silence *on a move that is the
+author's to make* is. (This sweep used to strip every healthy stale PR
+and close every rotted one — the inverse of the court rule: it
+de-queued approved, mergeable PRs because their author had gone quiet,
+and jumped straight to `close` on branches the author could still
+rescue.)
 
 ### Why a separate sub-query
 
@@ -209,48 +254,65 @@ The label name comes from
 [`<project-config>/pr-management-config.md → ready_for_maintainer_review_label`](../../projects/_template/pr-management-config.md)
 — do not hard-code the string.
 
-### Common trigger (4a and 4b)
+### Entry condition
 
-- The PR carries the `ready for maintainer review` label.
-- The `ready for maintainer review` label was added ≥ 7 days ago
-  (`<now> - ready_label_added_at >= 7 days`, where
-  `ready_label_added_at` is the most recent
-  `LabeledEvent { label.name == "ready for maintainer review" }`
-  timestamp from the PR's `timelineItems`).
-- The most recent maintainer comment came **after** the label
-  was added (`last_maintainer_comment_at > ready_label_added_at`)
-  AND `<now> - last_maintainer_comment_at >= 7 days`.
-- `last_author_activity_at` is null **or**
-  `last_author_activity_at <= last_maintainer_comment_at`.
+A PR is a Sweep-4 candidate when **all** hold:
 
-The "maintainer comment after label-add" condition is the
-load-bearing guard against the freshly-promoted misfire: when a
-maintainer just added the `ready for maintainer review` label,
-the queue moves to the maintainers, not the author. A pre-label
-maintainer comment is part of the conversation that *got* the PR
-to ready; counting it as proof of author silence would close PRs
-the moment they get promoted, which is the opposite of what
-`ready for maintainer review` means. This guard mirrors the
-"after the label-add timestamp" pattern row F4 already uses for
-regression detection (see
-[`classify-and-act.md#decision-table`](classify-and-act.md), F4
-row).
+- it carries the `ready for maintainer review` label;
+- the label was added ≥ 7 days ago (`<now> - ready_label_added_at >= 7
+  days`, where `ready_label_added_at` is the most recent
+  `LabeledEvent { label.name == <ready_label> }` timestamp from the
+  PR's `timelineItems`);
+- the PR has been quiet for ≥ 7 days — no commit, issue comment, or
+  review by anyone since `<now> - 7 days`.
 
-The author-activity condition makes this sweep about *author
-silence*, not label age — a "still working on it" reply resets
-the clock.
+The label-age gate is the guard against the freshly-promoted misfire:
+a PR promoted minutes ago has a recent label-add and is not a
+candidate, so the queue is never yanked out from under a just-promoted
+PR. The quiet-for-7-days gate keeps the sweep off PRs that are still
+mid-conversation.
 
-### Branch-health resolution — re-poll mergeability live (before 4a/4b)
+**Candidacy is not a verdict.** It means only "stale enough to
+re-examine"; the disposition comes entirely from the court
+re-classification in Steps A–B. Author silence is no longer a strip
+trigger by itself — a silent PR whose next move is a maintainer's stays
+labelled.
 
-The 4a/4b split turns on whether the branch is *healthy* or *rotted*. **Do not
-read that from the batched `mergeable` / `mergeStateStatus`.** GitHub computes
-mergeability lazily, so a batched search over the `ready` queue returns
-`UNKNOWN` for many PRs and `BLOCKED` for *most* (branch protection withholding
-the merge pending the required approval they do not have yet) — gating the split
-on the batch value mis-routes clean-but-unapproved stale PRs into 4b (close) when
-their branch is actually fine. The Sweep-4 candidate set is already small (stale
-ready PRs concentrate at the back of the queue), so resolve mergeability **live,
-per candidate**:
+### Maintainer detection — committer, not `authorAssociation`
+
+Every "maintainer" test in this sweep — and the
+`last_maintainer_comment_at` / F5a / F5b signals it shares with
+[`classify-and-act.md`](classify-and-act.md#maintainer-activity) —
+means **a member of the `committers_team`** (see
+[`<project-config>/pr-management-config.md`](../../projects/_template/pr-management-config.md))
+**or** an account with repo permission `write`/`maintain`/`admin` —
+**not** `authorAssociation ∈ {COLLABORATOR, MEMBER, OWNER}` alone.
+GitHub returns `COLLABORATOR` for any triage/read collaborator, so
+keying off it treats a read-only router's comment as maintainer
+activity. Resolve it live for the small Sweep-4 candidate set when the
+batch cannot prove committer status:
+
+```bash
+gh api repos/<upstream>/collaborators/<login>/permission --jq .permission   # want: write | maintain | admin
+# or team membership:
+gh api orgs/<org>/teams/<committers-team-slug>/memberships/<login> --jq .state  # want: active
+```
+
+A `read`/`triage` collaborator's comment does not establish
+`last_maintainer_comment_at` and does not count as maintainer activity
+here.
+
+### Step A — re-classify live (whose move is next?)
+
+Do **not** infer the disposition from label age or author silence —
+re-classify the candidate against the live decision table. Branch state
+is half of that, and the batched `mergeable` / `mergeStateStatus` is
+unreliable here: GitHub computes mergeability lazily, so a batched
+search over the `ready` queue returns `UNKNOWN` for many PRs and
+`BLOCKED` for *most* (branch protection withholding the merge pending
+the required approval they do not have yet). The Sweep-4 candidate set
+is already small (stale ready PRs concentrate at the back of the
+queue), so resolve mergeability **live, per candidate**:
 
 ```bash
 gh api repos/<upstream>/pulls/<N> --jq '[.mergeable, .mergeable_state]|@tsv'
@@ -258,53 +320,98 @@ gh api repos/<upstream>/pulls/<N> --jq '[.mergeable, .mergeable_state]|@tsv'
 
 Classify the live `(mergeable, mergeable_state)` pair:
 
-- `mergeable == true` and `mergeable_state ∈ {clean, has_hooks, unstable, behind, blocked}` → **healthy** (`blocked` is a clean branch withheld only on the missing approval — not bitrot) → route to **4a**.
-- `mergeable == false` **or** `mergeable_state == dirty` → **conflicted** → route to **4b**.
-- `mergeable == null` / `mergeable_state == unknown` after the live call → **defer this run** (do not strip, do not close); it settles and re-qualifies next sweep.
+- `mergeable == true` and `mergeable_state ∈ {clean, has_hooks, unstable, behind, blocked}` → **healthy** (`blocked` is a clean branch withheld only on the missing approval — not bitrot).
+- `mergeable == false` **or** `mergeable_state == dirty` → **conflicted** — author-court, only the author can rebase.
+- `mergeable == null` / `mergeable_state == unknown` after the live call → **defer this run** (do not strip); it settles and re-qualifies next sweep.
 
-`statusCheckRollup.state == FAILURE` independently routes to **4b** (red CI is
-bitrot regardless of mergeability). This mirrors the live re-poll the
+`statusCheckRollup.state == FAILURE` is author-court when the failures
+are the PR's own (a code / static fix is the author's move) and
+maintainer-court when they are flaky / systemic (a rerun is ours) — the
+decision table already draws that line (rows 10–13 `rerun` vs 12/12b/17
+`comment`). This mirrors the live re-poll the
 [`pr-management-quick-merge`](../pr-management-quick-merge/candidate-rules.md#stage-3--live-merge-readiness)
-skill uses for the same reason — observed: a batch mergeability gate misjudged
-~87% of a real `ready` queue.
+skill uses for the same reason — observed: a batch mergeability gate
+misjudged ~87% of a real `ready` queue.
 
-### 4a — Branch healthy → strip label
+**Check the maintainer-court guard first.** If
+[`author_question_to_maintainer_unanswered`](classify-and-act.md#author_question_to_maintainer_unanswered)
+holds (pre-filter [F5c](classify-and-act.md#pre-filters) would
+have skipped it in the interactive flow), the PR is maintainer-court
+regardless of branch state — keep the label and stop. Resolve the
+mentioned maintainer's committer status live (per the section above)
+before relying on this, since it is the deciding signal.
 
-**Extra trigger.** The live branch-health resolution above classifies the PR as
-**healthy** (not conflicted, and `statusCheckRollup.state != FAILURE`). A batch
-`mergeStateStatus == BLOCKED` is *healthy* here, not a reason to skip 4a.
+Otherwise run the PR through the live decision table
+([`classify-and-act.md`](classify-and-act.md)) to get its current
+`(classification, action)`, resolving "maintainer" per the section
+above. Step B reads the court off that result.
 
-**Action.** `strip-ready-label`. See
-[`actions.md#strip-ready-label`](actions.md#strip-ready-label--remove-the-ready-for-review-label-no-comment).
+### Step B — court disposition
 
-**Reason string.** *"Ready-for-review label stale — N days
-since maintainer comment, no author reply, branch healthy —
-strip label only"*.
+Read the court off the Step-A `(classification, action)`:
 
-**Group behaviour.** Simple `[A]ll` — non-destructive, no
-per-PR confirm.
+| Next move (decision-table action / state) | Court | Sweep-4 action |
+|---|---|---|
+| [`author_question_to_maintainer_unanswered`](classify-and-act.md#author_question_to_maintainer_unanswered) — author asked a maintainer, unanswered | maintainer (respond) | **keep label** — the author is waiting on us; never strip |
+| `approve-workflow` | maintainer | **keep label**; perform the approval |
+| `rerun` — flaky / systemic CI (rows 10/11/13) | maintainer | **keep label**; perform the rerun |
+| `rebase` — branch behind, mergeable (row 16) | maintainer | **keep label**; perform the branch update |
+| approved + mergeable (a committer approval present, CI green, not CONFLICTING) | maintainer (merge) | **keep label** — never strip |
+| `mark-ready` / passing `skip` — green, never reviewed (rows 19/20) | maintainer (review) | **keep label** |
+| `stale_review` — author already pushed after CHANGES_REQUESTED (row 18) | maintainer (re-review) | **keep label**; the row-18 `ping` is a reviewer nudge, not a strip |
+| `mergeable == CONFLICTING` (row 9) | author (rebase) | **strip** + `ping` (rebase) + audit marker |
+| author-caused CI / static failures (rows 12/12b/17) | author (fix) | **strip** + post the fix request + audit marker |
+| `ping` — unresolved threads the author has not engaged (row 15) | author | **strip** + `ping` + audit marker |
+| `request-author-confirmation` (row 14c) | author (confirm) | **strip** + post the request + audit marker |
 
-### 4b — Branch rotted → propose close
+A maintainer-court action that *does* something
+(`approve-workflow` / `rerun` / `rebase`) is performed — the PR keeps
+its label and progresses, joining that action's normal group. A
+maintainer-court `mark-ready` / `skip` / re-review simply leaves the PR
+labelled (no mutation): it is correctly in the queue.
 
-**Extra trigger.** The live branch-health resolution above classifies the PR as
-**conflicted** (`mergeable == false` / `mergeable_state == dirty`) **or**
-`statusCheckRollup.state == FAILURE`. A batch `mergeStateStatus == BLOCKED` is
-**not** a 4b trigger — that is the healthy-awaiting-approval case (4a).
+### Strip and act in one pass
 
-**Action.** `close` with the
+A strip and its author-facing action are a single unit of work **in
+this pass** — never strip now and defer the ping to a later scan. The
+author must never see the label vanish with no explanation and no
+follow-up.
+
+### Audit marker — every strip
+
+[`strip-ready-label`](actions.md#strip-ready-label--remove-the-ready-for-review-label--audit-marker)
+posts the
+[`stale-ready-label-strip`](comment-templates.md#stale-ready-label-strip)
+audit comment recording *what* was stripped, the *author-court reason*,
+and the *next move*. When the author-facing action is itself a comment
+(`ping` / `request-author-confirmation`), fold it into the **same**
+comment rather than posting twice; a quality-flag `comment`/`draft`
+keeps its own
+[`triage_feedback_channel`](../../projects/_template/pr-management-config.md)
+body and the audit marker accompanies it.
+
+### Persistent bitrot — hand back, do not close
+
+This sweep **hands rotted branches back** to the author (strip + ping);
+it does **not** auto-close them. A PR that stays conflicted / red and
+silent *after* the strip is retired by
+[Sweep 2](#sweep-2--inactive-open-prs) (inactive open PR → draft after
+4 weeks) like any other abandoned PR — there is no separate close timer
+here. (The
 [`stale-ready-label-close`](comment-templates.md#stale-ready-label-close)
-comment template; **skip the quality-violations label step**
-(close reason is bitrot, not policy violation). Otherwise
-[`actions.md#close`](actions.md#close--close-with-fold-and-quality-violations-label)
-unchanged.
+template is retained only for a maintainer's explicit, manual close of
+a long-dead ready PR.)
 
-**Reason string.** *"Ready-for-review label stale — N days
-since maintainer comment, no author reply, branch has
-<bitrot_signal> — close"*. `<bitrot_signal>` ∈ {`failing CI`,
-`merge conflicts`, `failing CI + conflicts`}.
+### Group behaviour
 
-**Group behaviour.** Per-PR confirm inside the batch
-(inherited from the `close`-group rule, SKILL.md Step 3).
+Author-court strips are a single `[A]ll`-confirmable group — reversible
+and self-documenting (each carries its audit marker). The per-PR
+**reason string must name the author-court trigger** ("merge conflict —
+author must rebase", "unresolved threads, author not engaged", "failing
+static checks — code fix needed", "awaiting author readiness
+confirmation") — never a bare "ready label stale". PRs that
+re-classify to a maintainer-court disposition are not in the strip
+group at all.
 
 ---
 
@@ -437,7 +544,7 @@ The sweeps add no new GraphQL calls beyond what classification
 already fetched — the timestamps (`updated_at`,
 `last_triage_comment_at`) come from the per-page batch query.
 The one exception is Sweep 4's
-[live mergeability re-poll](#branch-health-resolution--re-poll-mergeability-live-before-4a4b):
+[live mergeability re-poll](#step-a--re-classify-live-whose-move-is-next):
 one `GET /pulls/<N>` REST call per *stale Sweep-4 candidate* (a
 small set — single digits in a typical sweep), the unavoidable
 cost of getting a trustworthy branch-health read. Beyond that,

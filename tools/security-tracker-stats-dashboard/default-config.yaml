@@ -17,12 +17,17 @@
 
 buckets: monthly                # monthly | quarterly
 start: null                     # null = first tracker createdAt; else "YYYY-MM" (monthly) or "YYYY-Qn" (quarterly)
+rejections_ledger_label: rejections-ledger   # label identifying the "rejected without tracker" ledger issue; set to null to disable the stat
+                                # The ledger is a single open issue (labelled with this value, NOT the security-marker
+                                # label) whose comments record reports rejected on-thread without ever creating a
+                                # tracker. The renderer parses those comments for "rejected (no tracker)" counts and
+                                # excludes the ledger issue itself from all tracker classification. null -> stat omitted.
 upstream_repo: apache/airflow   # null -> skip c_prc/c_prm/c_rel charts and the back-fill rule
                                 # Mirrors <project-config>/project.md -> `upstream_repo`; ASF default is the airflow-s adopter's
                                 # value. Override in the overlay if the renderer should chart a different repo (or null).
 
 milestones:
-  - date: 2026-04-20
+  - date: 2026-04-13
     label: skill adoption
 
 # Tracker scope labels — the project's "what does this affect" axis.

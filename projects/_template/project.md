@@ -685,7 +685,42 @@ tracker:
     pr_merged: "pr merged"
     cve_allocated: "cve allocated"
     not_cve_worthy: "not cve worthy"
+    # Label on the single open "rejected without tracker" ledger issue
+    # — see the rejections-ledger note below. NOT the security_marker
+    # label, so the ledger is never treated as a tracker.
+    rejections_ledger: "rejections-ledger"
 ```
+
+#### Rejected-without-tracker ledger
+
+The `security-issue-import` skill sometimes rejects a report with a
+canned reply **without creating a tracker** (the disposition lives
+only on the mail thread). To keep those rejections countable, the
+team records each one as a comment on a single dedicated **ledger
+issue** in `tracker_repo`: one **open** issue, labelled with the
+`tracker.labels.rejections_ledger` value (ASF default
+`rejections-ledger`) and **not** carrying the security-marker label.
+
+Adopters who want the *rejected without tracker* dashboard stat must:
+
+1. **Create the ledger issue** once in `tracker_repo` and label it
+   `rejections-ledger` (keep it open; the skills resolve it via
+   `gh issue list --repo <tracker> --state open --label
+   rejections-ledger`).
+2. **Set the dashboard knob.** Point
+   `security-tracker-stats.md → rejections_ledger_label` (or the
+   `rejections_ledger_label:` key in the renderer's YAML overlay) at
+   the same label. Set it to `null` to disable the stat — then no
+   ledger issue is needed.
+
+Each rejection comment carries a machine-parseable block
+(`<!-- rejection v1 -->` with `date:` / `reporter:` / `canned:` /
+`thread:` / `summary:` lines); a one-time historical backfill is a
+single `<!-- rejection-backfill v1 count: N -->` comment. The
+`security-tracker-stats-dashboard` renderer parses these and excludes
+the ledger issue from all tracker classification. Closes handled by
+`security-issue-invalidate` are **not** ledger entries — those are
+tracked closes already counted in the closed buckets.
 
 ### Scope detection
 

@@ -759,39 +759,47 @@ decision.
 
 ---
 
-## `strip-ready-label` — remove the ready-for-review label, no comment
+## `strip-ready-label` — remove the ready-for-review label + audit marker
 
-Used by [Sweep 4a — branch healthy → strip label](stale-sweeps.md#4a--branch-healthy--strip-label).
-One mutation, no comment. (The rotted-branch sibling
-[Sweep 4b](stale-sweeps.md#4b--branch-rotted--propose-close)
-uses `close` instead, not this action.)
+Used by [Sweep 4 Step B](stale-sweeps.md#step-b--court-disposition) for
+**author-court** strips — when the next move to make the PR mergeable is
+the author's (a conflict to rebase, a code / static failure to fix,
+unresolved threads to address, readiness to confirm). A maintainer-court
+stale PR keeps its label and is never passed to this action.
+
+Two coupled steps, **in one pass**: post the author-facing follow-up,
+then remove the label. The strip is **never** silent.
 
 ```bash
-# Remove the now-stale ready-for-review label (idempotent —
-# a 422 "Label does not exist on this issue" is benign; log
-# and continue).
+# 1. Post the audit marker — and fold in the author-facing action when
+#    it is itself a comment (ping / request-author-confirmation).
+#    Template: comment-templates.md#stale-ready-label-strip
+gh pr comment <N> --repo <repo> --body-file <marker>
+# 2. Remove the now-handed-back label (idempotent — a 422 "Label does
+#    not exist on this issue" is benign; log and continue).
 gh pr edit <N> --repo <repo> --remove-label "ready for maintainer review"
 ```
 
 The label string is read from
 [`<project-config>/pr-management-config.md → ready_for_maintainer_review_label`](../../projects/_template/pr-management-config.md);
-do not hard-code it. The same `gh` recipe is used by the
-"strip-on-downgrade" hook inside `draft` and `comment`
+do not hard-code it. The same `gh pr edit --remove-label` recipe backs
+the "strip-on-downgrade" hook inside `draft` and `comment`
 (`actions.md` §[draft](#draft--convert-to-draft-and-fold-violations-into-the-pr-body) /
-§[comment](#comment--deliver-violations--stale-review--ping-feedback)),
-but those flows additionally convert to draft / post a
-comment. The `strip-ready-label` action is **only** the
-label-removal step — no other mutation, no comment.
+§[comment](#comment--deliver-violations--stale-review--ping-feedback));
+there the draft-conversion / violation feedback **is** the author-facing
+follow-up, so those flows do not additionally post the
+`stale-ready-label-strip` marker.
 
-### Why no comment
+### Why an audit marker (no longer silent)
 
-The PR already carries an unanswered maintainer comment (that
-is the trigger condition; see Sweep 4a). Posting a second
-contributor-facing comment would either duplicate the
-maintainer's existing ask or race the normal-queue re-triage
-that may run on the next sweep. Removing the label silently
-is the most conservative move; the maintainer can re-add the
-label in one click if the strip was unwarranted.
+`ready for maintainer review` is a public signal; removing it silently
+reads as an unexplained yank and confuses contributors — a silent strip
+once drew a public *"why was this removed?"* with no trace to answer it.
+The marker records *what* was stripped, the *author-court reason*, and
+the *next move*, so the strip is always auditable and the author knows
+exactly what gets the PR back into the queue. Because the label only
+comes off when the ball is genuinely the author's, the follow-up is
+never a duplicate of an existing maintainer ask — it *is* the ask.
 
 ### Failure handling
 
@@ -806,7 +814,9 @@ label in one click if the strip was unwarranted.
 
 ### Order-of-operations
 
-One step. No comment to sequence against.
+Post the audit marker / folded author action **before** removing the
+label — the same "comment before the state change that hides it" rule
+`draft` and `close` follow.
 
 ---
 
@@ -826,7 +836,7 @@ post it **before** the state change that hides it:
 | `flag-suspicious` | post comment → close → label *(per PR in the batch)* |
 | `mark-ready` | label only |
 | `request-author-confirmation` | post comment only (no label) |
-| `strip-ready-label` | remove-label only (no comment) |
+| `strip-ready-label` | post audit marker (+ folded author action) → remove-label |
 | `rerun` | rerun (no comment) |
 | `rebase` | update-branch (no comment) |
 | `ping` | post comment |
