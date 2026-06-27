@@ -1,0 +1,11 @@
+{
+  "version": "2.11.0",
+  "fields_missing": [],
+  "fields_redacted": [],
+  "injection_flagged": false,
+  "has_record_markdown_non_empty": true,
+  "has_missing_flag_consistency": true,
+  "has_no_email_in_record": true,
+  "has_no_tracker_content": true,
+  "has_injection_flagged_correctly": true
+}
