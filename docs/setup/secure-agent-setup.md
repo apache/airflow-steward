@@ -427,6 +427,31 @@ below, annotated.
       // data-exfiltration vector through the trustd service." No-op
       // outside the sandbox (e.g. CI). macOS-only.
       "enableWeakerNetworkIsolation": true
+    },
+    // `sandbox.credentials` (claude-code 2.1.187+) is the only layer
+    // that protects secret ENVIRONMENT VARIABLES — `denyRead` and the
+    // `permissions.deny[Read(...)]` rules are filesystem-only and do
+    // NOT stop a sandboxed command from reading `$ANTHROPIC_API_KEY`
+    // or dumping `env`. `mode: "deny"` unsets the var for sandboxed
+    // commands only; the unsandboxed agent process keeps its own auth,
+    // and sandbox-bypassed commands (e.g. `gh`, which reads
+    // ~/.config/gh) are unaffected. Credential FILES are already
+    // covered by `denyRead: ["~/"]`, so only `envVars` is listed here.
+    // (`mode: "mask"` + `injectHosts` is the alternative: keep the var
+    // usable only for connections to named hosts — not needed here.)
+    "credentials": {
+      "envVars": [
+        { "name": "ANTHROPIC_API_KEY", "mode": "deny" },
+        { "name": "ANTHROPIC_AUTH_TOKEN", "mode": "deny" },
+        { "name": "CLAUDE_CODE_OAUTH_TOKEN", "mode": "deny" },
+        { "name": "GH_TOKEN", "mode": "deny" },
+        { "name": "GITHUB_TOKEN", "mode": "deny" },
+        { "name": "AWS_ACCESS_KEY_ID", "mode": "deny" },
+        { "name": "AWS_SECRET_ACCESS_KEY", "mode": "deny" },
+        { "name": "AWS_SESSION_TOKEN", "mode": "deny" },
+        { "name": "NPM_TOKEN", "mode": "deny" },
+        { "name": "TWINE_PASSWORD", "mode": "deny" }
+      ]
     }
   },
   "permissions": {
