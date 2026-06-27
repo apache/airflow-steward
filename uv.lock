@@ -370,7 +370,7 @@ requires-dist = [{ name = "proxy-py", specifier = ">=2.4,<3" }]
 [package.metadata.requires-dev]
 dev = [
     { name = "mypy", specifier = ">=1.11" },
-    { name = "pytest", specifier = ">=9.1.0" },
+    { name = "pytest", specifier = ">=8.0" },
     { name = "ruff", specifier = ">=0.6" },
 ]
 
