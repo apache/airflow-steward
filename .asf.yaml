@@ -19,7 +19,7 @@
 ---
 github:
   description: "Agent-assisted maintainership and development framework for Apache projects — Triage and Drafting (agent-authored fixes with human review); Mentoring, Pairing (developer-side dev-cycle), and Auto-merge on the roadmap."
-  homepage: "https://github.com/apache/airflow-steward"
+  homepage: "https://github.com/apache/magpie"
   labels:
     # Note that GitHub only supports <=20 labels/topics per repo! Pipeline
     # will fail if you add more.
@@ -213,18 +213,17 @@ notifications:
   # `pullrequests_comment`) are set explicitly to `commits@` here —
   # **not** left to that default — so PR review comments, CI-status
   # flips, and label / milestone changes go to the same list as the
-  # lifecycle events rather than landing on `dev@airflow.apache.org`.
+  # lifecycle events rather than landing on `dev@magpie.apache.org`.
   # Per the ASF asf.yaml schema
   # (https://github.com/apache/infrastructure-asfyaml/blob/main/asfyaml/feature/notifications.py
   # `VALID_NOTIFICATION_SCHEMES`), if Infra adds a new scheme, set
   # it explicitly in the same change to keep the `dev@` default
   # suppressed.
-  jobs:                  jobs@airflow.apache.org
-  commits:               commits@airflow.apache.org
-  issues:                commits@airflow.apache.org
-  issues_status:         commits@airflow.apache.org
-  issues_comment:        commits@airflow.apache.org
-  pullrequests:          commits@airflow.apache.org
-  pullrequests_status:   commits@airflow.apache.org
-  pullrequests_comment:  commits@airflow.apache.org
-  discussions:           commits@airflow.apache.org
+  commits:               commits@magpie.apache.org
+  issues:                commits@magpie.apache.org
+  issues_status:         commits@magpie.apache.org
+  issues_comment:        commits@magpie.apache.org
+  pullrequests:          commits@magpie.apache.org
+  pullrequests_status:   commits@magpie.apache.org
+  pullrequests_comment:  commits@magpie.apache.org
+  discussions:           commits@magpie.apache.org

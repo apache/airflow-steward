@@ -1,0 +1,10 @@
+{
+  "staging_url": "https://dist.apache.org/repos/dist/dev/airflow/2.11.0-rc1/",
+  "target_url": "https://dist.apache.org/repos/dist/release/airflow/2.11.0/",
+  "dist_backend": "svnpubsub",
+  "rm_is_pmc": true,
+  "proposed_label": "promoted",
+  "mirror_note_present": true,
+  "has_svn_mv_command": true,
+  "has_no_auto_run": true
+}

@@ -43,7 +43,7 @@ repos:
       - id: check-hooks-apply
         name: Check if all hooks apply to the repository
   - repo: https://github.com/thlorenz/doctoc.git
-    rev: v2.4.1
+    rev: v2.5.0
     hooks:
       - id: doctoc
         name: Add TOC for Markdown and RST files
@@ -98,7 +98,7 @@ repos:
   # the hook never silently rewrites files; CI surfaces typos as
   # errors instead.
   - repo: https://github.com/crate-ci/typos
-    rev: v1.47.0
+    rev: v1.47.2
     hooks:
       - id: typos
         name: typos

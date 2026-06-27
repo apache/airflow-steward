@@ -10,6 +10,7 @@
     - [Categories (lifecycle bands)](#categories-lifecycle-bands)
     - [Time-to-triage signal](#time-to-triage-signal)
     - [Milestones (vertical annotations)](#milestones-vertical-annotations)
+    - [Rejected-without-tracker ledger (`rejections_ledger_label`)](#rejected-without-tracker-ledger-rejections_ledger_label)
     - [When `upstream_repo` is null](#when-upstream_repo-is-null)
   - [Prerequisites](#prerequisites)
   - [Failure modes](#failure-modes)
@@ -150,6 +151,63 @@ rollup / sync / import comments.
 on every time-axis chart. Each entry needs `date: YYYY-MM-DD` (mapped
 onto the bucket axis) and `label`. Set `milestones: []` in an overlay
 to remove them entirely.
+
+### Rejected-without-tracker ledger (`rejections_ledger_label`)
+
+```yaml
+rejections_ledger_label: rejections-ledger   # null to disable
+```
+
+The `security-issue-import` skill sometimes rejects a report with a
+canned reply **without creating a tracker** — the disposition lives
+only on the mail thread, so it is invisible to every other stat on
+this dashboard. To make those rejections countable the team records
+each one as a comment on a single dedicated **ledger issue** in the
+`<tracker>` repo: one open issue, labelled with
+`rejections_ledger_label` (default `rejections-ledger`) and **not**
+carrying the security-marker label.
+
+`fetch_issues.py` already pulls every issue's `labels` + `comments`,
+so the ledger and its comments arrive in `issues.json` with no extra
+fetch. `render.py`:
+
+- **identifies** any issue whose labels include
+  `rejections_ledger_label` as a ledger issue;
+- **excludes** the ledger issue from all tracker classification —
+  it never appears in the lifecycle bands, open/closed KPIs, triage
+  medians, or any per-bucket count;
+- **parses** the ledger's comments for the rejection markers below
+  and renders a *rejected (no tracker)* count.
+
+Each per-rejection comment carries a machine-parseable block:
+
+```text
+<!-- rejection v1 -->
+date: YYYY-MM-DD
+reporter: <email/name>
+canned: <canned-response-slug>
+thread: <url-or-threadid>
+summary: <one line>
+```
+
+A one-time historical backfill is recorded as a single comment
+(count only, no per-entry dates):
+
+```text
+<!-- rejection-backfill v1 count: N -->
+```
+
+Dated rejections are bucketed by their `date:` into the same
+monthly / quarterly axis as the trackers and rendered as a
+*rejected (no tracker)* area series (`c_rejected`). The undated
+backfill `count: N` is kept as a separate **historical (pre-ledger)**
+headline number rather than smeared across buckets, so the per-bucket
+series only ever shows real dated rejections. Both the stdout summary
+and an HTML header banner print `<dated> + <historical> = <total>`.
+
+The parse is defensive: comments without a marker are ignored,
+malformed `date:` lines are skipped, and an absent ledger issue (or
+`rejections_ledger_label: null`) simply omits the stat / shows 0.
 
 ### When `upstream_repo` is null
 

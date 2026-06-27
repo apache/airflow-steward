@@ -26,10 +26,11 @@ readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "Apache-2.0" }
 # google-auth-oauthlib is needed only by `oauth-draft-setup` (the one-time
-# interactive consent flow). The `oauth-draft-create` and
-# `oauth-draft-mark-read` commands are stdlib-only. We list the dep at
-# the project level rather than as an extra so the three console scripts
-# can be invoked uniformly via `uv run --project ... oauth-draft-*`.
+# interactive consent flow). The `oauth-draft-create`,
+# `oauth-draft-mark-read`, and `oauth-draft-message-id` commands are
+# stdlib-only. We list the dep at the project level rather than as an
+# extra so the console scripts can be invoked uniformly via
+# `uv run --project ... oauth-draft-*`.
 dependencies = [
   "google-auth-oauthlib>=1.4.0",
 ]
@@ -38,6 +39,7 @@ dependencies = [
 oauth-draft-setup = "oauth_draft.setup_creds:main"
 oauth-draft-create = "oauth_draft.create_draft:main"
 oauth-draft-mark-read = "oauth_draft.mark_threads_read:main"
+oauth-draft-message-id = "oauth_draft.message_id:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/oauth_draft"]
