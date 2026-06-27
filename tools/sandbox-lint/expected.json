@@ -46,6 +46,20 @@
         "*.crates.io"
       ],
       "enableWeakerNetworkIsolation": true
+    },
+    "credentials": {
+      "envVars": [
+        { "name": "ANTHROPIC_API_KEY", "mode": "deny" },
+        { "name": "ANTHROPIC_AUTH_TOKEN", "mode": "deny" },
+        { "name": "CLAUDE_CODE_OAUTH_TOKEN", "mode": "deny" },
+        { "name": "GH_TOKEN", "mode": "deny" },
+        { "name": "GITHUB_TOKEN", "mode": "deny" },
+        { "name": "AWS_ACCESS_KEY_ID", "mode": "deny" },
+        { "name": "AWS_SECRET_ACCESS_KEY", "mode": "deny" },
+        { "name": "AWS_SESSION_TOKEN", "mode": "deny" },
+        { "name": "NPM_TOKEN", "mode": "deny" },
+        { "name": "TWINE_PASSWORD", "mode": "deny" }
+      ]
     }
   },
   "permissions": {
