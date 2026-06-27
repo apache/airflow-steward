@@ -33,9 +33,9 @@ setup
   setup-isolated-setup-verify: Walk the verification checklist for the framework's secure agent setup.
   setup-override-upstream: Promote a local .apache-magpie-overrides skill into a PR upstream.
   setup-shared-config-sync: Commit and push the user's shared Claude config to the sync repo.
-  setup: Adopt and maintain the apache-steward framework in a project repo.
+  setup: Adopt and maintain the apache-magpie framework in a project repo.
 
 write-skill
-  write-skill: Author a new skill for the Apache Steward framework, or update an existing one.
+  write-skill: Author a new skill for the Apache Magpie framework, or update an existing one.
 
 User: "Thanks, that's exactly what I needed."

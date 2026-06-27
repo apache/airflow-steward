@@ -1,5 +1,5 @@
 You are executing the triage-status classification from Step 2 of the
-pr-management-stats skill from the Apache Steward framework.
+pr-management-stats skill from the Apache Magpie framework.
 
 Given a PR's comment history and commit metadata, classify its triage status.
 

@@ -1,7 +1,7 @@
 ---
 name: magpie-write-skill
 description: |
-  Author a new skill for the Apache Steward framework, or update
+  Author a new skill for the Apache Magpie framework, or update
   an existing one. Walks the user through the framework's skill
   shape (frontmatter, resources, placeholder convention,
   prompt-injection defences, Privacy-LLM gate-check) and
@@ -25,13 +25,13 @@ license: Apache-2.0
      <project-config> → adopting project's `.apache-magpie/` directory
      <tracker>        → value of `tracker_repo:` in <project-config>/project.md
      <upstream>       → value of `upstream_repo:` in <project-config>/project.md
-     <framework>      → `.apache-magpie/apache-steward` in adopters; `.` in
+     <framework>      → `.apache-magpie/apache-magpie` in adopters; `.` in
                         the framework standalone -->
 
 # write-skill
 
 This skill walks the user through authoring a new skill for the
-Apache Steward framework, or refactoring an existing one to pick
+Apache Magpie framework, or refactoring an existing one to pick
 up the framework's current conventions.
 
 ## Provenance

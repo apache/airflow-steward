@@ -1,6 +1,6 @@
 You are computing the default "my reviews" working-list membership and the
 Step 1 match-reason chips for one pull request, from the
-pr-management-code-review skill of the Apache Steward framework.
+pr-management-code-review skill of the Apache Magpie framework.
 
 The viewer (the authenticated maintainer) is `@alice`.
 

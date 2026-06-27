@@ -65,7 +65,7 @@ before moving on to the next item. Use:
 
   ```bash
   existing=$(gh issue view <N> --repo <tracker> --json comments \
-    --jq '[.comments[] | select(.body | startswith("<!-- apache-steward: release-manager-handoff v1 -->"))] | .[0].id // empty')
+    --jq '[.comments[] | select(.body | startswith("<!-- apache-magpie: release-manager-handoff v1 -->"))] | .[0].id // empty')
   ```
 
   - **No marker found (first hand-off, or marker lost)** — POST a
@@ -108,7 +108,7 @@ before moving on to the next item. Use:
   `tools/<cve-tool>/release-manager-publication-comment-oauth-pushed.md`
   or `tools/<cve-tool>/release-manager-publication-comment.md` based
   on the same Step 5c variant choice. The marker is
-  `<!-- apache-steward: release-manager-publication-ready v1 -->`.
+  `<!-- apache-magpie: release-manager-publication-ready v1 -->`.
   Apply right after the *Public advisory URL* body-field update has
   landed, the CVE JSON has been regenerated (Step 5a), and (when
   applicable) the OAuth push has landed (Step 5b) — that way the
@@ -168,7 +168,7 @@ before moving on to the next item. Use:
   then POST a fresh comment — there is no PATCH recovery for this
   template (the tracker is closed by the time it posts;
   informational only). Idempotency keys on the marker
-  `<!-- apache-steward: release-manager-wrap-up v1 -->`; if the
+  `<!-- apache-magpie: release-manager-wrap-up v1 -->`; if the
   marker is already present on the tracker, skip the post
   entirely.
 
@@ -740,8 +740,8 @@ own automated push path:
 | OAuth-pushed | `tools/<cve-tool>/release-manager-handoff-comment-oauth-pushed.md`, `tools/<cve-tool>/release-manager-publication-comment-oauth-pushed.md` (for the Vulnogram adapter: [`tools/cve-tool-vulnogram/release-manager-handoff-comment-oauth-pushed.md`](../../tools/cve-tool-vulnogram/release-manager-handoff-comment-oauth-pushed.md), [`tools/cve-tool-vulnogram/release-manager-publication-comment-oauth-pushed.md`](../../tools/cve-tool-vulnogram/release-manager-publication-comment-oauth-pushed.md)) | Step 5b's `push_update` succeeded this run |
 
 Both variants of each comment carry the **same marker** on line 1
-(`<!-- apache-steward: release-manager-handoff v1 -->` for the
-hand-off, `<!-- apache-steward: release-manager-publication-ready v1 -->`
+(`<!-- apache-magpie: release-manager-handoff v1 -->` for the
+hand-off, `<!-- apache-magpie: release-manager-publication-ready v1 -->`
 for the publication-ready). Idempotency detection still keys on the
 marker — the variant choice does not get its own marker. When the
 marker is found on the tracker, the existing comment's body is

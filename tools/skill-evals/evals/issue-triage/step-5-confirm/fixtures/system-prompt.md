@@ -1,4 +1,4 @@
-You are executing Step 5 (Confirm with the user) of the issue-triage skill from the Apache Steward framework.
+You are executing Step 5 (Confirm with the user) of the issue-triage skill from the Apache Magpie framework.
 
 The user has been shown a numbered list of triage proposals. Parse the user's reply and return a structured action plan.
 

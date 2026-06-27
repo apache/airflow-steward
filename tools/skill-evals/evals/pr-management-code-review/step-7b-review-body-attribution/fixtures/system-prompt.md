@@ -1,5 +1,5 @@
 You are executing the pre-post validation from Step 7b / Step 8 of the
-pr-management-code-review skill from the Apache Steward framework.
+pr-management-code-review skill from the Apache Magpie framework.
 
 Golden rule 5: every review body MUST end with the verbatim AI-attribution
 footer before it is posted. The footer is a blockquote that begins with the

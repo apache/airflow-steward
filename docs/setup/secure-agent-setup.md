@@ -101,7 +101,7 @@ each layer, see
 
 ### Agent-guided (recommended)
 
-If you have Claude Code installed and a clone of `airflow-steward`
+If you have Claude Code installed and a clone of `magpie`
 on the host, the framework ships six skills that walk every
 step interactively. Each surfaces sudo / shell-rc / settings-file
 changes for explicit approval before applying — nothing
@@ -121,7 +121,7 @@ privilege-elevating runs without you saying so.
 4. Run /magpie-setup-isolated-setup-verify — confirms ✓/✗/⚠ for every piece
    of the secure-agent setup.
 5. When you want to be on the framework's latest, run
-   `/magpie-setup upgrade` — pulls your local airflow-steward
+   `/magpie-setup upgrade` — pulls your local magpie
    checkout to origin/main with --ff-only, refuses to touch a
    dirty working tree, surfaces what arrived. Then run
    /magpie-setup-isolated-setup-update to surface user-side drift the
@@ -504,7 +504,7 @@ in a freshly-cloned adopter repo can **write** to CWD but cannot
 fails with `Operation not permitted`, and `Read`-tool reads of
 files like `.apache-magpie.lock` fail too. The full reproducer
 and harness-side analysis is in
-[issue #197](https://github.com/apache/airflow-steward/issues/197).
+[issue #197](https://github.com/apache/magpie/issues/197).
 
 The framework's defensive fix is to add the project root as an
 **explicit absolute path** to both `sandbox.filesystem.allowRead`
@@ -789,7 +789,7 @@ but only works on hosts where the framework path resolves.
 
 ```bash
 # ~/.bashrc or ~/.zshrc
-source /path/to/airflow-steward/tools/agent-isolation/claude-iso.sh
+source /path/to/magpie/tools/agent-isolation/claude-iso.sh
 ```
 
 **Global (user-scope) install** — copy the script into
@@ -802,7 +802,7 @@ out on a given host.
 ```bash
 # one-time install (re-run to pick up an upstream wrapper change)
 mkdir -p ~/.claude/agent-isolation
-cp /path/to/airflow-steward/tools/agent-isolation/claude-iso.sh \
+cp /path/to/magpie/tools/agent-isolation/claude-iso.sh \
     ~/.claude/agent-isolation/claude-iso.sh
 
 # ~/.bashrc or ~/.zshrc — guarded so it's a no-op until the file exists
@@ -944,7 +944,7 @@ user level.
 # the framework checkout — see "Syncing user-scope config across
 # machines" below for the multi-host pattern).
 mkdir -p ~/.claude/scripts
-cp /path/to/airflow-steward/tools/agent-isolation/sandbox-bypass-warn.sh \
+cp /path/to/magpie/tools/agent-isolation/sandbox-bypass-warn.sh \
     ~/.claude/scripts/sandbox-bypass-warn.sh
 chmod +x ~/.claude/scripts/sandbox-bypass-warn.sh
 ```
@@ -1032,8 +1032,8 @@ ships **security-language** (no CVE / security-fix wording in a public
 `gh pr create|edit` title/body).
 
 Each guard is overridable per command by a visible inline env
-assignment (`STEWARD_ALLOW_MENTIONS=1 gh pr comment …`, etc.) or
-disabled wholesale with `STEWARD_GUARD_OFF=1` — the deny message
+assignment (`MAGPIE_ALLOW_MENTIONS=1 gh pr comment …`, etc.) or
+disabled wholesale with `MAGPIE_GUARD_OFF=1` — the deny message
 names the override. The dispatcher is stdlib-only and invoked as
 `python3 …/agent-guard.py`, fast-pathing everything that is not a
 `gh` / `git` command.
@@ -1042,7 +1042,7 @@ names the override. The dispatcher is stdlib-only and invoked as
 
 The hook is **wired once**. Additional guards are discovered at
 runtime from the `guards.d` directory next to the script (plus any
-dir in `$STEWARD_GUARD_DIRS`). A skill contributes a guard by
+dir in `$MAGPIE_GUARD_DIRS`). A skill contributes a guard by
 shipping one import-free `*.py` file that defines `guard(ctx)` (and
 an optional `TRIGGERS` list) — **no `settings.json` change**. The
 setup skills sync `guards.d` from the snapshot, so a new bundled or
@@ -1055,13 +1055,13 @@ skill-contributed guard activates on the next `/magpie-setup` /
 
 ```bash
 mkdir -p ~/.claude/scripts/guards.d
-cp /path/to/airflow-steward/tools/agent-guard/src/agent_guard/__init__.py \
+cp /path/to/magpie/tools/agent-guard/src/agent_guard/__init__.py \
     ~/.claude/scripts/agent-guard.py
 # Bundled (universal) guards…
-cp /path/to/airflow-steward/tools/agent-guard/src/agent_guard/guards.d/*.py \
+cp /path/to/magpie/tools/agent-guard/src/agent_guard/guards.d/*.py \
     ~/.claude/scripts/guards.d/
 # …plus every skill-owned guard (mention, mark-ready, security-language, …)
-cp /path/to/airflow-steward/skills/*/guards/*.py ~/.claude/scripts/guards.d/ 2>/dev/null || true
+cp /path/to/magpie/skills/*/guards/*.py ~/.claude/scripts/guards.d/ 2>/dev/null || true
 chmod +x ~/.claude/scripts/agent-guard.py
 ```
 
@@ -1148,7 +1148,7 @@ unrelated sessions silent.
 
 ```bash
 mkdir -p ~/.claude/scripts
-cp /path/to/airflow-steward/tools/agent-isolation/sandbox-error-hint.sh \
+cp /path/to/magpie/tools/agent-isolation/sandbox-error-hint.sh \
     ~/.claude/scripts/sandbox-error-hint.sh
 chmod +x ~/.claude/scripts/sandbox-error-hint.sh
 ```
@@ -1258,7 +1258,7 @@ it itself.
 
 ```bash
 mkdir -p ~/.claude/scripts
-cp /path/to/airflow-steward/tools/agent-isolation/sandbox-status-line.sh \
+cp /path/to/magpie/tools/agent-isolation/sandbox-status-line.sh \
     ~/.claude/scripts/sandbox-status-line.sh
 chmod +x ~/.claude/scripts/sandbox-status-line.sh
 ```
@@ -1412,7 +1412,7 @@ sessions. Install in `~/.claude/settings.json`.
 
 ```bash
 mkdir -p ~/.claude/scripts
-cp /path/to/airflow-steward/tools/agent-isolation/claude-term-bg.sh \
+cp /path/to/magpie/tools/agent-isolation/claude-term-bg.sh \
     ~/.claude/scripts/claude-term-bg.sh
 chmod +x ~/.claude/scripts/claude-term-bg.sh
 ```
@@ -1823,7 +1823,7 @@ it / approve it.
 Before starting, confirm:
 
 - The OS (Linux distro / macOS).
-- The path to my airflow-steward framework checkout (you'll need
+- The path to my magpie framework checkout (you'll need
   to read its `.claude/settings.json`,
   `tools/agent-isolation/*`, and
   `tools/agent-isolation/pinned-versions.toml`).
@@ -1835,7 +1835,7 @@ Before starting, confirm:
 Then walk through:
 
 1. **Pinned tools.** Read
-   `<airflow-steward>/tools/agent-isolation/pinned-versions.toml`
+   `<magpie>/tools/agent-isolation/pinned-versions.toml`
    and surface the install command for `bubblewrap` and `socat`
    at the pinned versions for my distro (skip both on macOS —
    Seatbelt is built-in). Then surface the npm command for
@@ -1843,7 +1843,7 @@ Then walk through:
    run; do not invoke sudo or npm yourself.
 
 2. **Project `.claude/settings.json`.** Read
-   `<airflow-steward>/.claude/settings.json` and copy its
+   `<magpie>/.claude/settings.json` and copy its
    `sandbox`, `permissions.deny`, and `permissions.ask` blocks
    into this repo's `.claude/settings.json`. If a project
    settings.json already exists, surface a diff of the merged
@@ -1851,16 +1851,16 @@ Then walk through:
 
 3. **Clean-env wrapper.** Surface the line to add to my
    `~/.bashrc` or `~/.zshrc` to source
-   `<airflow-steward>/tools/agent-isolation/claude-iso.sh`. Ask
+   `<magpie>/tools/agent-isolation/claude-iso.sh`. Ask
    whether I want it as the default `claude` (alias) or
    on-demand only. Print the line; do not edit my shell rc
    yourself.
 
 4. **User-scope hook scripts.** `mkdir -p ~/.claude/scripts`,
    then copy
-   `<airflow-steward>/tools/agent-isolation/sandbox-bypass-warn.sh`
+   `<magpie>/tools/agent-isolation/sandbox-bypass-warn.sh`
    and
-   `<airflow-steward>/tools/agent-isolation/sandbox-status-line.sh`
+   `<magpie>/tools/agent-isolation/sandbox-status-line.sh`
    into `~/.claude/scripts/` and `chmod +x` them.
 
 5. **User-scope `~/.claude/settings.json` wiring.** Read the
@@ -1874,7 +1874,7 @@ Then walk through:
    I want the terminal background to tint while Claude is waiting
    on me (a pure quality-of-life signal, no security effect).
    **Default no.** Only if I say yes: copy
-   `<airflow-steward>/tools/agent-isolation/claude-term-bg.sh`
+   `<magpie>/tools/agent-isolation/claude-term-bg.sh`
    into `~/.claude/scripts/` and `chmod +x` it, then add six
    hooks to `~/.claude/settings.json`, merging into any existing
    arrays on those events — `Stop` → `claude-term-bg.sh stop`
@@ -1986,11 +1986,11 @@ synchronised is a periodic operation, not a one-time install.
 
 ### Direct steps
 
-1. **Framework checkout.** From your `airflow-steward` clone,
+1. **Framework checkout.** From your `magpie` clone,
    pull the latest:
 
    ```bash
-   cd /path/to/airflow-steward
+   cd /path/to/magpie
    git pull --ff-only
    ```
 
@@ -2020,11 +2020,11 @@ synchronised is a periodic operation, not a one-time install.
 
    ```bash
    diff ~/.claude/scripts/sandbox-bypass-warn.sh \
-       /path/to/airflow-steward/tools/agent-isolation/sandbox-bypass-warn.sh
+       /path/to/magpie/tools/agent-isolation/sandbox-bypass-warn.sh
    diff ~/.claude/scripts/sandbox-status-line.sh \
-       /path/to/airflow-steward/tools/agent-isolation/sandbox-status-line.sh
+       /path/to/magpie/tools/agent-isolation/sandbox-status-line.sh
    diff ~/.claude/agent-isolation/claude-iso.sh \
-       /path/to/airflow-steward/tools/agent-isolation/claude-iso.sh
+       /path/to/magpie/tools/agent-isolation/claude-iso.sh
    ```
 
 4. **comdev MCP checkouts.** If you registered the `ponymail`
@@ -2058,7 +2058,7 @@ Update my secure-agent-setup install to the framework's latest.
 Surface the diffs and the upgrade candidates; do not modify
 anything — I will decide what to apply:
 
-1. `cd` into my `airflow-steward` clone and `git pull --ff-only`.
+1. `cd` into my `magpie` clone and `git pull --ff-only`.
    Report what changed under `tools/agent-isolation/`,
    `.claude/settings.json`, and `secure-agent-setup.md`.
 2. Run `tools/agent-isolation/check-tool-updates.sh` and surface

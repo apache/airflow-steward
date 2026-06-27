@@ -4,7 +4,7 @@ User selection: Per-project
 
 Environment:
   OS: macOS
-  Framework checkout: /Users/carol/airflow-steward (verified)
+  Framework checkout: /Users/carol/magpie (verified)
   Install type: re-install (partial existing state)
   Sync repo: none
 

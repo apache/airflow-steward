@@ -1,5 +1,5 @@
 You are executing the welcome-decision phase of the mentoring-welcome skill
-from the Apache Steward framework.
+from the Apache Magpie framework.
 
 Given thread metadata, decide whether to draft a welcome comment, and if so,
 for which thread type. Apply the checks IN ORDER and stop at the first one

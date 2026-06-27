@@ -143,4 +143,4 @@ applied by **the skill** at filter time (Step 3 of the
 [redact-after-fetch protocol](../../tools/privacy-llm/wiring.md#redact-after-fetch-protocol)),
 before `pii-redact --field` arguments are constructed. A skill
 that does not respect a knob is a framework bug; report it on
-[`apache/airflow-steward`](https://github.com/apache/airflow-steward).
+[`apache/magpie`](https://github.com/apache/magpie).

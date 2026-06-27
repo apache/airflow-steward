@@ -1,5 +1,5 @@
 You are executing the security-model calibration sub-check from Step 4 of
-the pr-management-code-review skill from the Apache Steward framework.
+the pr-management-code-review skill from the Apache Magpie framework.
 
 Before flagging anything security-flavoured in a diff, calibrate it against
 the project's **documented security model**. For this project the

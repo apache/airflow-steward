@@ -59,7 +59,7 @@ looks like, how to verify, and how to clean up what
 /magpie-setup unadopt dry-run      # print the plan; no writes, no confirmation
 ```
 
-The flow refuses to run inside `apache/airflow-steward`
+The flow refuses to run inside `apache/magpie`
 itself (the framework is not its own adopter).
 
 ## What you'll be asked to confirm
@@ -192,7 +192,7 @@ template. If you had unrelated rules referencing
 dir), they remain. Audit and clean manually:
 
 ```bash
-grep apache-steward .gitignore
+grep apache-magpie .gitignore
 ```
 
 ### Outside-the-repo state
@@ -217,7 +217,7 @@ also retiring Magpie from this machine entirely:
   `setup-shared-config-sync` pushed to your private sync
   repo, which has its own lifecycle.
 - **Framework checkout** — your local clone of
-  `apache/airflow-steward` from `setup-isolated-setup-install`.
+  `apache/magpie` from `setup-isolated-setup-install`.
   Remove with `rm -rf <path-to-clone>` if no longer needed.
 - **Per-user state from skills that wrote outside this
   repo** — consult each skill's docs.
@@ -239,4 +239,4 @@ a first-time adopter takes.
 - [`install-recipes.md`](install-recipes.md) — the
   counterpart to this page.
 - Report issues against the framework repo at
-  [apache/airflow-steward](https://github.com/apache/airflow-steward/issues).
+  [apache/magpie](https://github.com/apache/magpie/issues).

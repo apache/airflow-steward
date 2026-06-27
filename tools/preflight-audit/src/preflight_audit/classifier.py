@@ -37,7 +37,7 @@ from typing import Any
 # The skill-marker prefix every framework-authored tracker comment
 # carries (status-rollup, release-manager hand-off, wrap-up). Keeps
 # the classifier in lock-step with `tools/github/status-rollup.md`.
-SKILL_MARKER_PREFIX = "<!-- apache-steward: "
+SKILL_MARKER_PREFIX = "<!-- apache-magpie: "
 
 # Bot logins always treated as bot-equivalent regardless of comment body.
 # Extend per-adopter via the override file (see bulk-mode.md).

@@ -42,7 +42,7 @@ GMAIL_API = "https://gmail.googleapis.com/gmail/v1/users/me"
 # Default location of the credentials file. Was historically
 # ``~/.config/airflow-s/gmail-oauth.json`` when this tool lived in the
 # Apache Airflow security tracker repo; renamed to
-# ``apache-steward`` here as the framework was generalised. Existing
+# ``apache-magpie`` here as the framework was generalised. Existing
 # adopters who still have the file at the old path can either move it
 # or set ``$GMAIL_OAUTH_CREDENTIALS`` (or pass ``--credentials``).
 DEFAULT_CREDENTIALS_DIR = pathlib.Path.home() / ".config" / "apache-magpie"

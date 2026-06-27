@@ -50,12 +50,8 @@ choices matter.
 
 ## Repository purpose
 
-This repository (the **Apache Magpie** framework — name
-confirmed available via PODLINGSEARCH; still served from the
-legacy `apache/airflow-steward` slug until the GitHub rename
-lands, see the heads-up note at the top of
-[`README.md`](README.md)) is the **generic, project-agnostic
-framework**.
+This repository (the **Apache Magpie** framework) is the
+**generic, project-agnostic framework**.
 It contains skills, tool adapters, generic process documentation,
 and a project-template scaffold — and **no project-specific
 content**. Adopting projects fetch this repository as a gitignored
@@ -273,7 +269,7 @@ order, **first match wins** — do **not** merge across locations:
 
 | # | Location | When to use |
 |---|---|---|
-| 1 | Path in `$APACHE_STEWARD_USER_CONFIG` (env var) | Power-user / CI / isolated test setups that need a specific config. Wins over both defaults below. |
+| 1 | Path in `$APACHE_MAGPIE_USER_CONFIG` (env var) | Power-user / CI / isolated test setups that need a specific config. Wins over both defaults below. |
 | 2 | `~/.config/apache-magpie/user.md` | **Recommended default.** One per-user, OS-conventional file shared across every worktree of every adopter project on the machine. |
 | 3 | `<project-config>/user.md` | Per-project fallback for adopters who set up `user.md` inside their tracker repo before `~/.config/apache-magpie/` existed. Future adopters should prefer (2). |
 

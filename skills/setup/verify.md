@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: Apache-2.0
      https://www.apache.org/legal/release-policy.html -->
 
-# verify — health check of the steward integration + drift detection
+# verify — health check of the magpie integration + drift detection
 
 Confirms the framework is wired in correctly so the rest of
 the framework's skills resolve from the right paths, and
@@ -156,7 +156,7 @@ Check that the entries from
   settings — written to by
   [`sandbox-add-project-root.sh`](../../tools/agent-isolation/sandbox-add-project-root.sh)
   as the per-worktree sandbox-allowlist defense for
-  [issue #197](https://github.com/apache/airflow-steward/issues/197);
+  [issue #197](https://github.com/apache/magpie/issues/197);
   must never be committed since the content is machine-specific
   absolute paths)
 - `__pycache__/` and `*.pyc` (byte-compiled artefacts emitted when
@@ -275,7 +275,7 @@ snapshot's `.apache-magpie/skills/setup/`.
     adopter modified the bootstrap skill directly; an
     anti-pattern per the framework's hard rule). The
     framework-side fix is to upstream the modifications as
-    a PR against `apache/airflow-steward`; the local fix
+    a PR against `apache/magpie`; the local fix
     is to revert the modifications and use
     `.apache-magpie-overrides/` instead.
 
@@ -337,7 +337,7 @@ Three sub-checks for the deterministic guard
 ### 8b. Sandbox-allowlist coverage of the current worktree
 
 Defensive cross-check for
-[issue #197](https://github.com/apache/airflow-steward/issues/197):
+[issue #197](https://github.com/apache/magpie/issues/197):
 `sandbox.filesystem.allowRead: ["."]` does not in practice cover
 CWD under the harness, so `/magpie-setup` (adopt, upgrade,
 worktree-init) chains into
@@ -662,15 +662,15 @@ Two files to check (per
 
 - **`<repo-root>/README.md`** — should have a contributor-facing
   section (typically `## Agent-assisted contribution
-  (apache-steward)`) that mentions the snapshot mechanism, the
+  (apache-magpie)`) that mentions the snapshot mechanism, the
   `/magpie-setup` invocation for fresh clones, the
   `.apache-magpie.lock` pin, and `.apache-magpie-overrides/`.
-  Grep for `apache-steward` and `/magpie-setup` together as a
+  Grep for `apache-magpie` and `/magpie-setup` together as a
   proxy. ⚠ if either token is absent.
 - **`<repo-root>/AGENTS.md`** — if the file exists, it should
-  have an `## apache-steward framework` section that
+  have an `## apache-magpie framework` section that
   cross-references the README section. Grep for
-  `apache-steward` and a link to the README anchor. ⚠ if the
+  `apache-magpie` and a link to the README anchor. ⚠ if the
   file exists but lacks the section; not applicable if the
   file does not exist (do not create one just to satisfy
   the check).

@@ -4,7 +4,7 @@ User selection: Per-project (default)
 
 Environment:
   OS: macOS (Seatbelt built-in; bubblewrap/socat not needed)
-  Framework checkout: /Users/alice/airflow-steward (verified)
+  Framework checkout: /Users/alice/magpie (verified)
   Install type: fresh (no existing .claude/ in adopter repo)
   Sync repo: none
 

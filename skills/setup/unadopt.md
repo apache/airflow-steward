@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: Apache-2.0
      https://www.apache.org/legal/release-policy.html -->
 
-# unadopt — remove the apache-steward framework from an adopter repo
+# unadopt — remove the apache-magpie framework from an adopter repo
 
 The reverse of [`adopt.md`](adopt.md). Removes the framework
 artefacts the adopt flow installed — gitignored snapshot,
@@ -31,7 +31,7 @@ explicit confirmation before any write.
 
 ## When to use
 
-- The project decided to stop using apache-steward.
+- The project decided to stop using apache-magpie.
 - The repo was adopted experimentally and the experiment is
   over.
 - The adoption was scoped to a fork / branch and that branch
@@ -70,7 +70,7 @@ relevant override file rather than unadopting.
    > undo just this worktree's symlink without touching the
    > main, `rm <worktree>/.apache-magpie` manually."*
 
-3. Confirm we are **not** in `apache/airflow-steward` itself
+3. Confirm we are **not** in `apache/magpie` itself
    (`git remote get-url origin`); refuse if it resolves to the
    framework — the framework is not "adopted into" itself.
 4. Confirm `<committed-lock>` (`.apache-magpie.lock`) is
@@ -102,8 +102,8 @@ every artefact).
 | `.gitignore` entries | `<repo-root>/.gitignore` | which of the entries from [`adopt.md` Step 7](adopt.md) are present |
 | Framework-skill symlinks | **Every active target dir** ([`agents.md`](agents.md)): the canonical `.agents/skills/` (always present), the `.claude/skills/` + `.github/skills/` relay pair, and any present holdout (`.windsurf/skills/`, `.goose/skills/`) | each `magpie-*` symlink — canonical entries resolving into `<snapshot-dir>/skills/`, relays resolving into `.agents/skills/magpie-*` — in **each** target dir |
 | Post-checkout hook | `<repo-root>/.git/hooks/post-checkout` | exists + invokes `~/.claude/scripts/sandbox-add-project-root.sh` |
-| Doc section: `README.md` | `<repo-root>/README.md` | contains the `## Agent-assisted contribution (apache-steward)` heading |
-| Doc section: `AGENTS.md` | `<repo-root>/AGENTS.md` | contains the `## apache-steward framework` heading |
+| Doc section: `README.md` | `<repo-root>/README.md` | contains the `## Agent-assisted contribution (apache-magpie)` heading |
+| Doc section: `AGENTS.md` | `<repo-root>/AGENTS.md` | contains the `## apache-magpie framework` heading |
 | Doc section: `CONTRIBUTING.md` | `<repo-root>/CONTRIBUTING.md` | contains the adoption section (fallback layout) |
 | Overrides directory | `<repo-root>/.apache-magpie-overrides/` | exists; count framework-scaffold files vs adopter-authored |
 | `setup` skill itself | canonical `.agents/skills/magpie-setup/` + the `.claude`/`.github` relay symlinks to it | exists (this is the only committed framework skill) |
@@ -132,7 +132,7 @@ The following will be REMOVED:
     .claude/skills/magpie-<skill-1>      → ../../.agents/skills/magpie-<skill-1>   (relay)
     .github/skills/magpie-<skill-1>      → ../../.agents/skills/magpie-<skill-1>   (relay)
     <holdout>/skills/magpie-<skill-1>    → ../../.agents/skills/magpie-<skill-1>   (relay; e.g. .windsurf/skills/, .goose/skills/ — only if present)
-    .git/hooks/post-checkout              (if it contains the steward recipe)
+    .git/hooks/post-checkout              (if it contains the magpie recipe)
     # Target dirs (per agents.md): canonical .agents/skills/, the
     #   .claude/skills/ + .github/skills/ relay pair, plus any present
     #   holdout — each carries one magpie-<n> entry per linked skill.
@@ -140,8 +140,8 @@ The following will be REMOVED:
   Committed (will show in `git status`):
     .apache-magpie.lock                  (the project's pin)
     .gitignore                            (the entries listed in adopt.md Step 7)
-    README.md                             (the `## Agent-assisted contribution (apache-steward)` section)
-    AGENTS.md                             (the `## apache-steward framework` section, if present)
+    README.md                             (the `## Agent-assisted contribution (apache-magpie)` section)
+    AGENTS.md                             (the `## apache-magpie framework` section, if present)
     .agents/skills/magpie-setup/         (this skill itself — self-destructive; canonical copy)
     .claude/skills/magpie-setup          (relay symlink)
     .github/skills/magpie-setup          (relay symlink)
@@ -155,12 +155,12 @@ The following will be PRESERVED:
 Surface the `~/.config/apache-magpie/user.md` line only if that
 file is actually present on disk. If it is absent (or the
 operator drove `user.md` resolution via
-`$APACHE_STEWARD_USER_CONFIG` / the legacy per-project location),
+`$APACHE_MAGPIE_USER_CONFIG` / the legacy per-project location),
 omit the line. The framework never touches the per-user file
 regardless of `--purge-overrides` — it is shared across every
 adopter project on the operator's machine and unadopting from
 *this* project does not imply they have stopped using
-apache-steward elsewhere.
+apache-magpie elsewhere.
 
 If `--purge-overrides` was passed, move
 `.apache-magpie-overrides/` into the *removed* section and
@@ -230,7 +230,7 @@ pointing at a deleted snapshot.
 
    Never touch a non-symlink at the same path.
 2. **Post-checkout hook.** Remove only if its content matches
-   the steward recipe verbatim (i.e. the hook the adopt flow
+   the magpie recipe verbatim (i.e. the hook the adopt flow
    wrote — a single
    `~/.claude/scripts/sandbox-add-project-root.sh` invocation
    guarded by the `-x` test; see
@@ -253,14 +253,14 @@ pointing at a deleted snapshot.
    and `*.pyc` in place — they are stock Python entries that
    most repos carry independently of the framework, so removing
    them would break the adopter's own Python ignores. Only drop
-   them if they sit unambiguously inside the steward-managed
+   them if they sit unambiguously inside the magpie-managed
    block (under the same comment header the adopt flow wrote)
    and the repo has no other Python sources.
 6. **Doc sections.** For each of `README.md`, `AGENTS.md`,
    `CONTRIBUTING.md` that contains an adoption section,
    remove the section. The boundaries are the section
    heading (e.g. `## Agent-assisted contribution (apache-
-   steward)`) and the next `##`-level heading (or EOF).
+   magpie)`) and the next `##`-level heading (or EOF).
    Surface the proposed diff (`git diff` form) to the user
    before writing; one batched confirmation for the whole
    doc set, not per file.
@@ -292,7 +292,7 @@ After the deletions, verify the post-state:
   pair, or any holdout) — neither dangling canonical links into
   the removed `<snapshot-dir>/` nor relays into the now-empty
   `.agents/skills/`.
-- `.gitignore` no longer contains the steward entries.
+- `.gitignore` no longer contains the magpie entries.
 - The doc sections are gone from the affected files.
 - `.agents/skills/magpie-setup/` and its `.claude`/`.github`
   relays do not exist.
@@ -320,7 +320,7 @@ Preserved:
   .apache-magpie-overrides/   (M files; pass `--purge-overrides` to remove)
   ~/.config/apache-magpie/user.md   (per-user; shared with other adopters on this machine — remove manually if this was your last adoption)
   .agents/skills/, .claude/skills/, .github/skills/   (target dirs — adopter-owned; only the magpie-* entries were removed)
-  <list of any non-steward-owned content the plan flagged>
+  <list of any non-magpie-owned content the plan flagged>
 
 Staged for commit (you'll see in `git status`):
   D  .apache-magpie.lock
@@ -330,7 +330,7 @@ Staged for commit (you'll see in `git status`):
   D  .agents/skills/magpie-setup/...   (+ .claude/.github relay symlinks)
 
 To re-adopt later: follow docs/setup/install-recipes.md in the
-framework repo at https://github.com/apache/airflow-steward.
+framework repo at https://github.com/apache/magpie.
 ```
 
 Suggest the user open the diff (`git diff --cached`) before

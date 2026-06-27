@@ -49,7 +49,7 @@ def guard(ctx):
     mentions = ctx.mentions(ctx.gh_body(read_files=True))
     if not mentions:
         return None
-    if ctx.override("STEWARD_ALLOW_MENTIONS"):
+    if ctx.override("MAGPIE_ALLOW_MENTIONS"):
         return None
 
     # Both channels share one rule: only the PR/issue author may be @-mentioned.
@@ -68,7 +68,7 @@ def guard(ctx):
             f"{sorted(set(mentions))} but the PR/issue author could not be verified, "
             "so the guard cannot confirm they are not a maintainer. Re-run once the "
             "author is known, drop the @-mentions (use backticked `login`), or override "
-            "with STEWARD_ALLOW_MENTIONS=1 if the mention is intentional."
+            "with MAGPIE_ALLOW_MENTIONS=1 if the mention is intentional."
         )
     offenders = sorted({m for m in mentions if m != author.lower()})
     if offenders:
@@ -76,6 +76,6 @@ def guard(ctx):
             f"agent-guard[mention]: a {surface} may only @-mention the PR author "
             f"(`{author}`); refusing to notify maintainer(s) {offenders}. Reference "
             "them as backticked `login` (no @) so they are not pinged, or override with "
-            "STEWARD_ALLOW_MENTIONS=1 for a deliberate exception."
+            "MAGPIE_ALLOW_MENTIONS=1 for a deliberate exception."
         )
     return None

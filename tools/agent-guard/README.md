@@ -56,15 +56,15 @@ Each guard is overridable by a **visible inline env assignment** so a maintainer
 can consciously proceed:
 
 ```bash
-STEWARD_ALLOW_MENTIONS=1     gh pr comment 123 --body "@reviewer please take another look"
-STEWARD_ALLOW_COAUTHOR=1     git commit -m "…"            # not for AI co-authorship
-STEWARD_ALLOW_MARK_READY=1   gh pr edit 123 --add-label "ready for maintainer review"
-STEWARD_ALLOW_SECURITY_LANG=1 gh pr create --title "…"    # disclosure already public
-STEWARD_ALLOW_EMPTY_PUSH=1   git push --force …
-STEWARD_GUARD_OFF=1          <any command>                # disable all guards once
+MAGPIE_ALLOW_MENTIONS=1     gh pr comment 123 --body "@reviewer please take another look"
+MAGPIE_ALLOW_COAUTHOR=1     git commit -m "…"            # not for AI co-authorship
+MAGPIE_ALLOW_MARK_READY=1   gh pr edit 123 --add-label "ready for maintainer review"
+MAGPIE_ALLOW_SECURITY_LANG=1 gh pr create --title "…"    # disclosure already public
+MAGPIE_ALLOW_EMPTY_PUSH=1   git push --force …
+MAGPIE_GUARD_OFF=1          <any command>                # disable all guards once
 ```
 
-`STEWARD_READY_LABEL` overrides the label string the `mark-ready` guard watches
+`MAGPIE_READY_LABEL` overrides the label string the `mark-ready` guard watches
 for (default `ready for maintainer review`).
 
 ## Wiring
@@ -98,7 +98,7 @@ the settings.json entry in sync. See those skills for the exact steps.
 The hook is **wired once**. Beyond the two bundled guards, additional guards are
 discovered at runtime from every `*.py` in a `guards.d` directory — the
 `guards.d` sibling of the running script, plus any directory listed in
-`$STEWARD_GUARD_DIRS` (colon-separated). **No `settings.json` change is needed to
+`$MAGPIE_GUARD_DIRS` (colon-separated). **No `settings.json` change is needed to
 add a guard.**
 
 A skill owns its guards by shipping them under `skills/<skill>/guards/*.py`;

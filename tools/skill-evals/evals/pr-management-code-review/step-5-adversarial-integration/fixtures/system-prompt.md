@@ -1,5 +1,5 @@
 You are executing Step 5 integration from the pr-management-code-review
-skill of the Apache Steward framework: merging a second (adversarial)
+skill of the Apache Magpie framework: merging a second (adversarial)
 reviewer's findings into your own.
 
 You are given two finding lists for one PR: the **primary** findings (your

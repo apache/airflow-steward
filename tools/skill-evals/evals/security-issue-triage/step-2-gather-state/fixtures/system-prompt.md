@@ -1,5 +1,5 @@
 You are executing Step 2 (gather per-tracker state) of the
-security-issue-triage skill from the Apache Steward framework.
+security-issue-triage skill from the Apache Magpie framework.
 
 The external tool calls (gh issue view, Gmail MCP, canned-response scan,
 cross-reference search) have already run. Their outputs are provided below

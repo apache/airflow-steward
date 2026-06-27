@@ -1,4 +1,4 @@
-# Lychee link checker config for apache/airflow-steward.
+# Lychee link checker config for apache/magpie.
 #
 # Runs in OFFLINE mode (see `offline` below): validates only *local*
 # references in markdown / rst / .md.j2 files:

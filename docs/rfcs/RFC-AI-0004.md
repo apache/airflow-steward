@@ -69,11 +69,11 @@
 | **RFC** | AI-0004 |
 | **Title** | Principles of agentic interaction for open-source maintainers |
 | **Status** | Draft |
-| **Authors** | The Apache Magpie project (see [`MISSION.md`](https://github.com/apache/airflow-steward/blob/main/MISSION.md) for roster) |
+| **Authors** | The Apache Magpie project (see [`MISSION.md`](https://github.com/apache/magpie/blob/main/MISSION.md) for roster) |
 | **Initial draft** | 2026-05-07 |
 | **Supersedes** | None |
 | **Superseded by** | None |
-| **Reference implementation** | [`apache/airflow-steward`](https://github.com/apache/airflow-steward) |
+| **Reference implementation** | [`apache/magpie`](https://github.com/apache/magpie) |
 | **License** | Apache License 2.0 |
 
 ---
@@ -82,7 +82,7 @@
 
 This RFC describes six principles that govern how AI agents should interact with open-source projects when **the human in the interaction is a project maintainer** — committer, PMC member, release manager, security-team member, triager. The six principles — **(1) human-in-the-loop on every state change**, **(2) secure sandbox by default**, **(3) vendor neutrality across LLM backends and project governance**, **(4) conversational, correctable agentic skills**, **(5) write access and outbound messages require human review**, and **(6) privacy by design** — are framed as *a baseline*. They define the minimum trust posture under which agentic tooling can be ethically deployed against the public artefacts of a community-governed project (issues, PRs, mailing lists, releases, security reports, contributor data).
 
-The RFC is normative for the Apache Magpie framework ([`apache/airflow-steward`](https://github.com/apache/airflow-steward), the working draft of which is summarised in [`MISSION.md`](https://github.com/apache/airflow-steward/blob/main/MISSION.md)) and is offered as a **pattern other projects can adopt or adapt** when integrating agentic tooling into their own maintainership workflow.
+The RFC is normative for the Apache Magpie framework ([`apache/magpie`](https://github.com/apache/magpie), the working draft of which is summarised in [`MISSION.md`](https://github.com/apache/magpie/blob/main/MISSION.md)) and is offered as a **pattern other projects can adopt or adapt** when integrating agentic tooling into their own maintainership workflow.
 
 It is **not** a specification of any particular implementation detail (LLM choice, prompt format, model size, scaffolding library). The principles are independent of those choices.
 
@@ -172,7 +172,7 @@ LLM-driven agents read attacker-controlled text every time they run. Email subje
 
 ### Architecture: three layers, layered
 
-The reference implementation (see [`docs/setup/secure-agent-internals.md`](https://github.com/apache/airflow-steward/blob/main/docs/setup/secure-agent-internals.md)) uses a three-layer model. Other implementations MAY choose different mechanisms; the layering MUST be preserved:
+The reference implementation (see [`docs/setup/secure-agent-internals.md`](https://github.com/apache/magpie/blob/main/docs/setup/secure-agent-internals.md)) uses a three-layer model. Other implementations MAY choose different mechanisms; the layering MUST be preserved:
 
 | Layer | What it stops | Mechanism (reference) |
 |---|---|---|
@@ -213,8 +213,8 @@ The reference implementation (see [`docs/setup/secure-agent-internals.md`](http
 
 1. **Pluggable backend.** The framework's skills cite no model name in their flow logic. "Use the strongest model available" / "use a fast model for this lookup step" are acceptable hints; "must be Claude Sonnet 4.5" is not.
 2. **Pluggable adapters.** Private-mailing-list, CVE-tool, release-process, and audit-finding ingest MUST live behind adapter modules. The reference implementation's `tools/<adapter>/` directories (`tools/cve-tool-vulnogram/`, `tools/gmail/`, `tools/ponymail/`) are this pattern.
-3. **Pilot diversity.** Validation runs (per the Apache Magpie [MISSION.md](https://github.com/apache/airflow-steward/blob/main/MISSION.md)) cover at least one frontier-model backend, at least one fully-local inference setup (Ollama / vLLM / equivalent), and at least one Apache-hosted or Apache-aligned endpoint. A framework that only validates against one vendor is a vendor-locked framework that has not noticed yet.
-4. **Privacy-LLM gating is vendor-neutral by construction.** Private content (security reports, embargoed CVE detail, PMC-private mail) flows only to LLMs the project's PMC has explicitly approved. "Approved" is per-PMC, not per-framework — the framework's contribution is the gate check, not the policy. See [`tools/privacy-llm/`](https://github.com/apache/airflow-steward/blob/main/tools/privacy-llm/) for the reference gate.
+3. **Pilot diversity.** Validation runs (per the Apache Magpie [MISSION.md](https://github.com/apache/magpie/blob/main/MISSION.md)) cover at least one frontier-model backend, at least one fully-local inference setup (Ollama / vLLM / equivalent), and at least one Apache-hosted or Apache-aligned endpoint. A framework that only validates against one vendor is a vendor-locked framework that has not noticed yet.
+4. **Privacy-LLM gating is vendor-neutral by construction.** Private content (security reports, embargoed CVE detail, PMC-private mail) flows only to LLMs the project's PMC has explicitly approved. "Approved" is per-PMC, not per-framework — the framework's contribution is the gate check, not the policy. See [`tools/privacy-llm/`](https://github.com/apache/magpie/blob/main/tools/privacy-llm/) for the reference gate.
 5. **License + IP posture.** Framework code AL2.0 / MIT. Skills AL2.0. Generated artefacts (commit messages, PR bodies, advisory drafts) inherit the maintainer's commit licence; the framework MUST NOT introduce a vendor's model-output licence by reference.
 
 ### Anti-patterns to avoid
@@ -308,7 +308,7 @@ The general HITL principle catches "the agent is mutating state". The two surfac
 
 Privacy and security overlap but are not identical. Security (Principle 2) defends against the agent doing the wrong thing. Privacy defends against the agent doing the *right* thing *with the wrong audience*. A correctly-functioning agent that forwards a security report's reporter-PII to a non-approved external LLM has not been compromised — it has been used as designed against a privacy boundary the framework should have enforced.
 
-The reference implementation operationalises this principle in [`tools/privacy-llm/`](https://github.com/apache/airflow-steward/blob/main/tools/privacy-llm/) — see [`docs/setup/privacy-llm.md`](https://github.com/apache/airflow-steward/blob/main/docs/setup/privacy-llm.md) for the adopter-facing setup and [`tools/privacy-llm/wiring.md`](https://github.com/apache/airflow-steward/blob/main/tools/privacy-llm/wiring.md) for the *redact-after-fetch* protocol that every skill reading Gmail private mail follows.
+The reference implementation operationalises this principle in [`tools/privacy-llm/`](https://github.com/apache/magpie/blob/main/tools/privacy-llm/) — see [`docs/setup/privacy-llm.md`](https://github.com/apache/magpie/blob/main/docs/setup/privacy-llm.md) for the adopter-facing setup and [`tools/privacy-llm/wiring.md`](https://github.com/apache/magpie/blob/main/tools/privacy-llm/wiring.md) for the *redact-after-fetch* protocol that every skill reading Gmail private mail follows.
 
 ### Five concrete consequences
 
@@ -331,11 +331,11 @@ The privacy gate's *policy* is set by the project's PMC; the gate's *implemen
 
 ### References to the broader privacy posture
 
-- The reference implementation: [`tools/privacy-llm/`](https://github.com/apache/airflow-steward/blob/main/tools/privacy-llm/) (the gate
+- The reference implementation: [`tools/privacy-llm/`](https://github.com/apache/magpie/blob/main/tools/privacy-llm/) (the gate
 - the redactor + the wiring contract).
-- The adopter-facing privacy setup: [`docs/setup/privacy-llm.md`](https://github.com/apache/airflow-steward/blob/main/docs/setup/privacy-llm.md).
-- The PII pattern catalogue: [`tools/privacy-llm/pii.md`](https://github.com/apache/airflow-steward/blob/main/tools/privacy-llm/pii.md).
-- The redact-after-fetch protocol every Gmail-reading skill follows: [`tools/privacy-llm/wiring.md`](https://github.com/apache/airflow-steward/blob/main/tools/privacy-llm/wiring.md).
+- The adopter-facing privacy setup: [`docs/setup/privacy-llm.md`](https://github.com/apache/magpie/blob/main/docs/setup/privacy-llm.md).
+- The PII pattern catalogue: [`tools/privacy-llm/pii.md`](https://github.com/apache/magpie/blob/main/tools/privacy-llm/pii.md).
+- The redact-after-fetch protocol every Gmail-reading skill follows: [`tools/privacy-llm/wiring.md`](https://github.com/apache/magpie/blob/main/tools/privacy-llm/wiring.md).
 - **Cross-cutting privacy AIP** —
 - The [ASF Privacy Policy](https://privacy.apache.org/policies/privacy-policy-public.html) — foundation-level baseline every ASF project inherits; this RFC layers agentic-specific obligations on top.
 
@@ -383,11 +383,11 @@ A project that wants to adopt these principles without adopting Apache Magpie as
 
 1. **Pick an agent host with HITL primitives.** Claude Code, Cursor's Composer, and Aider all support per-action confirmation. Avoid hosts that default to "auto-apply suggested changes".
 2. **Wrap the host in an OS sandbox.** On Linux, `bubblewrap` + a network-allow-list HTTP proxy is one day's work. On macOS, a `sandbox-exec` profile is similar. The agent's parent shell runs in the sandbox; every subprocess inherits.
-3. **Treat skill files as code.** Land them in a `skills/` directory under your project's main repo or a sibling `<project>-steward` repo. PR them. Review them. Diff them. Don't hand-edit them on production machines without committing.
+3. **Treat skill files as code.** Land them in a `skills/` directory under your project's main repo or a sibling `<project>-magpie` repo. PR them. Review them. Diff them. Don't hand-edit them on production machines without committing.
 4. **Document the adapter boundaries.** What is project-specific (your release process, your CVE flow, your private mailing list)? Move those into a `<project-config>/` directory with documented placeholders and let the skills consult them.
 5. **Pilot before scale.** Run the agent against your project's own backlog for a release cycle before letting it touch contributor-facing artefacts at full speed. The contributor-sentiment data you collect during the pilot is the only honest signal that the framework is helping, not just speeding up the harm.
 
-The Apache Magpie project is happy to consult on the lift — see [`MISSION.md`](https://github.com/apache/airflow-steward/blob/main/MISSION.md) for the maintainer- education stream.
+The Apache Magpie project is happy to consult on the lift — see [`MISSION.md`](https://github.com/apache/magpie/blob/main/MISSION.md) for the maintainer- education stream.
 
 ---
 
@@ -397,7 +397,7 @@ The Apache Magpie project is happy to consult on the lift — see [`MISSION.md`
 - **Specific UI.** A terminal-based CLI, a CI bot, an IDE extension, a web dashboard — all are valid surfaces. The principles apply identically.
 - **Specific scaffolding library.** LangGraph, BAML, raw Anthropic SDK, raw OpenAI SDK, ollama-cli, llamafile — pick one. The skills are the contract; the runtime is an implementation detail.
 - **Pricing or hosting.** The project is the buyer; the vendor is the seller. The framework declines to express a preference on either.
-- **Mandatory model evaluation.** Per-skill eval is recommended but not required by this RFC. A separate RFC may cover evaluation methodology — see the Apache Plumb collaboration in [`MISSION.md`](https://github.com/apache/airflow-steward/blob/main/MISSION.md).
+- **Mandatory model evaluation.** Per-skill eval is recommended but not required by this RFC. A separate RFC may cover evaluation methodology — see the Apache Plumb collaboration in [`MISSION.md`](https://github.com/apache/magpie/blob/main/MISSION.md).
 
 ---
 
@@ -415,4 +415,4 @@ The Apache Magpie project is happy to consult on the lift — see [`MISSION.md`
 
 ## Acknowledgements
 
-This RFC distils principles operationalised in the Apache Magpie reference implementation. The PMC roster and collaborator list (see [`MISSION.md`](https://github.com/apache/airflow-steward/blob/main/MISSION.md)) includes the people whose discussion, code, and incident-review work shaped these principles. The framing of the principles here owes a particular debt to the 2026-05 prompt-injection audit ([gist](https://gist.github.com/andrew/0bc8bdaac6902656ccf3b1400ad160f0)) that surfaced the Principle 2 specifics, and to the Triage/Mentoring/Drafting/Auto-merge swimlane discussion that surfaced the carve-out structure of Principle 1.
+This RFC distils principles operationalised in the Apache Magpie reference implementation. The PMC roster and collaborator list (see [`MISSION.md`](https://github.com/apache/magpie/blob/main/MISSION.md)) includes the people whose discussion, code, and incident-review work shaped these principles. The framing of the principles here owes a particular debt to the 2026-05 prompt-injection audit ([gist](https://gist.github.com/andrew/0bc8bdaac6902656ccf3b1400ad160f0)) that surfaced the Principle 2 specifics, and to the Triage/Mentoring/Drafting/Auto-merge swimlane discussion that surfaced the carve-out structure of Principle 1.

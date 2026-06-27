@@ -118,7 +118,7 @@ maintainer (or a future agent on a later run):
    useful, it belongs in the framework. The override file
    says so explicitly, and the next person running the
    `/magpie-setup override <skill>` flow takes the cue and
-   opens a PR against `apache/airflow-steward`.
+   opens a PR against `apache/magpie`.
 
 ## How a framework skill consults overrides
 
@@ -155,7 +155,7 @@ A framework agent NEVER:
   `.apache-magpie-overrides/`.
 - Proposes overrides be merged in by editing the framework
   source in the snapshot. Framework changes go via PR to
-  `apache/airflow-steward`.
+  `apache/magpie`.
 - Auto-rewrites override files on framework upgrades. When
   a framework upgrade restructures a skill that has an
   override, the agent surfaces the conflict and lets the
@@ -186,7 +186,7 @@ If an adopter project's override is widely useful (e.g. a
 behaviour the framework should ship by default for all
 adopters), the right move is **a PR against the framework**:
 
-1. Read the latest `apache/airflow-steward` `main`.
+1. Read the latest `apache/magpie` `main`.
 2. Implement the change in the framework skill's source.
 3. Open the PR.
 4. Once merged, the next `/magpie-setup upgrade` in the

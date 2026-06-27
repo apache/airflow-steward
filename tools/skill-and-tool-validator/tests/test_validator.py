@@ -1926,9 +1926,6 @@ class TestLineHasInlineAllowMarker:
     def test_plain_line_without_marker_is_not_allowed(self) -> None:
         assert line_has_inline_allow_marker("This mentions apache/airflow directly") is False
 
-    def test_line_with_apache_airflow_steward_marker_is_allowed(self) -> None:
-        assert line_has_inline_allow_marker("see apache/airflow-steward for details") is True
-
     def test_empty_line_is_not_allowed(self) -> None:
         assert line_has_inline_allow_marker("") is False
 

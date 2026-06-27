@@ -122,7 +122,7 @@ concurrently, which is exactly what the sync needs.
     hand-off / wrap-up comment begins with:
 
     ```text
-    <!-- apache-steward: <comment-kind> v<N> -->
+    <!-- apache-magpie: <comment-kind> v<N> -->
     ```
 
     Concretely, treat the last-comment author as *bot-equivalent* if
@@ -130,7 +130,7 @@ concurrently, which is exactly what the sync needs.
 
     - `login in {github-actions[bot], dependabot[bot]}` or
       `login` ends with `[bot]` (real GitHub App accounts).
-    - The body starts with `<!-- apache-steward: ` (skill-authored
+    - The body starts with `<!-- apache-magpie: ` (skill-authored
       comment — see [`tools/github/status-rollup.md`](../../tools/github/status-rollup.md)
       for the marker spec).
     - `login` matches a `bot_logins:` entry in the override file at

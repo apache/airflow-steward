@@ -37,10 +37,8 @@ Thanks for helping improve this repository. It is the **generic,
 project-agnostic framework** for agent-assisted repository
 maintainership across ASF projects (and equally for any non-ASF
 open-source community that wants in). The framework is named
-**Apache Magpie** (confirmed available via PODLINGSEARCH); it
-still lives at the legacy `apache/airflow-steward` slug until the
-GitHub rename lands — see [`MISSION.md`](MISSION.md) and the
-heads-up at the top of [`README.md`](README.md).
+**Apache Magpie** — see [`MISSION.md`](MISSION.md) for the
+project's motivation, scope, and design commitments.
 
 Before sending a patch, please skim this file end-to-end: it lays
 out the layering the repository depends on, the cross-cutting
@@ -299,7 +297,7 @@ needs to fill in.
 
 | Family | Tools | What they bridge to |
 |---|---|---|
-| Forge / tracker | `github/`, `jira/` | GitHub Issues + PRs (full); JIRA (read-only Groovy bridge — write path tracked at [#301](https://github.com/apache/airflow-steward/issues/301)) |
+| Forge / tracker | `github/`, `jira/` | GitHub Issues + PRs (full); JIRA (read-only Groovy bridge — write path tracked at [#301](https://github.com/apache/magpie/issues/301)) |
 | Mail | `gmail/`, `ponymail/`, `mail-source/imap/`, `mail-source/mbox/` | Gmail (full); PonyMail archive (read-only); IMAP + mbox stubs |
 | CVE workflow | `vulnogram/`, `cve-org/` | ASF Vulnogram (CVE allocation + JSON generation); MITRE CVE Services v2 |
 | Runtime / safety | `agent-isolation/`, `privacy-llm/`, `sandbox-lint/` | Bubblewrap + network-allowlist sandbox; redactor + checker for privacy-LLM gating; settings.json linter |
@@ -335,7 +333,7 @@ skills and all tools.
    `<upstream>` / `<security-list>` / `<private-list>` /
    `<default-branch>` — the `check-placeholders` prek hook
    catches violations. Per-CLI runtime ports are tracked at
-   issues [#313](https://github.com/apache/airflow-steward/issues/313)–[#322](https://github.com/apache/airflow-steward/issues/322).
+   issues [#313](https://github.com/apache/magpie/issues/313)–[#322](https://github.com/apache/magpie/issues/322).
 4. **Conversational, correctable.** A maintainer override
    (`.apache-magpie-overrides/<skill>.md` in the adopter repo)
    modifies skill behaviour without forking the framework. The
@@ -373,16 +371,16 @@ LLM backends**. The current state per harness:
 | Harness | State | Tracking |
 |---|---|---|
 | Claude Code | Primary, fully supported | — |
-| Codex CLI | Partial — Claude Code plugin delegates rescue + adversarial-review subtasks to Codex | First-class runtime tracked at [#313](https://github.com/apache/airflow-steward/issues/313) |
-| Gemini CLI | Not yet ported | [#314](https://github.com/apache/airflow-steward/issues/314) |
-| Local LLM (Ollama / llama.cpp / vLLM) | Not yet ported | [#315](https://github.com/apache/airflow-steward/issues/315) |
-| Cursor (Composer + Agent CLI) | Not yet ported | [#316](https://github.com/apache/airflow-steward/issues/316) |
-| Aider | Not yet ported | [#317](https://github.com/apache/airflow-steward/issues/317) |
-| GitHub Copilot CLI + Coding Agent | Not yet ported | [#318](https://github.com/apache/airflow-steward/issues/318) |
-| Goose (Block) | Not yet ported | [#319](https://github.com/apache/airflow-steward/issues/319) |
-| Amazon Q Developer CLI | Not yet ported | [#320](https://github.com/apache/airflow-steward/issues/320) |
-| JetBrains Junie | Not yet ported | [#321](https://github.com/apache/airflow-steward/issues/321) |
-| OpenHands | Not yet ported | [#322](https://github.com/apache/airflow-steward/issues/322) |
+| Codex CLI | Partial — Claude Code plugin delegates rescue + adversarial-review subtasks to Codex | First-class runtime tracked at [#313](https://github.com/apache/magpie/issues/313) |
+| Gemini CLI | Not yet ported | [#314](https://github.com/apache/magpie/issues/314) |
+| Local LLM (Ollama / llama.cpp / vLLM) | Not yet ported | [#315](https://github.com/apache/magpie/issues/315) |
+| Cursor (Composer + Agent CLI) | Not yet ported | [#316](https://github.com/apache/magpie/issues/316) |
+| Aider | Not yet ported | [#317](https://github.com/apache/magpie/issues/317) |
+| GitHub Copilot CLI + Coding Agent | Not yet ported | [#318](https://github.com/apache/magpie/issues/318) |
+| Goose (Block) | Not yet ported | [#319](https://github.com/apache/magpie/issues/319) |
+| Amazon Q Developer CLI | Not yet ported | [#320](https://github.com/apache/magpie/issues/320) |
+| JetBrains Junie | Not yet ported | [#321](https://github.com/apache/magpie/issues/321) |
+| OpenHands | Not yet ported | [#322](https://github.com/apache/magpie/issues/322) |
 
 MCP servers used by the Claude Code runtime today: Slack, Gmail,
 Google Calendar, Google Drive, plus framework-internal ones for
@@ -475,7 +473,7 @@ local Grape cache; subsequent runs are fast.
 
 Both Groovy files have parallel Python reference implementations
 under the same subtree (`reference.py` for the dashboard;
-[#301](https://github.com/apache/airflow-steward/issues/301) tracks
+[#301](https://github.com/apache/magpie/issues/301) tracks
 the Python port of the JIRA bridge alongside the write path).
 **Languages other than Groovy or Python are welcome via PR** — the
 contract that matters is the CLI surface and the JSON output shape.
@@ -509,8 +507,8 @@ You need these tools on your machine:
 First-time clone:
 
 ```bash
-git clone git@github.com:apache/airflow-steward.git
-cd airflow-steward
+git clone git@github.com:apache/magpie.git
+cd magpie
 uv tool install prek
 prek install                   # wire the hooks into .git/hooks
 prek run --all-files           # runs every hook on every file
@@ -884,16 +882,16 @@ agent self-eval mode).
 
 Good entry points, in rough order of ramp-up cost:
 
-1. **Pick a [`good first issue`](https://github.com/apache/airflow-steward/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22).**
+1. **Pick a [`good first issue`](https://github.com/apache/magpie/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22).**
    The current backlog has 24+ such issues, including 22 net-new
    tool / adapter bridges and per-CLI runtime ports tracked at
-   [#301–#322](https://github.com/apache/airflow-steward/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22+sort%3Acreated-desc).
+   [#301–#322](https://github.com/apache/magpie/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22+sort%3Acreated-desc).
    Before you start work, please leave a comment on the issue so a
    maintainer can assign it to you. That keeps two people from working
    on the same issue at the same time.
    Two clusters:
-   - **Tool bridges** ([#301–#312](https://github.com/apache/airflow-steward/issues/301)) — JIRA write path, Bugzilla, IMAP / mbox concrete wiring, GitLab, Mailman 3 / Hyperkitty, Discourse, Zulip, Matrix, Forgejo, OSV.dev, Pagure.
-   - **Agent-CLI runtime adapters** ([#313–#322](https://github.com/apache/airflow-steward/issues/313)) — Codex, Gemini, local-LLM, Cursor, Aider, gh-copilot, Goose, Amazon Q, Junie, OpenHands.
+   - **Tool bridges** ([#301–#312](https://github.com/apache/magpie/issues/301)) — JIRA write path, Bugzilla, IMAP / mbox concrete wiring, GitLab, Mailman 3 / Hyperkitty, Discourse, Zulip, Matrix, Forgejo, OSV.dev, Pagure.
+   - **Agent-CLI runtime adapters** ([#313–#322](https://github.com/apache/magpie/issues/313)) — Codex, Gemini, local-LLM, Cursor, Aider, gh-copilot, Goose, Amazon Q, Junie, OpenHands.
 
    Each issue is self-contained: tool location, suggested
    capabilities, why-useful context, references to existing tools
@@ -936,7 +934,7 @@ describing what you want to try and a maintainer will route you.
 
 ## Confidentiality
 
-This repository (`apache/airflow-steward`) is **public**. The
+This repository (`apache/magpie`) is **public**. The
 confidentiality rules in AGENTS.md primarily apply to **adopters'
 own tracker repositories**, which are private (security tracker
 contents must never appear on a public surface). But contributors

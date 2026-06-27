@@ -14,7 +14,7 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-"""Approved-LLM gate-check for the apache-steward privacy-llm tool.
+"""Approved-LLM gate-check for the apache-magpie privacy-llm tool.
 
 Single console script: ``privacy-llm-check`` (:mod:`checker.check`).
 

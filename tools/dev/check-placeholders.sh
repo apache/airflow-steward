@@ -56,10 +56,8 @@ FORBIDDEN_PATTERNS=(
 # Files / directories where Airflow references are intentional:
 # the framework's own onboarding / contributor docs use Airflow as
 # the canonical example adopter; the bootstrap scaffold under
-# `projects/_template/` may reference Airflow in pointers; the root
-# pyproject.toml documents the legacy `apache/airflow-steward` slug
-# as part of its rename note; this linter file itself contains the
-# patterns to look for.
+# `projects/_template/` may reference Airflow in pointers; this
+# linter file itself contains the patterns to look for.
 ALLOWLIST_PATHS=(
   "README.md"
   "AGENTS.md"
@@ -93,11 +91,6 @@ INLINE_ALLOW_MARKERS=(
   "future-renamed"
   "originally"
   "vendor>: <product>"
-  # `apache/airflow-steward` is the framework's own legacy slug — a
-  # match for the `apache/airflow` substring will fire on it, but
-  # those mentions are intentional self-references, not hardcoded
-  # adopter references.
-  "apache/airflow-steward"
 )
 
 # Where to look. Only `.md` files under skills + tool adapter docs

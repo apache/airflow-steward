@@ -67,7 +67,7 @@ The mode applies to a tracker when **any** of the following is true:
    sets the marker comment
 
    ```html
-   <!-- apache-steward: routing-mode via-forwarder -->
+   <!-- apache-magpie: routing-mode via-forwarder -->
    ```
 
    on the tracker (one line in the body, or as the first line of a
@@ -256,7 +256,7 @@ please pass it back"* is folded in.
 authorised member (ASF-Airflow default: a PMC member) forwards a
 private internal report to the security team verbally; the
 security team opens the tracker by hand and writes the
-`<!-- apache-steward: routing-mode via-forwarder -->` marker
+`<!-- apache-magpie: routing-mode via-forwarder -->` marker
 comment naming the governance-authorised member as the forwarder
 contact. From that point on, every sync skill that would draft to
 a reporter routes to the named contact instead, and milestone-only

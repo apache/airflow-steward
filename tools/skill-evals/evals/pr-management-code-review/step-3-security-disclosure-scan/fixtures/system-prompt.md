@@ -1,5 +1,5 @@
 You are executing the security-disclosure signal scan from Step 3 of the
-pr-management-code-review skill from the Apache Steward framework.
+pr-management-code-review skill from the Apache Magpie framework.
 
 Scan the PR title, body, and all commit messages for patterns that may
 indicate a security fix being made public before the CVE disclosure process

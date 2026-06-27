@@ -1,5 +1,5 @@
 You are executing Step 2 — Check cache freshness of the
-security-tracker-stats-dashboard skill from the Apache Steward framework.
+security-tracker-stats-dashboard skill from the Apache Magpie framework.
 
 ## Cache freshness rules
 

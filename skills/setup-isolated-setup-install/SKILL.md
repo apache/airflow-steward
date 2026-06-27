@@ -52,7 +52,7 @@ upstreaming guidance.
 **Hard rule**: agents NEVER modify the snapshot under
 `<adopter-repo>/.apache-magpie/`. Local modifications
 go in the override file. Framework changes go via PR
-to `apache/airflow-steward`.
+to `apache/magpie`.
 
 ---
 
@@ -122,7 +122,7 @@ Before walking any install step, confirm with the user:
    socat (Seatbelt is built-in); Linux installs both per the
    distro shortcut.
 2. **Framework checkout path.** The path to the user's local
-   `airflow-steward` clone. Required to read
+   `magpie` clone. Required to read
    `tools/agent-isolation/pinned-versions.toml`,
    `.claude/settings.json`, and the
    `tools/agent-isolation/*.sh` scripts. If the user does not
@@ -158,7 +158,7 @@ inline.
 
 Per
 [`docs/setup/secure-agent-setup.md` → *Project-root coverage in the sandbox allowlists*](../../docs/setup/secure-agent-setup.md#project-root-coverage-in-the-sandbox-allowlists)
-and [issue #197](https://github.com/apache/airflow-steward/issues/197),
+and [issue #197](https://github.com/apache/magpie/issues/197),
 the harness pre-resolves `sandbox.filesystem.allowRead: ["."]` at
 session start in a way that silently drops the literal `.` from the
 resolved set, so a session in a freshly-cloned adopter repo can
@@ -342,7 +342,7 @@ Skip if the operator picked per-project scope.
    uses the private sync repo), mode `0755`. The hook content is
    in
    [`tools/agent-isolation/git-global-post-checkout.sh`](../../tools/agent-isolation/git-global-post-checkout.sh) —
-   it calls the sandbox-allowlist helper and (for steward-adopted
+   it calls the sandbox-allowlist helper and (for magpie-adopted
    repos) `setup verify --auto-fix-symlinks`.
 
 2. **Set `core.hooksPath` globally** so every git operation across

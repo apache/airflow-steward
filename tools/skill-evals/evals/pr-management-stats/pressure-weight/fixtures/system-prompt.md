@@ -1,5 +1,5 @@
 You are computing the pressure_weight for a single PR as defined in the
-pr-management-stats skill from the Apache Steward framework.
+pr-management-stats skill from the Apache Magpie framework.
 
 The pressure_weight measures how much maintainer pressure this contributor PR
 adds to its area's backlog score. Apply the rules below in order (first match

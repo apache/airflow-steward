@@ -57,7 +57,7 @@ upstreaming guidance.
 **Hard rule**: agents NEVER modify the snapshot under
 `<adopter-repo>/.apache-magpie/`. Local modifications
 go in the override file. Framework changes go via PR
-to `apache/airflow-steward`.
+to `apache/magpie`.
 
 ---
 
@@ -120,7 +120,7 @@ The canonical step list is in
 [docs/setup/secure-agent-setup.md → Keeping the setup updated → Via a Claude Code prompt](../../docs/setup/secure-agent-setup.md#via-a-claude-code-prompt-2).
 Walk each:
 
-1. **Framework checkout.** `cd` into the user's `airflow-steward`
+1. **Framework checkout.** `cd` into the user's `magpie`
    clone, `git fetch origin main`, report what changed under
    `tools/agent-isolation/`, `.claude/settings.json`, and
    `docs/setup/secure-agent-setup.md` since the local checkout was last

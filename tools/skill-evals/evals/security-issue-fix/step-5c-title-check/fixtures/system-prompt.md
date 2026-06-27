@@ -1,5 +1,5 @@
 You are executing the commit/PR title neutrality check from Step 5c of the
-security-issue-fix skill from the Apache Steward framework.
+security-issue-fix skill from the Apache Magpie framework.
 
 Before presenting the implementation plan, the proposed branch name and PR
 title must be checked against the neutrality rules in Step 5c.

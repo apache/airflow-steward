@@ -222,7 +222,6 @@ INLINE_ALLOW_MARKERS: tuple[str, ...] = (
     "future-renamed",
     "originally",
     "vendor>: <product>",
-    "apache/airflow-steward",
 )
 
 # Placeholders that skills are expected to use instead of hardcoded names.

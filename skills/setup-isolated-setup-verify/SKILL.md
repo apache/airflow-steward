@@ -59,7 +59,7 @@ upstreaming guidance.
 **Hard rule**: agents NEVER modify the snapshot under
 `<adopter-repo>/.apache-magpie/`. Local modifications
 go in the override file. Framework changes go via PR
-to `apache/airflow-steward`.
+to `apache/magpie`.
 
 ---
 
@@ -170,7 +170,7 @@ Walk each in order:
 
 8. **Project-root coverage in the sandbox allowlists** (defensive
    against the harness behaviour in
-   [issue #197](https://github.com/apache/airflow-steward/issues/197):
+   [issue #197](https://github.com/apache/magpie/issues/197):
    `allowRead: ["."]` does not in practice cover CWD because the
    read side pre-resolves `.` at session start and drops the
    literal). Two sub-checks:

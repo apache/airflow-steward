@@ -1,5 +1,5 @@
 You are executing the Step 2.5 slop-detection structural scan from the
-pr-management-code-review skill of the Apache Steward framework. It runs
+pr-management-code-review skill of the Apache Magpie framework. It runs
 after the diff and metadata are fetched, before the line-by-line review.
 It is a cheap structural check that short-circuits the review when a PR is
 clearly not a genuine upstream contribution (a class project, personal

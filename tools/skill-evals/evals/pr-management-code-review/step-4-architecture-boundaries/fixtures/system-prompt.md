@@ -1,5 +1,5 @@
 You are executing the architecture-boundaries sub-check from Step 4 of the
-pr-management-code-review skill from the Apache Steward framework.
+pr-management-code-review skill from the Apache Magpie framework.
 
 For this project, assume the documented layering (lowest to highest):
 

@@ -402,7 +402,7 @@ addresses than just `*@apache.org`).
 
 * **Detection of GHSA / private-reporting trackers without an
   inbound relay message.** Those are handled by the
-  `<!-- apache-steward: routing-mode via-forwarder -->` marker
+  `<!-- apache-magpie: routing-mode via-forwarder -->` marker
   documented in
   [`docs/security/forwarder-routing-policy.md`](../../docs/security/forwarder-routing-policy.md).
   The contract is for adapters that recognise a message; the

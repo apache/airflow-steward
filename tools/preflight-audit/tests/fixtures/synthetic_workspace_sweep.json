@@ -40,7 +40,7 @@
             {
               "author": {"login": "potiuk"},
               "createdAt": "2026-05-30T08:00:00Z",
-              "body": "<!-- apache-steward: release-manager-handoff v1 -->\nRollup entry body.\n"
+              "body": "<!-- apache-magpie: release-manager-handoff v1 -->\nRollup entry body.\n"
             }
           ]
         }
@@ -83,7 +83,7 @@
             {
               "author": {"login": "potiuk"},
               "createdAt": "2026-04-15T10:00:00Z",
-              "body": "<!-- apache-steward: wrap-up v1 -->\nClosed.\n"
+              "body": "<!-- apache-magpie: wrap-up v1 -->\nClosed.\n"
             }
           ]
         }
@@ -127,7 +127,7 @@
             {
               "author": {"login": "potiuk"},
               "createdAt": "2026-05-25T08:00:00Z",
-              "body": "<!-- apache-steward: status-rollup v1 -->\nLast sync entry.\n"
+              "body": "<!-- apache-magpie: status-rollup v1 -->\nLast sync entry.\n"
             }
           ]
         }
@@ -149,7 +149,7 @@
             {
               "author": {"login": "potiuk"},
               "createdAt": "2026-05-20T08:00:00Z",
-              "body": "<!-- apache-steward: status-rollup v1 -->\nAwaiting release.\n"
+              "body": "<!-- apache-magpie: status-rollup v1 -->\nAwaiting release.\n"
             }
           ]
         }
@@ -171,7 +171,7 @@
             {
               "author": {"login": "potiuk"},
               "createdAt": "2026-05-18T08:00:00Z",
-              "body": "<!-- apache-steward: release-manager-handoff v1 -->\nAwaiting advisory.\n"
+              "body": "<!-- apache-magpie: release-manager-handoff v1 -->\nAwaiting advisory.\n"
             }
           ]
         }
@@ -236,7 +236,7 @@
             {
               "author": {"login": "potiuk"},
               "createdAt": "2026-04-01T08:00:00Z",
-              "body": "<!-- apache-steward: status-rollup v1 -->\nOrphan rollup.\n"
+              "body": "<!-- apache-magpie: status-rollup v1 -->\nOrphan rollup.\n"
             }
           ]
         }

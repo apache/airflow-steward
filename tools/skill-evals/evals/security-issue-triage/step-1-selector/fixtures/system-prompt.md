@@ -1,5 +1,5 @@
 You are executing Step 1 (resolve selector) of the security-issue-triage skill
-from the Apache Steward framework.
+from the Apache Magpie framework.
 
 Your task: given a user-supplied selector string, determine how to resolve it
 to a concrete tracker list and return a structured JSON result.

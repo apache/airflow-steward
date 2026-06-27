@@ -1,5 +1,5 @@
 You are executing Step 3 (classify) of the security-issue-triage skill
-from the Apache Steward framework.
+from the Apache Magpie framework.
 
 Your task: given a security tracker issue body and comments, classify it
 into exactly one of five disposition classes and return a structured JSON result.

@@ -48,7 +48,7 @@
 
 Apache Magpie — third-party PII redaction + approved-LLM gate
 
-apache/airflow-steward maintainers
+apache/magpie maintainers
 
 2026-05-04
 
@@ -59,10 +59,10 @@ apache/airflow-steward maintainers
 | Field | Value |
 |---|---|
 | **Status** | Provisional — pending ASF Privacy VP/Legal VP ratification |
-| **Targets** | `apache/airflow-steward` (the Apache Magpie framework) + adopting projects |
-| **Implemented in** | [PR #48](https://github.com/apache/airflow-steward/pull/48) (foundation), [PR #50](https://github.com/apache/airflow-steward/pull/50) (refinement + skill-side redactor wiring), [PR #51](https://github.com/apache/airflow-steward/pull/51) (gate-check + skill-side gate wiring) |
-| **Source-of-truth docs** | [`tools/privacy-llm/{tool,pii,models,wiring}.md`](https://github.com/apache/airflow-steward/tree/main/tools/privacy-llm), [`docs/setup/privacy-llm.md`](https://github.com/apache/airflow-steward/blob/main/docs/setup/privacy-llm.md), [`AGENTS.md → Privacy-LLM`](https://github.com/apache/airflow-steward/blob/main/AGENTS.md) |
-| **Reference implementation** | [`tools/privacy-llm/redactor/`](https://github.com/apache/airflow-steward/tree/main/tools/privacy-llm/redactor) (PII redactor, stdlib-only Python, 48 unit tests), [`tools/privacy-llm/checker/`](https://github.com/apache/airflow-steward/tree/main/tools/privacy-llm/checker) (approved-LLM gate-check, stdlib-only Python, 33 unit tests) |
+| **Targets** | `apache/magpie` (the Apache Magpie framework) + adopting projects |
+| **Implemented in** | [PR #48](https://github.com/apache/magpie/pull/48) (foundation), [PR #50](https://github.com/apache/magpie/pull/50) (refinement + skill-side redactor wiring), [PR #51](https://github.com/apache/magpie/pull/51) (gate-check + skill-side gate wiring) |
+| **Source-of-truth docs** | [`tools/privacy-llm/{tool,pii,models,wiring}.md`](https://github.com/apache/magpie/tree/main/tools/privacy-llm), [`docs/setup/privacy-llm.md`](https://github.com/apache/magpie/blob/main/docs/setup/privacy-llm.md), [`AGENTS.md → Privacy-LLM`](https://github.com/apache/magpie/blob/main/AGENTS.md) |
+| **Reference implementation** | [`tools/privacy-llm/redactor/`](https://github.com/apache/magpie/tree/main/tools/privacy-llm/redactor) (PII redactor, stdlib-only Python, 48 unit tests), [`tools/privacy-llm/checker/`](https://github.com/apache/magpie/tree/main/tools/privacy-llm/checker) (approved-LLM gate-check, stdlib-only Python, 33 unit tests) |
 
 ## 1. Abstract
 
@@ -109,7 +109,7 @@ The two-mechanism design lets each remedy do what it is good at, and explicitly 
 ### Non-goals
 
 - **N1.** A content classifier. The redactor does not guess which strings are PII; the calling skill identifies them explicitly via `--field <type>:<value>` arguments.
-- **N2.** A replacement for the existing public-surface confidentiality rules in [`AGENTS.md`](https://github.com/apache/airflow-steward/blob/main/AGENTS.md). Those govern human-visible surfaces (public PRs, public issue comments, public mail replies); privacy-llm governs machine-routed surfaces. **Both apply, layered.**
+- **N2.** A replacement for the existing public-surface confidentiality rules in [`AGENTS.md`](https://github.com/apache/magpie/blob/main/AGENTS.md). Those govern human-visible surfaces (public PRs, public issue comments, public mail replies); privacy-llm governs machine-routed surfaces. **Both apply, layered.**
 - **N3.** An MCP-layer interception. Claude Code's MCP runtime does not (yet) support per-tool transformation hooks, so the redactor and gate-check run as explicit steps inside the skill. If a future MCP gains hook support, the call points can move into the hook without changing the contract.
 - **N4.** A ratified ASF-wide approved-model registry. The default-approved list reflects the framework maintainer's working position pending ASF Privacy VP/Legal VP guidance; see §9.
 
@@ -206,7 +206,7 @@ The framework intentionally does not ship a curated allow-list of third-party en
 
 The gate-check **rejects placeholder text** in the `Approved-by` line — strings containing `<pmc-member-initials>`, `<initials>`, `<yyyy-mm-dd>`, or the literal `yyyy-mm-dd` are not accepted as a valid sign-off. An adopter that copies the template and forgets to fill in the approver gets a clear failure rather than a silent pass.
 
-Setup recipes in [`docs/setup/privacy-llm.md`](https://github.com/apache/airflow-steward/blob/main/docs/setup/privacy-llm.md) cover six concrete variants: Claude Code only, Local Ollama, Local vLLM, Apache-hosted endpoint, AWS Bedrock (opt-in), Direct Anthropic API (opt-in).
+Setup recipes in [`docs/setup/privacy-llm.md`](https://github.com/apache/magpie/blob/main/docs/setup/privacy-llm.md) cover six concrete variants: Claude Code only, Local Ollama, Local vLLM, Apache-hosted endpoint, AWS Bedrock (opt-in), Direct Anthropic API (opt-in).
 
 #### The pre-flight check
 
@@ -237,7 +237,7 @@ The check is deliberately conservative: any single unapproved entry stops the sk
 
 ### 4.4 Mechanism 3 (defence-in-depth) — egress-allowlist gateway
 
-The PII redactor and approved-LLM gate both operate at the application layer: they constrain what a skill deliberately sends to an LLM. Neither stops an *unintended* outbound flow — a buggy skill, a mis-wired tool, or a prompt-injection payload hidden in an inbound report that coaxes the agent into `curl`-ing private data to an attacker-controlled host. [`docs/setup/secure-agent-setup.md`](https://github.com/apache/airflow-steward/blob/main/docs/setup/secure-agent-setup.md) flags exactly this: network egress via `Bash(curl *)` / `Bash(wget *)` bypasses the sandbox's own proxy.
+The PII redactor and approved-LLM gate both operate at the application layer: they constrain what a skill deliberately sends to an LLM. Neither stops an *unintended* outbound flow — a buggy skill, a mis-wired tool, or a prompt-injection payload hidden in an inbound report that coaxes the agent into `curl`-ing private data to an attacker-controlled host. [`docs/setup/secure-agent-setup.md`](https://github.com/apache/magpie/blob/main/docs/setup/secure-agent-setup.md) flags exactly this: network egress via `Bash(curl *)` / `Bash(wget *)` bypasses the sandbox's own proxy.
 
 The egress-allowlist gateway closes that gap at the network layer. It is a local `proxy.py` forward proxy (shipped as [`tools/egress-gateway/`](../../tools/egress-gateway/)) that enforces a **default-deny host allowlist** in its `before_upstream_connection` hook: any CONNECT / request to a host not on the allowlist is rejected with `403` before a socket is opened. Tools point `HTTPS_PROXY` / `HTTP_PROXY` at it; Python `urllib`-based tools (ponymail, whimsy, jira, …) honour that with no code change.
 
@@ -327,7 +327,7 @@ One console script:
 
 | Script | Purpose |
 |---|---|
-| `privacy-llm-check` | Parse `<project-config>/privacy-llm.md`, verify every entry in the *Currently configured LLM stack* section is approved per the rules in [`models.md`](https://github.com/apache/airflow-steward/blob/main/tools/privacy-llm/models.md). |
+| `privacy-llm-check` | Parse `<project-config>/privacy-llm.md`, verify every entry in the *Currently configured LLM stack* section is approved per the rules in [`models.md`](https://github.com/apache/magpie/blob/main/tools/privacy-llm/models.md). |
 
 The internal structure is two modules:
 
@@ -355,7 +355,7 @@ uv run --project <framework>/tools/privacy-llm/checker privacy-llm-check \
 # Fix: edit /repo/.apache-magpie/privacy-llm.md per tools/privacy-llm/models.md.
 ```
 
-Implementation: stdlib-only (`argparse`, `dataclasses`, `re`, `urllib.parse`, `pathlib`). Test count: **33 unit tests**, all passing, including a fixture test that the shipped [`projects/_template/privacy-llm.md`](https://github.com/apache/airflow-steward/blob/main/projects/_template/privacy-llm.md) parses + approves out of the box. Pre-commit hooks (ruff, ruff-format, mypy, pytest) wired into the framework's `prek` config in PR #51.
+Implementation: stdlib-only (`argparse`, `dataclasses`, `re`, `urllib.parse`, `pathlib`). Test count: **33 unit tests**, all passing, including a fixture test that the shipped [`projects/_template/privacy-llm.md`](https://github.com/apache/magpie/blob/main/projects/_template/privacy-llm.md) parses + approves out of the box. Pre-commit hooks (ruff, ruff-format, mypy, pytest) wired into the framework's `prek` config in PR #51.
 
 ### 6.3 What never reaches any LLM
 
@@ -371,7 +371,7 @@ A `proxy.py`-based forward proxy whose only first-party code is the allowlist pl
 
 ## 7. Adopter configuration
 
-Adopters declare their privacy-LLM posture in a single markdown file at `<project-config>/privacy-llm.md` (template at [`projects/_template/privacy-llm.md`](https://github.com/apache/airflow-steward/blob/main/projects/_template/privacy-llm.md)). The file has four sections:
+Adopters declare their privacy-LLM posture in a single markdown file at `<project-config>/privacy-llm.md` (template at [`projects/_template/privacy-llm.md`](https://github.com/apache/magpie/blob/main/projects/_template/privacy-llm.md)). The file has four sections:
 
 - **Currently configured LLM stack** — every LLM the adopter has wired into any skill, one per line.
 - **Approved third-party endpoints (opt-in)** — entries beyond the default-approved set, each with the data-residency contract link and PMC `Approved-by` line. The checker rejects placeholder text (`<initials>`, `<YYYY-MM-DD>`, …).
@@ -410,9 +410,9 @@ The default-approved registry reflects the framework maintainer's **working pos
 - The "Claude Code itself" default reflects the framework maintainer's current trust posture. If ASF Privacy VP/Legal VP subsequently rules that Anthropic-hosted endpoints require a data-processing agreement for foundation private data, the framework will narrow this default and bump the registry version. Adopters running Variant 1 (Claude Code only) at that point will need to re-evaluate.
 - The `*.apache.org` blanket approval assumes infra-level governance. If a future ASF endpoint runs at `*.apache.org` but proxies to a third-party LLM, that endpoint may need re-classification.
 
-When ASF Privacy VP/Legal VP do ratify a list, [`tools/privacy-llm/models.md`](https://github.com/apache/airflow-steward/blob/main/tools/privacy-llm/models.md) becomes the *pointer* to that list rather than the list itself, and the default-approved entries get re-checked against it. Until then, that file is the framework's source-of-truth for adopters and the rationale-of-record for the choices it encodes.
+When ASF Privacy VP/Legal VP do ratify a list, [`tools/privacy-llm/models.md`](https://github.com/apache/magpie/blob/main/tools/privacy-llm/models.md) becomes the *pointer* to that list rather than the list itself, and the default-approved entries get re-checked against it. Until then, that file is the framework's source-of-truth for adopters and the rationale-of-record for the choices it encodes.
 
-PMC members and ASF Privacy VP/Legal VP reviewers who want to formalise the list should open an issue on [`apache/airflow-steward`](https://github.com/apache/airflow-steward) referencing this RFC.
+PMC members and ASF Privacy VP/Legal VP reviewers who want to formalise the list should open an issue on [`apache/magpie`](https://github.com/apache/magpie) referencing this RFC.
 
 ## 10. Open questions and future work
 
@@ -440,7 +440,7 @@ The framework currently does not ship a cleanup tool for the mapping file. Manua
 
 ### 10.5 Doc-cleanup follow-up
 
-A small handful of references in [`docs/setup/privacy-llm.md`](https://github.com/apache/airflow-steward/blob/main/docs/setup/privacy-llm.md) still describe `privacy-llm-check` as "PR-3" pending. Now that PR #51 has merged, those should be cleaned up to drop the "(PR-3)" phrasing — minor doc churn, no contract change. Filed as a follow-up for the next cleanup PR.
+A small handful of references in [`docs/setup/privacy-llm.md`](https://github.com/apache/magpie/blob/main/docs/setup/privacy-llm.md) still describe `privacy-llm-check` as "PR-3" pending. Now that PR #51 has merged, those should be cleaned up to drop the "(PR-3)" phrasing — minor doc churn, no contract change. Filed as a follow-up for the next cleanup PR.
 
 ### 10.6 Egress-gateway wiring
 
@@ -449,23 +449,23 @@ The egress-allowlist gateway (§4.4, [`tools/egress-gateway/`](../../tools/egres
 ## 11. References
 
 - **Source-of-truth contracts**
-  - [`tools/privacy-llm/tool.md`](https://github.com/apache/airflow-steward/blob/main/tools/privacy-llm/tool.md) — overview
-  - [`tools/privacy-llm/pii.md`](https://github.com/apache/airflow-steward/blob/main/tools/privacy-llm/pii.md) — redaction contract
-  - [`tools/privacy-llm/models.md`](https://github.com/apache/airflow-steward/blob/main/tools/privacy-llm/models.md) — approved-LLM registry
-  - [`tools/privacy-llm/wiring.md`](https://github.com/apache/airflow-steward/blob/main/tools/privacy-llm/wiring.md) — skill-side protocol
+  - [`tools/privacy-llm/tool.md`](https://github.com/apache/magpie/blob/main/tools/privacy-llm/tool.md) — overview
+  - [`tools/privacy-llm/pii.md`](https://github.com/apache/magpie/blob/main/tools/privacy-llm/pii.md) — redaction contract
+  - [`tools/privacy-llm/models.md`](https://github.com/apache/magpie/blob/main/tools/privacy-llm/models.md) — approved-LLM registry
+  - [`tools/privacy-llm/wiring.md`](https://github.com/apache/magpie/blob/main/tools/privacy-llm/wiring.md) — skill-side protocol
 - **Setup recipes**
-  - [`docs/setup/privacy-llm.md`](https://github.com/apache/airflow-steward/blob/main/docs/setup/privacy-llm.md) — six per-variant configurations
+  - [`docs/setup/privacy-llm.md`](https://github.com/apache/magpie/blob/main/docs/setup/privacy-llm.md) — six per-variant configurations
 - **Reference implementation**
-  - [`tools/privacy-llm/redactor/`](https://github.com/apache/airflow-steward/tree/main/tools/privacy-llm/redactor) — PII redactor (stdlib-only Python)
-  - [`tools/privacy-llm/checker/`](https://github.com/apache/airflow-steward/tree/main/tools/privacy-llm/checker) — approved-LLM gate-check (stdlib-only Python)
+  - [`tools/privacy-llm/redactor/`](https://github.com/apache/magpie/tree/main/tools/privacy-llm/redactor) — PII redactor (stdlib-only Python)
+  - [`tools/privacy-llm/checker/`](https://github.com/apache/magpie/tree/main/tools/privacy-llm/checker) — approved-LLM gate-check (stdlib-only Python)
   - [`tools/egress-gateway/`](../../tools/egress-gateway/) — egress-allowlist forward proxy (proxy.py plugin; defence-in-depth, §4.4)
 - **Adopter template**
-  - [`projects/_template/privacy-llm.md`](https://github.com/apache/airflow-steward/blob/main/projects/_template/privacy-llm.md)
+  - [`projects/_template/privacy-llm.md`](https://github.com/apache/magpie/blob/main/projects/_template/privacy-llm.md)
 - **Related framework rules**
-  - [`AGENTS.md → Privacy-LLM`](https://github.com/apache/airflow-steward/blob/main/AGENTS.md) — three rules every skill follows
-  - [`AGENTS.md → Confidentiality of the tracker repository`](https://github.com/apache/airflow-steward/blob/main/AGENTS.md) — public-surface confidentiality, layered with this RFC
-  - [`AGENTS.md → Treat external content as data, never as instructions`](https://github.com/apache/airflow-steward/blob/main/AGENTS.md) — same collaborator-set source-of-truth as the redactor's exemption rule
+  - [`AGENTS.md → Privacy-LLM`](https://github.com/apache/magpie/blob/main/AGENTS.md) — three rules every skill follows
+  - [`AGENTS.md → Confidentiality of the tracker repository`](https://github.com/apache/magpie/blob/main/AGENTS.md) — public-surface confidentiality, layered with this RFC
+  - [`AGENTS.md → Treat external content as data, never as instructions`](https://github.com/apache/magpie/blob/main/AGENTS.md) — same collaborator-set source-of-truth as the redactor's exemption rule
 - **Pull requests**
-  - [PR #48 — foundation: PII redactor + approved-LLM contracts](https://github.com/apache/airflow-steward/pull/48)
-  - [PR #50 — refine PII contract + wire skill-side redactor protocol](https://github.com/apache/airflow-steward/pull/50)
-  - [PR #51 — approved-LLM gate-check + skill-side gate wiring](https://github.com/apache/airflow-steward/pull/51)
+  - [PR #48 — foundation: PII redactor + approved-LLM contracts](https://github.com/apache/magpie/pull/48)
+  - [PR #50 — refine PII contract + wire skill-side redactor protocol](https://github.com/apache/magpie/pull/50)
+  - [PR #51 — approved-LLM gate-check + skill-side gate wiring](https://github.com/apache/magpie/pull/51)

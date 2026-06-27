@@ -45,8 +45,8 @@
 | **Created** | 2026-05-02 |
 | **Last updated** | 2026-05-02 |
 | **Discussion** | *TBD — link to mailing list thread once posted* |
-| **Reference implementation** | [`apache/airflow-steward`](https://github.com/apache/airflow-steward) |
-| **Related documents** | [`secure-agent-setup.md`](https://github.com/apache/airflow-steward/blob/main/docs/setup/secure-agent-setup.md), [`secure-agent-internals.md`](https://github.com/apache/airflow-steward/blob/main/docs/setup/secure-agent-internals.md) |
+| **Reference implementation** | [`apache/magpie`](https://github.com/apache/magpie) |
+| **Related documents** | [`secure-agent-setup.md`](https://github.com/apache/magpie/blob/main/docs/setup/secure-agent-setup.md), [`secure-agent-internals.md`](https://github.com/apache/magpie/blob/main/docs/setup/secure-agent-internals.md) |
 
 > **Note for Confluence editors.** This page combines two source documents (`secure-agent-setup.md` — the adopter install path, and `secure-agent-internals.md` — the threat model and mechanism). Image references (`images/session-*.png`, `images/sandbox-*.png`) point at PNG files in the source repo. Upload them as Confluence attachments and re-link from this page when publishing — the alt-text in each `![…]` reference is enough to reproduce the screenshot if needed.
 
@@ -56,7 +56,7 @@ This RFC proposes a layered, opt-in secure setup that an ASF project handling *
 
 The setup is built around four layers — a **clean-env shell wrapper**, a **filesystem sandbox** (bubblewrap on Linux, Seatbelt on macOS), a set of **tool-permission rules** in the agent's own configuration, and a **forced-confirmation** policy for write-side actions visible to others — plus two **visibility mechanisms** (a status-line indicator and a per-call bypass-warn hook) that make sandbox state continuously legible to the operator.
 
-A reference implementation ships in the [`apache/airflow-steward`](https://github.com/apache/airflow-steward) incubator-podling project (the ASF Incubator's "steward" tooling for a tracker repo). This RFC abstracts the lessons of that implementation into a pattern other ASF projects can adopt with or without depending on `airflow-steward` itself.
+A reference implementation ships in the [`apache/magpie`](https://github.com/apache/magpie) incubator-podling project (the ASF Incubator's maintainership tooling for a tracker repo). This RFC abstracts the lessons of that implementation into a pattern other ASF projects can adopt with or without depending on `magpie` itself.
 
 ## Motivation
 
@@ -91,7 +91,7 @@ Layers 1, 2, and 3 are configured by the same project-scope `.claude/settings.j
 
 ### Layer 0 — Clean-env wrapper
 
-A shell wrapper that strips credential-shaped environment variables from the parent shell before invoking the agent. The reference implementation ships [`tools/agent-isolation/claude-iso.sh`](https://github.com/apache/airflow-steward/blob/main/tools/agent-isolation/claude-iso.sh).
+A shell wrapper that strips credential-shaped environment variables from the parent shell before invoking the agent. The reference implementation ships [`tools/agent-isolation/claude-iso.sh`](https://github.com/apache/magpie/blob/main/tools/agent-isolation/claude-iso.sh).
 
 The wrapper hard-allows a tiny passthrough list (`HOME`, `PATH`, `SHELL`, `TERM`, `LANG`, `XDG_*`, `DISPLAY`, `SSH_AUTH_SOCK`, `USER`, `LOGNAME`, `PWD`); everything else from the parent shell is dropped via `env -i`.
 
@@ -205,13 +205,13 @@ The `permissions.ask` block above intercepts every write-side action whose eff
 
 Claude Code's Bash tool accepts a `dangerouslyDisableSandbox: true` flag that lets the model run a single command outside the sandbox — necessary for the (rare) cases where a legitimate task needs to read or write a path the sandbox denies. The runtime prompts the user before honouring the bypass, but in a long session the prompt is easy to skim past, especially when several appear in quick succession.
 
-The reference implementation ships a `PreToolUse` hook, [`tools/agent-isolation/sandbox-bypass-warn.sh`](https://github.com/apache/airflow-steward/blob/main/tools/agent-isolation/sandbox-bypass-warn.sh), that prints a bold red banner with the command and the model's stated reason to stderr **before** the permission prompt appears. The hook is **complementary** to the rest of the secure setup, not a replacement: it does not prevent a bypass, it just makes the bypass visible. The user still has to approve the call at the permission prompt — the banner gives them a fair chance to read what they are about to approve.
+The reference implementation ships a `PreToolUse` hook, [`tools/agent-isolation/sandbox-bypass-warn.sh`](https://github.com/apache/magpie/blob/main/tools/agent-isolation/sandbox-bypass-warn.sh), that prints a bold red banner with the command and the model's stated reason to stderr **before** the permission prompt appears. The hook is **complementary** to the rest of the secure setup, not a replacement: it does not prevent a bypass, it just makes the bypass visible. The user still has to approve the call at the permission prompt — the banner gives them a fair chance to read what they are about to approve.
 
 Recommended install scope is **user-scope** (in `~/.claude/settings.json`), not project-scope: a sandbox-bypass attempt is just as worth noticing in an unrelated project as in a tracker.
 
 ### Visibility — sandbox-state status line
 
-The agent's terminal footer (`statusLine`) is the always-visible bottom-of-window line. The reference implementation ships [`tools/agent-isolation/sandbox-status-line.sh`](https://github.com/apache/airflow-steward/blob/main/tools/agent-isolation/sandbox-status-line.sh), which renders:
+The agent's terminal footer (`statusLine`) is the always-visible bottom-of-window line. The reference implementation ships [`tools/agent-isolation/sandbox-status-line.sh`](https://github.com/apache/magpie/blob/main/tools/agent-isolation/sandbox-status-line.sh), which renders:
 
 - `<model> [sandbox]` in green when the active settings set `"sandbox": { "enabled": true }`, OR
 - `<model> [NO SANDBOX]` in bold red when they do not.
@@ -224,7 +224,7 @@ A session that is inadvertently running with `sandbox.enabled` unset (or globa
 
 Every system-level tool the secure setup depends on is pinned with a **per-tool cooldown** before adopting a new upstream release — same convention as `[tool.uv] exclude-newer = "7 days"` in `pyproject.toml`. Default cooldown is 7 days; individual tools can override.
 
-The current pins (from the reference implementation's [`tools/agent-isolation/pinned-versions.toml`](https://github.com/apache/airflow-steward/blob/main/tools/agent-isolation/pinned-versions.toml)):
+The current pins (from the reference implementation's [`tools/agent-isolation/pinned-versions.toml`](https://github.com/apache/magpie/blob/main/tools/agent-isolation/pinned-versions.toml)):
 
 | Tool | Pinned version | Released | Cooldown | Purpose |
 |---|---|---|---|---|
@@ -307,11 +307,11 @@ npm install -g --no-save @anthropic-ai/claude-code@2.1.123
 
 ```text
 1. Open Claude Code in your tracker repo.
-2. Run /verify-apache-steward (if consuming the framework as a
+2. Run /verify-apache-magpie (if consuming the framework as a
    submodule) to confirm wiring is correct.
 3. Run /setup-secure-config — guided first-time install.
 4. Run /verify-secure-config — confirms ✓/✗/⚠ for each piece.
-5. Run /upgrade-apache-steward and /update-secure-config when
+5. Run /upgrade-apache-magpie and /update-secure-config when
    pulling a framework update.
 6. Optional: /sync-shared-config to push user-scope edits to a
    private dotfile-style sync repo.
@@ -399,35 +399,35 @@ The repo is **private** for three reasons:
 
 ## What a session looks like
 
-> The five PNG files referenced below live in the [`apache/airflow-steward`](https://github.com/apache/airflow-steward) repo under `images/`. Upload them as Confluence attachments when publishing this RFC.
+> The five PNG files referenced below live in the [`apache/magpie`](https://github.com/apache/magpie) repo under `images/`. Upload them as Confluence attachments when publishing this RFC.
 
 **1. Sandboxed session — the steady state.**
 
-![session-sandboxed](https://raw.githubusercontent.com/apache/airflow-steward/main/images/session-sandboxed.png)
+![session-sandboxed](https://raw.githubusercontent.com/apache/magpie/main/images/session-sandboxed.png)
 
 The terminal footer renders `<model> [sandbox]` in green when the active settings set `sandbox.enabled: true`. Bash subprocesses run inside bubblewrap (Linux) or Seatbelt (macOS) and only see paths listed in `sandbox.filesystem.allowRead`.
 
 **2. Unsandboxed session — the failure mode the setup exists to make obvious.**
 
-![session-no-sandbox](https://raw.githubusercontent.com/apache/airflow-steward/main/images/session-no-sandbox.png)
+![session-no-sandbox](https://raw.githubusercontent.com/apache/magpie/main/images/session-no-sandbox.png)
 
 `[NO SANDBOX]` in bold red means the active settings do not enable the sandbox. The agent's Bash subprocesses run with full access to the host filesystem.
 
 **3. Sandbox-bypass attempt — the per-call signal.**
 
-![Bold red SANDBOX BYPASS banner immediately above the Claude Code permission prompt](https://raw.githubusercontent.com/apache/airflow-steward/main/images/sandbox-bypass-banner.png)
+![Bold red SANDBOX BYPASS banner immediately above the Claude Code permission prompt](https://raw.githubusercontent.com/apache/magpie/main/images/sandbox-bypass-banner.png)
 
 When the model invokes the Bash tool with `dangerouslyDisableSandbox: true`, the bypass-warn hook prints a bold red banner to stderr **before** the permission prompt renders. Approving the prompt at that point is a deliberate act, not a skim-past click.
 
 **4. Sandbox actually denying a read — proof it is real.**
 
-![sandbox-blocks-read](https://raw.githubusercontent.com/apache/airflow-steward/main/images/sandbox-blocks-read.png)
+![sandbox-blocks-read](https://raw.githubusercontent.com/apache/magpie/main/images/sandbox-blocks-read.png)
 
 In a sandboxed session **without** bypass, a Bash call that tries to touch a path outside `allowRead` is intercepted by the runtime *before* the bubblewrap / Seatbelt subprocess actually fires. The runtime surfaces the rule that was violated by name (`read ~/Downloads (outside allowed read paths)`) and offers to retry with the sandbox disabled.
 
 **5. bubblewrap / Seatbelt in action — the OS layer the runtime falls back to.**
 
-![sandbox-os-level-block](https://raw.githubusercontent.com/apache/airflow-steward/main/images/sandbox-os-level-block.png)
+![sandbox-os-level-block](https://raw.githubusercontent.com/apache/magpie/main/images/sandbox-os-level-block.png)
 
 When the eventual filesystem access is **opaque to lexical analysis** — here, a path constructed inside a `python3 -c` one-liner via `os.path.expanduser`, which the runtime cannot parse without actually executing it — the runtime hands the Bash subprocess off to bubblewrap (Linux) / Seatbelt (macOS). The OS sandbox then catches the violation at the syscall boundary. The two layers are stacked deliberately: the runtime is the cheap, predictable check; bubblewrap / Seatbelt is the unbypassable backstop for everything the runtime cannot lexically pre-parse.
 
@@ -468,8 +468,8 @@ This setup substantially shrinks the credential-leakage surface, but some risks 
 - [socat](http://www.dest-unreach.org/socat/) — TCP relay used for SNI-filtered network egress.
 - [macOS Seatbelt / sandbox-exec](https://developer.apple.com/library/archive/documentation/Security/Conceptual/AppSandboxDesignGuide/AboutAppSandbox/AboutAppSandbox.html) — kernel-level syscall sandbox.
 - [Claude Code sandbox feature](https://docs.claude.com/en/docs/claude-code/) — the runtime-layer wrapping that this RFC builds on.
-- [`apache/airflow-steward`](https://github.com/apache/airflow-steward) — the reference implementation, including:
-  - [`secure-agent-setup.md`](https://github.com/apache/airflow-steward/blob/main/docs/setup/secure-agent-setup.md) — adopter-facing install path
-  - [`secure-agent-internals.md`](https://github.com/apache/airflow-steward/blob/main/docs/setup/secure-agent-internals.md) — threat model and mechanism
-  - [`tools/agent-isolation/`](https://github.com/apache/airflow-steward/tree/main/tools/agent-isolation) — wrapper, hooks, status-line, pinned-versions manifest
-  - [`.claude/settings.json`](https://github.com/apache/airflow-steward/blob/main/.claude/settings.json) — the dogfooded sandbox / permissions config
+- [`apache/magpie`](https://github.com/apache/magpie) — the reference implementation, including:
+  - [`secure-agent-setup.md`](https://github.com/apache/magpie/blob/main/docs/setup/secure-agent-setup.md) — adopter-facing install path
+  - [`secure-agent-internals.md`](https://github.com/apache/magpie/blob/main/docs/setup/secure-agent-internals.md) — threat model and mechanism
+  - [`tools/agent-isolation/`](https://github.com/apache/magpie/tree/main/tools/agent-isolation) — wrapper, hooks, status-line, pinned-versions manifest
+  - [`.claude/settings.json`](https://github.com/apache/magpie/blob/main/.claude/settings.json) — the dogfooded sandbox / permissions config

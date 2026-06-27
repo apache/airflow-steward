@@ -1,5 +1,5 @@
 You are executing the image IP sub-check from Step 4 of the
-pr-management-code-review skill from the Apache Steward framework.
+pr-management-code-review skill from the Apache Magpie framework.
 
 When the diff adds binary image files (.png, .jpg, .jpeg, .gif, .svg,
 .ico, .webp), use judgement rather than raising an automatic finding:

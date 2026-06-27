@@ -15,7 +15,7 @@ A Python parity implementation should:
 5. Match the Groovy reference's section ordering and threshold values
 6. Use only stdlib (no external dependencies)
 
-Contributions welcome via PR against apache/airflow-steward.
+Contributions welcome via PR against apache/magpie.
 """
 
 import sys

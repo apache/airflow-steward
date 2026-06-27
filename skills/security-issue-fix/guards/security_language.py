@@ -62,7 +62,7 @@ def guard(ctx):
     text = ctx.gh_body(include_title=True, read_files=True)
     if not text:
         return None
-    if ctx.override("STEWARD_ALLOW_SECURITY_LANG"):
+    if ctx.override("MAGPIE_ALLOW_SECURITY_LANG"):
         return None
     lowered = text.lower()
     hits = []
@@ -76,6 +76,6 @@ def guard(ctx):
             f"security-fix language {sorted(set(hits))}. Per the ASF process, the "
             "security nature of a fix must not appear in public content before the CVE "
             "is announced — neutralise the wording. If disclosure is already public, "
-            "override with STEWARD_ALLOW_SECURITY_LANG=1."
+            "override with MAGPIE_ALLOW_SECURITY_LANG=1."
         )
     return None

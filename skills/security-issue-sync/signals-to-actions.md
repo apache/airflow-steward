@@ -844,7 +844,7 @@ will change and *why*. Group them by category:
   **Idempotency + PATCH-in-place**. Same shape as the hand-off
   comment: scan for the marker
   ```html
-  <!-- apache-steward: remediation-developer-fill-fields v1 -->
+  <!-- apache-magpie: remediation-developer-fill-fields v1 -->
   ```
   on line 1 of each comment. Three outcomes:
 
@@ -931,7 +931,7 @@ will change and *why*. Group them by category:
   **Idempotency + variant edit-in-place.** Before proposing, scan
   the issue's existing comments for the marker
   ```html
-  <!-- apache-steward: release-manager-handoff v1 -->
+  <!-- apache-magpie: release-manager-handoff v1 -->
   ```
   exactly. The marker is on line 1 of the comment body so a
   literal `gh issue view --json comments --jq` filter detects it
@@ -1001,7 +1001,7 @@ will change and *why*. Group them by category:
     parameterised with the CVE ID.
   - `FRAMEWORK_RECORD_MD_URL`, `FRAMEWORK_SYNC_SKILL_URL`,
     `FRAMEWORK_README_URL` — absolute GitHub URLs into
-    `apache/airflow-steward` `main`, since the framework lives in
+    `apache/magpie` `main`, since the framework lives in
     the gitignored snapshot at `<adopter-tracker>/.apache-magpie/`
     that does not render through the parent-repo viewer (per the
     absolute-URL rule used elsewhere in this repo).
@@ -1046,7 +1046,7 @@ will change and *why*. Group them by category:
   **Idempotency.** Before proposing, scan the issue's existing
   comments for the marker
   ```html
-  <!-- apache-steward: release-manager-publication-ready v1 -->
+  <!-- apache-magpie: release-manager-publication-ready v1 -->
   ```
   exactly. If a comment carrying this marker already exists, do not
   re-post — surface as *"publication-ready comment already posted on

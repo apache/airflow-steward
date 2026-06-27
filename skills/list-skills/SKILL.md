@@ -26,7 +26,7 @@ license: Apache-2.0
      <project-config> → adopting project's `.apache-magpie/` directory
      <tracker>        → value of `tracker_repo:` in <project-config>/project.md
      <upstream>       → value of `upstream_repo:` in <project-config>/project.md
-     <framework>      → `.apache-magpie/apache-steward` in adopters; `.` in
+     <framework>      → `.apache-magpie/apache-magpie` in adopters; `.` in
                         the framework standalone -->
 
 # list-skills

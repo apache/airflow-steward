@@ -1,12 +1,12 @@
 ## Activity card inputs
 
 - login: contributor-c
-- upstream: apache/airflow-steward
+- upstream: apache/magpie
 - window: 6 months
 - since (after trim): 2026-03-01
 - today: 2026-05-19
 - window_trimmed: true
-- trim_reason: Repo apache/airflow-steward was created on 2026-03-01, which is newer than the requested window start of 2025-11-19; window trimmed to repo creation date.
+- trim_reason: Repo apache/magpie was created on 2026-03-01, which is newer than the requested window start of 2025-11-19; window trimmed to repo creation date.
 
 ## Stream results
 

@@ -34,7 +34,7 @@ license: Apache-2.0
      <project-config> → adopting project's `.apache-magpie/` directory
      <tracker>        → value of `tracker_repo:` in <project-config>/project.md
      <upstream>       → value of `upstream_repo:` in <project-config>/project.md
-     <framework>      → `.apache-magpie/apache-steward` in adopters; `.` in
+     <framework>      → `.apache-magpie/apache-magpie` in adopters; `.` in
                         the framework standalone -->
 
 # optimize-skill
@@ -77,7 +77,7 @@ upstreaming guidance.
 **Hard rule**: agents NEVER modify the snapshot under
 `<adopter-repo>/.apache-magpie/`. Local modifications
 go in the override file. Framework changes go via PR
-to `apache/airflow-steward`.
+to `apache/magpie`.
 
 ---
 
@@ -277,7 +277,7 @@ the maintainer can queue the next one.
   every sibling linked exactly one level deep and no unreferenced
   siblings.
 - **Never touch the snapshot** (`<adopter-repo>/.apache-magpie/`).
-  Framework-skill optimizations land via PR to `apache/airflow-steward`.
+  Framework-skill optimizations land via PR to `apache/magpie`.
 
 ---
 

@@ -1,5 +1,5 @@
 You are executing the tone-check phase of the mentoring-welcome skill from
-the Apache Steward framework.
+the Apache Magpie framework.
 
 Given a drafted welcome comment, evaluate it against the ordered checklist
 below. Hard-fail rules block posting; soft-fail rules trigger a revision

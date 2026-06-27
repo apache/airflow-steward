@@ -28,7 +28,7 @@
 
 This page is the canonical reference for the label taxonomy used on
 issues and pull requests in this framework repository
-(`apache/airflow-steward`). It also defines the **capability** model
+(`apache/magpie`). It also defines the **capability** model
 that classifies what each skill or tool in the framework actually
 *does*, independent of which subject area it sits under.
 
@@ -155,7 +155,7 @@ Capabilities for every skill currently in
 | `security-issue-import-from-pr` | `capability:intake` |
 | `security-issue-import-via-forwarder` | `capability:intake` |
 | `security-issue-import-from-scan` | `capability:intake` |
-| `security-issue-sync` | `capability:intake` *(+ `capability:reconciliation` once [#337](https://github.com/apache/airflow-steward/issues/337) lands the ASF-dashboard step)* |
+| `security-issue-sync` | `capability:intake` *(+ `capability:reconciliation` once [#337](https://github.com/apache/magpie/issues/337) lands the ASF-dashboard step)* |
 | `setup-shared-config-sync` | `capability:intake` + `capability:setup` *(reconciles user-scope config to a sync repo; the act is intake, the subject is setup)* |
 | `release-vote-tally` | `capability:triage` *(reads the vote thread / approval signal, classifies each reply as binding or non-binding, tallies the result, and drafts the `[RESULT] [VOTE]` email for RM review — triage over the vote-thread queue)* |
 | `release-prepare` | `capability:resolve` *(drafts the planning issue, prep PR, and post-release bump PR that open the release lifecycle)* |
@@ -213,7 +213,7 @@ Tools under [`tools/`](../tools/). Tools with two values (separated by
 | [`tools/github-body-field`](../tools/github-body-field/) | `capability:setup` | Read or rewrite one `### Field` section of a GitHub issue body without bringing the body into agent context — substrate helper for the security-sync skills |
 | [`tools/github-rollup`](../tools/github-rollup/) | `capability:setup` | Append to (or create) the status-rollup comment on a GitHub issue without bringing the rollup body into agent context — substrate helper for every status-update-emitting skill |
 | [`tools/gmail`](../tools/gmail/) | `capability:setup` | Gmail API substrate |
-| [`tools/jira`](../tools/jira/) | `capability:setup` | JIRA REST substrate (read-only today; write subcommands tracked in [#301](https://github.com/apache/airflow-steward/issues/301)) |
+| [`tools/jira`](../tools/jira/) | `capability:setup` | JIRA REST substrate (read-only today; write subcommands tracked in [#301](https://github.com/apache/magpie/issues/301)) |
 | [`tools/mail-archive`](../tools/mail-archive/) | `capability:setup` | Adapter contract for public mail-archive backends (PonyMail, Hyperkitty, Discourse, Google Groups, GitHub Discussions). Pure interface spec. |
 | [`tools/mail-source`](../tools/mail-source/) | `capability:setup` + `capability:intake` | Mail-source backend abstraction (mbox / IMAP / Mailman 3); the abstraction is setup, every concrete read is part of the intake pipeline |
 | [`tools/ponymail`](../tools/ponymail/) | `capability:setup` + `capability:intake` | PonyMail archive substrate; same dual role as `mail-source` — substrate plus an intake-pipeline component |
@@ -256,7 +256,7 @@ capability:
 
 Apply at least one `area:*` AND one `capability:*` label. If the issue
 genuinely spans capabilities, apply both — for example,
-[#337](https://github.com/apache/airflow-steward/issues/337) carries
+[#337](https://github.com/apache/magpie/issues/337) carries
 both `capability:reconciliation` and `capability:setup` because it
 covers a new substrate tool *and* a new sync-flow integration.
 

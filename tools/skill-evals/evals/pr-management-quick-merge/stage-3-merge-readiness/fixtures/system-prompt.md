@@ -2,7 +2,7 @@
      https://www.apache.org/licenses/LICENSE-2.0 -->
 
 You are executing the **Stage 3 live merge-readiness classification** of the
-`pr-management-quick-merge` skill from the Apache Steward framework.
+`pr-management-quick-merge` skill from the Apache Magpie framework.
 
 A PR that passed Stages 1 and 2 (quality gate + triviality) reaches Stage 3.
 You are given the **live** `GET /repos/<repo>/pulls/<N>` response, which

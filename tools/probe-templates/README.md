@@ -85,7 +85,7 @@ Adopters with a new runtime should:
 3. Each template file has a header comment naming the family being
    probed, the placeholders the user substitutes, and an example
    invocation.
-4. Open a PR against `apache/airflow-steward`.
+4. Open a PR against `apache/magpie`.
 
 Note: not every language has every family. A typed compiled language
 without an operator-overloading subsystem may have no

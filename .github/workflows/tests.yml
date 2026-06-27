@@ -48,7 +48,7 @@ jobs:
         # filter mirrors the auto-discovery rule in
         # `tools/dev/run-workspace-check.sh`: only members with a
         # `[tool.pytest.ini_options]` section get pytest jobs, and
-        # an explicit `[tool.steward.checks] skip = [..., "pytest"]`
+        # an explicit `[tool.magpie.checks] skip = [..., "pytest"]`
         # opts out.
         run: |
           members=$(python3 <<'PY'
@@ -67,7 +67,7 @@ jobs:
               tool = data.get("tool", {})
               if "ini_options" not in tool.get("pytest", {}):
                   continue
-              skip = tool.get("steward", {}).get("checks", {}).get("skip", [])
+              skip = tool.get("magpie", {}).get("checks", {}).get("skip", [])
               if "pytest" in skip:
                   continue
               out.append({"name": path.split("/")[-1], "path": path})

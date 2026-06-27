@@ -12,8 +12,8 @@ Check 3 (user-scope scripts): drift detected in 1 script.
   +++ ~/.claude/scripts/sandbox-bypass-warn.sh
   @@ -12,7 +12,6 @@
    # Warn the user that sandbox mode is disabled.
-  -echo "[steward] WARNING: sandbox mode is disabled for this session." >&2
-  +echo "[steward] sandbox bypass active." >&2
+  -echo "[magpie] WARNING: sandbox mode is disabled for this session." >&2
+  +echo "[magpie] sandbox bypass active." >&2
    exit 0
 
   Other scripts are identical to framework source-of-truth.

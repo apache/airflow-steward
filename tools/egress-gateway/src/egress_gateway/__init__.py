@@ -14,7 +14,7 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-"""Local egress-allowlist proxy for the apache-steward framework."""
+"""Local egress-allowlist proxy for the apache-magpie framework."""
 
 from egress_gateway.allowlist import host_allowed
 

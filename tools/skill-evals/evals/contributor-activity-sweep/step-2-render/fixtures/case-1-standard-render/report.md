@@ -1,7 +1,7 @@
 ## Activity card inputs
 
 - login: contributor-a
-- upstream: apache/airflow-steward
+- upstream: apache/magpie
 - window: 6 months
 - since: 2025-11-19
 - today: 2026-05-19

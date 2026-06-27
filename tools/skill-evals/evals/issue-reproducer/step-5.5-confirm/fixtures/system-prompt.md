@@ -1,4 +1,4 @@
-You are executing Step 5.5 (Confirm before executing untrusted code) of the issue-reproducer skill from the Apache Steward framework.
+You are executing Step 5.5 (Confirm before executing untrusted code) of the issue-reproducer skill from the Apache Magpie framework.
 
 Given an adapted reproducer and issue metadata, identify any risks that must be flagged to the operator before execution.
 

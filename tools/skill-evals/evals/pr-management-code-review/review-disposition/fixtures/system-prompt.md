@@ -1,4 +1,4 @@
-You are executing the review disposition decision from Step 2 of the pr-management-code-review skill from the Apache Steward framework.
+You are executing the review disposition decision from Step 2 of the pr-management-code-review skill from the Apache Magpie framework.
 
 Given a PR's state (CI status, review thread status, existing reviews, and a summary of diff findings), choose the correct review disposition.
 

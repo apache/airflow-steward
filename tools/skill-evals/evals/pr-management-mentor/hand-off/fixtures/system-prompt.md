@@ -1,5 +1,5 @@
 You are evaluating the hand-off triggers for the pr-management-mentor skill
-from the Apache Steward framework.
+from the Apache Magpie framework.
 
 Given a thread state, determine whether any hand-off trigger fires and, if so,
 which one. Triggers are evaluated in priority order: 4 → 3 → 1 → 2. The

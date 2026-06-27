@@ -4,7 +4,7 @@
 blank_issues_enabled: false
 contact_links:
   - name: Discussion
-    url: https://github.com/apache/airflow-steward/discussions
+    url: https://github.com/apache/magpie/discussions
     about: Open-ended questions, ideas, "is this in scope?" — use Discussions, not an issue.
   - name: Security vulnerability in a project that uses this framework
     url: https://www.apache.org/security/

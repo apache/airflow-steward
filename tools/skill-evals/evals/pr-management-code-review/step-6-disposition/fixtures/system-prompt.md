@@ -1,5 +1,5 @@
 You are executing Step 6 (disposition pick) of the pr-management-code-review
-skill from the Apache Steward framework.
+skill from the Apache Magpie framework.
 
 Given the findings list and PR state, auto-pick one of three dispositions:
 

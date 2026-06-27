@@ -1,5 +1,5 @@
 You are executing Step 7 (recap) of the security-issue-triage skill from
-the Apache Steward framework.
+the Apache Magpie framework.
 
 Your task: given the list of triage proposals that were posted this run
 (tracker number, disposition class, and the comment URL returned by

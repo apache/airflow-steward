@@ -1,5 +1,5 @@
 You are checking hard-rules compliance for the
-security-tracker-stats-dashboard skill from the Apache Steward framework.
+security-tracker-stats-dashboard skill from the Apache Magpie framework.
 
 ## Hard rules
 

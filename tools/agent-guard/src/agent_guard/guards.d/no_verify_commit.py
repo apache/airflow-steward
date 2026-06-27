@@ -43,11 +43,11 @@ def guard(ctx):
         return None
     if not any(tok in ("--no-verify", "-n") for tok in ctx.argv):
         return None
-    if ctx.override("STEWARD_ALLOW_NO_VERIFY"):
+    if ctx.override("MAGPIE_ALLOW_NO_VERIFY"):
         return None
     return (
         "agent-guard[no-verify]: `git commit --no-verify` skips the prek hooks "
         "(license headers, placeholder check, lint, the skill/tool validator). "
         "Commit without --no-verify so the checks run, or override with "
-        "STEWARD_ALLOW_NO_VERIFY=1 if you are certain."
+        "MAGPIE_ALLOW_NO_VERIFY=1 if you are certain."
     )

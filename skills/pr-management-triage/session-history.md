@@ -287,7 +287,7 @@ not paraphrase or expand them.
   parsed back into structured data.
 - A replacement for git history on the framework repo. Concrete
   rule changes still go via PR to
-  [`apache/airflow-steward`](https://github.com/apache/airflow-steward).
+  [`apache/magpie`](https://github.com/apache/magpie).
   The session-history gist is the **input** to those PRs; the
   framework repo's diff is the **output**.
 - A substitute for the on-screen summary. Step 6 always prints

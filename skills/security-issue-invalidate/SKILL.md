@@ -147,7 +147,7 @@ upstreaming guidance.
 **Hard rule**: agents NEVER modify the snapshot under
 `<adopter-repo>/.apache-magpie/`. Local modifications
 go in the override file. Framework changes go via PR
-to `apache/airflow-steward`.
+to `apache/magpie`.
 
 ---
 
@@ -712,7 +712,7 @@ upsert recipe). Shape:
 
 **Reporter notification:** <one of — required line, never omit:>
 - **`security@`-imported, direct-reporter mode:** Gmail draft `<draftId>` created on thread `<threadId>` anchored at message `<messageId>` — awaiting user review.
-- **`security@`-imported, via-forwarder mode:** Forwarder-relay draft `<draftId>` to `<forwarder-contact>` on thread `<threadId>` per the matching adapter's `reporter_addressing_block` convention (clickable URL + paste-ready reporter-voice block) — awaiting user review. For an `airflow-s` adopter with the `asf-security` forwarder enabled, the contact resolves to an `@apache.org` forwarder and the block follows the [`tools/gmail/asf-relay.md`](https://github.com/apache/airflow-steward/blob/main/tools/gmail/asf-relay.md) shape.
+- **`security@`-imported, via-forwarder mode:** Forwarder-relay draft `<draftId>` to `<forwarder-contact>` on thread `<threadId>` per the matching adapter's `reporter_addressing_block` convention (clickable URL + paste-ready reporter-voice block) — awaiting user review. For an `airflow-s` adopter with the `asf-security` forwarder enabled, the contact resolves to an `@apache.org` forwarder and the block follows the [`tools/gmail/asf-relay.md`](https://github.com/apache/magpie/blob/main/tools/gmail/asf-relay.md) shape.
 - **`security@`-imported, `duplicate` disposition:** *(same as direct or via-forwarder above; the draft body MUST name the canonical CVE-ID per Step 5d).*
 - **No notification owed — internal audit finding:** Tracker imported from project-internal markdown audit (`<source-markdown>`), no inbound `security@` thread, no reporter to notify.
 - **No Gmail draft owed — GHSA-relay-only, operator has GHSA-write access:** GHSA-relay-only reporter channel (`GHSA-XXXX-XXXX-XXXX`); closure communicated as GHSA comment `<URL>` / advisory state set to `<withdrawn|informational>`. No Gmail reply needed.

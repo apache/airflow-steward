@@ -168,7 +168,7 @@ repos:
   # `tools/dev/run-workspace-check.sh`. The driver auto-discovers
   # which checks apply per member (e.g. only runs `mypy` on members
   # with a `[tool.mypy]` section in their pyproject) and honours an
-  # opt-out `[tool.steward.checks] skip = [...]` block per member.
+  # opt-out `[tool.magpie.checks] skip = [...]` block per member.
   #
   # Adding a new uv-managed tool requires NO edit here — append its
   # path to `[tool.uv.workspace] members` in the root pyproject and

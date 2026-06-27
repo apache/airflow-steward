@@ -20,7 +20,7 @@
 # project-local Claude Code sandbox allowlists.
 #
 # Defensive fix for the harness behaviour described in
-# https://github.com/apache/airflow-steward/issues/197 :
+# https://github.com/apache/magpie/issues/197 :
 # `sandbox.filesystem.allowRead: ["."]` is *not* equivalent to
 # `allowWrite: ["."]` in the harness — the read side pre-resolves
 # `.` at session start to absolute paths and then drops the literal,

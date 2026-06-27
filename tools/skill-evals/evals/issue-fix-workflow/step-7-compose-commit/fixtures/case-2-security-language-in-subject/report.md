@@ -8,5 +8,5 @@ AIRFLOW-88101: security fix for bytes serialization vulnerability in XCom
 serialize_value() raised TypeError for bytes inputs. This security
 vulnerability has been patched.
 
-Generated-by: Apache Steward / issue-fix-workflow
+Generated-by: Apache Magpie / issue-fix-workflow
 ---

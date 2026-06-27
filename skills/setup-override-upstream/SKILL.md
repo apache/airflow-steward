@@ -3,14 +3,14 @@ name: magpie-setup-override-upstream
 description: |
   Walk an adopter through promoting a local
   `.apache-magpie-overrides/<skill>.md` file into a PR
-  against `apache/airflow-steward`. After the PR merges and
+  against `apache/magpie`. After the PR merges and
   the adopter runs `/magpie-setup upgrade`, the override file
   is no longer needed and the skill prompts for its removal.
 when_to_use: |
   Invoke when the user says "upstream my override", "promote
   this override to the framework", "convert my local
-  modification into a steward feature", "make this override
-  a framework feature", "open a PR to apache-steward for
+  modification into a magpie feature", "make this override
+  a framework feature", "open a PR to apache-magpie for
   this override", or similar — typically after running the
   override locally for a while and deciding the change is
   worth contributing back.
@@ -26,9 +26,9 @@ license: Apache-2.0
      <adopter-repo>           → repo this skill is being run in (an adopter)
      <override-file>          → .apache-magpie-overrides/<skill>.md being upstreamed
      <framework-skill>        → framework skill the override modifies
-     <framework-clone>        → user's local clone of apache/airflow-steward
+     <framework-clone>        → user's local clone of apache/magpie
                                 (separate from .apache-magpie/, which is a gitignored snapshot)
-     <framework-fork>         → user's GitHub fork of apache/airflow-steward
+     <framework-fork>         → user's GitHub fork of apache/magpie
                                 (where the PR branch gets pushed) -->
 
 # setup-override-upstream
@@ -38,7 +38,7 @@ feature*. It takes a single
 `.apache-magpie-overrides/<skill>.md` file in an adopter
 repo, walks the user through deciding whether the change is
 worth upstreaming, designs the framework-level abstraction,
-implements it in `apache/airflow-steward`, and opens a PR.
+implements it in `apache/magpie`, and opens a PR.
 
 The override mechanism (per
 [`docs/setup/agentic-overrides.md`](../../docs/setup/agentic-overrides.md))
@@ -67,7 +67,7 @@ guidance.
 **Hard rule**: agents NEVER modify the snapshot under
 `<adopter-repo>/.apache-magpie/`. Local modifications go in
 the override file. Framework changes go via PR to
-`apache/airflow-steward`.
+`apache/magpie`.
 
 ---
 
@@ -114,7 +114,7 @@ early if the change is not generalisable.
 
 **Golden rule 2 — write to `<framework-clone>`, never to
 the snapshot.** The framework PR is implemented in the
-user's local apache-steward clone (a separate working
+user's local apache-magpie clone (a separate working
 directory from the adopter's `.apache-magpie/` snapshot,
 which is gitignored and read-only). If the user does not
 have a clone yet, the skill helps them set one up.
@@ -149,11 +149,11 @@ preemptively.
    above). If drift exists, propose
    `/magpie-setup upgrade` first.
 3. Identify `<framework-clone>` — the user's local clone
-   of `apache/airflow-steward`. Common locations:
-   `~/code/airflow-steward/`, `~/work/airflow-steward/`.
+   of `apache/magpie`. Common locations:
+   `~/code/magpie/`, `~/work/magpie/`.
    If not found, surface and ask the user where it is, or
    help them clone it (`git clone
-   git@github.com:apache/airflow-steward.git`). The clone
+   git@github.com:apache/magpie.git`). The clone
    is **separate** from `<adopter-repo>/.apache-magpie/`
    (the snapshot).
 
@@ -261,7 +261,7 @@ In `<framework-clone>`:
 
 1. `git push -u <fork-remote> feat/<branch>`. If no fork
    remote is configured, surface and help the user add one
-   (`git remote add fork <user>/airflow-steward.git`).
+   (`git remote add fork <user>/magpie.git`).
 2. Draft the PR title + body. Include:
    - **Summary** — what the change is, in 1–3 bullets.
    - **Motivation** — link to the originating override
@@ -297,7 +297,7 @@ In `<framework-clone>`:
 5. Write the PR body to a tempfile first, then create the PR:
    ```bash
    # Write tool: file_path: /tmp/override-pr-body.md, content: <PR body>
-   gh pr create --repo apache/airflow-steward --base main \
+   gh pr create --repo apache/magpie --base main \
      --head <user>:<branch> --title "..." --body-file /tmp/override-pr-body.md \
      --label "area:<area>" --label "capability:<capability>"
    ```
@@ -340,7 +340,7 @@ lands.
 Next: wait for the PR to merge, then in <adopter-repo>:
   /magpie-setup upgrade
   rm .apache-magpie-overrides/<skill>.md
-  git add -A && git commit -m "Remove override <skill>: upstreamed in apache/airflow-steward#<N>"
+  git add -A && git commit -m "Remove override <skill>: upstreamed in apache/magpie#<N>"
 ```
 
 ## Failure modes
@@ -349,7 +349,7 @@ Next: wait for the PR to merge, then in <adopter-repo>:
 |---|---|---|
 | `<adopter-repo>` has no `.apache-magpie-overrides/` | not adopted, or adopted without the overrides scaffold | run `/magpie-setup adopt` (idempotent) |
 | Step 1 finds zero overrides | nothing to upstream — adopter has no local modifications recorded | stop |
-| `<framework-clone>` not found | user has not cloned `apache/airflow-steward` yet | help them clone, then resume |
+| `<framework-clone>` not found | user has not cloned `apache/magpie` yet | help them clone, then resume |
 | Framework pre-commit fails after the implementation | the change does not match framework conventions | iterate with the user, re-run pre-commit, do not bypass with `--no-verify` |
 | User decides mid-flow that the override is project-specific after all | wrong call in Step 3 | stop without opening a PR; the override file in the adopter repo is unchanged, no harm done |
 

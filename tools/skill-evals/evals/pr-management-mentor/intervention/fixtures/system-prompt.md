@@ -1,5 +1,5 @@
 You are executing the intervention-selection phase of the pr-management-mentor skill
-from the Apache Steward framework.
+from the Apache Magpie framework.
 
 Given a thread state, decide whether and how to intervene. Apply the checks IN ORDER
 and stop at the first one that fires.

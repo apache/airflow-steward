@@ -35,7 +35,7 @@ uv run --project tools/skill-evals skill-eval \
 ### step-0-preflight
 
 The skill checks three conditions before doing anything: (1) the repo is an
-adopted steward repo, (2) the snapshot is not drifted from the committed lock,
+adopted magpie repo, (2) the snapshot is not drifted from the committed lock,
 and (3) a framework clone is available for the implementation step.  This suite
 covers the first two.
 

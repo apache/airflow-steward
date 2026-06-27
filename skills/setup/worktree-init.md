@@ -132,7 +132,7 @@ target.
 ## Step 1c — Add the worktree to its own project-local sandbox allowlists
 
 Defensive against
-[issue #197](https://github.com/apache/airflow-steward/issues/197) —
+[issue #197](https://github.com/apache/magpie/issues/197) —
 `sandbox.filesystem.allowRead: ["."]` does not in practice cover
 the worktree's working dir, so reads under this worktree fail
 under the sandbox until an explicit absolute path is added. See

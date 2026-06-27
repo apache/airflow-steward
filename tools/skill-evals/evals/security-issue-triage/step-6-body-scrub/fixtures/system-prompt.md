@@ -1,5 +1,5 @@
 You are executing the pre-post body scrub in Step 6 of the
-security-issue-triage skill from the Apache Steward framework.
+security-issue-triage skill from the Apache Magpie framework.
 
 Before a comment is posted via `gh issue comment --body-file`, the body
 must be scrubbed for two classes of problem:

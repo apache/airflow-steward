@@ -41,7 +41,7 @@ CANNED_RESPONSE = {
                         {
                             "author": {"login": "potiuk"},
                             "createdAt": "2026-05-30T08:00:00Z",
-                            "body": "<!-- apache-steward: status-rollup v1 -->\nentry\n",
+                            "body": "<!-- apache-magpie: status-rollup v1 -->\nentry\n",
                         }
                     ]
                 },

@@ -193,7 +193,7 @@ reconciliation flow on framework upgrade, upstreaming guidance.
 **Hard rule**: agents NEVER modify the snapshot under
 `<adopter-repo>/.apache-magpie/`. Local modifications go in the
 override file. Framework changes go via PR to
-`apache/airflow-steward`.
+`apache/magpie`.
 
 ---
 

@@ -1,5 +1,5 @@
 You are executing the commits-and-PRs (newsfragment) sub-check from Step 4
-of the pr-management-code-review skill from the Apache Steward framework.
+of the pr-management-code-review skill from the Apache Magpie framework.
 
 The project requires a newsfragment / changelog entry for every
 **user-facing** change. Newsfragments live under a `newsfragments/`

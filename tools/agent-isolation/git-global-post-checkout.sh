@@ -27,7 +27,7 @@
 # After that, every `git checkout`, `git clone` (which runs an
 # implicit checkout of the default branch), and `git worktree add`
 # across the operator's host invokes this script — for any repo,
-# not just apache-steward adopters.
+# not just apache-magpie adopters.
 #
 # One responsibility, best-effort + idempotent + `|| true` so the
 # hook never breaks the surrounding git operation:
@@ -39,15 +39,15 @@
 #   to populate `<worktree>/.claude/settings.local.json` with the
 #   worktree's absolute path. Defensive against the harness
 #   behaviour documented at
-#   https://github.com/apache/airflow-steward/issues/197 .
+#   https://github.com/apache/magpie/issues/197 .
 #
-# **Not** in this hook: apache-steward symlink reconciliation.
+# **Not** in this hook: apache-magpie symlink reconciliation.
 # `/magpie-setup verify --auto-fix-symlinks` is a Claude Code
 # slash command, not a shell command, so it cannot be invoked from
 # a `git checkout` hook running in the operator's shell — the
 # previous template version of this hook spelled out the line
 # anyway and printed a spurious "No such file or directory" error
-# on every checkout. Symlink-drift in steward-adopted repos is now
+# on every checkout. Symlink-drift in magpie-adopted repos is now
 # reconciled **lazily** — the next time the operator opens Claude
 # Code in the worktree, `/magpie-setup verify` detects any drift
 # and offers to fix it.

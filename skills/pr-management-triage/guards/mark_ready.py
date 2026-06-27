@@ -34,7 +34,7 @@ def guard(ctx):
     ready = ctx.ready_label
     if not label or label.strip().lower() != ready.strip().lower():
         return None
-    if ctx.override("STEWARD_ALLOW_MARK_READY"):
+    if ctx.override("MAGPIE_ALLOW_MARK_READY"):
         return None
 
     target = ctx.positional_after("edit")
@@ -62,6 +62,6 @@ def guard(ctx):
             f"agent-guard[mark-ready]: PR has {pending} GitHub Actions run(s) awaiting "
             f"approval at head {head[:7]}; adding '{ready}' now is premature (Golden rule "
             "1b) — the real CI has not run. Approve/await the workflow first. Override: "
-            "STEWARD_ALLOW_MARK_READY=1."
+            "MAGPIE_ALLOW_MARK_READY=1."
         )
     return None

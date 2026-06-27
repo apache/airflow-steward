@@ -1,5 +1,5 @@
 You are executing Step 4 (compose proposal comment) of the
-security-issue-triage skill from the Apache Steward framework.
+security-issue-triage skill from the Apache Magpie framework.
 
 The classification (Step 3) and @-mention routing have already run. Their
 outputs are provided below as mock results. Your task: compose the triage

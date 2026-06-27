@@ -16,7 +16,7 @@
 # under the License.
 
 """Tests for the skill-owned guards, exercised end-to-end through the agent-guard
-discovery path — exactly how an adopter runs them. ``STEWARD_GUARD_DIRS`` points
+discovery path — exactly how an adopter runs them. ``MAGPIE_GUARD_DIRS`` points
 the dispatcher at the real ``skills/<skill>/guards`` directories in this repo, so
 these tests fail if a guard file is moved, renamed, or broken."""
 
@@ -35,13 +35,13 @@ SECURITY_GUARDS = REPO_ROOT / "skills" / "security-issue-fix" / "guards"
 @pytest.fixture(autouse=True)
 def _wire_skill_guards(monkeypatch):
     for name in (
-        "STEWARD_GUARD_OFF",
-        "STEWARD_ALLOW_MENTIONS",
-        "STEWARD_ALLOW_MARK_READY",
-        "STEWARD_ALLOW_SECURITY_LANG",
+        "MAGPIE_GUARD_OFF",
+        "MAGPIE_ALLOW_MENTIONS",
+        "MAGPIE_ALLOW_MARK_READY",
+        "MAGPIE_ALLOW_SECURITY_LANG",
     ):
         monkeypatch.delenv(name, raising=False)
-    monkeypatch.setenv("STEWARD_GUARD_DIRS", f"{TRIAGE_GUARDS}{os.pathsep}{SECURITY_GUARDS}")
+    monkeypatch.setenv("MAGPIE_GUARD_DIRS", f"{TRIAGE_GUARDS}{os.pathsep}{SECURITY_GUARDS}")
 
 
 def fake_run(handler):
@@ -99,7 +99,7 @@ def test_mention_author_unresolved_fails_closed(monkeypatch):
 
 def test_mention_override(monkeypatch):
     monkeypatch.setattr(agent_guard, "_run", fake_run(lambda a: "alice"))
-    assert dispatch('STEWARD_ALLOW_MENTIONS=1 gh pr comment 5 --body "@bob ping"') is None
+    assert dispatch('MAGPIE_ALLOW_MENTIONS=1 gh pr comment 5 --body "@bob ping"') is None
 
 
 # --- mark-ready guard (skill-owned) ---------------------------------------- #
@@ -134,7 +134,7 @@ def test_mark_ready_other_label_allowed(monkeypatch):
 
 def test_mark_ready_override(monkeypatch):
     monkeypatch.setattr(agent_guard, "_run", fake_run(_mark_ready_handler("3")))
-    cmd = 'STEWARD_ALLOW_MARK_READY=1 gh pr edit 5 --repo o/r --add-label "ready for maintainer review"'
+    cmd = 'MAGPIE_ALLOW_MARK_READY=1 gh pr edit 5 --repo o/r --add-label "ready for maintainer review"'
     assert dispatch(cmd) is None
 
 
@@ -160,5 +160,5 @@ def test_security_language_in_comment_allowed():
 
 
 def test_security_override():
-    cmd = 'STEWARD_ALLOW_SECURITY_LANG=1 gh pr create --title "Fix CVE-2026-1234" --body "x"'
+    cmd = 'MAGPIE_ALLOW_SECURITY_LANG=1 gh pr create --title "Fix CVE-2026-1234" --body "x"'
     assert dispatch(cmd) is None

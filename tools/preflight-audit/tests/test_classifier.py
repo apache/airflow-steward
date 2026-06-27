@@ -89,7 +89,7 @@ def test_rule_1_skipped_when_skill_drove_recent_update():
         labels=frozenset({"cve allocated", "fix released"}),
         last_comment_author="potiuk",
         last_comment_days_ago=1.0,
-        last_comment_body="<!-- apache-steward: release-manager-handoff v1 -->\nbody",
+        last_comment_body="<!-- apache-magpie: release-manager-handoff v1 -->\nbody",
     )
     c = classify_issue(iss, now=NOW)
     # Rule 7 should fire because Rule 1 yielded.
@@ -154,7 +154,7 @@ def test_rule_2_not_urgent_when_skill_comment():
         updated_days_ago=10.0,
         last_comment_author="potiuk",
         last_comment_days_ago=0.5,
-        last_comment_body="<!-- apache-steward: status-rollup v1 -->\nentry\n",
+        last_comment_body="<!-- apache-magpie: status-rollup v1 -->\nentry\n",
     )
     c = classify_issue(iss, now=NOW)
     assert c.decision != Decision.DISPATCH_URGENT
@@ -243,7 +243,7 @@ def test_rule_5_skip_full_lifecycle_skill_last():
         labels=frozenset({"cve allocated", "pr merged", "announced"}),
         last_comment_author="potiuk",
         last_comment_days_ago=2.0,
-        last_comment_body="<!-- apache-steward: status-rollup v1 -->\nentry",
+        last_comment_body="<!-- apache-magpie: status-rollup v1 -->\nentry",
     )
     c = classify_issue(iss, now=NOW)
     assert c.decision == Decision.SKIP_NOOP
@@ -275,7 +275,7 @@ def test_rule_6_skip_awaiting_release():
         labels=frozenset({"cve allocated", "pr merged"}),
         last_comment_author="potiuk",
         last_comment_days_ago=2.0,
-        last_comment_body="<!-- apache-steward: status-rollup v1 -->\n",
+        last_comment_body="<!-- apache-magpie: status-rollup v1 -->\n",
     )
     c = classify_issue(iss, now=NOW)
     assert c.decision == Decision.SKIP_NOOP
@@ -294,7 +294,7 @@ def test_rule_7_skip_awaiting_advisory():
         labels=frozenset({"cve allocated", "fix released"}),
         last_comment_author="potiuk",
         last_comment_days_ago=1.0,
-        last_comment_body="<!-- apache-steward: release-manager-handoff v1 -->\n",
+        last_comment_body="<!-- apache-magpie: release-manager-handoff v1 -->\n",
     )
     c = classify_issue(iss, now=NOW)
     assert c.decision == Decision.SKIP_NOOP
@@ -340,7 +340,7 @@ def test_skill_marker_detected_regardless_of_author():
         labels=frozenset({"cve allocated", "fix released"}),
         last_comment_author="some-user",
         last_comment_days_ago=2.0,
-        last_comment_body="<!-- apache-steward: status-rollup v1 -->\nentry",
+        last_comment_body="<!-- apache-magpie: status-rollup v1 -->\nentry",
     )
     c = classify_issue(iss, now=NOW)
     assert c.last_is_skill_or_bot is True
@@ -438,10 +438,10 @@ def test_no_last_comment_falls_through_to_dispatch():
 @pytest.mark.parametrize(
     "body,expected_skill",
     [
-        ("<!-- apache-steward: x v1 -->", True),
-        ("  \n<!-- apache-steward: x v1 -->", True),  # leading whitespace
-        ("<!-- apache-steward:x -->", False),  # missing space after colon
-        ("real reply\n<!-- apache-steward: x -->", False),  # not at start
+        ("<!-- apache-magpie: x v1 -->", True),
+        ("  \n<!-- apache-magpie: x v1 -->", True),  # leading whitespace
+        ("<!-- apache-magpie:x -->", False),  # missing space after colon
+        ("real reply\n<!-- apache-magpie: x -->", False),  # not at start
         ("", False),
         (None, False),
     ],

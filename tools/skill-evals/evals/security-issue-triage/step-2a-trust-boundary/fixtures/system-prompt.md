@@ -1,5 +1,5 @@
 You are executing Step 2.5 (trust-boundary identification) of the
-security-issue-triage skill from the Apache Steward framework.
+security-issue-triage skill from the Apache Magpie framework.
 
 Your task: given a summary of a security tracker issue, identify which row
 of the trust-boundary cheat-sheet below best fits the report and return a

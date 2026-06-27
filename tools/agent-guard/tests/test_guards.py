@@ -29,14 +29,14 @@ import agent_guard
 @pytest.fixture(autouse=True)
 def _clear_env(monkeypatch):
     for name in (
-        "STEWARD_GUARD_OFF",
-        "STEWARD_GUARD_DIRS",
-        "STEWARD_ALLOW_COAUTHOR",
-        "STEWARD_ALLOW_EMPTY_PUSH",
-        "STEWARD_ALLOW_NO_VERIFY",
-        "STEWARD_ALLOW_MENTIONS",
-        "STEWARD_ALLOW_MARK_READY",
-        "STEWARD_ALLOW_SECURITY_LANG",
+        "MAGPIE_GUARD_OFF",
+        "MAGPIE_GUARD_DIRS",
+        "MAGPIE_ALLOW_COAUTHOR",
+        "MAGPIE_ALLOW_EMPTY_PUSH",
+        "MAGPIE_ALLOW_NO_VERIFY",
+        "MAGPIE_ALLOW_MENTIONS",
+        "MAGPIE_ALLOW_MARK_READY",
+        "MAGPIE_ALLOW_SECURITY_LANG",
     ):
         monkeypatch.delenv(name, raising=False)
 
@@ -90,7 +90,7 @@ def test_commit_generated_by_allowed():
 
 
 def test_commit_coauthor_override():
-    assert dispatch('STEWARD_ALLOW_COAUTHOR=1 git commit -m "x\nCo-Authored-By: a"') is None
+    assert dispatch('MAGPIE_ALLOW_COAUTHOR=1 git commit -m "x\nCo-Authored-By: a"') is None
 
 
 # --------------------------------------------------------------------------- #
@@ -139,7 +139,7 @@ def test_empty_rebase_failopen_no_base(monkeypatch):
 
 def test_empty_rebase_override(monkeypatch):
     monkeypatch.setattr(agent_guard, "_run", fake_run(_push_handler("0")))
-    assert dispatch("STEWARD_ALLOW_EMPTY_PUSH=1 git push --force origin b:b") is None
+    assert dispatch("MAGPIE_ALLOW_EMPTY_PUSH=1 git push --force origin b:b") is None
 
 
 # --------------------------------------------------------------------------- #
@@ -153,7 +153,7 @@ def test_bundled_no_verify_guard_discovered():
 
 
 def test_no_verify_override():
-    assert dispatch('STEWARD_ALLOW_NO_VERIFY=1 git commit -n -m "x"') is None
+    assert dispatch('MAGPIE_ALLOW_NO_VERIFY=1 git commit -n -m "x"') is None
 
 
 def test_plain_commit_not_blocked_by_no_verify_guard():
@@ -173,15 +173,15 @@ def test_contributed_guard_from_env_dir(monkeypatch, tmp_path):
         "def guard(ctx):\n"
         "    sub = ctx.gh_subcommand()\n"
         "    if sub == ('pr', 'merge') and any(t in ('--admin',) for t in ctx.argv):\n"
-        "        if ctx.override('STEWARD_ALLOW_ADMIN_MERGE'):\n"
+        "        if ctx.override('MAGPIE_ALLOW_ADMIN_MERGE'):\n"
         "            return None\n"
         "        return 'contributed[admin-merge]: refusing gh pr merge --admin'\n"
         "    return None\n",
         encoding="utf-8",
     )
-    monkeypatch.setenv("STEWARD_GUARD_DIRS", str(gdir))
+    monkeypatch.setenv("MAGPIE_GUARD_DIRS", str(gdir))
     assert dispatch("gh pr merge 5 --admin") is not None
-    assert dispatch("STEWARD_ALLOW_ADMIN_MERGE=1 gh pr merge 5 --admin") is None
+    assert dispatch("MAGPIE_ALLOW_ADMIN_MERGE=1 gh pr merge 5 --admin") is None
     assert dispatch("gh pr view 5 --json title") is None
 
 
@@ -189,7 +189,7 @@ def test_broken_contributed_guard_fails_open(monkeypatch, tmp_path):
     gdir = tmp_path / "guards.d"
     gdir.mkdir()
     (gdir / "broken.py").write_text("this is not valid python !!!", encoding="utf-8")
-    monkeypatch.setenv("STEWARD_GUARD_DIRS", str(gdir))
+    monkeypatch.setenv("MAGPIE_GUARD_DIRS", str(gdir))
     assert dispatch("gh pr view 5") is None
 
 
@@ -223,7 +223,7 @@ def test_malformed_command_allows():
 
 
 def test_global_off(monkeypatch):
-    assert dispatch('STEWARD_GUARD_OFF=1 git commit -m "x\nCo-Authored-By: a"') is None
+    assert dispatch('MAGPIE_GUARD_OFF=1 git commit -m "x\nCo-Authored-By: a"') is None
 
 
 # --------------------------------------------------------------------------- #

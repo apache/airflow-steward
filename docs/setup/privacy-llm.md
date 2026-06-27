@@ -383,7 +383,7 @@ against it.
 
 If you are a PMC member or ASF Legal Affairs reviewer reading
 this and want to formalise the list: open an issue on
-[`apache/airflow-steward`](https://github.com/apache/airflow-steward)
+[`apache/magpie`](https://github.com/apache/magpie)
 referencing this file. The framework will track ratification as
 a project memory and bump the registry version once the ratified
 list lands.

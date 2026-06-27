@@ -14,7 +14,7 @@ exclude-newer-span = "P7D"
 members = [
     "agent-guard",
     "agent-isolation",
-    "apache-steward",
+    "apache-magpie",
     "checker",
     "egress-gateway",
     "generate-cve-json",
@@ -46,7 +46,7 @@ version = "0.1.0"
 source = { editable = "tools/agent-isolation" }
 
 [[package]]
-name = "apache-steward"
+name = "apache-magpie"
 version = "0.0.0"
 source = { virtual = "." }
 

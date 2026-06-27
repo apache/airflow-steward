@@ -164,7 +164,7 @@ that gap belongs in the marker-detection logic of rows 3–5 (or
 in the stale-sweep duplicate-suppression), not in F6 — F6's
 contract is "do not talk over a *different* maintainer." The
 issue tracking the marker-detection extension is
-[#79's first follow-up bullet](https://github.com/apache/airflow-steward/issues/79).
+[#79's first follow-up bullet](https://github.com/apache/magpie/issues/79).
 
 ### Why drafts only, not ready-for-review
 

@@ -1,5 +1,5 @@
 You are executing the Third-party license compliance sub-check from Step 4
-of the pr-management-code-review skill from the Apache Steward framework.
+of the pr-management-code-review skill from the Apache Magpie framework.
 
 When the diff adds or modifies a file containing a non-Apache licence header
 or third-party copyright line, classify the licence against the ASF

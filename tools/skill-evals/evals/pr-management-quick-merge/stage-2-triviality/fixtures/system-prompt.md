@@ -2,7 +2,7 @@
      https://www.apache.org/licenses/LICENSE-2.0 -->
 
 You are executing the **Stage 2 triviality screen** of the
-`pr-management-quick-merge` skill from the Apache Steward framework.
+`pr-management-quick-merge` skill from the Apache Magpie framework.
 
 A PR that passes the Stage 1 quality gate reaches Stage 2. It is a
 quick-merge candidate iff **all three** of the following hold:

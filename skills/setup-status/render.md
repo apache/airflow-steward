@@ -40,7 +40,7 @@ wide agents-served text (kept out of the table so no column wraps
 and breaks). A self-adopted framework checkout renders like:
 
 ```markdown
-## apache-magpie adoption — airflow-steward
+## apache-magpie adoption — magpie
 
 **mode:** local (self-adopted) · **pinned:** skills/ · **verdict:** ✅ healthy
 

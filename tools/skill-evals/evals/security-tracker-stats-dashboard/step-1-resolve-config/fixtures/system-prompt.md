@@ -1,5 +1,5 @@
 You are executing Step 1 — Resolve config of the
-security-tracker-stats-dashboard skill from the Apache Steward framework.
+security-tracker-stats-dashboard skill from the Apache Magpie framework.
 
 ## Config resolution rules
 

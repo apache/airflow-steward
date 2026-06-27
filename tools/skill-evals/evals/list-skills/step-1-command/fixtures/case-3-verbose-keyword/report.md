@@ -1,1 +1,1 @@
-User said: "list the steward skills verbosely — I need the descriptions to be easier to read."
+User said: "list the magpie skills verbosely — I need the descriptions to be easier to read."

@@ -2,12 +2,12 @@
 
 cat .apache-magpie.lock:
   method: git-branch
-  url: https://github.com/apache/airflow-steward.git
+  url: https://github.com/apache/magpie.git
   ref: v0.9.1
 
 cat .apache-magpie.local.lock:
   method: git-branch
-  url: https://github.com/apache/airflow-steward.git
+  url: https://github.com/apache/magpie.git
   ref: v0.9.2
 
 Result: ref differs (local v0.9.2, committed pin v0.9.1) — sync needed.
@@ -23,8 +23,8 @@ cat .claude/settings.json:
     "enabled": true,
     "network": {"allowedDomains": ["github.com", "api.github.com", "pypi.org"]},
     "filesystem": {
-      "allowRead": ["/home/carol/steward", "/tmp/claude"],
-      "allowWrite": ["/home/carol/steward", "/tmp/claude"]
+      "allowRead": ["/home/carol/magpie", "/tmp/claude"],
+      "allowWrite": ["/home/carol/magpie", "/tmp/claude"]
     }
   },
   "permissions": {
@@ -116,22 +116,22 @@ curl https://example.com:
 
 ## Check 8 — Project-root coverage in sandbox allowlists
 
-CWD: /home/carol/steward
+CWD: /home/carol/magpie
 
 cat .claude/settings.local.json:
 ```json
 {
   "sandbox": {
     "filesystem": {
-      "allowRead": ["/home/carol/steward"],
-      "allowWrite": ["/home/carol/steward"]
+      "allowRead": ["/home/carol/magpie"],
+      "allowWrite": ["/home/carol/magpie"]
     }
   }
 }
 ```
 
-/home/carol/steward found in allowRead: yes
-/home/carol/steward found in allowWrite: yes
+/home/carol/magpie found in allowRead: yes
+/home/carol/magpie found in allowWrite: yes
 
 Live probe:
   Read .git/HEAD: OK (content: "ref: refs/heads/main")

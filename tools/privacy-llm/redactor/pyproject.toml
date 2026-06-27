@@ -21,7 +21,7 @@ build-backend = "hatchling.build"
 [project]
 name = "redactor"
 version = "0.1.0"
-description = "PII redactor for the apache-steward privacy-llm tool — replace reporter PII with hash-prefixed identifiers and reverse on outbound."
+description = "PII redactor for the apache-magpie privacy-llm tool — replace reporter PII with hash-prefixed identifiers and reverse on outbound."
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "Apache-2.0" }

@@ -39,9 +39,9 @@
 # single argv item.
 #
 # Per-member opt-out: a workspace member can skip one or more
-# checks by adding a `[tool.steward.checks]` block:
+# checks by adding a `[tool.magpie.checks]` block:
 #
-#   [tool.steward.checks]
+#   [tool.magpie.checks]
 #   skip = ["mypy", "pytest"]
 #
 # Examples:
@@ -87,7 +87,7 @@ fi
 # each member's pyproject.toml, and emits one line per applicable
 # member: "<check>\t<path>" — with the `<check>` filter already
 # applied based on (a) the presence of the relevant `[tool.*]`
-# section and (b) the member's `[tool.steward.checks] skip` list.
+# section and (b) the member's `[tool.magpie.checks] skip` list.
 applicable=$(python3 - "$CHECK_KEY" <<'PY'
 import sys
 import tomllib
@@ -129,7 +129,7 @@ for member in members:
     tool = data.get("tool", {})
 
     # Opt-out check.
-    skip = tool.get("steward", {}).get("checks", {}).get("skip", [])
+    skip = tool.get("magpie", {}).get("checks", {}).get("skip", [])
     if check in skip:
         continue
 

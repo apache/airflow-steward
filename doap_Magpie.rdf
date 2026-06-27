@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one
+  or more contributor license agreements.  See the NOTICE file
+  distributed with this work for additional information
+  regarding copyright ownership.  The ASF licenses this file
+  to you under the Apache License, Version 2.0 (the
+  "License"); you may not use this file except in compliance
+  with the License.  You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing,
+  software distributed under the License is distributed on an
+  "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+  KIND, either express or implied.  See the License for the
+  specific language governing permissions and limitations
+  under the License.
+-->
+<rdf:RDF xml:lang="en"
+         xmlns="http://usefulinc.com/ns/doap#"
+         xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+         xmlns:asfext="http://projects.apache.org/ns/asfext#"
+         xmlns:foaf="http://xmlns.com/foaf/0.1/">
+  <Project rdf:about="https://magpie.apache.org">
+    <created>2026-04-28</created>
+    <license rdf:resource="https://spdx.org/licenses/Apache-2.0"/>
+    <name>Apache Magpie</name>
+    <homepage rdf:resource="https://github.com/apache/magpie"/>
+    <asfext:pmc rdf:resource="https://magpie.apache.org"/>
+    <shortdesc xml:lang="en">Agent-assisted maintainership and development framework for Apache projects.</shortdesc>
+    <description xml:lang="en">Apache Magpie is a project-agnostic, agent-assisted maintainership and
+      development framework that any open-source project — ASF or not — can adopt. It ships
+      independently-toggleable modes (Triage, Mentoring, Drafting, Pairing, and Auto-merge) as
+      reusable agent skills, so each project picks the automation level that fits its culture and
+      risk tolerance. Magpie covers security-issue handling, contributor mentoring, agent-drafted
+      remediation under human review, and developer-side development-cycle workflows, with a
+      privacy-aware model-routing posture for sensitive content.</description>
+    <bug-database rdf:resource="https://github.com/apache/magpie/issues"/>
+    <mailing-list rdf:resource="https://lists.apache.org/list.html?dev@magpie.apache.org"/>
+    <download-page rdf:resource="https://github.com/apache/magpie"/>
+    <programming-language>Python</programming-language>
+    <category rdf:resource="https://projects.apache.org/category/build-management"/>
+    <repository>
+      <GitRepository>
+        <location rdf:resource="https://github.com/apache/magpie.git"/>
+        <browse rdf:resource="https://github.com/apache/magpie"/>
+      </GitRepository>
+    </repository>
+    <maintainer>
+      <foaf:Person>
+        <foaf:name>Jarek Potiuk</foaf:name>
+        <foaf:mbox rdf:resource="mailto:potiuk@apache.org"/>
+      </foaf:Person>
+    </maintainer>
+  </Project>
+</rdf:RDF>

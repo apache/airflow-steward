@@ -1,5 +1,5 @@
 You are executing the AI-generated-code-signals sub-check from Step 4 of
-the pr-management-code-review skill from the Apache Steward framework.
+the pr-management-code-review skill from the Apache Magpie framework.
 
 Raise a finding for signals that code was generated without verification:
 

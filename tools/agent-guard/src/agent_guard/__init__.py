@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-"""Deterministic ``PreToolUse`` guard dispatcher for apache-steward.
+"""Deterministic ``PreToolUse`` guard dispatcher for apache-magpie.
 
 Reads a Claude Code ``PreToolUse`` hook event on stdin, inspects the ``Bash``
 command, and **denies** the ones that would violate a hard framework rule
@@ -40,14 +40,14 @@ through ``uv run`` — and returns in a few milliseconds for any command that is
 not a guarded ``gh`` / ``git commit`` / ``git push`` (the fast path).
 
 Every guard is overridable, per command, by a visible inline env assignment so a
-maintainer can consciously proceed (``STEWARD_ALLOW_MENTIONS=1 gh pr comment …``)
-or disable the whole dispatcher (``STEWARD_GUARD_OFF=1``). Overrides are read
+maintainer can consciously proceed (``MAGPIE_ALLOW_MENTIONS=1 gh pr comment …``)
+or disable the whole dispatcher (``MAGPIE_GUARD_OFF=1``). Overrides are read
 from the command string itself (and from the hook's own environment).
 
 **Contributing guards.** Beyond the two bundled guards, any skill adds its own
 deterministic guard **without re-wiring the hook**: drop an import-free
 ``*.py`` file into a discovered ``guards.d`` directory (the ``guards.d`` sibling
-of this script, plus any dir in ``$STEWARD_GUARD_DIRS``) that defines a
+of this script, plus any dir in ``$MAGPIE_GUARD_DIRS``) that defines a
 module-level ``guard(ctx)`` returning a deny string or ``None`` — see
 ``GuardContext`` and ``guards.d/no_verify_commit.py`` for the template. The hook
 is wired once at setup; thereafter guards are added/removed by managing files in
@@ -70,8 +70,8 @@ from pathlib import Path
 # Configuration / constants
 # --------------------------------------------------------------------------- #
 
-GLOBAL_OFF_ENV = "STEWARD_GUARD_OFF"
-READY_LABEL_ENV = "STEWARD_READY_LABEL"
+GLOBAL_OFF_ENV = "MAGPIE_GUARD_OFF"
+READY_LABEL_ENV = "MAGPIE_READY_LABEL"
 DEFAULT_READY_LABEL = "ready for maintainer review"
 
 # Shell control operators that separate one simple command from the next.
@@ -251,13 +251,13 @@ def guard_commit_trailer(seg: Segment, cwd: str | None) -> str | None:
         return None
     if not re.search(r"co-authored-by:", seg.raw, re.IGNORECASE):
         return None
-    if seg.override("STEWARD_ALLOW_COAUTHOR"):
+    if seg.override("MAGPIE_ALLOW_COAUTHOR"):
         return None
     return (
         "agent-guard[commit-trailer]: this commit message carries a 'Co-Authored-By:' "
         "trailer. Per AGENTS.md, agents are assistants, not authors — use a "
         "'Generated-by: <agent name and version>' trailer instead and remove the "
-        "Co-Authored-By line. Override (not for AI co-authorship): STEWARD_ALLOW_COAUTHOR=1."
+        "Co-Authored-By line. Override (not for AI co-authorship): MAGPIE_ALLOW_COAUTHOR=1."
     )
 
 
@@ -270,7 +270,7 @@ def guard_empty_rebase(seg: Segment, cwd: str | None) -> str | None:
     )
     if not forced:
         return None
-    if seg.override("STEWARD_ALLOW_EMPTY_PUSH"):
+    if seg.override("MAGPIE_ALLOW_EMPTY_PUSH"):
         return None
 
     # Resolve the source ref being pushed: last `src[:dst]` positional, else HEAD.
@@ -296,7 +296,7 @@ def guard_empty_rebase(seg: Segment, cwd: str | None) -> str | None:
             f"agent-guard[empty-rebase]: refusing to force-push '{src}' — it has 0 commits "
             f"over its merge-base with {default_ref}. Pushing an empty branch to a PR head "
             "auto-closes the PR and revokes maintainer write access. Verify the rebase "
-            "result is non-empty first. Override: STEWARD_ALLOW_EMPTY_PUSH=1."
+            "result is non-empty first. Override: MAGPIE_ALLOW_EMPTY_PUSH=1."
         )
     return None
 
@@ -321,7 +321,7 @@ GUARDED_HEADS = frozenset({"gh", "git"})
 # Colon-separated extra guard directories (in addition to the default
 # ``guards.d`` sibling of this script). Lets a checkout point the hook at
 # skill-owned guard dirs without moving files.
-GUARD_DIRS_ENV = "STEWARD_GUARD_DIRS"
+GUARD_DIRS_ENV = "MAGPIE_GUARD_DIRS"
 
 
 # --------------------------------------------------------------------------- #
@@ -398,7 +398,7 @@ def command_kinds(seg: Segment) -> set[str]:
 
 
 def guard_dirs() -> list[Path]:
-    """Directories scanned for contributed guards: ``$STEWARD_GUARD_DIRS`` entries
+    """Directories scanned for contributed guards: ``$MAGPIE_GUARD_DIRS`` entries
     plus the ``guards.d`` sibling of this script."""
     dirs: list[Path] = []
     env = os.environ.get(GUARD_DIRS_ENV)

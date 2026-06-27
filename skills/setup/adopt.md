@@ -1,9 +1,9 @@
 <!-- SPDX-License-Identifier: Apache-2.0
      https://www.apache.org/legal/release-policy.html -->
 
-# adopt — first-time install of apache-steward into an adopter repo
+# adopt — first-time install of apache-magpie into an adopter repo
 
-The default sub-action when the user says "adopt apache-steward".
+The default sub-action when the user says "adopt apache-magpie".
 
 There are two adoption shapes the skill recognises and routes
 between automatically:
@@ -72,7 +72,7 @@ between automatically:
 
    Detect it **structurally** — do *not* rely on the `origin`
    URL, which on a contributor's fork points at
-   `<user>/airflow-steward`, not `apache/`. The repo is the
+   `<user>/magpie`, not `apache/`. The repo is the
    framework checkout when `skills/setup/SKILL.md` exists at the
    repo root with `name: magpie-setup` in its frontmatter **and**
    `skills/list-skills/` is present.
@@ -317,7 +317,7 @@ logic for a *new* framework version.
 4. If the adopter **does** have local modifications,
    surface the diff and stop. The user either (a) confirms
    the local mods can be discarded, (b) upstreams them as a
-   PR to `apache/airflow-steward` first, or (c) defers the
+   PR to `apache/magpie` first, or (c) defers the
    bootstrap-skill refresh — in (c) the rest of this run
    continues against the in-flight (older) version with a
    warning.
@@ -463,7 +463,7 @@ structured-question tool, use a *multi-select* prompt for
 the three opt-in families (`security`, `pr-management`,
 `issue`) — the families are not mutually exclusive.
 Pre-select the **union** of (a) families the user named in
-their initial "adopt" request (e.g. *"adopt apache-steward
+their initial "adopt" request (e.g. *"adopt apache-magpie
 for PR triage"* → `pr-management`) and (b)
 `<signal-derived-families>` from Step 4b. Mention in the
 prompt body why each family is pre-ticked (named by the
@@ -629,22 +629,22 @@ Create `<repo-root>/.apache-magpie-overrides/` (directory)
 with a small `README.md` inside:
 
 ```markdown
-# apache-steward overrides
+# apache-magpie overrides
 
 Agent-readable instructions that override specific steps or
-behaviours of apache-steward framework skills, scoped to
+behaviours of apache-magpie framework skills, scoped to
 this adopter repo. Each override file is named after the
 framework skill it modifies (e.g. `pr-management-triage.md`
 overrides the `pr-management-triage` skill).
 
 The framework skills consult this directory at run-time
 before executing default behaviour. See
-[`docs/setup/agentic-overrides.md`](https://github.com/apache/airflow-steward/blob/main/docs/setup/agentic-overrides.md)
+[`docs/setup/agentic-overrides.md`](https://github.com/apache/magpie/blob/main/docs/setup/agentic-overrides.md)
 in the framework for the full contract.
 
 **Hard rule**: never modify the snapshot under
 `<repo-root>/.apache-magpie/`. Local mods go here.
-Framework changes go via PR to `apache/airflow-steward`.
+Framework changes go via PR to `apache/magpie`.
 ```
 
 This directory is **committed** (overrides ship with the
@@ -676,7 +676,7 @@ configuration* → *`user.md` resolution order*](../../AGENTS.md#usermd-resoluti
 Use this project-agnostic template:
 
 ```markdown
-# Per-user configuration for apache-steward
+# Per-user configuration for apache-magpie
 
 This file is committed in the adopter repo and holds preferences
 that vary per developer (GitHub handle, local clone paths, optional
@@ -907,7 +907,7 @@ the sandbox-allowlist helper installed by
 directory is added to the worktree's own
 `.claude/settings.local.json`'s `sandbox.filesystem.allowRead` /
 `allowWrite` (defensive against
-[issue #197](https://github.com/apache/airflow-steward/issues/197)
+[issue #197](https://github.com/apache/magpie/issues/197)
 — see
 [`setup-isolated-setup-install/SKILL.md` → Step P](../setup-isolated-setup-install/SKILL.md#step-p--project-root-coverage-in-the-sandbox-allowlists)).
 
@@ -916,7 +916,7 @@ the user before writing:
 
 ```bash
 #!/usr/bin/env bash
-# apache-steward post-checkout hook (installed by /magpie-setup adopt).
+# apache-magpie post-checkout hook (installed by /magpie-setup adopt).
 # Add the current worktree's working dir to the worktree's own
 # .claude/settings.local.json sandbox allowlists (per issue #197).
 # Chains into the helper if installed by /magpie-setup-isolated-setup-install;
@@ -972,10 +972,10 @@ framework before they hit a "skill not found" error:
    the skill families they actually installed:
 
    ```markdown
-   ## Agent-assisted contribution (apache-steward)
+   ## Agent-assisted contribution (apache-magpie)
 
    This repo adopts the
-   [`apache/airflow-steward`](https://github.com/apache/airflow-steward)
+   [`apache/magpie`](https://github.com/apache/magpie)
    framework via a snapshot mechanism. The framework provides
    maintainer-facing skills (e.g. `pr-management-triage`,
    `pr-management-code-review`, `pr-management-stats`,
@@ -1007,7 +1007,7 @@ framework before they hit a "skill not found" error:
    in [`.apache-magpie-overrides/`](.apache-magpie-overrides/)
    (committed) — never edit the snapshot directly. Framework
    changes go via PR to
-   [`apache/airflow-steward`](https://github.com/apache/airflow-steward).
+   [`apache/magpie`](https://github.com/apache/magpie).
    ```
 
    Trim the skill-family list to what was actually picked in
@@ -1026,10 +1026,10 @@ framework before they hit a "skill not found" error:
    Suggested template:
 
    ```markdown
-   ## apache-steward framework
+   ## apache-magpie framework
 
    This repo adopts the
-   [`apache/airflow-steward`](https://github.com/apache/airflow-steward)
+   [`apache/magpie`](https://github.com/apache/magpie)
    framework via the snapshot mechanism. The framework
    provides the `pr-management-*` skills; they are gitignored
    symlinks into the `.apache-magpie/` snapshot directory.
@@ -1041,14 +1041,14 @@ framework before they hit a "skill not found" error:
    [`.apache-magpie.lock`](.apache-magpie.lock). The
    contributor-facing summary of the adoption + setup flow
    lives in the
-   [Agent-assisted contribution section of `README.md`](README.md#agent-assisted-contribution-apache-steward).
+   [Agent-assisted contribution section of `README.md`](README.md#agent-assisted-contribution-apache-magpie).
 
    Adopter-specific modifications to framework-skill
    workflows live in
    [`.apache-magpie-overrides/`](.apache-magpie-overrides/)
    — never edit the snapshot directly. Framework changes go
    via PR to
-   [`apache/airflow-steward`](https://github.com/apache/airflow-steward).
+   [`apache/magpie`](https://github.com/apache/magpie).
    ```
 
    Do not create `AGENTS.md` if it does not already exist —
@@ -1170,7 +1170,7 @@ Four passes, in this order:
 
 3. **Add the adopter's project root to each worktree's
    project-local sandbox allowlists.** Defensive against
-   [issue #197](https://github.com/apache/airflow-steward/issues/197) —
+   [issue #197](https://github.com/apache/magpie/issues/197) —
    `sandbox.filesystem.allowRead: ["."]` does not in practice
    cover CWD, so reads under a freshly-cloned adopter repo
    fail under the sandbox until an explicit absolute path is

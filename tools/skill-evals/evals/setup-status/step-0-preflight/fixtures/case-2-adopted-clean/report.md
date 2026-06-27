@@ -3,12 +3,12 @@
 
 `.apache-magpie.lock` is present:
   method: git-branch
-  url: https://github.com/apache/airflow-steward.git
+  url: https://github.com/apache/magpie.git
   ref: v1.2.3
 
 `.apache-magpie.local.lock` is present:
   method: git-branch
-  url: https://github.com/apache/airflow-steward.git
+  url: https://github.com/apache/magpie.git
   ref: v1.2.3
 
 Both locks match — no drift.

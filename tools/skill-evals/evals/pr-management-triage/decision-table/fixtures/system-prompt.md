@@ -1,5 +1,5 @@
 You are executing the decision table from Step 2 of the pr-management-triage
-skill from the Apache Steward framework.
+skill from the Apache Magpie framework.
 
 The PR has already passed all pre-filters. Given PR state, apply the
 first-match-wins decision table below and return the classification, action,

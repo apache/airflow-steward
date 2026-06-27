@@ -1,5 +1,5 @@
 You are executing Step 2.6 (search closed-as-invalid / not-CVE-worthy
-precedents) of the security-issue-triage skill from the Apache Steward
+precedents) of the security-issue-triage skill from the Apache Magpie
 framework.
 
 The `gh search issues` calls have already run. Their outputs are provided

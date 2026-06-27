@@ -8,6 +8,6 @@
     {"n": 5, "status": "⚠", "evidence": "claude-code 2.2.0 installed, pinned-versions.toml pins 2.1.150 — newer than pin"},
     {"n": 6, "status": "✓", "evidence": "effective sandbox.enabled: true (from .claude/settings.json)"},
     {"n": 7, "status": "✓", "evidence": "cat ~/.aws/credentials → Operation not permitted; $AWS_ACCESS_KEY_ID empty; curl denied at permission layer"},
-    {"n": 8, "status": "✓", "evidence": "/home/carol/steward in allowRead and allowWrite in .claude/settings.local.json; live read of .git/HEAD OK; write probe OK"}
+    {"n": 8, "status": "✓", "evidence": "/home/carol/magpie in allowRead and allowWrite in .claude/settings.local.json; live read of .git/HEAD OK; write probe OK"}
   ]
 }

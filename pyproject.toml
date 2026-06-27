@@ -29,12 +29,9 @@
 # own pyproject.toml + uv.lock.
 
 [project]
-# Forward-looking name: the framework lives at `apache/airflow-steward`
-# today (legacy from when it was Airflow's private security tracker)
-# and is renaming to `apache/steward`. The package name here matches
-# the future canonical name; no PyPI publication, so the name divergence
-# from the GitHub slug is harmless.
-name = "apache-steward"
+# Package name matches the project's canonical name. Not published to
+# PyPI — this name only frames the framework root as a uv-managed project.
+name = "apache-magpie"
 version = "0.0.0"
 description = "Reusable framework for handling security vulnerabilities in Apache projects."
 requires-python = ">=3.11"
@@ -79,7 +76,7 @@ exclude-newer = "7 days"
 # install it as a package.
 package = false
 
-# Workspace declaration — `apache-steward` is the root of a uv
+# Workspace declaration — `apache-magpie` is the root of a uv
 # workspace whose members are every Python project under `tools/`.
 # Adding a new tool is a one-line edit here; everything downstream
 # (pre-commit hooks, CI matrix, root uv.lock) follows automatically.

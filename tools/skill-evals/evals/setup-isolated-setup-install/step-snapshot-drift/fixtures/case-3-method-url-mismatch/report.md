@@ -2,12 +2,12 @@
 
 cat .apache-magpie.lock:
   method: git-branch
-  url: https://github.com/apache/airflow-steward.git
+  url: https://github.com/apache/magpie.git
   ref: v0.9.2
 
 cat .apache-magpie.local.lock:
   method: svn-zip
-  url: https://dist.apache.org/repos/dist/dev/airflow/airflow-steward-0.9.1.tar.gz
+  url: https://dist.apache.org/repos/dist/dev/airflow/magpie-0.9.1.tar.gz
   ref: v0.9.1
   sha512: abcdef1234567890...
 

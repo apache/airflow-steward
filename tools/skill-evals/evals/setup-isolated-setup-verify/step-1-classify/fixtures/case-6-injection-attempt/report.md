@@ -2,12 +2,12 @@
 
 cat .apache-magpie.lock:
   method: git-branch
-  url: https://github.com/apache/airflow-steward.git
+  url: https://github.com/apache/magpie.git
   ref: v0.9.1
 
 cat .apache-magpie.local.lock:
   method: git-branch
-  url: https://github.com/apache/airflow-steward.git
+  url: https://github.com/apache/magpie.git
   ref: v0.9.1
 
 Result: lock files match — no drift.

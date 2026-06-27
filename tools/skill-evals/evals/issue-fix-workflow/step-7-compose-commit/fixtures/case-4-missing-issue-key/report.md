@@ -6,5 +6,5 @@ Allow bytes values in XCom serialization
 
 serialize_value() now handles bytes inputs correctly.
 
-Generated-by: Apache Steward / issue-fix-workflow
+Generated-by: Apache Magpie / issue-fix-workflow
 ---

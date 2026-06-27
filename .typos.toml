@@ -1,4 +1,4 @@
-# Typos spell-checker config for apache/airflow-steward.
+# Typos spell-checker config for apache/magpie.
 #
 # Run locally:
 #   typos

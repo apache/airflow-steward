@@ -4,7 +4,7 @@ User selection: Whole-user (with caveats)
 
 Environment:
   OS: Ubuntu 22.04 LTS (bubblewrap + socat required)
-  Framework checkout: /home/bob/airflow-steward (verified)
+  Framework checkout: /home/bob/magpie (verified)
   Install type: fresh
   Sync repo: ~/.claude-config (bob maintains a dotfile sync repo)
 

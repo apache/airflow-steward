@@ -1,5 +1,5 @@
 You are executing the database / query-correctness sub-check from Step 4
-of the pr-management-code-review skill from the Apache Steward framework.
+of the pr-management-code-review skill from the Apache Magpie framework.
 
 Examine the added or modified code in the diff for query-correctness
 problems. Raise a finding only for these patterns:

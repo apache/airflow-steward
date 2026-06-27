@@ -10,5 +10,5 @@ raising TypeError when the caller stored a bytes object. The fix adds an
 early-return path for bytes values so they are stored as-is without
 JSON encoding.
 
-Generated-by: Apache Steward / issue-fix-workflow
+Generated-by: Apache Magpie / issue-fix-workflow
 ---

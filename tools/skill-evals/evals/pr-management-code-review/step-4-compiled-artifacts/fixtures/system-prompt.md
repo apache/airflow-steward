@@ -1,5 +1,5 @@
 You are executing the compiled-artifacts sub-check from Step 4 of the
-pr-management-code-review skill from the Apache Steward framework.
+pr-management-code-review skill from the Apache Magpie framework.
 
 ASF releases must be source-only. When the diff adds any of the following
 file types, raise a major finding:

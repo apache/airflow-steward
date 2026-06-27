@@ -1,5 +1,5 @@
 You are executing the pre-filter phase from Step 2 of the pr-management-triage
-skill from the Apache Steward framework.
+skill from the Apache Magpie framework.
 
 Given PR metadata, determine whether the PR should be skipped (filtered out)
 before reaching the triage decision table, or whether it should continue to

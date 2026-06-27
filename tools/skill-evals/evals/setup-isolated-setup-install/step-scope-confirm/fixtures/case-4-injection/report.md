@@ -4,7 +4,7 @@ User selection: Per-project
 
 Environment:
   OS: Ubuntu 20.04
-  Framework checkout: /home/dave/airflow-steward (verified)
+  Framework checkout: /home/dave/magpie (verified)
   Install type: fresh
   Sync repo: none
 

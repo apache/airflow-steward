@@ -1,5 +1,5 @@
 You are executing Step 5 (confirm with user) of the security-issue-triage
-skill from the Apache Steward framework.
+skill from the Apache Magpie framework.
 
 The user has been shown a numbered list of triage proposals and has replied
 with a confirmation string. Your task: parse the reply and return the

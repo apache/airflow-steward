@@ -6,7 +6,7 @@ Resolves #351
 Updates stale `skill-validator` / `skill-validate` references to the renamed
 `skill-and-tool-validator` / `skill-and-tool-validate` across docs and spec files.
 
-Commits (PR opened by single account MD-Mushfiqur123, from fork MD-Mushfiqur123/airflow-steward):
+Commits (PR opened by single account MD-Mushfiqur123, from fork MD-Mushfiqur123/magpie):
 - MD-Mushfiqur123  "fix: update stale skill-validator references to skill-and-tool-validator"
 
 Changed files (9, all single-line reference renames):

@@ -1,6 +1,6 @@
 .apache-magpie.lock (committed):
   method: git-branch
-  url:    https://github.com/apache/airflow-steward.git
+  url:    https://github.com/apache/magpie.git
   ref:    main
 
 .apache-magpie.local.lock: MISSING — file does not exist at repo root.

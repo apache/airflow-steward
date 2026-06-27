@@ -1,5 +1,5 @@
 You are executing the code-quality sub-check from Step 4 of the
-pr-management-code-review skill from the Apache Steward framework.
+pr-management-code-review skill from the Apache Magpie framework.
 
 Raise a finding for clear code-quality defects:
 

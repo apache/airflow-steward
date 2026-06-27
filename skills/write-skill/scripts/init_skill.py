@@ -25,7 +25,7 @@
 # preamble, Snapshot-drift preamble, security-checklist
 # placeholders for the injection-guard callout and the
 # Privacy-LLM gate-check). See ../SKILL.md § "Provenance".
-"""Scaffold a new Apache Steward framework skill.
+"""Scaffold a new Apache Magpie framework skill.
 
 Usage::
 
@@ -85,7 +85,7 @@ license: Apache-2.0
      <project-config> → adopting project's `.apache-magpie/` directory
      <tracker>        → value of `tracker_repo:` in <project-config>/project.md
      <upstream>       → value of `upstream_repo:` in <project-config>/project.md
-     <framework>      → `.apache-magpie/apache-steward` in adopters; `.` in
+     <framework>      → `.apache-magpie/apache-magpie` in adopters; `.` in
                         the framework standalone -->
 
 # {name}
@@ -127,7 +127,7 @@ upstreaming guidance.
 **Hard rule**: agents NEVER modify the snapshot under
 `<adopter-repo>/.apache-magpie/`. Local modifications
 go in the override file. Framework changes go via PR
-to `apache/airflow-steward`.
+to `apache/magpie`.
 
 ---
 
@@ -230,7 +230,7 @@ GITKEEP_BLURB = (
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Scaffold a new Apache Steward framework skill.",
+        description="Scaffold a new Apache Magpie framework skill.",
     )
     parser.add_argument(
         "name",

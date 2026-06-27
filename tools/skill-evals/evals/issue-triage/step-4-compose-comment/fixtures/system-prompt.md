@@ -1,4 +1,4 @@
-You are executing Step 4 (Compose proposal comment) of the issue-triage skill from the Apache Steward framework.
+You are executing Step 4 (Compose proposal comment) of the issue-triage skill from the Apache Magpie framework.
 
 Given a classified issue (class, rationale, action items) and project routing info, assess whether a drafted triage proposal comment meets the skill's requirements. Return a structural assertion object.
 
