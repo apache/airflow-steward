@@ -88,8 +88,11 @@ The relevant keys under `repo_health.flaky_test_triage`:
 | `include_patterns` | `[]` (all) | Job-name globs to include |
 | `exclude_patterns` | `[]` | Job-name globs to exclude (e.g. known-broken jobs) |
 
-If the user provides explicit flags (`--window-days`, `--threshold`),
-those override the config file for this run.
+Always read the config file, even when the user supplies an explicit
+window or threshold: `include_patterns` and `exclude_patterns` have no
+inline equivalent and must come from config. Explicit flags
+(`--window-days`, `--threshold`) override only the matching keys for this
+run; they do not replace the config file or let the skill skip reading it.
 
 ---
 
@@ -208,8 +211,9 @@ Present findings in this order:
    re-run recovery. These need a fix, not a flakiness investigation.
 4. **Clean jobs** — optionally summarise the total count; individual clean
    jobs do not need to be listed.
-5. **Next steps** — suggest that the maintainer investigate the flaky jobs
-   by examining recent failing runs directly:
+5. **Next steps** — only when at least one flaky or consistently-broken job
+   was found, suggest that the maintainer investigate by examining recent
+   failing runs directly:
 
 ```bash
 # Open a specific failing run for inspection:
@@ -218,6 +222,10 @@ gh run view <run-id> --repo <upstream>
 # Download test-result artifacts for a run (if published):
 gh run download <run-id> --repo <upstream> --dir /tmp/test-results/
 ```
+
+   When every audited job is clean (no flaky and no consistently-broken
+   jobs), omit the investigation commands entirely. State that no jobs
+   crossed the threshold and that no further action is needed.
 
 Use conservative language. These are CI instability signals, not
 confirmed test-code defects. The maintainer must inspect the run logs
