@@ -59,6 +59,29 @@ one PR** (the branch-per-feature constraint).
   setup-isolated-setup-install, setup-isolated-setup-update,
   setup-isolated-setup-verify, setup-override-upstream,
   setup-shared-config-sync).
+- **Release-management — first four skills shipped** —
+  `release-vote-draft`, `release-announce-draft`, `release-vote-tally`,
+  and `release-verify-rc` landed with eval suites (formerly planned work
+  items 1–2 plus two follow-ups). Six `release-*` skills remain; see
+  [`specs/release-management-lifecycle.md`](specs/release-management-lifecycle.md).
+- **Triage — general-issue family filled out** — `issue-stale-sweep`,
+  `issue-deduplicate`, and `issue-backlog-stats` shipped with eval suites
+  (formerly planned work item 3 plus its deferred siblings).
+  Spec: [`specs/triage-mode.md`](specs/triage-mode.md).
+- **Mentoring — first-contribution welcome shipped** — `mentoring-welcome`
+  landed with an eval suite (formerly planned work item 4).
+  Spec: [`specs/mentoring-mode.md`](specs/mentoring-mode.md).
+- **Project-agnosticism — ASF-coupling advisory lint shipped** — the SOFT
+  ASF-coupling category landed in `tools/skill-and-tool-validator`
+  (formerly planned work item 5), and `drafting-mode.md` Known Gaps is
+  synced to the shipped drafting skills (formerly planned work item 6).
+- **Repo-health — three-skill family shipped** — `ci-runner-audit`,
+  `workflow-security-audit`, and `dependency-audit` landed (read-only,
+  `experimental`). Spec: [`specs/repo-health-family.md`](specs/repo-health-family.md).
+- **New proposed specs awaiting their first build item** —
+  [`specs/reviewer-routing.md`](specs/reviewer-routing.md) (Triage) and
+  [`specs/skill-reconciler.md`](specs/skill-reconciler.md) (infra) are
+  documented spec-first; their build items are below.
 
 ---
 
@@ -67,25 +90,13 @@ one PR** (the branch-per-feature constraint).
 The following items are already built on local branches or open as PRs.
 Do not duplicate them.
 
-| Branch slug | PR | Description |
-|---|---|---|
-| `injection-guard` | merged (#473) | Prompt-injection hardening on forwarder-relay ingest |
-| `check-headers` | #474 | License-header enforcement check in spec-validator |
-| `spec-validator-known-gaps` | #490 | Enforce Known-gaps section in every functional spec |
-| `spec-validate-hook` | #489 | pre-commit hook for spec-validate |
-| `skill-quality-fix` | #488 | Stabilise setup-verify eval + extend check-1 coverage |
-| `check-eval-coverage` | #481 | SOFT eval-coverage check (check #8) |
-| `eval-quick-merge` | #480 | pr-management-quick-merge skill + evals |
-| `spec-validator-path-check` | local | Validate paths referenced in Validation blocks |
-| `spec-validator-spdx` | local | Enforce SPDX header on spec files |
-| `tracker-dashboard-tests` | local | pyproject + pytest suite for security-tracker render.py |
-| `loop-imp` | #467 | Incremental update runs from .last-sync marker |
-| `loop-cli-ux` | #472 | Explicit loop.sh argument handling |
-| `node-bump-markdownlint` | local | Node 22.13→22.20 bump for markdownlint |
-| `token-reduction` | #479 | Slim AGENTS.md into a glossary |
-| `docs-modes-sync` | #483 | Sync modes.md skill inventory |
-| `docs-mentoring-sync` | #482 | Sync mentoring spec to experimental |
-| `eval-setup-status` | #484 | Fix setup-status eval prompts |
+None in flight. The previous in-flight batch (spec-validator SPDX /
+path-existence / Known-gaps checks, the `spec-validate` pre-commit hook,
+the SOFT eval-coverage check, `pr-management-quick-merge`, the
+security-tracker dashboard pytest suite, the loop incremental-sync and
+CLI-UX changes, the markdownlint Node bump, the AGENTS.md slim, and the
+modes / mentoring / setup-status doc syncs) has all merged and is
+reflected in the code and in **What's been built** above.
 
 ---
 
@@ -94,109 +105,48 @@ Do not duplicate them.
 Priority order. Each maps to one branch and one PR. Branch names are
 slugs, not numbers (numbering implies an order the specs don't carry).
 
-1. **First release-management skill: release-vote-draft.**
-   `specs/release-management-lifecycle.md` is the only `proposed` spec
-   with zero implemented skills. The adopter contract templates
-   (`projects/_template/release-management-config.md`,
-   `release-build.md`, `pmc-roster.md`, `release-trains.md`,
-   `site-repo.md`) already exist. `release-vote-draft` is the most
-   standalone and highest-frequency PMC task: it takes RC metadata
-   (project name, version, RC number, artifact URLs) and produces a
-   VOTE email draft following ASF conventions. Include an eval suite
-   in `tools/skill-evals/evals/release-vote-draft/`.
+1. **First reviewer-routing skill: reviewer-routing.**
+   `specs/reviewer-routing.md` is `proposed` with zero implemented
+   skills, and review-cycle latency is one of the two priorities MISSION
+   names. Add a Triage-family skill `reviewer-routing` that takes an open
+   issue or PR and proposes a primary reviewer (and optional backup) from
+   the project's configured roster, scored on roster eligibility for the
+   touched area, git-history familiarity with the changed paths, and the
+   reviewer's current open-review load. Read-only / propose-then-confirm:
+   it never assigns or requests review. An unresolved roster yields an
+   explicit `NO ELIGIBLE REVIEWER` signal, never a fabricated handle.
+   Include an eval suite with an adversarial case asserting an injected
+   "assign to X" line in a PR body is ignored.
    Validation:
    ```bash
    uv run --project tools/skill-and-tool-validator --group dev skill-and-tool-validate
-   uv run --project tools/skill-evals skill-eval tools/skill-evals/evals/release-vote-draft/
+   uv run --project tools/skill-evals skill-eval tools/skill-evals/evals/reviewer-routing/
    ```
-   Spec: [`specs/release-management-lifecycle.md`](specs/release-management-lifecycle.md).
-   Branch `release-vote-draft`.
+   Spec: [`specs/reviewer-routing.md`](specs/reviewer-routing.md).
+   Branch `reviewer-routing`.
 
-2. **Second release-management skill: release-announce-draft.**
-   Companion to `release-vote-draft`. Takes a successful vote tally
-   (binding +1 count, RC metadata) and produces the ANNOUNCE email
-   draft for the ASF announce@ and dev@ lists, following ASF posting
-   conventions (subject: `[ANNOUNCE] Apache <Project> <Version>
-   released`). Also standalone: it does not depend on
-   `release-vote-draft` being run in the same session. Include an
-   eval suite.
+2. **Cross-project skill reconciler: skill-reconciler.**
+   `specs/skill-reconciler.md` is `proposed` with no implementation. Add
+   a meta/infra-family skill `skill-reconciler` that compares two
+   near-duplicate skills (two `source`-tagged copies, e.g. an ASF and a
+   non-ASF variant) and emits a structured diff plus a reconciliation
+   proposal, labelling every difference `ALLOWED`, `DRIFT`, or
+   `SAFETY-BASELINE`. Read-only: it proposes, it never rewrites either
+   skill (convergence is a separate confirmed `write-skill` /
+   `optimize-skill` edit). A safety-baseline divergence is always a
+   must-fix and never folded into allowed-divergence noise. First cut may
+   take two explicit paths rather than auto-pairing by `source` tag.
+   Include an eval suite with a case where the two copies diverge only on
+   the safety baseline and the reconciler must flag it.
    Validation:
    ```bash
    uv run --project tools/skill-and-tool-validator --group dev skill-and-tool-validate
-   uv run --project tools/skill-evals skill-eval tools/skill-evals/evals/release-announce-draft/
+   uv run --project tools/skill-evals skill-eval tools/skill-evals/evals/skill-reconciler/
    ```
-   Spec: [`specs/release-management-lifecycle.md`](specs/release-management-lifecycle.md).
-   Branch `release-announce-draft`.
+   Spec: [`specs/skill-reconciler.md`](specs/skill-reconciler.md).
+   Branch `skill-reconciler`.
 
-3. **Stale-issue sweep for general triage.**
-   `specs/triage-mode.md` Known Gaps explicitly names stale-handling
-   as missing from the general-issue side (the security side covers
-   this via `security-issue-sync`). Add a new skill
-   `issue-stale-sweep` that surfaces issues with no activity past a
-   configurable threshold and proposes closure or an update request
-   (waits for maintainer confirmation before posting). Include an eval
-   suite.
-   Validation:
-   ```bash
-   uv run --project tools/skill-and-tool-validator --group dev skill-and-tool-validate
-   uv run --project tools/skill-evals skill-eval tools/skill-evals/evals/issue-stale-sweep/
-   ```
-   Spec: [`specs/triage-mode.md`](specs/triage-mode.md).
-   Branch `issue-stale-sweep`.
-
-4. **First-contribution welcome/orientation skill.**
-   `specs/mentoring-mode.md` Known Gaps names the "first-contribution
-   welcome/orientation skill" as missing. Add `mentoring-welcome`,
-   which greets first-time contributors on a newly opened issue or PR
-   with orientation context: contributing guide link, community norms,
-   expected next steps, and a pointer to the good-first-issue pool.
-   Waits for maintainer confirmation before posting. Include an eval
-   suite.
-   Validation:
-   ```bash
-   uv run --project tools/skill-and-tool-validator --group dev skill-and-tool-validate
-   uv run --project tools/skill-evals skill-eval tools/skill-evals/evals/mentoring-welcome/
-   ```
-   Spec: [`specs/mentoring-mode.md`](specs/mentoring-mode.md).
-   Branch `mentoring-welcome`.
-
-5. **ASF-coupling advisory lint (fold into `skill-and-tool-validator`).**
-   `specs/project-agnosticism.md` Known Gaps names the absence of an
-   automated ASF-coupling check as its first gap. Add a new SOFT advisory
-   category to `tools/skill-and-tool-validator` that reuses the existing
-   walk, file allowlist, and inline `e.g.`/`example:` markers (the same
-   machinery as the placeholder check). It flags a curated, tiered set of
-   ASF-coupled tokens in skill bodies (high-confidence:
-   `svn (mv|commit|co)`, `announce@apache.org`, `dist/(dev|release)/`,
-   Vulnogram URLs; low-confidence: bare `PMC` / `ICLA` / `incubator`) and
-   tags each hit with a remedy class (placeholder / adapter /
-   capability-flag). SOFT only: surfaces on stderr, never fails the build.
-   Extend the validator tests with a coupled fixture and an allowlisted
-   fixture.
-   Validation:
-   ```bash
-   uv run --project tools/skill-and-tool-validator --group dev pytest
-   uv run --project tools/skill-and-tool-validator --group dev skill-and-tool-validate
-   ```
-   Spec: [`specs/project-agnosticism.md`](specs/project-agnosticism.md).
-   Branch `asf-coupling-lint`.
-
-6. **Sync drafting-mode spec Known Gaps to reflect shipped skills.**
-   `specs/drafting-mode.md` Known Gaps still says "Generic
-   (non-security, non-issue) Drafting from audit-tool findings is
-   `proposed`", but `audit-finding-fix` shipped with a full eval suite.
-   Update the Known Gaps section to reflect the current state and
-   remove the stale `proposed` claim so new plan passes do not
-   re-raise this as a gap.
-   Validation:
-   ```bash
-   uv run --project tools/spec-validator --group dev spec-validate tools/spec-loop/specs/
-   uv run --project tools/spec-validator --group dev pytest
-   ```
-   Spec: [`specs/drafting-mode.md`](specs/drafting-mode.md).
-   Branch `drafting-spec-sync`.
-
-7. **Non-ASF adopter profile fixture + smoke eval.**
+3. **Non-ASF adopter profile fixture + smoke eval.**
    `specs/project-agnosticism.md` acceptance #3 requires that a non-ASF
    profile can be declared without editing any skill body, but there is
    no fixture to prove it. Add a worked non-ASF profile under
@@ -226,35 +176,31 @@ slugs, not numbers (numbering implies an order the specs don't carry).
   it would skip the proof MISSION requires.
 - When a build iteration creates a new skill, its eval suite is part of
   that same work item — not a separate one.
-- **Release-management family:** only the two most standalone skills
-  (`release-vote-draft`, `release-announce-draft`) are planned here.
-  The remaining eight (`release-prepare`, `release-keys-sync`,
-  `release-rc-cut`, `release-verify-rc`, `release-vote-tally`,
+- **Release-management family:** the first four skills (`release-vote-draft`,
+  `release-announce-draft`, `release-vote-tally`, `release-verify-rc`)
+  have shipped and are recorded in **What's been built**. The remaining
+  six (`release-prepare`, `release-keys-sync`, `release-rc-cut`,
   `release-promote`, `release-archive-sweep`, `release-audit-report`)
-  should be planned in subsequent passes once the first two establish
-  the skill-authoring patterns for this family.
+  should be planned in subsequent passes now that the first four have
+  established the skill-authoring patterns for this family.
 - **Triage contributor-growth gaps** (PMC-member nomination,
   emeritus-committer handling, contributor offboarding) noted in
   `triage-mode.md` Known Gaps are intentionally deferred: they are
   vague enough that a spec-RFC conversation is more appropriate than
   a direct build item.
-- **Project-agnosticism:** two of the three gaps in
-  `project-agnosticism.md` are buildable and planned now: the ASF-coupling
-  advisory lint (work item 5) and the non-ASF adopter profile fixture
-  (work item 7). The remaining gap, the capability-flag vocabulary for
-  contributor intake (ICLA vs DCO), security intake, and CVE allocation,
-  is deferred only until someone enumerates the option sets and defaults,
-  following the backend-flag precedent already set by
+- **Project-agnosticism:** the ASF-coupling advisory lint has shipped
+  (recorded in **What's been built**); the non-ASF adopter profile
+  fixture is work item 3. The remaining gap, the capability-flag
+  vocabulary for contributor intake (ICLA vs DCO), security intake, and
+  CVE allocation, is deferred only until someone enumerates the option
+  sets and defaults, following the backend-flag precedent already set by
   `release-management-lifecycle.md` (distribution / approval / announcement
   backends). That is a spec-authoring task, not yet a build item.
 - **General-issue dedupe and backlog dashboard** (`triage-mode.md` Known
-  Gaps) are deferred behind `issue-stale-sweep` (work item 3): dedupe
-  overlaps the existing `security-issue-deduplicate` matching approach and
-  a backlog dashboard overlaps `pr-management-stats`, so both should reuse
-  those patterns once stale-sweep establishes the general-issue skill
-  shape. Not dropped, sequenced after item 3.
-- **Repo-health family** (`triage-mode.md` Known Gaps: the standalone
-  `ci-runner-audit` plus candidate siblings, GitHub Actions security
-  audit, dependency-update triage, license/NOTICE compliance, flaky-test
-  detection) is deferred pending a family spec; it is a multi-skill area
-  that wants its own spec before any build item.
+  Gaps) have shipped (`issue-deduplicate`, `issue-backlog-stats`) alongside
+  `issue-stale-sweep`; see **What's been built**. No longer planned items.
+- **Repo-health family** has shipped its first three members
+  (`ci-runner-audit`, `workflow-security-audit`, `dependency-audit`) under
+  its own [`specs/repo-health-family.md`](specs/repo-health-family.md);
+  remaining candidates (license / NOTICE compliance, flaky-test detection)
+  are deferred to a subsequent pass.
