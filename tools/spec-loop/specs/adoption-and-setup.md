@@ -31,9 +31,14 @@ gitignored skill symlinks, and committed agent-readable override files.
 ## Where it lives
 
 - Skill: `setup` (adopt, verify, upgrade, override).
-- Skills: `setup-isolated-setup-install` / `-update` / `-verify`
-  (the sandbox harness), `setup-override-upstream` (promote a stabilised
-  override into a framework PR), `setup-shared-config-sync`.
+- Skills: `setup-isolated-setup-install` / `-update` / `-verify` / `-doctor`
+  (the sandbox harness; `-doctor` probes live restrictions — SSH agent /
+  Yubikey reachability, localhost port binding, filesystem restrictions),
+  `setup-override-upstream` (promote a stabilised override into a
+  framework PR), `setup-shared-config-sync`.
+- Skill: `setup-status` — renders a Markdown adoption dashboard: install
+  method and pin, drift between local and committed locks, which skills
+  are wired in the current repo.
 - Docs: `docs/setup/` (install recipes, agentic-overrides contract,
   prerequisites).
 - Lock files: `.apache-magpie.lock` (committed pin) and

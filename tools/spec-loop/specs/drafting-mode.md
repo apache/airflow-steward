@@ -8,8 +8,8 @@ kind: feature
 mode: Drafting
 source: >
   MISSION.md § Technical scope (Drafting). docs/modes.md § Drafting.
-  Implemented by security-issue-fix (stable, security-only) and
-  issue-fix-workflow (experimental).
+  Implemented by security-issue-fix (stable, security-only),
+  issue-fix-workflow (experimental), and audit-finding-fix (experimental).
 acceptance:
   - A drafting skill produces the failing test, the smallest production
     change, targeted test runs, and a commit — but never merges.
