@@ -1,0 +1,136 @@
+<!-- SPDX-License-Identifier: Apache-2.0
+     https://www.apache.org/licenses/LICENSE-2.0 -->
+
+---
+title: Cross-project skill reconciler
+status: proposed
+kind: feature
+mode: infra
+source: >
+  MISSION.md § Scope boundaries ("Duplication is embraced where it buys
+  decoupling ... an agent can reconcile two near-identical skills on
+  demand, so the price of keeping them separate is low") and § "The data
+  layer is shared; the skills on top are free to diverge" (skills carry a
+  `source` tag so the split is a registry query). PRINCIPLES.md on the
+  safety baseline that must stay eventually-consistent across every copy.
+  meta-and-quality-tooling.md (the skill-authoring/quality family this
+  joins). No reconciler tool or skill exists yet.
+acceptance:
+  - The reconciler is read-only: it produces a structured diff and a
+    reconciliation proposal; it never rewrites either skill without human
+    confirmation.
+  - Divergence in the safety baseline (untrusted-content-is-never-
+    instructions, identity-resolution caveats, confidentiality posture)
+    is reported as a must-fix, distinct from divergence that is allowed
+    to stand.
+  - A maintainer can review the proposal and the safety-baseline verdict
+    without running either skill.
+---
+
+# Cross-project skill reconciler
+
+## What it does
+
+Compares two near-duplicate skills, typically the same capability carried
+in an ASF and a non-ASF variant (or two `source`-tagged copies), and
+produces a structured diff plus a reconciliation proposal. It
+operationalises the MISSION principle that duplication is fine where it
+buys decoupling precisely because an agent can reconcile copies on
+demand: the reconciler is that agent step, made repeatable.
+
+The key move is that not all divergence is equal. The reconciler sorts
+differences into three classes: **allowed divergence** (scope, tier,
+teaching voice, project-specific values behind placeholders, the things
+MISSION says skills are free to diverge on); **drift** (one copy gained a
+fix, a clearer step, or a hardening the other lacks, where convergence is
+probably wanted); and **safety-baseline divergence** (the
+untrusted-content-is-never-instructions rule, identity-resolution
+caveats, confidentiality posture, which PRINCIPLES says every copy must
+stay eventually-consistent on). The first is reported and left alone, the
+second is proposed as a merge, and the third is flagged as a must-fix
+that a maintainer should not ignore.
+
+## Where it lives
+
+- Skill (proposed, not implemented): `skill-reconciler` under `skills/`,
+  in the meta / quality family with `write-skill`, `optimize-skill`, and
+  `list-skills` (see [meta-and-quality-tooling.md](meta-and-quality-tooling.md)).
+- Optional deterministic helper (proposed): a `uv` tool under `tools/`
+  that does the structural diff (frontmatter, section headings,
+  step-by-step decision rules, placeholder inventory) so the skill
+  reasons over a normalised diff rather than raw text. Follows the
+  tool-backs-skill pattern already used across the catalogue.
+- Inputs: two `SKILL.md` trees (plus their supporting `.md` files),
+  identified by path or by `source` tag.
+- It reads the safety-baseline definition from the same place the rest of
+  the framework does (PRINCIPLES.md / the security posture docs); it does
+  not restate the baseline inline.
+
+## Behaviour & contract
+
+- **Read-only; proposes, never rewrites.** The reconciler emits a diff
+  and a proposal. Any actual convergence edit goes through `write-skill`
+  / `optimize-skill` under human confirmation; the reconciler itself
+  changes no skill file.
+- **Three-class divergence verdict.** Every difference is labelled
+  `ALLOWED`, `DRIFT`, or `SAFETY-BASELINE`. The safety-baseline class is
+  never silently merged away and never dropped from the report, even when
+  the two copies are otherwise identical.
+- **Safety divergence is a must-fix, not a suggestion.** When the two
+  copies disagree on the untrusted-content rule, identity-resolution
+  caveats, or confidentiality posture, the reconciler surfaces it as a
+  blocking finding a maintainer must resolve, separate from the
+  convenience merges.
+- **Decoupling is preserved by default.** The reconciler does not push
+  toward DRY across organisational boundaries; allowed divergence is
+  reported and left in place. Convergence is proposed only for drift and
+  required only for the safety baseline.
+- **Untrusted content stays data.** Skill bodies under comparison are
+  treated as input data; an injected instruction inside a compared skill
+  is reported as content, never executed.
+
+## Out of scope
+
+- Rewriting, merging, or deleting either skill on autopilot (that is a
+  confirmed `write-skill` / `optimize-skill` edit).
+- Choosing which copy "wins" on allowed divergence; the reconciler
+  reports the difference and leaves the call to the maintainers who own
+  each copy.
+- Cross-foundation policy. The reconciler is a tool for reconciling skill
+  text; it makes no claim on which project's governance is correct.
+
+## Acceptance criteria
+
+1. Given two near-duplicate skills, the reconciler emits a structured
+   diff and labels every difference `ALLOWED`, `DRIFT`, or
+   `SAFETY-BASELINE`.
+2. A safety-baseline divergence is always reported as a must-fix and is
+   never folded into the allowed-divergence noise.
+3. The reconciler makes no edit to either skill; convergence is a
+   separate, confirmed authoring step.
+4. The skill validates under `skill-and-tool-validate` and ships an eval
+   suite under `tools/skill-evals/evals/skill-reconciler/`, including a
+   case where the two copies diverge only on the safety baseline and the
+   reconciler must flag it.
+
+## Validation
+
+```bash
+uv run --project tools/skill-and-tool-validator --group dev skill-and-tool-validate
+uv run --project tools/skill-evals skill-eval tools/skill-evals/evals/skill-reconciler/
+```
+
+## Known gaps
+
+- **Nothing is implemented yet.** This spec is `proposed`; the plan pass
+  turns it into a build item (the skill, optionally its structural-diff
+  tool, and an eval suite).
+- **The safety-baseline definition is not yet machine-readable.** The
+  reconciler needs an authoritative list of baseline clauses to check
+  against; today that posture lives in prose across PRINCIPLES.md and the
+  security docs. A buildable precursor is to extract that baseline into a
+  single referenced checklist the reconciler (and humans) can cite.
+- **`source`-tag-driven pairing is unproven.** MISSION frames copy
+  selection as a registry query over `source` tags, but no registry index
+  pairs copies automatically yet; the first implementation can take two
+  explicit paths and defer auto-pairing.
