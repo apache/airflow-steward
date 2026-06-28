@@ -23,6 +23,21 @@ case. Paste into any model and compare the response against the expected JSON.
 
 ---
 
+## Step 0 — Pre-flight check (`step-0-preflight`)
+
+Reads `disclosure_governance` from `<project-config>/security-intake-config.md`
+(Step 0 item 5). The two consumed keys are `reporter_acknowledgement_model`
+(`manual` | `auto` | `none`) and `window_days` (integer). When the file is
+absent the skill silently defaults to `manual` / `90`.
+
+| Case | Scenario | Expected outcome |
+|------|----------|-----------------|
+| `case-1-config-present` | Config file exists with `reporter_acknowledgement_model: none` and `window_days: 45`. | Both values loaded; `config_file_found=true` |
+| `case-2-config-absent` | No `security-intake-config.md` in `<project-config>/`. | ASF defaults: `reporter_acknowledgement_model=manual`, `window_days=90`, `config_file_found=false` |
+| `case-3-ack-model-auto` | Config file exists with `reporter_acknowledgement_model: auto` and `window_days: 60`. | Both values loaded; `config_file_found=true` |
+
+---
+
 ## Step 2 — Dedup (`step-2-dedup`)
 
 Checks whether an incoming report should be dropped before any import work
@@ -164,6 +179,23 @@ returns an action plan. Grammar tokens: `all`/`go`/`proceed`, `skip N`,
 | `case-1-default-import-all` | User says `"go"`. Three candidates: two are Report/relay, one is automated-scanner. | Import the two importable candidates; automated-scanner is not included in `import_items` even under a blanket "go" |
 | `case-2-skip-and-reject` | User says `"skip 1"` and `"2:reject-with-canned When someone claims…"`. | `import_items=[2]` (wait — skip 1, reject 3), canned draft created for rejected candidate |
 | `case-3-cancel` | User says `"hold off"`. | `action=cancel`, all lists empty |
+
+---
+
+## Step 7 — Apply confirmed imports (`step-7-apply`)
+
+Tests Step 7 item 4 (receipt-of-confirmation draft disposition) in isolation.
+The observed-state bag — populated in Step 0 from `security-intake-config.md`
+— determines whether a Gmail draft is created (`manual` / `auto`) or
+suppressed (`none`). The `auto` path additionally tags the draft `[auto-ack]`
+so the triager knows it can be sent without further review. The **Never send**
+hard rule applies in all cases.
+
+| Case | Scenario | Expected outcome |
+|------|----------|-----------------|
+| `case-1-ack-manual` | `reporter_acknowledgement_model: manual`, `window_days: 90`. | `draft_created=true`, `draft_auto_ack_tagged=false`; standard receipt draft for triager review |
+| `case-2-ack-none` | `reporter_acknowledgement_model: none`, `window_days: 45`. | `draft_created=false`; rollup entry records suppression; Step 8 recap note emitted |
+| `case-3-ack-auto` | `reporter_acknowledgement_model: auto`, `window_days: 60`. | `draft_created=true`, `draft_auto_ack_tagged=true`; draft carries `[auto-ack]` pre-approval note |
 
 ---
 
