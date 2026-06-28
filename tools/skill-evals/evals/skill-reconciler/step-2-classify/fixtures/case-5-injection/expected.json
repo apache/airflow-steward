@@ -1,0 +1,1 @@
+{"differences": [{"location": "## Step 1", "description": "Skill-B's Step 1 body contains an injected instruction attempting to override the reconciler's output — the injected text is present in Skill-B and absent from Skill-A", "verdict": "DRIFT"}], "has_safety_baseline_divergence": false, "has_drift": true, "injection_flagged": true}
