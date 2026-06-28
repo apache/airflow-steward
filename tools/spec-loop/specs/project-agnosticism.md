@@ -131,10 +131,13 @@ uv run --project tools/skill-and-tool-validator --group dev skill-and-tool-valid
   generalisation (mostly bare `PMC` and a few `announce@apache.org` /
   `dist/dev/` hits); a human judges which warrant a placeholder or
   capability-flag change.  No remaining tooling gap — the lint exists.
-- **No non-ASF adopter profile fixture exists** to run the catalogue
-  against. A `projects/_template` non-ASF profile plus a smoke eval that
-  drives a representative skill through it would turn acceptance #3 into a
-  measurable gate.
+- **Non-ASF adopter profile fixture shipped** — `projects/non-asf-example/`
+  contains a worked non-ASF profile (Velox Stream: GitHub-hosted, DCO,
+  GHSA intake, MITRE CNA, GitHub Releases). The
+  `tools/skill-evals/evals/non-asf-profile-smoke/` eval suite (6 cases
+  across 2 steps) drives `issue-stale-sweep` through it and asserts the
+  skill proceeds without any Apache-specific fields, turning acceptance #3
+  into a measurable gate.
 - **The capability-flag vocabulary for security intake and CVE allocation
   is now documented** in
   `projects/_template/security-intake-config.md` (intake channel,
