@@ -4,6 +4,7 @@
 
 - [What is Apache Magpie?](#what-is-apache-magpie)
   - [How it works](#how-it-works)
+  - [Need help with one of these? Adopt a family of skills](#need-help-with-one-of-these-adopt-a-family-of-skills)
   - [Who is this for?](#who-is-this-for)
     - [Maintainers wanting to adopt Magpie in their project](#maintainers-wanting-to-adopt-magpie-in-their-project)
     - [Security team members](#security-team-members)
@@ -38,6 +39,26 @@ Five **modes** describe what the agent can do, from low-risk to high:
 | **Auto-merge** | Merge trivial changes without human review | Off (deliberately) |
 
 Each project picks the modes that fit. You can run just Triage and nothing else.
+
+---
+
+## Need help with one of these? Adopt a family of skills
+
+Magpie's skills ship in **families**. You don't adopt all of them — you pick the ones that match a problem you actually have today. Each family page explains what it does, which skills it includes, and how to turn it on.
+
+| If you're dealing with… | Adopt the family |
+|---|---|
+| Setting up agents safely — sandbox, clean environment, privacy routing | [setup](setup/README.md) |
+| Security reports that need careful, audited handling | [security](security/README.md) |
+| A pull-request queue that's out of control | [pr-management](pr-management/README.md) |
+| An issue backlog full of duplicates and stale reports | [issue-management](issue-management/README.md) |
+| Repo hygiene slipping — CI runners, dependencies, licenses, flaky tests | [repo-health](repo-health/README.md) |
+| Releases that are a manual, error-prone slog | [release-management](release-management/README.md) |
+| New contributors getting stuck and drifting away | [mentoring](mentoring/README.md) |
+| Growing contributors into committers | [contributor-growth](contributor-growth/README.md) |
+| Building or maintaining your own skills | [utilities](utilities/README.md) |
+
+Start with [`setup`](setup/README.md) regardless — it is the prerequisite every adopter installs first — then add the families above as you need them.
 
 ---
 
