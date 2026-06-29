@@ -84,7 +84,10 @@ Tracked VCS bridges that implement this capability against a non-Git
 backend:
 
 - Mercurial (Hg) — apache/magpie#601
-- Apache Subversion (SVN) — apache/magpie#602
+- Apache Subversion (SVN) — apache/magpie#602 (generic VCS binding);
+  [`tools/asf-svn/`](../asf-svn/) packages the full ASF SVN surface
+  (source control + `dist.apache.org` release distribution +
+  authorization) for ASF projects
 - Jujutsu (jj) — apache/magpie#603
 - Fossil — apache/magpie#604
 - Perforce / Helix Core — apache/magpie#605

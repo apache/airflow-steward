@@ -317,12 +317,20 @@ issue until the full binding lands. Adding a backend means replacing one
 detection, dispatch, the CLI, and every skill that calls `magpie-vcs`
 pick it up automatically. Nothing else changes.
 
-Tracking issues exist, labelled `good first issue`, for the rest of the
+The **ASF SVN** surface goes beyond the generic VCS binding: the
+[`tools/asf-svn/`](../tools/asf-svn/) adapter packages the SVN
+source-control binding together with ASF-specific capabilities that no
+other tool covers — `dist.apache.org` release staging/promotion/pruning
+and ASF committer/PMC authorization resolution. This means even a
+GitHub-hosted ASF project that uses Git for source control needs
+`tools/asf-svn` to steward its release flow through `dist.apache.org`.
+
+Tracking issues exist, labelled `good first issue`, for the remaining
 non-Git systems:
 [Mercurial](https://github.com/apache/magpie/issues/601),
-[Subversion](https://github.com/apache/magpie/issues/602) (ASF-critical:
-`svn.apache.org` and the release `dist.apache.org` area are SVN; the
-full ASF SVN surface is [#608](https://github.com/apache/magpie/issues/608)),
+[Subversion](https://github.com/apache/magpie/issues/602) (generic VCS
+binding; `tools/asf-svn` covers the full ASF SVN surface including
+`dist.apache.org` and authorization),
 [Jujutsu](https://github.com/apache/magpie/issues/603),
 [Fossil](https://github.com/apache/magpie/issues/604), and
 [Perforce](https://github.com/apache/magpie/issues/605) — so the
@@ -393,7 +401,7 @@ coverage without pretending one team can implement an open-ended set.
 | Agentic runtime | ✅ by construction (`AGENTS.md` standard) | Claude Code; community use under Codex, Cursor, Gemini CLI, Copilot, OpenCode, Kiro | Runtime adapters [#313–#322](https://github.com/apache/magpie/issues?q=is%3Aissue+state%3Aopen+adapter+in%3Atitle) |
 | Forge / tracker | ✅ by construction | GitHub, Jira; CVE/scan/relay via adapter contracts | GitLab [#305](https://github.com/apache/magpie/issues/305), Forgejo/Gitea [#310](https://github.com/apache/magpie/issues/310), Pagure [#312](https://github.com/apache/magpie/issues/312), Bitbucket [#606](https://github.com/apache/magpie/issues/606), SourceHut [#607](https://github.com/apache/magpie/issues/607), Bugzilla [#302](https://github.com/apache/magpie/issues/302) |
 | Communication channels | ✅ by construction | PonyMail / mail-archive reads | mbox [#304](https://github.com/apache/magpie/issues/304), IMAP [#303](https://github.com/apache/magpie/issues/303), Mailman 3 [#306](https://github.com/apache/magpie/issues/306); Discourse [#307](https://github.com/apache/magpie/issues/307), Zulip [#308](https://github.com/apache/magpie/issues/308), Matrix [#309](https://github.com/apache/magpie/issues/309) |
-| Source control (VCS) | ✅ by construction | **Git (complete)** | Mercurial [#601](https://github.com/apache/magpie/issues/601), Subversion [#602](https://github.com/apache/magpie/issues/602)/[#608](https://github.com/apache/magpie/issues/608) (detected); Jujutsu [#603](https://github.com/apache/magpie/issues/603), Fossil [#604](https://github.com/apache/magpie/issues/604), Perforce [#605](https://github.com/apache/magpie/issues/605) (tracked) |
+| Source control (VCS) | ✅ by construction | **Git (complete)**; ASF SVN surface ([`tools/asf-svn`](../tools/asf-svn/): source control + dist.apache.org + authorization) | Mercurial [#601](https://github.com/apache/magpie/issues/601), Subversion generic VCS binding [#602](https://github.com/apache/magpie/issues/602) (detected); Jujutsu [#603](https://github.com/apache/magpie/issues/603), Fossil [#604](https://github.com/apache/magpie/issues/604), Perforce [#605](https://github.com/apache/magpie/issues/605) (tracked) |
 | Project governance | ✅ by construction | ASF + non-ASF adopter profiles | Adopter config (modes, thresholds) |
 
 ✅ "by construction" means the workflows carry no vendor assumption;
