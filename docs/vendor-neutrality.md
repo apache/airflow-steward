@@ -247,7 +247,7 @@ issue`, not hypothetical:
 [Codeberg / Gitea / Forgejo](https://github.com/apache/magpie/issues/310),
 [Pagure](https://github.com/apache/magpie/issues/312) (Fedora /
 `pagure.io`),
-[Bitbucket](https://github.com/apache/magpie/issues/306) (deep Jira
+[Bitbucket](https://github.com/apache/magpie/issues/606) (deep Jira
 pairing), and
 [SourceHut](https://github.com/apache/magpie/issues/607) (email-patch
 review). Tracker-only surfaces are tracked the same way — e.g.
@@ -344,7 +344,7 @@ coverage without pretending one team can implement an open-ended set.
 |---|---|---|---|
 | LLM backend | ✅ by construction | Claude Code, Ollama, vLLM, Apache-hosted, Bedrock, direct Anthropic | Any endpoint meeting the capability floor + privacy gate |
 | Agentic runtime | ✅ by construction (`AGENTS.md` standard) | Claude Code; community use under Codex, Cursor, Gemini CLI, Copilot, OpenCode, Kiro | Runtime adapters [#313–#322](https://github.com/apache/magpie/issues?q=is%3Aissue+state%3Aopen+adapter+in%3Atitle) |
-| Forge / tracker | ✅ by construction | GitHub, Jira; mail/CVE/scan/relay via adapter contracts | GitLab [#305](https://github.com/apache/magpie/issues/305), Forgejo/Gitea [#310](https://github.com/apache/magpie/issues/310), Pagure [#312](https://github.com/apache/magpie/issues/312), Bitbucket [#306](https://github.com/apache/magpie/issues/306), SourceHut [#607](https://github.com/apache/magpie/issues/607), Bugzilla [#302](https://github.com/apache/magpie/issues/302) |
+| Forge / tracker | ✅ by construction | GitHub, Jira; mail/CVE/scan/relay via adapter contracts | GitLab [#305](https://github.com/apache/magpie/issues/305), Forgejo/Gitea [#310](https://github.com/apache/magpie/issues/310), Pagure [#312](https://github.com/apache/magpie/issues/312), Bitbucket [#606](https://github.com/apache/magpie/issues/606), SourceHut [#607](https://github.com/apache/magpie/issues/607), Bugzilla [#302](https://github.com/apache/magpie/issues/302) |
 | Source control (VCS) | ✅ by construction | **Git (complete)** | Mercurial, Subversion (detected); Jujutsu, Fossil, Perforce, Bitbucket, SourceHut (tracked) |
 | Project governance | ✅ by construction | ASF + non-ASF adopter profiles | Adopter config (modes, thresholds) |
 
