@@ -14,7 +14,7 @@
 
 # PR management skill family
 
-> **Scope — `asf: false`.** Works on any project, ASF or not — no
+> **Scope.** Works on any project, ASF or not — no
 > Apache-Software-Foundation-specific assumptions baked in.
 
 Maintainer-facing PR-queue management for projects with a public

@@ -1,5 +1,6 @@
 ---
 name: magpie-release-vote-tally
+organization: ASF
 mode: Triage
 description: |
   After the approval window closes, fetch the approval signal for an RC

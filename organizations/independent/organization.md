@@ -3,6 +3,7 @@
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
 - [Independent — organization (no formal governing body)](#independent--organization-no-formal-governing-body)
+  - [Organization identity](#organization-identity)
   - [Governance vocabulary](#governance-vocabulary)
   - [CVE authority](#cve-authority)
   - [Governance gate](#governance-gate)
@@ -28,6 +29,16 @@ inherits from.
 Everything here is the *generic* path — no mailing lists, no forwarder
 relay, no foundation CNA, no project-metadata service. A project may
 still override any key.
+
+## Organization identity
+
+```yaml
+organization_identity:
+  id: independent
+  name: "Independent (no formal organization)"
+  url: null
+  logo: null   # no organization logo; the website falls back to the project's own
+```
 
 ## Governance vocabulary
 

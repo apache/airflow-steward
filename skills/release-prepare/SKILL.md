@@ -1,5 +1,6 @@
 ---
 name: magpie-release-prepare
+organization: ASF
 mode: Drafting
 description: |
   Draft the release planning issue (Step 1), the prep PR with version

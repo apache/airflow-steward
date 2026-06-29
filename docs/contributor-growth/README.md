@@ -17,7 +17,7 @@
 
 # Contributor-growth skill family
 
-> **Scope — `asf: true` · 🪶 ASF-specific.** This family encodes Apache Software
+> **Scope — `organization: ASF` · 🪶 ASF-specific.** This family encodes Apache Software
 > Foundation processes (the contributor-to-committer path) and assumes an ASF
 > adopter profile by default. Non-ASF projects can still adopt it through the
 > adapter/config layer, but it carries ASF assumptions the generic families do not.

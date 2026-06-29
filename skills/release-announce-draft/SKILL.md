@@ -1,5 +1,6 @@
 ---
 name: magpie-release-announce-draft
+organization: ASF
 mode: Drafting
 description: |
   Draft the `[ANNOUNCE]` email body and open (not merge) the site-bump PR

@@ -14,6 +14,8 @@
 
 **Capability:** capability:stats + capability:intake
 
+**Organization:** ASF
+
 ASF project-metadata substrate. Read-only, unauthenticated client
 for the official `apache/comdev` `apache-projects-mcp` server, which
 wraps the public `projects.apache.org/json` feeds (committee /

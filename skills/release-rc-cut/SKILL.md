@@ -1,5 +1,6 @@
 ---
 name: magpie-release-rc-cut
+organization: ASF
 mode: Drafting
 description: |
   Emit the paste-ready command sequence to tag an RC, build artefacts,

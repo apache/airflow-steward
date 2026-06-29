@@ -1,5 +1,6 @@
 ---
 name: magpie-committer-onboarding
+organization: ASF
 description: |
   Post-vote committer and PMC onboarding for Apache projects.
   Walks the nominator through every step from ICLA check to
