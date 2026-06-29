@@ -140,6 +140,7 @@ Capabilities for every skill currently in
 | `workflow-security-audit` | `capability:triage` |
 | `license-compliance-audit` | `capability:triage` |
 | `flaky-test-triage` | `capability:triage` |
+| `reviewer-routing` | `capability:triage` *(scores the configured reviewer roster on area match, git-history familiarity, and open-review load; proposes a primary reviewer plus optional backup — read-only, propose-then-confirm)* |
 | `pr-management-quick-merge` | `capability:triage` + `capability:review` *(screens the ready-for-review queue for trivial, all-gates-green PRs — triage; submits the maintainer's approve on per-PR confirmation — review)* |
 | `pr-management-code-review` | `capability:review` |
 | `pairing-self-review` | `capability:review` |
@@ -191,6 +192,7 @@ Capabilities for every skill currently in
 | `setup-override-upstream` | `capability:setup` |
 | `write-skill` | `capability:setup` |
 | `optimize-skill` | `capability:setup` |
+| `skill-reconciler` | `capability:reconciliation` *(compares two near-duplicate skill copies and classifies every difference as ALLOWED, DRIFT, or SAFETY-BASELINE; proposes convergence; never writes either copy)* |
 
 ## Capability to tool map
 
@@ -230,6 +232,7 @@ Tools under [`tools/`](../tools/). Tools with two values (separated by
 | [`tools/skill-and-tool-validator`](../tools/skill-and-tool-validator/) | `capability:setup` | Skill-frontmatter and convention validator |
 | [`tools/spec-status-index`](../tools/spec-status-index/) | `capability:setup` + `capability:stats` | Index of spec / RFC implementation status — substrate that also doubles as a governance/stats view |
 | [`tools/spec-validator`](../tools/spec-validator/) | `capability:setup` | Spec-frontmatter and body-section validator — counterpart to `skill-and-tool-validator` for `tools/spec-loop/specs/` |
+| [`tools/vcs`](../tools/vcs/) | `capability:setup` | Backend-dispatching implementation of the source-control (VCS) capability ([`tools/github/source-control.md`](../tools/github/source-control.md)); complete Git backend plus detected extension points for non-Git VCS bridges (#601 Hg, #602 SVN) |
 
 A tool's capabilities are determined by its **use-case lifecycle
 phases**, not by which skills happen to consume it. `tools/github` is

@@ -156,6 +156,16 @@ worrying about accidental loss of legitimate work.
 If the reset itself fails, stop and surface — do not proceed to
 the next issue with a known-dirty tree.
 
+> **Source control.** The `git stash` / `git clean` / `git checkout`
+> / `git reset` calls above are the **Git binding** of the framework's
+> source-control capability
+> ([`tools/github/source-control.md`](../../tools/github/source-control.md)),
+> resetting the project's `<upstream>` working copy between runs. If
+> the project's manifest enables a non-Git VCS under *Tools enabled →
+> Source control*, substitute that tool's working-copy-reset binding
+> (`hg revert --all` + purge, `svn revert -R` + cleanup, …) for the
+> same abstract operation; the reset protocol is unchanged.
+
 ## JDK / interpreter version awareness
 
 Reproducer outcomes can depend on the runtime version. The skill

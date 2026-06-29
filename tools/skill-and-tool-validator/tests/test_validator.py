@@ -56,6 +56,7 @@ from skill_and_tool_validator import (
     find_repo_root,
     is_path_allowlisted,
     is_placeholder_url,
+    known_organizations,
     line_has_inline_allow_marker,
     main,
     parse_frontmatter,
@@ -2347,7 +2348,10 @@ class TestValidateTools:
         root = _make_tools_root(tmp_path)
         tool = root / "tools" / "foo"
         tool.mkdir()
-        (tool / "README.md").write_text("# tools/foo\n\n**Capability:** capability:setup\n\nFoo tool.\n")
+        (tool / "README.md").write_text(
+            "# tools/foo\n\n**Capability:** capability:setup\n\nFoo tool.\n\n"
+            "## Prerequisites\n\n- Python 3.11+ via uv.\n"
+        )
         violations = list(validate_tools(root))
         assert violations == []
 
@@ -2363,7 +2367,9 @@ class TestValidateTools:
         root = _make_tools_root(tmp_path)
         tool = root / "tools" / "bare"
         tool.mkdir()
-        (tool / "README.md").write_text("# bare\n\nDescription only, no capability line.\n")
+        (tool / "README.md").write_text(
+            "# bare\n\nDescription only, no capability line.\n\n## Prerequisites\n\n- None.\n"
+        )
         violations = list(validate_tools(root))
         assert len(violations) == 1
         assert "missing '**Capability:**" in violations[0].message
@@ -2381,7 +2387,9 @@ class TestValidateTools:
         root = _make_tools_root(tmp_path)
         tool = root / "tools" / "dual"
         tool.mkdir()
-        (tool / "README.md").write_text("# dual\n\n**Capability:** capability:setup + capability:intake\n")
+        (tool / "README.md").write_text(
+            "# dual\n\n**Capability:** capability:setup + capability:intake\n\n## Prerequisites\n\n- None.\n"
+        )
         violations = list(validate_tools(root))
         assert violations == []
 
@@ -2395,10 +2403,87 @@ class TestValidateTools:
         (tool / "README.md").write_text(
             "# tools/with-prose\n\n"
             "**Capability:** capability:setup\n\n"
-            "Some prose that follows the capability line and should NOT be parsed as part of it.\n"
+            "Some prose that follows the capability line and should NOT be parsed as part of it.\n\n"
+            "## Prerequisites\n\n- None.\n"
         )
         violations = list(validate_tools(root))
         assert violations == []
+
+    def test_tool_missing_prerequisites(self, tmp_path: Path) -> None:
+        root = _make_tools_root(tmp_path)
+        tool = root / "tools" / "no-prereq"
+        tool.mkdir()
+        (tool / "README.md").write_text("# no-prereq\n\n**Capability:** capability:setup\n\nA tool.\n")
+        violations = list(validate_tools(root))
+        assert len(violations) == 1
+        assert "'## Prerequisites'" in violations[0].message
+        assert violations[0].category == "tool-prerequisites"
+
+    def test_tool_missing_both_capability_and_prerequisites(self, tmp_path: Path) -> None:
+        root = _make_tools_root(tmp_path)
+        tool = root / "tools" / "bare-both"
+        tool.mkdir()
+        (tool / "README.md").write_text("# bare-both\n\nDescription only.\n")
+        cats = {v.category for v in validate_tools(root)}
+        assert cats == {"tool-prerequisites", "tool-capability"}
+
+    def test_tool_organization_known(self, tmp_path: Path) -> None:
+        root = _make_tools_root(tmp_path)
+        (root / "organizations" / "ASF").mkdir(parents=True)
+        tool = root / "tools" / "asf-backend"
+        tool.mkdir()
+        (tool / "README.md").write_text(
+            "# asf-backend\n\n**Capability:** capability:setup\n\n"
+            "**Organization:** ASF\n\nAn ASF backend.\n\n## Prerequisites\n\n- None.\n"
+        )
+        violations = list(validate_tools(root))
+        assert violations == []
+
+    def test_tool_organization_unknown(self, tmp_path: Path) -> None:
+        root = _make_tools_root(tmp_path)
+        (root / "organizations" / "ASF").mkdir(parents=True)
+        tool = root / "tools" / "bogus-org"
+        tool.mkdir()
+        (tool / "README.md").write_text(
+            "# bogus-org\n\n**Capability:** capability:setup\n\n"
+            "**Organization:** Nope\n\nA tool.\n\n## Prerequisites\n\n- None.\n"
+        )
+        violations = [v for v in validate_tools(root) if v.category == "organization"]
+        assert len(violations) == 1
+        assert "'**Organization:** Nope'" in violations[0].message
+
+
+class TestOrganizationMembership:
+    def test_known_organizations_excludes_template(self, tmp_path: Path) -> None:
+        for name in ("ASF", "independent", "_template"):
+            (tmp_path / "organizations" / name).mkdir(parents=True)
+        assert known_organizations(tmp_path) == {"ASF", "independent"}
+
+    def test_frontmatter_organization_known(self, tmp_path: Path) -> None:
+        (tmp_path / "organizations" / "ASF").mkdir(parents=True)
+        text = (
+            "---\nname: magpie-x\ndescription: d\nlicense: Apache-2.0\n"
+            "capability: capability:setup\norganization: ASF\n---\n\nBody.\n"
+        )
+        violations = [
+            v
+            for v in validate_frontmatter(tmp_path / "SKILL.md", text, root=tmp_path)
+            if v.category == "organization"
+        ]
+        assert violations == []
+
+    def test_frontmatter_organization_unknown(self, tmp_path: Path) -> None:
+        (tmp_path / "organizations" / "ASF").mkdir(parents=True)
+        text = (
+            "---\nname: magpie-x\ndescription: d\nlicense: Apache-2.0\n"
+            "capability: capability:setup\norganization: Nope\n---\n\nBody.\n"
+        )
+        violations = [
+            v
+            for v in validate_frontmatter(tmp_path / "SKILL.md", text, root=tmp_path)
+            if v.category == "organization"
+        ]
+        assert len(violations) == 1
 
 
 # ---------------------------------------------------------------------------

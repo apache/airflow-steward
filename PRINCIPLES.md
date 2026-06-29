@@ -96,7 +96,7 @@ Skills produce drafts. Tool calls enforce schemas. Humans or deterministic check
 
 ## 6. The human is always in the loop, until they choose otherwise
 
-Every agent-authored output (comment, label, draft, issue, PR) is a proposal a human signs off on. The agent never performs a merge of its own work, nor unilaterally enables auto-merge on it. Auto-merge, where it exists, is narrow, opt-in per project AND per change class, and never touches security-class changes. **The opt-out never extends to communication aimed at a human: any outbound message a person will read as if a maintainer wrote it (reporter mail, PR or issue comment, review reply, mailing-list post, mentoring message) requires explicit human sign-off, regardless of mode.** Sending such prose without that sign-off is impersonation, and impersonation never graduates to an auto-mode.
+Every agent-authored output (comment, label, draft, issue, PR) is a proposal a human signs off on. The agent never performs a merge of its own work, nor unilaterally enables auto-merge on it. Agentic Autonomous, where it exists, is narrow, opt-in per project AND per change class, and never touches security-class changes. **The opt-out never extends to communication aimed at a human: any outbound message a person will read as if a maintainer wrote it (reporter mail, PR or issue comment, review reply, mailing-list post, mentoring message) requires explicit human sign-off, regardless of mode.** Sending such prose without that sign-off is impersonation, and impersonation never graduates to an auto-mode.
 
 ## 7. Contributor sentiment gates every mode graduation
 
@@ -108,7 +108,7 @@ Skill behavior is probabilistic, so correctness lives in distributions, not unit
 
 ## 9. Vendor neutrality is non-negotiable
 
-Every skill targets the abstraction layer, never a single vendor's client. Frontier APIs, local inference (Ollama, vLLM), community-hosted endpoints: all valid backends, provided they meet the skill's declared capability floor (context window, tool use, vision, sustained reasoning). A skill hard-coded to one vendor or model family is broken, not specialized. Capability floors must be justified and minimized so the floor itself does not become a vendor lock-in by proxy. Affordability is part of this: every release ships at least one configuration that runs end-to-end on a single developer machine, even if individual skills run at reduced quality there.
+Every skill targets the abstraction layer, never a single vendor's client. Frontier APIs, local inference (Ollama, vLLM), community-hosted endpoints: all valid backends, provided they meet the skill's declared capability floor (context window, tool use, vision, sustained reasoning). A skill hard-coded to one vendor or model family is broken, not specialized. Capability floors must be justified and minimized so the floor itself does not become a vendor lock-in by proxy. Affordability is part of this: every release ships at least one configuration that runs end-to-end on a single developer machine, even if individual skills run at reduced quality there. How this is achieved in practice — the skills / tools / capabilities architecture and the per-axis status — is documented in [`docs/vendor-neutrality.md`](docs/vendor-neutrality.md).
 
 ## 10. No default telemetry
 

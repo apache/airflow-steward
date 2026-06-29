@@ -133,7 +133,7 @@ markdown link or an OSC 8 wrapper, and convert any match.
 
 **Golden rule 6 — flag, do not assert, contributor-side facts AI
 cannot verify.** If the proposal touches on first-time-contributor
-status, CLA / ICLA acceptance, or a reporter's prior contribution
+status, licence agreement acceptance, or a reporter's prior contribution
 history, the skill *flags* the fact for the maintainer to check —
 it does not *assert* the fact. AI tooling has no authoritative
 view of CLA state or contributor history.
@@ -348,7 +348,12 @@ permits batched reads) the inputs the classifier needs.
 6. **Recent-fix scan** — for `ALREADY-FIXED` detection, search
    `<upstream>`'s git log since the issue's filing date for
    commits referencing the issue key (e.g., `git log --grep=<KEY>`)
-   or touching the cited code locations.
+   or touching the cited code locations. This `git log` is the **Git
+   binding** of the framework's source-control capability
+   ([`tools/github/source-control.md`](../../tools/github/source-control.md));
+   a project on a non-Git VCS enabled under *Tools enabled → Source
+   control* substitutes that tool's history-read binding (`hg log`,
+   `svn log`, …) for the same abstract operation.
 
 **Bulk mode for N > 5** — when the resolved selector has more
 than 5 issues, follow the same subagent-fanout pattern as

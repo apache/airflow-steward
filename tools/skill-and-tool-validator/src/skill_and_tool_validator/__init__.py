@@ -88,14 +88,31 @@ DOCS_DIR = Path("docs")
 SKILL_EVALS_DIR = Path("tools/skill-evals/evals")
 PROJECTS_TEMPLATE_DIR = Path("projects/_template")
 
-# Categories for the tool-validator block. Both HARD by default — every
-# tool must have a README that declares its capability.
+# Categories for the tool-validator block. All HARD by default — every
+# tool must have a README that declares its capability and its prerequisites.
 TOOL_README_CATEGORY = "tool-readme"
 TOOL_CAPABILITY_CATEGORY = "tool-capability"
+TOOL_PREREQUISITES_CATEGORY = "tool-prerequisites"
 
 # Matches `**Capability:** capability:NAME` (and multi-value
 # `capability:NAME + capability:NAME + …`) on a single line.
 TOOL_CAPABILITY_RE = re.compile(r"^\*\*Capability:\*\*[ \t]+(.+)$", re.MULTILINE)
+
+# Matches a level-2 `## Prerequisites` heading. Every tool README must carry
+# one so the tool's runtime / CLI / credential / network requirements are
+# stated up front rather than discovered at first run.
+TOOL_PREREQUISITES_RE = re.compile(r"^##[ \t]+Prerequisites[ \t]*$", re.MULTILINE)
+
+# Optional `**Organization:** <org>` line in a tool README — declares that
+# the tool belongs to / is the adapter for a specific organization (e.g.
+# the ASF backends cve-tool-vulnogram, ponymail, apache-projects). Absent =
+# organization-agnostic. Skills declare the same via an `organization:`
+# frontmatter key; skill families via a banner in docs/<family>/README.md.
+TOOL_ORGANIZATION_RE = re.compile(r"^\*\*Organization:\*\*[ \t]+(.+)$", re.MULTILINE)
+ORGANIZATION_CATEGORY = "organization"
+# Directory of organization adapters; an entity's declared `organization`
+# must match one of these (minus the authoring template).
+ORGANIZATIONS_DIR = Path("organizations")
 
 # Capability-sync check: keeps docs/labels-and-capabilities.md tables aligned
 # with live skill frontmatter + tool README declarations.
@@ -116,7 +133,7 @@ _CAPABILITY_TOKEN_RE = re.compile(r"`?(capability:[a-z]+)`?")
 _ITALIC_PARENS_RE = re.compile(r"\*\(.*?\)\*")
 
 REQUIRED_FRONTMATTER_KEYS = {"name", "description", "license", "capability"}
-OPTIONAL_FRONTMATTER_KEYS = {"when_to_use", "mode"}
+OPTIONAL_FRONTMATTER_KEYS = {"when_to_use", "mode", "organization"}
 ALLOWED_LICENSES = {"Apache-2.0"}
 
 # Canonical capability taxonomy — docs/labels-and-capabilities.md is authoritative.
@@ -204,6 +221,7 @@ ALLOWLIST_PATHS: tuple[str, ...] = (
     "docs/security/new-members-onboarding.md",
     "pyproject.toml",
     "projects/_template/",
+    "organizations/",
     "tools/dev/check-placeholders.sh",
     ".github/",
     ".asf.yaml",
@@ -237,6 +255,8 @@ FRAMEWORK_PLACEHOLDERS: tuple[str, ...] = (
     "<issue-tracker-project>",
     "<runtime>",
     "<default-branch>",
+    "<governance-body>",
+    "<project-stage>",
 )
 
 # YAML block-scalar headers — must not be stored as scalar content,
@@ -287,6 +307,8 @@ HARD_CATEGORIES: frozenset[str] = frozenset(
     {
         TOOL_README_CATEGORY,
         TOOL_CAPABILITY_CATEGORY,
+        TOOL_PREREQUISITES_CATEGORY,
+        ORGANIZATION_CATEGORY,
         CAPABILITY_SYNC_CATEGORY,
         INJECTION_GUARD_CATEGORY,
         NAME_CONVENTION_CATEGORY,
@@ -523,12 +545,33 @@ def parse_frontmatter(text: str) -> dict[str, str] | None:
     return result
 
 
-def validate_frontmatter(path: Path, text: str) -> Iterable[Violation]:
+def known_organizations(root: Path | None = None) -> set[str]:
+    """Return the set of declared organization adapters (dir names under
+    ``organizations/``), excluding the authoring template. An entity that
+    declares ``organization: <name>`` must name one of these."""
+    base = (root or find_repo_root()) / ORGANIZATIONS_DIR
+    if not base.exists():
+        return set()
+    return {d.name for d in base.iterdir() if d.is_dir() and d.name != "_template"}
+
+
+def validate_frontmatter(path: Path, text: str, root: Path | None = None) -> Iterable[Violation]:
     """Validate the YAML frontmatter of a SKILL.md file."""
     fm = parse_frontmatter(text)
     if fm is None:
         yield Violation(path, 1, "missing YAML frontmatter block (expected '---' at start)")
         return
+
+    if fm.get("organization"):
+        orgs = known_organizations(root)
+        if orgs and fm["organization"] not in orgs:
+            yield Violation(
+                path,
+                1,
+                f"frontmatter organization '{fm['organization']}' is not a known organization "
+                f"{sorted(orgs)} — add organizations/{fm['organization']}/ or fix the value",
+                category=ORGANIZATION_CATEGORY,
+            )
 
     missing = REQUIRED_FRONTMATTER_KEYS - set(fm.keys())
     for key in sorted(missing):
@@ -1309,10 +1352,14 @@ def validate_tools(root: Path | None = None) -> Iterable[Violation]:
     2. The README to contain a ``**Capability:** capability:NAME`` line,
        with NAME drawn from ``ALLOWED_CAPABILITIES``. Multi-value form is
        ``**Capability:** capability:NAME + capability:NAME``.
+    3. The README to contain a ``## Prerequisites`` section so the tool's
+       runtime / CLI / credential / network requirements are stated up
+       front.
 
-    Both are HARD checks — every tool must declare its capabilities so
-    the per-tool map in ``docs/labels-and-capabilities.md`` stays
-    authoritative.
+    All are HARD checks — every tool must declare its capabilities and
+    its prerequisites so the per-tool map in
+    ``docs/labels-and-capabilities.md`` stays authoritative and an adopter
+    can tell what a tool needs before running it.
     """
     for tool_dir in collect_tool_dirs(root):
         readme = tool_dir / "README.md"
@@ -1332,6 +1379,29 @@ def validate_tools(root: Path | None = None) -> Iterable[Violation]:
         except OSError as exc:
             yield Violation(readme, None, f"cannot read README.md: {exc}")
             continue
+
+        if TOOL_PREREQUISITES_RE.search(text) is None:
+            yield Violation(
+                readme,
+                1,
+                f"tool '{tool_dir.name}' README missing a '## Prerequisites' section — "
+                f"state the tool's runtime, required CLIs, credentials, and network "
+                f"access up front (see tools/AGENTS.md)",
+                category=TOOL_PREREQUISITES_CATEGORY,
+            )
+
+        org_match = TOOL_ORGANIZATION_RE.search(text)
+        if org_match is not None:
+            org = org_match.group(1).strip()
+            orgs = known_organizations(root)
+            if orgs and org not in orgs:
+                yield Violation(
+                    readme,
+                    text[: org_match.start()].count("\n") + 1,
+                    f"tool '{tool_dir.name}' '**Organization:** {org}' is not a known "
+                    f"organization {sorted(orgs)} — add organizations/{org}/ or fix the value",
+                    category=ORGANIZATION_CATEGORY,
+                )
 
         match = TOOL_CAPABILITY_RE.search(text)
         if match is None:

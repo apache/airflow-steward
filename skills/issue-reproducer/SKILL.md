@@ -248,7 +248,14 @@ skill once per candidate in its campaign loop.
    [`<project-config>/reproducer-conventions.md`](../../projects/_template/reproducer-conventions.md).
 4. **Working tree** — confirm we are in the `<upstream>` checkout
    and `git status` is clean (or accept a `--allow-dirty` flag if
-   the user explicitly opts in).
+   the user explicitly opts in). The `git` calls in this skill (here
+   and the reset protocol in
+   [`runtime-recipes.md`](runtime-recipes.md)) are the **Git binding**
+   of the framework's source-control capability
+   ([`tools/github/source-control.md`](../../tools/github/source-control.md));
+   a project that enables a non-Git VCS under *Tools enabled → Source
+   control* substitutes that tool's binding for the same abstract
+   operations.
 5. **Drift check** — see *Snapshot drift* above.
 6. **Override consultation** — see *Adopter overrides* above.
 7. **Credential-isolation setup verified** — Step 6 executes

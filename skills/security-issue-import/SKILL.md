@@ -19,7 +19,8 @@ when_to_use: |
   skill is cheap to run against the default 14-day Gmail window and a
   no-op when every recent thread is already tracked or already
   answered-and-closed on-thread. Use `import last 30d` / `import all`
-  (= 90d) for a wider backlog sweep when genuinely warranted.
+  (= disclosure_governance.window_days, default 90d) for a wider backlog
+  sweep when genuinely warranted.
 argument-hint: "[import] [last Nd|all] [skip threadId]"
 capability: capability:intake
 license: Apache-2.0
@@ -28,9 +29,7 @@ license: Apache-2.0
 <!-- Placeholder convention (see AGENTS.md#placeholder-convention-used-in-skill-files):
      <project-config> → adopting project's `.apache-magpie/` directory
      <tracker>        → value of `tracker_repo:` in <project-config>/project.md
-                       (example: airflow-s/airflow-s for the Apache Airflow security team)
      <upstream>       → value of `upstream_repo:` in <project-config>/project.md
-                       (example: apache/airflow)
      Before running any bash command below, substitute these with the
      concrete values from the adopting project's <project-config>/project.md. -->
 
@@ -258,7 +257,7 @@ Before touching any candidate thread, verify:
    (401, 403, 404), stop and tell the user to log in with
    `gh auth login` or get added to `<tracker>`.
 3. **(Reference-adopter guidance.)** The reference adopter
-   (`airflow-s`) lists `gmail` as primary `mandatory: yes` and —
+   lists `gmail` as primary `mandatory: yes` and —
    per the ASF default — `ponymail` as `mandatory: yes` too
    (`fallback` role for drafts, since PonyMail is read-only). So
    for the reference flow **both** backends are pre-flight
@@ -307,6 +306,21 @@ Before touching any candidate thread, verify:
    when (and only when) the draft references a third-party
    identifier.
 
+5. **Disclosure governance from `<project-config>/security-intake-config.md`.**
+   If the file exists, read the `disclosure_governance` block and load these
+   two keys into the observed-state bag for use in Step 7:
+
+   - `reporter_acknowledgement_model` — `manual` | `auto` | `none`. Controls
+     whether and how the receipt-of-confirmation reply is drafted (Step 7.4).
+   - `window_days` — integer; the CVD window in calendar days, used as the
+     disclosure deadline hint when composing the acknowledgement draft.
+
+   If the file does not exist or the `disclosure_governance` block is absent,
+   silently default to `reporter_acknowledgement_model: manual` and
+   `window_days: 90`. A missing file is **not** a stop condition — adopters
+   who have not yet created this config receive the same ASF defaults the
+   skill has always applied.
+
 If a `mandatory: yes` mail-source backend or the `gh` check fails,
 do **not** proceed — the skill would fail mid-flow otherwise,
 leaving half-built state (a draft on the wrong thread, or a tracker
@@ -328,7 +342,7 @@ candidate Gmail threads:
 | `import new` (default) | every security@ thread received in the last **14 days** that has not yet been imported as an <tracker> issue and has not already been answered-and-closed on-thread |
 | `import since:YYYY-MM-DD` | every security@ thread received since the given date that is not yet imported |
 | `import thread:<id>` | the single Gmail thread with that `threadId` — useful for re-importing after a manual discard, or for picking up a single message the automatic scan missed |
-| `import last 30d` / `import all` / `import last 90d` (explicit request only) | a wider sweep — use when the skill has not been run in a while or the user is doing a backlog catch-up. The `all` alias is 90 days. |
+| `import last 30d` / `import all` / `import last Nd` (explicit request only) | a wider sweep — use when the skill has not been run in a while or the user is doing a backlog catch-up. The `all` alias spans `disclosure_governance.window_days` days (default 90) from `<project-config>/security-intake-config.md`. |
 
 If the user supplies no selector, default to `import new` (14-day window).
 
@@ -353,9 +367,8 @@ report:
 
 Use the canonical candidate-listing query template from
 [`tools/gmail/search-queries.md`](../../tools/gmail/search-queries.md#security-issue-import--candidate-listing-query);
-substitute the adopting project's `<security-list-domain>` (Airflow:
-`<security-list-domain>`) and the project's GitHub-notification
-exclusions — both declared in
+substitute the adopting project's `<security-list-domain>` and the
+project's GitHub-notification exclusions — both declared in
 [`<project-config>/project.md`](../../<project-config>/project.md#gmail-and-ponymail).
 
 **Backend selection.** Candidate listing is one of the cases where
@@ -367,7 +380,7 @@ lags the inbox by minutes-to-hours for brand-new messages, which
 is exactly the window this skill most cares about.
 
 When PonyMail MCP is enabled and authenticated (Step 0) **and**
-`security@<project>.apache.org` is in `.apache-magpie-overrides/user.md` →
+`<security-list>` is in `.apache-magpie-overrides/user.md` →
 `tools.ponymail.private_lists`, run the archive as a **paired
 authoritative check** against the Gmail result set:
 
@@ -398,7 +411,7 @@ When PonyMail MCP is disabled, unauthenticated, or the private
 list is not in the user's allowlist, skip the paired-check query
 and proceed Gmail-only.
 
-**Do not exclude `-from:security@apache.org`.** That address is used
+**Do not exclude `-from:<security-list>`.** That address is used
 for three very different message types — CVE-tool bookkeeping,
 **ASF Security Team forwarding of inbound reports**, and ad-hoc ASF
 Security discussion / advice. Blanket-excluding the sender would drop
@@ -417,9 +430,12 @@ uses this address for **two distinct categories** of messages:
    tracker.
 2. **GHSA-relayed reports** — when a reporter files a GitHub
    Security Advisory against `<upstream>`, GitHub emails
-   `notifications@github.com → security@<project>.apache.org`
+   `notifications@github.com → <security-list>`
    with subject `[<upstream>] ... (GHSA-...)`. **These are**
-   import candidates.
+   import candidates. A GHSA relay is not a distinct class — at
+   Step 3 classify it as a plain **`Report`** (the GHSA ID is
+   captured as a de-dup signal and as provenance, not as the
+   classification) and proceed to field extraction.
 
 Filter the mirror notifications at Step 1 only by the project's
 declared dedicated `noreply` mirror addresses (e.g.
@@ -453,7 +469,7 @@ most threads will be filtered out at Step 2.
 For each candidate `threadId`, check whether that ID already appears in
 an `<tracker>` issue body. The sync skill records each thread
 ID in the *"Security mailing list thread"* field of the tracking issue
-(either as the `lists.apache.org/thread/<id>` URL or as a textual note
+(either as the `<mail-archive-url>/thread/<id>` URL or as a textual note
 containing the Gmail `threadId`). One `gh search issues` call is
 enough:
 
@@ -610,7 +626,7 @@ fuzzy-match search against existing issues on three orthogonal keys:
 2. **Code pointers**: grep the body for function names and file paths
    that look like load-bearing identifiers (regex:
    `[A-Z][A-Za-z0-9_]*\.[a-z_][a-zA-Z0-9_]*\(\)` for `ClassName.method()`,
-   `airflow[a-zA-Z0-9_./]+\.py` for file paths, and
+   `<product>[a-zA-Z0-9_./]+\.py` for file paths, and
    `[a-z][a-zA-Z0-9_]*/[a-z][a-zA-Z0-9_/]+\.py` for repo-relative paths).
    Take the **two or three most specific** pointers (the longest
    Python-import-style names and the deepest file paths) and search
@@ -619,7 +635,7 @@ fuzzy-match search against existing issues on three orthogonal keys:
    some other tracker already discusses the same code surface — often
    a partial overlap, possibly a duplicate.
 3. **Subject root-cause keywords**: strip `[SECURITY]`, `[Security
-   Report]`, `Re:`, `Fwd:`, `FW:`, `Airflow:` / `<vendor>: <product>:` (e.g. `Apache Airflow:`)
+   Report]`, `Re:`, `Fwd:`, `FW:`, `<vendor>: <product>:`
    prefixes from the root message's subject, then take the remaining
    3–5 noun-phrase tokens (for example
    `RCE BaseSerialization.deserialize next_kwargs`) and search.
@@ -855,7 +871,7 @@ query templates and the substitution-values guide live in
 in short:
 
 **Backend selection.** When PonyMail MCP is enabled and
-authenticated (Step 0) **and** `security@<project>.apache.org`
+authenticated (Step 0) **and** `<security-list>`
 is in `.apache-magpie-overrides/user.md` → `tools.ponymail.private_lists`,
 **PonyMail MCP is the primary backend for this step**:
 
@@ -1012,7 +1028,7 @@ reporter's own pointer is the strongest match available).
 - **STRONG** — reporter linked the PR explicitly, OR the matched
   PR's title/body explicitly names the same vulnerability class
   on the same code surface (e.g. report says *"XSS in
-  `airflow/www/security/permissions.py:render_label`"* and the
+  `app/www/security/permissions.py:render_label`"* and the
   PR title is *"Escape user-supplied label in `permissions.py`
   to fix XSS"*).
 - **MEDIUM** — code surface matches and the vulnerability class
@@ -1099,9 +1115,9 @@ if not, fall through to the table below.
 
 | Class | How to spot it | How to handle |
 |---|---|---|
-| **Report**: a reporter describes a vulnerability | The body has a description, a PoC / reproduction steps, an impact claim. Sender is an external address (not `@apache.org`, not on the security-team roster in [`AGENTS.md`](../../AGENTS.md)). | Proceed to Step 4. |
+| **Report**: a reporter describes a vulnerability | The body has a description, a PoC / reproduction steps, an impact claim. Sender is an external address (not a project-internal address, not on the security-team roster in [`AGENTS.md`](../../AGENTS.md)). | Proceed to Step 4. |
 | **Report (disposition converged)**: a `Report` where the inbound thread has a team-member substantive technical disposition AND the reporter has acknowledged it | Same body shape as `Report`, but the thread has a team-member reply with one of: option-1/option-2 framing, *"we agree, opening fix PR"* disposition, a docs-clarification acknowledgement; AND the reporter has replied confirming the disposition; AND no further reporter follow-up is needed. Detected at Step 3 by reading the thread (FULL_CONTENT, last 5 messages) and scanning for a team-roster sender's reply followed by an external-sender acknowledgement | Proceed to Step 4 (extract template fields and create the tracker for audit trail); in Step 7, **skip the canned receipt-of-confirmation reply** (the reporter has already seen our substantive response and a canned receipt would be tone-deaf). Note in the rollup entry that the disposition is converged on the inbound thread. |
-| **CVE-tool bookkeeping**: an automated or human status-change notification on the ASF CVE tool | Sender is `security@apache.org` (or one of the security-team members acting on behalf of the CVE tool). Subject matches one of: `"CVE-YYYY-NNNNN reserved for airflow"`, `"Comment added on CVE-YYYY-NNNNN"`, `"CVE-YYYY-NNNNN is now READY"`, `"CVE-YYYY-NNNNN is now PUBLIC"`, `"CVE-YYYY-NNNNN is now PUBLISHED"`, `"CVE-YYYY-NNNNN REJECTED"`, or a verbatim `"<state-change>"` line in the body pointing at `cveprocess.apache.org/cve5/CVE-YYYY-NNNNN`. | Do **not** import and do **not** draft a reply — the CVE-tool notifications are consumed by the `security-issue-sync` skill's Step 1e review-comment check. Classify as `cve-tool-bookkeeping` and drop. |
+| **CVE-tool bookkeeping**: an automated or human status-change notification on the ASF CVE tool | Sender is `<security-list>` (or one of the security-team members acting on behalf of the CVE tool). Subject matches one of: `"CVE-YYYY-NNNNN reserved for <product>"`, `"Comment added on CVE-YYYY-NNNNN"`, `"CVE-YYYY-NNNNN is now READY"`, `"CVE-YYYY-NNNNN is now PUBLIC"`, `"CVE-YYYY-NNNNN is now PUBLISHED"`, `"CVE-YYYY-NNNNN REJECTED"`, or a verbatim `"<state-change>"` line in the body pointing at `<cve-tool-url>/cve5/CVE-YYYY-NNNNN`. | Do **not** import and do **not** draft a reply — the CVE-tool notifications are consumed by the `security-issue-sync` skill's Step 1e review-comment check. Classify as `cve-tool-bookkeeping` and drop. |
 | **Automated scanner dump**: SAST/DAST tool output, CodeQL/Dependabot alert paste, a string of "issues" with no human PoC | Body is machine-generated, contains multiple unrelated findings, no explanation of Security Model violation | Surface as a candidate with class `automated-scanner` and **do not** propose auto-import. In Step 5 the skill proposes a Gmail draft from the *"Automated scanning results"* canned response in [`canned-responses.md`](../../<project-config>/canned-responses.md) instead. |
 | **Consolidated multi-issue report**: one email bundles ≥3 unrelated vulnerabilities | The root message has headings like *"Issue 1"*, *"Issue 2"*, each of which would be its own tracker | Surface class `consolidated-multi-issue`; do not auto-import. Propose the "Sending multiple issues in consolidated report" canned reply. |
 | **Media / research-disclosure request**: reporter wants to publish a blog or talk about a finding we already know about | Body asks about disclosure timing, mentions a talk / blog / CVE on another vendor | Surface class `media-request`; do not auto-import. Propose the "When someone submits a media report" canned reply. |
@@ -1168,10 +1184,10 @@ here.
 |---|---|
 | **The issue description** | The root email body, **verbatim** (preserve paragraphs, PoC code blocks, and any quoted sections). The body is private — the triager will copy it into a public CVE description only after Step 13. |
 | **Short public summary for publish** | Leave `_No response_`. Filled by the release manager at Step 13 in sanitised form. |
-| **Affected versions** | Extract `<product> <version>` / `>= X, < Y` / `<Y` phrases from the body (substitute the adopter's product name — e.g. `Airflow <version>` for the airflow-s adopter). If the reporter gave only a single version they tested on (e.g. `3.1.5`), record that verbatim; the triager can widen the range later. Leave `_No response_` if no version is mentioned. |
-| **Security mailing list thread** | **Keep the private thread handle, and — if possible — also link the PonyMail archive entry.** The full URL-construction recipe (search URL template, month-token format, user-pastes-back flow, Gmail-threadId fallback) lives in [`tools/gmail/ponymail-archive.md`](../../tools/gmail/ponymail-archive.md#use-case--security-issue-import); the adopting project's private-search URL template is declared in [`<project-config>/project.md`](../../<project-config>/project.md#gmail-and-ponymail). Propose the constructed search URL to the user at Step 5, wait for them to paste back the resolved `lists.apache.org/thread/<hash>?<security-list>` URL, and record the PonyMail URL, the Gmail `threadId`, **and the inbound report's root `Message-ID`** in this field. The root `Message-ID` is the archive-independent handle for the message (a Gmail `threadId` resolves only inside the one mailbox that holds it; the `Message-ID` is what the reporter's MUA stamped and what PonyMail hashes its permalinks on), so it keeps the report locatable even from an account that never received the Gmail copy. Resolve it per backend per [`tools/gmail/operations.md` — Get the root `Message-ID` of a thread](../../tools/gmail/operations.md#get-the-root-message-id-of-a-thread) (PonyMail results carry it directly; on the Gmail backend the claude.ai MCP does **not** expose it, so use the `oauth-draft-message-id` helper). Record it on its own line as ``Root Message-ID: `<id>` `` — **backtick-wrap it**, since a bare `<...@...>` renders as an HTML tag on GitHub. The whole field is **internal-only** — the `generate-cve-json` script will not export it to `references[]` — see the "CVE references must never point at non-public mailing-list threads" section of [`AGENTS.md`](../../AGENTS.md). |
+| **Affected versions** | Extract the version(s) / range (`<version>` / `>= X, < Y` / `<Y`) the reporter states and record them as **bare, comma-separated version numbers** — e.g. `2.9.0, 2.9.3` or `>= 2.6.0, < 2.10.2`. **Do not prefix the product name** (the tracker is already project-scoped, so `<product> 2.9.0` is redundant — record `2.9.0`). If the reporter gave only a single version they tested on (e.g. `3.1.5`), record that verbatim; the triager can widen the range later. Leave `_No response_` if no version is mentioned. |
+| **Security mailing list thread** | **Keep the private thread handle, and — if possible — also link the PonyMail archive entry.** The full URL-construction recipe (search URL template, month-token format, user-pastes-back flow, Gmail-threadId fallback) lives in [`tools/gmail/ponymail-archive.md`](../../tools/gmail/ponymail-archive.md#use-case--security-issue-import); the adopting project's private-search URL template is declared in [`<project-config>/project.md`](../../<project-config>/project.md#gmail-and-ponymail). Propose the constructed search URL to the user at Step 5, wait for them to paste back the resolved `<mail-archive-url>/thread/<hash>?<security-list>` URL, and record the PonyMail URL, the Gmail `threadId`, **and the inbound report's root `Message-ID`** in this field. The root `Message-ID` is the archive-independent handle for the message (a Gmail `threadId` resolves only inside the one mailbox that holds it; the `Message-ID` is what the reporter's MUA stamped and what PonyMail hashes its permalinks on), so it keeps the report locatable even from an account that never received the Gmail copy. Resolve it per backend per [`tools/gmail/operations.md` — Get the root `Message-ID` of a thread](../../tools/gmail/operations.md#get-the-root-message-id-of-a-thread) (PonyMail results carry it directly; on the Gmail backend the claude.ai MCP does **not** expose it, so use the `oauth-draft-message-id` helper). Record it on its own line as ``Root Message-ID: `<id>` `` — **backtick-wrap it**, since a bare `<...@...>` renders as an HTML tag on GitHub. The whole field is **internal-only** — the `generate-cve-json` script will not export it to `references[]` — see the "CVE references must never point at non-public mailing-list threads" section of [`AGENTS.md`](../../AGENTS.md). |
 | **Public advisory URL** | `_No response_`. Populated at Step 14 by `security-issue-sync` once the advisory is archived. |
-| **Reporter credited as** | The reporter's full display name from the email `From:` header (e.g. `Alice Example` from `"Alice Example" <alice@example.com>`). This is a **placeholder** — in direct-reporter mode, the receipt-of-confirmation reply in Step 7 asks the reporter to confirm their preferred credit form. **Apply the [bot/AI credit policy](../../tools/cve-tool-vulnogram/bot-credits-policy.md) before populating** — if the `From:`-header name or address matches the bot detection rule (`*[bot]` suffix, known-bot list, `*-bot`/`*-ai`/`*-agent`/`*-gpt` suffix patterns, `noreply`/`no-reply`/`donotreply` / `security-alerts@` / `notifications@` service sender), **include** the detected name in the field (the CVE JSON generator emits it with `type: "tool"` per the policy's finder-side rule) and surface *"credited as tool: `<name>` (matches bot policy — `<rule>`)"* in Step 5's proposal. Service-sender addresses (noreply / relays) are still suppressed from the field — they are routing artefacts, not identities; extract the real reporter from the email body instead. **In direct-reporter mode**, also fold the policy's *clarification-reply* into the Step 7 receipt-of-confirmation draft, asking whether a human behind the bot/AI handle should be **additionally** credited as finder (the tool credit stands either way). **In via-forwarder mode** (when the optional [`security-issue-import-via-forwarder`](../security-issue-import-via-forwarder/SKILL.md) sub-skill pre-classified the candidate via a registered forwarder adapter — for the ASF adopter this is the `asf-security` adapter — and the other cases enumerated in [`docs/security/forwarder-routing-policy.md`](../../docs/security/forwarder-routing-policy.md#when-does-via-forwarder-mode-apply)), the **standalone** bot-credit clarification draft is suppressed — it is a credit-acceptance confirmation message, which the forwarder cannot meaningfully answer. The credit *question* itself is **not** suppressed: it folds as a single best-effort *"if a human was behind the tool, please pass back their preferred attribution"* line into the Step 7 receipt-of-confirmation draft instead, per the [question-vs-confirmation distinction](../../docs/security/forwarder-routing-policy.md#negative-space--do-not-relay) in the forwarder-routing policy. The same bot-detection rule applies to the forwarder adapter's `extract_credit()` output (the detection runs on the relayed credit string, not on the forwarder's sender address); see [`tools/forwarder-relay/README.md`](../../tools/forwarder-relay/README.md) for the adapter contract. The user can override per the policy doc. |
+| **Reporter credited as** | The reporter's full display name from the email `From:` header (e.g. `Alice Example` from `"Alice Example" <alice@example.com>`). **When the body carries an explicit attribution line** — e.g. `Credit: discovered and reported by <name> of <org>`, common in ASF-security-relay forwards where the `From:` is `<security-list>` and the sender header is only a routing artefact — that line is **authoritative**: record the credited party **as written, including any affiliation** (e.g. `Jordan Lee of Horizon Security Research`, not just `Jordan Lee`). This is a **placeholder** — in direct-reporter mode, the receipt-of-confirmation reply in Step 7 asks the reporter to confirm their preferred credit form. **Apply the [bot/AI credit policy](../../tools/cve-tool-vulnogram/bot-credits-policy.md) before populating** — if the `From:`-header name or address matches the bot detection rule (`*[bot]` suffix, known-bot list, `*-bot`/`*-ai`/`*-agent`/`*-gpt` suffix patterns, `noreply`/`no-reply`/`donotreply` / `security-alerts@` / `notifications@` service sender), **include** the detected name in the field (the CVE JSON generator emits it with `type: "tool"` per the policy's finder-side rule) and surface *"credited as tool: `<name>` (matches bot policy — `<rule>`)"* in Step 5's proposal. Service-sender addresses (noreply / relays) are still suppressed from the field — they are routing artefacts, not identities; extract the real reporter from the email body instead. **In direct-reporter mode**, also fold the policy's *clarification-reply* into the Step 7 receipt-of-confirmation draft, asking whether a human behind the bot/AI handle should be **additionally** credited as finder (the tool credit stands either way). **In via-forwarder mode** (when the optional [`security-issue-import-via-forwarder`](../security-issue-import-via-forwarder/SKILL.md) sub-skill pre-classified the candidate via a registered forwarder adapter and the other cases enumerated in [`docs/security/forwarder-routing-policy.md`](../../docs/security/forwarder-routing-policy.md#when-does-via-forwarder-mode-apply)), the **standalone** bot-credit clarification draft is suppressed — it is a credit-acceptance confirmation message, which the forwarder cannot meaningfully answer. The credit *question* itself is **not** suppressed: it folds as a single best-effort *"if a human was behind the tool, please pass back their preferred attribution"* line into the Step 7 receipt-of-confirmation draft instead, per the [question-vs-confirmation distinction](../../docs/security/forwarder-routing-policy.md#negative-space--do-not-relay) in the forwarder-routing policy. The same bot-detection rule applies to the forwarder adapter's `extract_credit()` output (the detection runs on the relayed credit string, not on the forwarder's sender address); see [`tools/forwarder-relay/README.md`](../../tools/forwarder-relay/README.md) for the adapter contract. The user can override per the policy doc. |
 | **PR with the fix** | `_No response_`. |
 | **Remediation developer** | `_No response_`. Auto-populated by the `security-issue-sync` skill from the linked PR's author the first time *PR with the fix* is set; manual edits are preserved on subsequent syncs. The auto-populate step applies the same [bot/AI credit policy](../../tools/cve-tool-vulnogram/bot-credits-policy.md). |
 | **CWE** | `_No response_`. The security team scores CWE independently; a reporter-supplied CWE is informational only (per the *"Reporter-supplied CVSS scores are informational only"* rule in [`AGENTS.md`](../../AGENTS.md)). Do **not** copy a CWE from the reporter's body into this field. |
@@ -1181,7 +1197,12 @@ here.
 **Issue title**: construct a short title from the report's topic. Prefer
 the reporter's original subject if it is descriptive; otherwise
 paraphrase in the format *"<Component>: <short vulnerability
-description>"*. Strip `Re:` / `Fwd:` / `[SECURITY]` prefixes.
+description>"*. Lead with the affected component (`Webserver: …`,
+`Auth: …`, `API: …`). Strip `Re:` / `Fwd:` / `[SECURITY]`
+prefixes, and **do not prefix the product name** — write
+`Webserver: session cookie missing Secure flag`, not
+`<product> Webserver: session cookie missing Secure flag` (the tracker
+is already project-scoped).
 
 ---
 
@@ -1721,6 +1742,33 @@ For each confirmed `Report` or forwarder-relayed candidate:
      draft is skipped because the bundle covers it. Cross-link
      the consolidated draft's `<draftId>` in this tracker's
      rollup entry.
+   - `reporter_acknowledgement_model` is `none` (from the
+     observed-state bag populated in Step 0, default `manual`) —
+     skip the draft entirely. Record
+     `acknowledgement_model=none: receipt-of-confirmation draft
+     suppressed per <project-config>/security-intake-config.md
+     disclosure_governance` in this tracker's rollup entry
+     (Step 7.5 below). Surface a one-line note in the Step 8
+     recap for each suppressed candidate.
+
+   **Acknowledgement model** (when a draft is created): read
+   `reporter_acknowledgement_model` from the observed-state bag:
+
+   - **`manual` (default)**: Draft the receipt-of-confirmation
+     reply for triager review. When composing or customising the
+     canned body, substitute `window_days` (from the observed-
+     state bag, default 90) wherever the canned response
+     references the CVD deadline — e.g. "we expect to have this
+     resolved within `window_days` days".
+   - **`auto`**: Draft the same receipt, but prepend `[auto-ack]`
+     to the draft summary line and add a note in the Step 5
+     proposal: *"acknowledgement_model=auto — this is the
+     standard receipt template and may be sent without further
+     triager review per your project's security-intake-config.md
+     disclosure_governance"*. The **Never send** hard rule still
+     applies — the skill creates a draft; `[auto-ack]` is a
+     triager hint, not an auto-dispatch instruction. `window_days`
+     substitution applies as in `manual`.
 
    When a draft is created (the default path), **apply the
    reveal-before-send protocol if (and only if) the rendered
@@ -1763,7 +1811,7 @@ For each confirmed `Report` or forwarder-relayed candidate:
    Never fabricate a new subject — subject is always
    `Re: <root subject>`, even when the recipient changes.
    `ccRecipients` always includes the adopting project's `security_list`
-   (for Airflow: `<security-list>`; see
+   (see
    [`<project-config>/project.md`](../../<project-config>/project.md#gmail-and-ponymail)).
 
    **Two variants depending on how the candidate was classified:**
@@ -1932,7 +1980,17 @@ Print a short recap with:
   [`<tracker>#NNN`](https://github.com/<tracker>/issues/NNN)
   links.
 - The Gmail drafts waiting for user review, with `draftId`s.
-- Any candidates that were skipped, and why.
+- Every candidate that was **not** imported, and why. This list is
+  exhaustive — include each of: user-skipped candidates (`skip NN`),
+  candidates rejected with a canned response (state the
+  canned-response name in the reason, e.g. *"rejected with canned
+  response: When someone reports a DoS that requires authenticated
+  access"*), and candidates dropped by the dedup filter because they
+  are already tracked (cite the existing tracker, **preserving its
+  full `owner/repo#NNN` form** as supplied, e.g. *"already tracked as
+  example-s/example-s#198"*, not a bare *"#198"*). Do not omit
+  dedup-filtered candidates — being
+  already tracked is a skip reason, not a silent drop.
 - A reminder of the next step per [`README.md`](../../README.md):
   *"Step 2: the triager starts the validity discussion on the newly
   created tracker, tagging at least one other security-team member."*

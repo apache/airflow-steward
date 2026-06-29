@@ -4,6 +4,7 @@
 
 - [What is Apache Magpie?](#what-is-apache-magpie)
   - [How it works](#how-it-works)
+  - [Need help with one of these? Adopt a family of skills](#need-help-with-one-of-these-adopt-a-family-of-skills)
   - [Who is this for?](#who-is-this-for)
     - [Maintainers wanting to adopt Magpie in their project](#maintainers-wanting-to-adopt-magpie-in-their-project)
     - [Security team members](#security-team-members)
@@ -31,13 +32,39 @@ Five **modes** describe what the agent can do, from low-risk to high:
 
 | Mode | What it does | Status |
 |---|---|---|
-| **Triage** | Classify issues/PRs, spot duplicates, propose labels | Stable |
-| **Mentoring** | Help contributors with conventions, point to examples | Experimental |
-| **Drafting** | Write a code fix or a PR for you to review | Stable (security) |
-| **Pairing** | Self-review your own code before submitting | Experimental |
-| **Auto-merge** | Merge trivial changes without human review | Off (deliberately) |
+| **Agentic Triage** | Classify issues/PRs, spot duplicates, propose labels | Stable |
+| **Agentic Mentoring** | Help contributors with conventions, point to examples | Experimental |
+| **Agentic Drafting** | Write a code fix or a PR for you to review | Stable (security) |
+| **Agentic Pairing** | Self-review your own code before submitting | Experimental |
+| **Agentic Autonomous** | Merge trivial changes without human review | Off (deliberately) |
 
-Each project picks the modes that fit. You can run just Triage and nothing else.
+Each project picks the modes that fit. You can run just Agentic Triage and nothing else.
+
+---
+
+## Need help with one of these? Adopt a family of skills
+
+Magpie's skills ship in **families**. You don't adopt all of them — you pick the ones that match a problem you actually have today. Each family page explains what it does, which skills it includes, and how to turn it on.
+
+Most families work on **any** project, inside or outside the Apache Software
+Foundation. The ones marked **🪶 ASF-specific** encode Foundation processes —
+the release lifecycle and the contributor-to-committer path — and assume an ASF
+adopter profile by default; a non-ASF project can still adopt them through the
+adapter/config layer, but they carry ASF assumptions the generic families do not.
+
+| If you're dealing with… | Adopt the family | Scope |
+|---|---|---|
+| Setting up agents safely — sandbox, clean environment, privacy routing | [setup](setup/README.md) | Any project |
+| Security reports that need careful, audited handling | [security](security/README.md) | Any project |
+| A pull-request queue that's out of control | [pr-management](pr-management/README.md) | Any project |
+| An issue backlog full of duplicates and stale reports | [issue-management](issue-management/README.md) | Any project |
+| Repo hygiene slipping — CI runners, dependencies, licenses, flaky tests | [repo-health](repo-health/README.md) | Any project |
+| Releases that are a manual, error-prone slog | [release-management](release-management/README.md) | 🪶 ASF-specific |
+| New contributors getting stuck and drifting away | [mentoring](mentoring/README.md) | Any project |
+| Growing contributors into committers | [contributor-growth](contributor-growth/README.md) | 🪶 ASF-specific |
+| Building or maintaining your own skills | [utilities](utilities/README.md) | Any project |
+
+Start with [`setup`](setup/README.md) regardless — it is the prerequisite every adopter installs first — then add the families above as you need them.
 
 ---
 
@@ -80,10 +107,10 @@ from mailing lists, slack etc.
 ## Key concepts in 60 seconds
 
 - **Skill** — A markdown file describing one workflow (e.g., "triage a PR"). The agent reads it and follows the steps.
-- **Mode** — A risk level (Triage → Mentoring → Drafting → Pairing → Auto-merge). Projects opt in per-mode.
+- **Mode** — A risk level (Agentic Triage → Agentic Mentoring → Agentic Drafting → Agentic Pairing → Agentic Autonomous). Projects opt in per-mode.
 - **Adopter config** — Your project-specific settings (mailing lists, label schemes, canned responses) in a `<project-config>/` directory.
 - **Sandbox** — The agent runs in a locked-down environment. It can't read your credentials, can't access the network freely, and can't push code.
-- **Human-in-the-loop** — Every action visible to others requires explicit maintainer confirmation. No exceptions until Auto-merge (which is off).
+- **Human-in-the-loop** — Every action visible to others requires explicit maintainer confirmation. No exceptions until Agentic Autonomous (which is off).
 
 ---
 
@@ -92,6 +119,7 @@ from mailing lists, slack etc.
 | I want to… | Read… |
 |---|---|
 | Understand the full vision | [MISSION.md](../MISSION.md) |
+| Understand how it stays vendor-neutral | [vendor-neutrality.md](vendor-neutrality.md) |
 | See what skills exist today | [modes.md](modes.md) |
 | Adopt in my project | [README → Adopting](../README.md#adopting-the-framework) |
 | Set up the secure agent sandbox | [setup/](setup/README.md) |

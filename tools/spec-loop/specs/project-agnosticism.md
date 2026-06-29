@@ -59,16 +59,35 @@ The three mechanisms, in order of preference:
   `projects/_template/`.
 - The backend-flag precedent: `docs/release-management/README.md`
   (§ adopter backends) and `projects/_template/release-management-config.md`.
+- The per-family **`organization:` scope** (formerly the binary
+  `asf: true` / `asf: false` flag), declared in each family's scope banner
+  at the top of `docs/<family>/README.md` and surfaced in the **Scope**
+  column of the family tables in [`README.md`](../../../README.md#skill-families)
+  and [`docs/index.md`](../../../docs/index.md#need-help-with-one-of-these-adopt-a-family-of-skills).
+  An organization-scoped family declares `organization: <org>` (naming a
+  directory under [`organizations/`](../../../organizations/)); an
+  organization-agnostic family declares no scope key at all. Only
+  **release-management** and **contributor-growth** carry
+  `organization: ASF`: their *core purpose* is an ASF Foundation process
+  (the release lifecycle, the contributor-to-committer path). This is a
+  narrower lens than the residual-coupling audit list below — a family can
+  be agnostic (no `organization:`, runs anywhere) and still carry
+  ASF-flavoured *defaults* that the coupling audit tracks (security is the
+  clearest case; those defaults now live in `organizations/ASF/`).
+  Skills, tools, and tool adapters declare the same membership — see
+  [`organizations/README.md` § Membership](../../../organizations/README.md#membership--what-can-belong-to-an-organization).
 - The skills carrying residual ASF coupling to audit, by family:
-  - **security**: `security@`-style intake and the ASF security-team
-    relay (`security-issue-import-via-forwarder`), CVE allocation assuming
-    an ASF CNA (`security-cve-allocate`), Vulnogram as the CVE tool.
-  - **contributor / committer growth**: `committer-onboarding`
-    (ICLA gate, PMC vote semantics, `dev@` announce),
+  - **security** (agnostic): generic at its core, but ships an
+    ASF-flavoured default profile — `security@`-style intake and the ASF
+    security-team relay (`security-issue-import-via-forwarder`), CVE
+    allocation assuming an ASF CNA (`security-cve-allocate`), Vulnogram as
+    the CVE tool — all swappable for GHSA / MITRE-CNA via the config layer.
+  - **contributor / committer growth** (`organization: ASF`):
+    `committer-onboarding` (ICLA gate, PMC vote semantics, `dev@` announce),
     `contributor-nomination` (committer-vs-PMC roster framing).
-  - **release-management** (proposed): the whole ASF release ritual,
-    already designed with backend flags; the audit confirms the non-ASF
-    paths stay first-class as the skills land.
+  - **release-management** (`organization: ASF`): the whole ASF release
+    ritual, already designed with backend flags; the audit confirms the
+    non-ASF paths stay first-class as the skills land.
   - any skill whose prose names `apache.org` lists, `svn` dist trees,
     `incubator`, or ASF-only governance steps without a flag.
 
@@ -131,10 +150,13 @@ uv run --project tools/skill-and-tool-validator --group dev skill-and-tool-valid
   generalisation (mostly bare `PMC` and a few `announce@apache.org` /
   `dist/dev/` hits); a human judges which warrant a placeholder or
   capability-flag change.  No remaining tooling gap — the lint exists.
-- **No non-ASF adopter profile fixture exists** to run the catalogue
-  against. A `projects/_template` non-ASF profile plus a smoke eval that
-  drives a representative skill through it would turn acceptance #3 into a
-  measurable gate.
+- **Non-ASF adopter profile fixture shipped** — `projects/non-asf-example/`
+  contains a worked non-ASF profile (Velox Stream: GitHub-hosted, DCO,
+  GHSA intake, MITRE CNA, GitHub Releases). The
+  `tools/skill-evals/evals/non-asf-profile-smoke/` eval suite (6 cases
+  across 2 steps) drives `issue-stale-sweep` through it and asserts the
+  skill proceeds without any Apache-specific fields, turning acceptance #3
+  into a measurable gate.
 - **The capability-flag vocabulary for security intake and CVE allocation
   is now documented** in
   `projects/_template/security-intake-config.md` (intake channel,

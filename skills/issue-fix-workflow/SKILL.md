@@ -219,6 +219,19 @@ opened (still gated by an explicit confirmation step).
 
 ---
 
+## Source control
+
+The `git …` invocations in this skill are the **Git binding** of the
+framework's source-control capability
+([`tools/github/source-control.md`](../../tools/github/source-control.md)),
+operating on the project's `<upstream>` working copy. If the project's
+manifest enables a non-Git VCS under *Tools enabled → Source control*,
+substitute that tool's binding for the same abstract operations
+(working-tree status, branch, stage, commit, diff, push); the skill
+logic is unchanged.
+
+---
+
 ## Step 0 — Pre-flight check
 
 1. **Issue exists and is triaged.** Fetch from `<issue-tracker>`;

@@ -34,6 +34,23 @@ Suites are currently implemented for:
 - **committer-onboarding** — 20 cases across 4 steps (step-0-validate-vote, step-1-icla-comms, step-2-checklist, step-3-completion-summary)
 - **ci-runner-audit** — 6 cases across 2 steps (step-scope-selection, step-reporting)
 - **setup-status** — 14 cases across 4 steps (step-0-preflight, step-1-command, step-2-present, step-3-adjust-decision)
+- **non-asf-profile-smoke** — 6 cases across 2 steps (step-1-fetch-pool, step-3-classify); drives `issue-stale-sweep` through the `projects/non-asf-example/` fixture to verify non-ASF config resolves without skill-body edits
+
+## Prerequisites
+
+- **Runtime:** Python 3.11+ (stdlib only) — the runner is pure standard
+  library with no third-party deps and no build step; run it directly
+  with `python3` and `PYTHONPATH=tools/skill-evals/src`.
+- **CLIs:** None for the default print mode. Automated mode (`--cli`)
+  needs an LLM CLI that reads a prompt on stdin and writes the response
+  to stdout (e.g. `claude -p`, `llm`, `ollama run …`). Field-aware
+  grading adds a judge CLI (default `claude -p --model haiku`).
+- **Credentials / auth:** None in print mode; in `--cli` mode whatever
+  the chosen model CLI requires (e.g. a Claude / API key, or a local
+  Ollama install).
+- **Network:** Evals mock all external tool calls, so the harness itself
+  makes no network calls; any network use comes from the model CLI you
+  point `--cli` / `--grader-cli` at.
 
 ## Run
 
@@ -80,10 +97,12 @@ PYTHONPATH=tools/skill-evals/src python3 -m skill_evals.runner --cli "llm -m gpt
 PYTHONPATH=tools/skill-evals/src python3 -m skill_evals.runner --cli "claude -p" --verbose \
     tools/skill-evals/evals/issue-triage/step-3-classify/fixtures/case-1-clear-bug
 
-# Run only cases tagged as useful smoke tests for local llama3.1:8b.
-PYTHONPATH=tools/skill-evals/src python3 -m skill_evals.runner --tag llama \
-    --cli "ollama run llama3.1:8b --nowordwrap --format json" \
+# Run only cases tagged as useful smoke tests for a local model.
+# Either supported local target works; swap the --cli model as you like.
+PYTHONPATH=tools/skill-evals/src python3 -m skill_evals.runner --tag local-smoke \
+    --cli "ollama run qwen3.5:9b --nowordwrap --format json" \
     tools/skill-evals/evals/
+# (or --cli "ollama run llama3.1:8b --nowordwrap --format json")
 ```
 
 **JSON extraction** tries three strategies in order: parse the whole
@@ -192,14 +211,40 @@ Cases can opt into runner filters with a `case-meta.json` file next to
 
 ```json
 {
-  "tags": ["llama", "smoke"]
+  "tags": ["local-smoke", "smoke"]
 }
 ```
 
 Use `--tag <name>` to run only matching cases. Tags are intentionally
-conservative: for example, `llama` means the case is known to be useful
-as a local `llama3.1:8b` smoke signal, not that the whole suite is
-expected to pass on that model.
+conservative: for example, `local-smoke` means the case is known to be
+useful as a **local-model** smoke signal, not that the whole suite is
+expected to pass on a small local model. The tag is deliberately
+model-neutral: it names the purpose, not a specific model, so swapping
+the local target later is a one-line `--cli` change, not a repo-wide
+re-tag.
+
+#### Supported local models
+
+Two local targets are supported for the `local-smoke` set; either can run
+it, and you pick the `--cli` model per run:
+
+| Model | Ollama tag | License | Notes |
+|---|---|---|---|
+| Qwen3.5 9B | `qwen3.5:9b` | **Apache-2.0** | Recommended for ASF adopters: the license matches the framework's open / vendor-neutral posture. ~6.6 GB (Q4_K_M). |
+| Llama 3.1 8B | `llama3.1:8b` | Llama Community License (not an OSI/open license) | The historical reference target the current `local-smoke` set was first baselined against. ~4.7 GB. |
+
+`local-smoke` marks cases that pass on a local model. `qwen3.5:9b` and
+`llama3.1:8b` are interchangeable targets; pick one per run with `--cli`.
+Pin temperature for reproducibility, the runner sets none, so model
+defaults (llama ~0.8, qwen ~1.0) make single runs stochastic. Run the set
+against whichever you have installed:
+
+```bash
+PYTHONPATH=tools/skill-evals/src python3 -m skill_evals.runner --tag local-smoke \
+    --cli "ollama run qwen3.5:9b --nowordwrap --format json" \
+    tools/skill-evals/evals/
+# or: --cli "ollama run llama3.1:8b --nowordwrap --format json"
+```
 
 ## Structure
 
@@ -216,7 +261,7 @@ evals/
         case-N-<name>/
           report.md               # mock tool call outputs for this case
           expected.json           # ground-truth JSON the model should produce
-          case-meta.json           # optional runner tags, e.g. {"tags":["llama"]}
+          case-meta.json           # optional runner tags, e.g. {"tags":["local-smoke"]}
 ```
 
 The runner resolves the system prompt in order: `step-config.json` → `system-prompt.md` → error. When `step-config.json` is present the system prompt is assembled at run time by extracting the relevant section directly from the skill's `SKILL.md` and appending `output-spec.md`. This means a change to `SKILL.md` is immediately reflected in the prompt — if the change would cause the model to produce different output, the test fails.

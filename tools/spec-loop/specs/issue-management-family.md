@@ -23,7 +23,7 @@ acceptance:
   - issue-backlog-stats and issue-reassess-stats are strictly read-only;
     no tracker state is mutated.
   - All family skills validate under skill-and-tool-validate with no errors.
-  - docs/modes.md Triage and Drafting tables carry each shipped
+  - docs/modes.md Agentic Triage and Agentic Drafting tables carry each shipped
     issue-management skill.
 ---
 
@@ -39,7 +39,7 @@ tracker.
 
 The canonical lifecycle a maintainer walks:
 
-1. **Triage** a candidate pool of open issues → classification + disposition.
+1. **Agentic Triage** a candidate pool of open issues → classification + disposition.
 2. **Reproduce** a code-level bug to confirm it → structured verdict.
 3. **Draft a fix** for a triaged confirmed bug or feature → branch +
    commits + test results for human review and push.
@@ -120,7 +120,7 @@ and a consistent propose-before-act discipline.
 
 ## Behaviour & contract
 
-- **Read-only or propose-then-confirm.** Triage-mode skills never write
+- **Read-only or propose-then-confirm.** Agentic Triage-mode skills never write
   a label, comment, or state change without the maintainer typing a
   confirmation. The single exception class — dashboard skills
   (`issue-backlog-stats`, `issue-reassess-stats`) — is unconditionally
@@ -192,11 +192,6 @@ uv run --project tools/skill-and-tool-validator --group dev skill-and-tool-valid
 
 ## Known gaps
 
-- **`docs/issue-management/README.md` is out of date.** The family README
-  on `main` lists six skills; `issue-backlog-stats` (#535) and
-  `issue-deduplicate` (#532) landed on `main` after the README was last
-  synced. A follow-on docs-sync item should add them to the skills table
-  and adopter-contract matrix.
 - **No adopter pilot has run the full family.** All eight skills are
   `experimental`; no maintainer has exercised the triage → reproduce →
   fix-draft → stale-sweep → deduplicate → dashboard pipeline end-to-end.
@@ -211,6 +206,6 @@ uv run --project tools/skill-and-tool-validator --group dev skill-and-tool-valid
   fixes exceed the skill's scope and must be handed back to a human-led
   workflow. This boundary is intentional, not a tooling gap, but adopters
   should be aware of it.
-- **`docs/modes.md` Triage table may not reflect newer skills.**
+- **`docs/modes.md` Agentic Triage table may not reflect newer skills.**
   `issue-backlog-stats` and `issue-deduplicate` may not yet appear in the
-  `docs/modes.md` Triage table; a docs-sync PR should verify and add them.
+  `docs/modes.md` Agentic Triage table; a docs-sync PR should verify and add them.

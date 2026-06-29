@@ -95,7 +95,12 @@ hygiene"*](../issue-reproducer/runtime-recipes.md#working-tree-hygiene),
 the reproducer resets the working tree on its way out. The campaign
 shouldn't need to do anything extra here, but it should **verify**
 the reset happened before moving on (`git status` clean) —
-campaign-scale drift from working-tree leak is hard to debug.
+campaign-scale drift from working-tree leak is hard to debug. (The
+`git status` check is the **Git binding** of the framework's
+source-control capability
+([`tools/github/source-control.md`](../../tools/github/source-control.md));
+a project on a non-Git VCS enabled under *Tools enabled → Source
+control* substitutes that tool's working-tree-status binding.)
 
 ## Bulk-mode subagent fanout
 

@@ -2,7 +2,7 @@
      https://www.apache.org/licenses/LICENSE-2.0 -->
 
 ---
-title: Mentoring mode
+title: Agentic Mentoring mode
 status: experimental
 kind: feature
 mode: Mentoring
@@ -14,7 +14,7 @@ source: >
   onboarding latency as one of the two loudest ecosystem complaints;
   authoring newcomer-ready good first issues targets it directly.
 acceptance:
-  - The Mentoring spec (tone guide, hand-off protocol, adopter knobs) is
+  - The Agentic Mentoring spec (tone guide, hand-off protocol, adopter knobs) is
     reviewable independently of any runtime skill (it already is).
   - The first skill ships flagged mode Mentoring + experimental and joins
     threads in a teaching register, never gatekeeps.
@@ -27,7 +27,7 @@ acceptance:
     skips repeat contributors.
 ---
 
-# Mentoring mode
+# Agentic Mentoring mode
 
 ## What it does
 
@@ -90,7 +90,7 @@ a project can offer a first-time contributor.
 
 ## Out of scope
 
-- Implementation-detail review that belongs to Pairing
+- Implementation-detail review that belongs to Agentic Pairing
   ([Pairing](pairing-mode.md)).
 - Any contributor-facing message sent without human review.
 - Curating or bulk-labeling the *existing* backlog as good first issues:
@@ -99,8 +99,8 @@ a project can offer a first-time contributor.
 
 ## Acceptance criteria
 
-1. The Mentoring spec is reviewable without any skill code (it is).
-2. The first Mentoring skill validates and carries `mode: Mentoring`.
+1. The Agentic Mentoring spec is reviewable without any skill code (it is).
+2. The first Agentic Mentoring skill validates and carries `mode: Mentoring`.
 3. Hand-off-to-human is documented and enforced.
 4. The `good-first-issue-author` skill validates, carries
    `mode: Mentoring`, and produces a single newcomer-ready issue draft
@@ -123,10 +123,11 @@ uv run --project tools/skill-evals skill-eval tools/skill-evals/evals/mentoring-
 - **The family now covers the newcomer journey end to end.**
   `pr-management-mentor`, `good-first-issue-author`, `mentoring-welcome`
   (first-contribution welcome / orientation), and `contributor-to-committer`
-  (readiness path tracker) all ship. The two newcomer-facing capabilities
-  this spec previously flagged as undesigned are both built; the open
-  item that remains is the backlog-curation counterpart noted above
-  (relabeling the existing backlog as good-first-issue candidates).
+  (readiness path tracker) all ship. `docs/mentoring/README.md` reflects all
+  four shipped skills. The two newcomer-facing capabilities this spec
+  previously flagged as undesigned are both built; the open item that remains
+  is the backlog-curation counterpart noted above (relabeling the existing
+  backlog as good-first-issue candidates).
 - **`experimental` — no adopter pilot has run.** All four shipped skills
   (`pr-management-mentor`, `good-first-issue-author`, `mentoring-welcome`)
   and `contributor-to-committer` may change shape as adopter pilots and
