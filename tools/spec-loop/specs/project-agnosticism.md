@@ -108,6 +108,11 @@ The three mechanisms, in order of preference:
 - **Advisory, not paternalistic.** The audit surfaces candidate coupling
   for a maintainer to judge; some ASF strings are legitimate (examples,
   the ASF default profile, ASF-specific docs). It does not auto-rewrite.
+- **Template and example profiles stay comparable.** `projects/_template/`
+  is the adopter contract; `projects/non-asf-example/` is the proof that
+  a non-ASF adopter can satisfy that contract. Required files and config
+  keys should be structurally comparable, with omissions explained rather
+  than silently drifting.
 
 ## Out of scope
 
@@ -129,6 +134,9 @@ The three mechanisms, in order of preference:
    `<project-config>` flag, not on skill edits.
 3. The ASF profile runs the catalogue unchanged (default-valued flags),
    and a non-ASF profile can be declared without editing any skill body.
+4. The template profile and non-ASF example expose the same required
+   config surfaces, except where the example documents an intentional
+   omission or an organization-inherited default.
 
 ## Validation
 
@@ -173,3 +181,8 @@ uv run --project tools/skill-and-tool-validator --group dev skill-and-tool-valid
   catalogue (bare `PMC`, `ICLA`, `announce@apache.org`) is surfaced by the
   advisory lint (check #10 in `skill-and-tool-validator`) for human
   judgement.
+- **Template/profile drift is not mechanically checked.** The non-ASF
+  example is now a real smoke fixture, but no validator compares its file
+  and key surface against `projects/_template/`. A drift check should
+  catch missing required files, stale documented keys, and hidden
+  organization-default assumptions.

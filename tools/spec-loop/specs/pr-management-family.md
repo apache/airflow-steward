@@ -137,6 +137,9 @@ is listed here for navigability since its domain is PR threads.
 4. `pr-management-stats` emits read-only tables without mutating any
    tracker or PR state.
 5. All family skills pass `skill-and-tool-validate` with no errors.
+6. `pr-management-code-review` has a dedicated eval suite covering
+   selector resolution, review-risk classification, AI-generated-code
+   signals, prompt injection in PR content, and the final review handoff.
 
 ## Validation
 
@@ -161,9 +164,10 @@ uv run --project tools/skill-and-tool-validator --group dev skill-and-tool-valid
   code-review skill ships without a matching suite in
   `tools/skill-evals/evals/pr-management-code-review/`; the SOFT
   eval-coverage check in `skill-and-tool-validator` flags this. Adding a
-  step-level fixture set (at minimum an adversarial prompt-injection case
-  and a typical APPROVE output) is the next concrete quality improvement
-  for this family.
+  step-level fixture set is the next concrete quality improvement for
+  this family. Minimum coverage: selector resolution, review-risk
+  classification, AI-generated-code signal handling, prompt injection in
+  PR body/comments, and a typical APPROVE / REQUEST_CHANGES handoff.
 - **Stale-PR handling is built into `pr-management-triage`.** Dedicated
   stale sweeps (`stale-draft`, `inactive-open`, `stale-review-ping`) run
   as Step 5 of the triage flow and can be invoked standalone via

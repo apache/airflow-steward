@@ -73,6 +73,10 @@ identical "ASF default" values in its own `project.md`.
 - The `organizations/ASF/organization.md` keys mirror the namespaces of
   the project manifest's *Security workflow configuration* section so
   resolution is mechanical.
+- Organization smoke coverage should exercise more than one family. At
+  minimum, a non-ASF profile must be able to drive security intake
+  backend selection, release backend selection, and contributor-governance
+  defaults without editing skill bodies.
 
 ## Out of scope
 
@@ -94,6 +98,8 @@ identical "ASF default" values in its own `project.md`.
   first hit wins; no skill branches on the organization.
 - A new organization can be authored from `organizations/_template/` with
   no skill edits.
+- Smoke fixtures cover security intake, release backend, and contributor
+  governance defaults for at least one non-ASF profile.
 
 ## Validation
 
@@ -121,3 +127,7 @@ resolves to the baseline.
   convention).
 - The family-level `organization:` scope (replacing `asf: true/false`)
   and the external-adapter discovery index are separate follow-ups.
+- **Smoke coverage is narrow.** The non-ASF profile smoke currently proves
+  one path. The next coverage pass should exercise security intake,
+  release backend selection, and contributor governance so organization
+  defaults are tested across the surfaces most likely to drift.
