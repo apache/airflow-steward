@@ -1,5 +1,6 @@
 ---
 name: magpie-release-archive-sweep
+organization: ASF
 mode: Triage
 description: |
   Scan `dist/release/<project>/` (or the configured distribution location),

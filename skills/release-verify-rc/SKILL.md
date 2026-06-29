@@ -1,5 +1,6 @@
 ---
 name: magpie-release-verify-rc
+organization: ASF
 mode: Triage
 description: |
   Read-only pre-flight verification of a staged release candidate (RC)

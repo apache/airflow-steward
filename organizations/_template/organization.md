@@ -3,6 +3,7 @@
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
 - [TODO: `<Organization Name>` — organization](#todo-organization-name--organization)
+  - [Organization identity](#organization-identity)
   - [Governance vocabulary](#governance-vocabulary)
   - [Capability-to-backend bundle](#capability-to-backend-bundle)
 
@@ -25,6 +26,19 @@ Any key you omit falls through to the framework default. Start from
 (the generic baseline) and change only what your organization mandates;
 [`organizations/ASF/organization.md`](../ASF/organization.md) is a fully
 worked example.
+
+## Organization identity
+
+Brand / display metadata used by the website. `logo` is the asset the
+site renders for projects under this organization.
+
+```yaml
+organization_identity:
+  id: <org>                            # must match this directory's name
+  name: "<Organization full name>"     # longer than the id; shown on the website
+  url: <homepage URL>
+  logo: <URL or path to the organization's logo, shown on the website>
+```
 
 ## Governance vocabulary
 

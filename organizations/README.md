@@ -3,6 +3,7 @@
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
 - [Organizations](#organizations)
+  - [Membership — what can belong to an organization](#membership--what-can-belong-to-an-organization)
   - [Why this exists](#why-this-exists)
   - [Resolution order](#resolution-order)
   - [What ships here](#what-ships-here)
@@ -19,8 +20,10 @@ An **organization** in Magpie groups everything a governing body — a
 foundation, a company, or an informal maintainer collective — makes
 *default* for the projects that belong to it:
 
+- its **identity** (`organization_identity`: `id`, full `name`, `url`,
+  and `logo`) — the brand the website renders for projects under it;
 - its **governance vocabulary** (what the governing body is called, how
-  contributors are admitted, the project-lifecycle stages), and
+  contributors are admitted, the project-lifecycle stages); and
 - its **default backend selections + infrastructure values** — which
   tool [adapter](../docs/vendor-neutrality.md#tool-adapters) fulfils each
   capability (CVE authority, mail archive, project metadata, …) and the
@@ -31,6 +34,24 @@ It is the layer between a single project's
 defaults. A project names its organization once
 (`organization: <org>` in `<project-config>/project.md`) and inherits
 the rest.
+
+## Membership — what can belong to an organization
+
+Beyond a *project*, four framework entities can declare that they
+**belong to** an organization (and so assume its stack); the value names
+a directory here, and absence means organization-agnostic:
+
+| Entity | How it declares membership |
+|---|---|
+| **Skill** | `organization:` key in the `SKILL.md` frontmatter |
+| **Skill family** | `organization:` scope banner in `docs/<family>/README.md` |
+| **Tool** | `**Organization:** <org>` line in the tool `README.md` |
+| **Tool adapter** | same as a tool — the adapter directory's README |
+
+For example the ASF release-management and contributor-growth families,
+their skills, and the `cve-tool-vulnogram` / `ponymail` /
+`apache-projects` tools all declare `organization: ASF`. The validator
+rejects a declared organization that has no directory here.
 
 ## Why this exists
 

@@ -1,5 +1,6 @@
 ---
 name: magpie-release-promote
+organization: ASF
 mode: Drafting
 description: |
   Emit the backend-shaped promotion command set for a release that has

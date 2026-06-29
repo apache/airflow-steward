@@ -1,5 +1,6 @@
 ---
 name: magpie-release-vote-draft
+organization: ASF
 mode: Drafting
 description: |
   Draft the `[VOTE]` email body and planning-issue comment for an

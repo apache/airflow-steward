@@ -14,6 +14,8 @@
 
 **Capability:** capability:setup + capability:intake
 
+**Organization:** ASF
+
 PonyMail archive substrate. Read-only ASF mailing-list archive client; complements `gmail` for threads not present in the inbox. Used by security-issue-import + sync to cross-reference public mailing-list discussions. See [`tool.md`](tool.md) for the operation catalogue and [`operations.md`](operations.md) for usage.
 
 ## Prerequisites

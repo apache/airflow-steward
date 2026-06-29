@@ -511,6 +511,14 @@ Read that page once; treat it as the source of truth.
 - **New docs** link to the taxonomy doc and name their capability in the
   first paragraph if capability-specific; cross-cutting docs need no
   marker.
+- **Organization membership (optional).** A skill, skill family, tool, or
+  tool adapter that *belongs to* a specific organization declares it:
+  skills via an `organization:` frontmatter key, families via the
+  `organization:` scope banner in `docs/<family>/README.md`, and tools
+  via an `**Organization:** <org>` line in the README. The value must
+  name an organization under [`organizations/`](organizations/); omit it
+  for organization-agnostic entities. The validator fails on an unknown
+  organization value.
 
 The taxonomy applies to *this framework repository*. Skills that create
 issues or PRs on an **adopter's tracker** (e.g. `security-issue-import`,

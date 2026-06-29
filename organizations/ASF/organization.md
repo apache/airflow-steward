@@ -3,6 +3,7 @@
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
 - [Apache Software Foundation — organization](#apache-software-foundation--organization)
+  - [Organization identity](#organization-identity)
   - [Governance vocabulary](#governance-vocabulary)
   - [CVE authority](#cve-authority)
   - [Governance gate](#governance-gate)
@@ -45,6 +46,20 @@ backends are [`tools/cve-tool-vulnogram/`](../../tools/cve-tool-vulnogram/),
 [`tools/apache-projects/`](../../tools/apache-projects/), and the
 ASF-security forwarder shape in
 [`tools/gmail/asf-relay.md`](../../tools/gmail/asf-relay.md).
+
+## Organization identity
+
+Brand / display metadata, surfaced by the website (and any skill that
+shows which organization a project belongs to). `logo` is the asset the
+site renders for projects under this organization.
+
+```yaml
+organization_identity:
+  id: ASF                              # matches the organizations/<id>/ dir name
+  name: "Apache Software Foundation"   # full name, longer than the id; shown on the website
+  url: https://www.apache.org/
+  logo: https://www.apache.org/foundation/press/kit/asf_logo.svg
+```
 
 ## Governance vocabulary
 

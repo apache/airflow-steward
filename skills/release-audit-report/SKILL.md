@@ -1,5 +1,6 @@
 ---
 name: magpie-release-audit-report
+organization: ASF
 mode: Triage
 description: |
   Assemble a per-release audit record from the planning issue, vote thread,

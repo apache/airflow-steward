@@ -1,5 +1,6 @@
 ---
 name: magpie-release-keys-sync
+organization: ASF
 mode: Drafting
 description: |
   Draft the diff that adds the Release Manager's public key to the

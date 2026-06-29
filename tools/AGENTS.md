@@ -62,11 +62,29 @@ declares, up front:
    A pure interface-spec tool (an adapter *contract* with no executable
    code) says so and defers concrete prerequisites to its adapters.
 
-Both are **HARD** checks in
+3. **(Optional) its organization** — when a tool *belongs to* a specific
+   organization (it is the backend/adapter for that org's stack, e.g.
+   the ASF Vulnogram / PonyMail / apache-projects tools), add a line of
+   the exact form
+
+   ```markdown
+   **Organization:** ASF
+   ```
+
+   The value must name an organization under
+   [`organizations/`](../organizations/) (e.g. `ASF`). Omit the line for
+   organization-agnostic tools — absence means "belongs to no specific
+   organization". Skills declare the same membership with an
+   `organization:` frontmatter key; skill families with an
+   `organization:` scope banner in `docs/<family>/README.md`.
+
+The capability and prerequisites are **HARD** checks in
 [`tools/skill-and-tool-validator`](skill-and-tool-validator/) — a tool
 README missing either the `**Capability:**` line or the
 `## Prerequisites` section fails `skill-and-tool-validate` (and the
-`prek` / pre-commit hook that runs it).
+`prek` / pre-commit hook that runs it). The optional `**Organization:**`
+line, when present, must name a known organization or the validator
+fails the run.
 
 ## Refresh the cross-references when tools change
 
