@@ -503,6 +503,8 @@ idempotent — re-add them if they're missing.
 /.apache-magpie/
 /.apache-magpie.local.lock
 /.claude/settings.local.json
+/.claude/hooks/agent-guard.py
+/.claude/hooks/guards.d/
 __pycache__/
 *.pyc
 ```
@@ -513,6 +515,24 @@ scripts emit when run from the adopter checkout (e.g.
 [`setup-status/scripts/collect_status.py`](../setup-status/scripts/collect_status.py))
 out of the tree. Most adopters already carry these from a stock
 Python `.gitignore`; the adopt flow adds them if missing.
+
+The `/.claude/hooks/agent-guard.py` and `/.claude/hooks/guards.d/`
+lines keep the deterministic `PreToolUse` guard **gitignored** —
+it is framework code synced from the snapshot
+([Step 12 pass 1](#step-12--post-install-sync--worktree-propagation--sandbox-allowlist--sanity-check)),
+not an adopter artefact, so it is regenerated on `/magpie-setup`
+rather than committed (the same rule that keeps the snapshot and
+the framework-skill symlinks out of git — the only committed
+framework artefact is `magpie-setup`). The committed
+`.claude/settings.json` still references it; the **wiring** is
+committed, the **script** is not. Because the script is gitignored,
+**no** worktree inherits it via git — every worktree is seeded from
+the main checkout by the post-checkout hook
+([Step 10](#step-10--worktree-aware-post-checkout-hook-fresh-only))
+or by [`worktree-init` Step 1d](worktree-init.md#step-1d--seed-the-worktrees-agent-guard-pretooluse-hook).
+An adopter who keeps their own non-framework guards under
+`.claude/hooks/guards.d/` and wants them tracked should commit them
+with `git add -f` (the directory is ignored by default).
 
 **Symlink entries — one uniform block per active target
 ([`agents.md`](agents.md)), no per-layout variation.** Every
@@ -902,15 +922,36 @@ are handled — both are read-only and scoped.
 
 ## Step 10 — Worktree-aware post-checkout hook (FRESH only)
 
-Install `<repo-root>/.git/hooks/post-checkout` that chains into
-the sandbox-allowlist helper installed by
-`setup-isolated-setup-install`, so the new worktree's working
-directory is added to the worktree's own
-`.claude/settings.local.json`'s `sandbox.filesystem.allowRead` /
-`allowWrite` (defensive against
-[issue #197](https://github.com/apache/magpie/issues/197)
-— see
-[`setup-isolated-setup-install/SKILL.md` → Step P](../setup-isolated-setup-install/SKILL.md#step-p--project-root-coverage-in-the-sandbox-allowlists)).
+Install `<repo-root>/.git/hooks/post-checkout` — a best-effort
+per-worktree reconciler that fires on `git checkout` and on
+`git worktree add`. It carries **two** responsibilities, each
+guarded independently so neither can gate the git operation:
+
+1. **Sandbox allowlist.** Chain into the sandbox-allowlist helper
+   installed by `setup-isolated-setup-install`, so the new
+   worktree's working directory is added to the worktree's own
+   `.claude/settings.local.json`'s `sandbox.filesystem.allowRead` /
+   `allowWrite` (defensive against
+   [issue #197](https://github.com/apache/magpie/issues/197)
+   — see
+   [`setup-isolated-setup-install/SKILL.md` → Step P](../setup-isolated-setup-install/SKILL.md#step-p--project-root-coverage-in-the-sandbox-allowlists)).
+
+2. **agent-guard seeding.** The committed `.claude/settings.json`
+   wires the deterministic `PreToolUse` guard
+   ([`tools/agent-guard`](../../tools/agent-guard/README.md)) at
+   `$CLAUDE_PROJECT_DIR/.claude/hooks/agent-guard.py` — a
+   **per-worktree** path. The script + its `guards.d/` are
+   adopter-installed local files synced into the **main** checkout
+   by [Step 12 pass 1](#step-12--post-install-sync--worktree-propagation--sandbox-allowlist--sanity-check)
+   and **gitignored** ([Step 7](#step-7--gitignore-entries-fresh-only)).
+   Because they are gitignored, **no** worktree inherits them via
+   `git worktree add` — every freshly-created worktree starts
+   without the script and would run with the guard **silently
+   inactive**. The hook seeds them from the main checkout's
+   already-synced copy when — and only when — this worktree has
+   none, so the guard is live in every worktree from its first
+   checkout. It never overwrites a copy the worktree already
+   carries (which may hold worktree-local guards).
 
 The hook is a small shell script. Surface the exact content to
 the user before writing:
@@ -918,27 +959,54 @@ the user before writing:
 ```bash
 #!/usr/bin/env bash
 # apache-magpie post-checkout hook (installed by /magpie-setup adopt).
-# Add the current worktree's working dir to the worktree's own
-# .claude/settings.local.json sandbox allowlists (per issue #197).
-# Chains into the helper if installed by /magpie-setup-isolated-setup-install;
-# no-op when the helper is absent.
+# Best-effort per-worktree reconciliation on checkout / `git worktree add`.
+# Every action is individually guarded and the hook always exits 0 — it
+# never gates the surrounding git operation.
 set -u
+
+# (a) Sandbox allowlist (issue #197): add the current worktree's working
+#     dir to the worktree's own .claude/settings.local.json. No-op when the
+#     helper from /magpie-setup-isolated-setup-install is absent.
 if [ -x "$HOME/.claude/scripts/sandbox-add-project-root.sh" ]; then
   "$HOME/.claude/scripts/sandbox-add-project-root.sh" || true
 fi
+
+# (b) agent-guard PreToolUse guard: .claude/settings.json resolves it at
+#     $CLAUDE_PROJECT_DIR/.claude/hooks/agent-guard.py (per-worktree). Seed
+#     this worktree from the main checkout's already-synced copy when it has
+#     none — never overwrite a copy the worktree already carries.
+wt="$(git rev-parse --show-toplevel 2>/dev/null)" || wt=""
+main="$(dirname "$(cd "$(git rev-parse --git-common-dir 2>/dev/null)" 2>/dev/null && pwd)")"
+if [ -n "$wt" ] && [ "$main" != "$wt" ] \
+   && [ -f "$main/.claude/hooks/agent-guard.py" ] \
+   && [ ! -f "$wt/.claude/hooks/agent-guard.py" ]; then
+  mkdir -p "$wt/.claude/hooks/guards.d"
+  cp "$main/.claude/hooks/agent-guard.py" "$wt/.claude/hooks/agent-guard.py" || true
+  [ -d "$main/.claude/hooks/guards.d" ] &&
+    cp "$main/.claude/hooks/guards.d/"*.py "$wt/.claude/hooks/guards.d/" 2>/dev/null || true
+fi
+
 exit 0
 ```
 
-The `|| true` guard keeps the hook from failing the surrounding
-git operation (`git checkout`, `git worktree add`) — the hook is
-best-effort reconciliation, not a gate.
+The `|| true` guards (and the trailing `exit 0`) keep the hook
+from failing the surrounding git operation (`git checkout`,
+`git worktree add`) — the hook is best-effort reconciliation, not
+a gate.
 
 If the operator has not yet run `/magpie-setup-isolated-setup-install`,
-the helper-script line is a no-op (the `-x` test fails). When
+the helper-script line (a) is a no-op (the `-x` test fails). When
 they later install the secure setup, no hook re-write is needed:
-the next `post-checkout` fires the helper automatically.
+the next `post-checkout` fires the helper automatically. Likewise
+(b) is a no-op when the main checkout has no agent-guard yet (the
+`-f "$main/.claude/hooks/agent-guard.py"` test fails) or when the
+worktree already carries its own copy.
 
-**Why no framework-skill symlink reconciliation here.** Earlier
+**Why agent-guard seeding is shell-safe but symlink
+reconciliation is not.** Seeding agent-guard is a plain
+`cp` of files that already exist in the main checkout — a pure
+shell operation with no dependency on the agent harness. Recreating
+the gitignored framework-skill symlinks is **not**: earlier
 template versions of this hook also called
 `/magpie-setup verify --auto-fix-symlinks` to recreate
 gitignored symlinks after a checkout. That line printed a spurious
@@ -1247,7 +1315,8 @@ A summary of what was written:
 ✓ Locks:    .apache-magpie.lock (committed) + .apache-magpie.local.lock (gitignored)
 ✓ Symlinks: <list of created symlinks>
 ✓ Overrides scaffold: .apache-magpie-overrides/ (committed)
-✓ post-checkout hook installed
+✓ post-checkout hook installed (seeds sandbox allowlist + agent-guard per worktree)
+✓ agent-guard PreToolUse hook synced (.claude/hooks/agent-guard.py + guards.d/ — gitignored)
 ✓ <repo>/README.md updated with adoption note
 
 Committed (you'll see in `git status`):
@@ -1262,6 +1331,9 @@ Committed (you'll see in `git status`):
 Gitignored (do NOT commit):
   .apache-magpie/
   .apache-magpie.local.lock
+  .claude/settings.local.json   # per-machine, per-worktree sandbox allowlist (issue #197)
+  .claude/hooks/agent-guard.py  # framework code synced from the snapshot; seeded into each worktree
+  .claude/hooks/guards.d/       # bundled + skill-owned guards; re-collected on /magpie-setup
   __pycache__/ + *.pyc       # byte-compiled artefacts from skill scripts; added to .gitignore if missing
   .agents/skills/magpie-*   (except magpie-setup, committed above)  # canonical links into the snapshot: opt-in + always-on families
   .claude/skills/magpie-*   (except magpie-setup, committed above)  # relays → ../../.agents/skills/magpie-*

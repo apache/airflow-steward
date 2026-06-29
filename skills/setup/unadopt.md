@@ -9,9 +9,12 @@ committed lock, gitignored local lock, framework-skill
 symlinks **in every active target dir** ([`agents.md`](agents.md)
 — `.agents/skills/`, `.claude/skills/`, `.github/skills/`, plus
 any present holdout), the matching `.gitignore` blocks,
-post-checkout hook, the adoption sections in `README.md` /
-`AGENTS.md` / `CONTRIBUTING.md`, and the committed `setup`
-skill itself.
+post-checkout hook, the gitignored agent-guard hook
+(`.claude/hooks/agent-guard.py` + `guards.d/`), the adoption
+sections in `README.md` / `AGENTS.md` / `CONTRIBUTING.md`, and the
+committed `setup` skill itself. (The committed
+`.claude/settings.json` `hooks.PreToolUse` wiring is adopter-owned
+and agent-edit-denied — surfaced for manual removal, never edited.)
 
 > **Critical — tear down *all* target dirs.** Removing only the
 > `.claude/skills/` + `.github/skills/` pair would **orphan** the
@@ -101,7 +104,8 @@ every artefact).
 | Committed lock | `<committed-lock>` | exists |
 | `.gitignore` entries | `<repo-root>/.gitignore` | which of the entries from [`adopt.md` Step 7](adopt.md) are present |
 | Framework-skill symlinks | **Every active target dir** ([`agents.md`](agents.md)): the canonical `.agents/skills/` (always present), the `.claude/skills/` + `.github/skills/` relay pair, and any present holdout (`.windsurf/skills/`, `.goose/skills/`) | each `magpie-*` symlink — canonical entries resolving into `<snapshot-dir>/skills/`, relays resolving into `.agents/skills/magpie-*` — in **each** target dir |
-| Post-checkout hook | `<repo-root>/.git/hooks/post-checkout` | exists + invokes `~/.claude/scripts/sandbox-add-project-root.sh` |
+| Post-checkout hook | `<repo-root>/.git/hooks/post-checkout` | exists + invokes `~/.claude/scripts/sandbox-add-project-root.sh` and/or seeds `.claude/hooks/agent-guard.py` |
+| agent-guard hook | `<repo-root>/.claude/hooks/agent-guard.py` + `<repo-root>/.claude/hooks/guards.d/` | exist (gitignored framework code). The committed `.claude/settings.json` `hooks.PreToolUse` wiring is **adopter-owned** — surface it for the user to remove by hand (settings.json is agent-edit-denied); do not edit it. |
 | Doc section: `README.md` | `<repo-root>/README.md` | contains the `## Agent-assisted contribution (apache-magpie)` heading |
 | Doc section: `AGENTS.md` | `<repo-root>/AGENTS.md` | contains the `## apache-magpie framework` heading |
 | Doc section: `CONTRIBUTING.md` | `<repo-root>/CONTRIBUTING.md` | contains the adoption section (fallback layout) |
@@ -133,6 +137,8 @@ The following will be REMOVED:
     .github/skills/magpie-<skill-1>      → ../../.agents/skills/magpie-<skill-1>   (relay)
     <holdout>/skills/magpie-<skill-1>    → ../../.agents/skills/magpie-<skill-1>   (relay; e.g. .windsurf/skills/, .goose/skills/ — only if present)
     .git/hooks/post-checkout              (if it contains the magpie recipe)
+    .claude/hooks/agent-guard.py          (gitignored framework code)
+    .claude/hooks/guards.d/               (gitignored; bundled + skill-owned guards)
     # Target dirs (per agents.md): canonical .agents/skills/, the
     #   .claude/skills/ + .github/skills/ relay pair, plus any present
     #   holdout — each carries one magpie-<n> entry per linked skill.
@@ -231,20 +237,33 @@ pointing at a deleted snapshot.
    Never touch a non-symlink at the same path.
 2. **Post-checkout hook.** Remove only if its content matches
    the magpie recipe verbatim (i.e. the hook the adopt flow
-   wrote — a single
-   `~/.claude/scripts/sandbox-add-project-root.sh` invocation
-   guarded by the `-x` test; see
+   wrote — the two-part body that chains
+   `~/.claude/scripts/sandbox-add-project-root.sh` (guarded by
+   the `-x` test) **and** seeds `.claude/hooks/agent-guard.py`
+   from the main checkout; see
    [`adopt.md` Step 10](adopt.md#step-10--worktree-aware-post-checkout-hook-fresh-only)
    for the exact text). If the hook contains additional adopter
    logic, surface that, leave the hook in place, and tell the
-   user which line to delete by hand. Hooks that still contain
+   user which lines to delete by hand. Hooks that still contain
    the obsolete `/magpie-setup verify --auto-fix-symlinks` line
    (a Claude Code slash command that does not work from a shell
    hook — removed in a later framework release) should be
    replaced with the current Step 10 template.
-3. **Snapshot directory.** `rm -rf <snapshot-dir>/`.
-4. **Local lock.** `rm <local-lock>`.
-5. **`.gitignore` entries.** Read `<repo-root>/.gitignore`,
+3. **agent-guard hook files.** `rm -f
+   <repo-root>/.claude/hooks/agent-guard.py` and `rm -rf
+   <repo-root>/.claude/hooks/guards.d/` — gitignored framework
+   code, no `git rm` needed. If the adopter force-added their own
+   guards under `guards.d/` (tracked via `git add -f`), surface
+   them and `git rm` only those by name; do not delete an
+   adopter-authored tracked guard silently. Leave the
+   `.claude/hooks/` directory itself if it holds non-framework
+   hooks. The committed `.claude/settings.json` `hooks.PreToolUse`
+   wiring is **adopter-owned and agent-edit-denied** — surface the
+   exact entry for the user to delete by hand; do not edit
+   `settings.json`.
+4. **Snapshot directory.** `rm -rf <snapshot-dir>/`.
+5. **Local lock.** `rm <local-lock>`.
+6. **`.gitignore` entries.** Read `<repo-root>/.gitignore`,
    remove exactly the lines from
    [`adopt.md` Step 7](adopt.md) that are present, and leave
    any adopter-added entries (e.g. unrelated rules near the
@@ -256,7 +275,7 @@ pointing at a deleted snapshot.
    them if they sit unambiguously inside the magpie-managed
    block (under the same comment header the adopt flow wrote)
    and the repo has no other Python sources.
-6. **Doc sections.** For each of `README.md`, `AGENTS.md`,
+7. **Doc sections.** For each of `README.md`, `AGENTS.md`,
    `CONTRIBUTING.md` that contains an adoption section,
    remove the section. The boundaries are the section
    heading (e.g. `## Agent-assisted contribution (apache-
@@ -264,10 +283,10 @@ pointing at a deleted snapshot.
    Surface the proposed diff (`git diff` form) to the user
    before writing; one batched confirmation for the whole
    doc set, not per file.
-7. **Committed lock.** `git rm <committed-lock>`.
-8. **Overrides directory** *(only if `--purge-overrides`)*.
+8. **Committed lock.** `git rm <committed-lock>`.
+9. **Overrides directory** *(only if `--purge-overrides`)*.
    `git rm -r .apache-magpie-overrides/`.
-9. **`setup` skill itself.** `git rm -r` the canonical copy
+10. **`setup` skill itself.** `git rm -r` the canonical copy
    `.agents/skills/magpie-setup/` and its relay symlinks
    `.claude/skills/magpie-setup` and `.github/skills/magpie-setup`.
    After this step the running skill has deleted its own committed
@@ -293,6 +312,10 @@ After the deletions, verify the post-state:
   the removed `<snapshot-dir>/` nor relays into the now-empty
   `.agents/skills/`.
 - `.gitignore` no longer contains the magpie entries.
+- `.claude/hooks/agent-guard.py` and `.claude/hooks/guards.d/`
+  do not exist (save any adopter-authored guards the user chose
+  to keep); the `.claude/settings.json` `hooks.PreToolUse` entry
+  was surfaced for manual removal.
 - The doc sections are gone from the affected files.
 - `.agents/skills/magpie-setup/` and its `.claude`/`.github`
   relays do not exist.

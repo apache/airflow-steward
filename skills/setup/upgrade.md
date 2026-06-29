@@ -414,7 +414,13 @@ The framework ships hooks and config files an adopter
 rather than pulls in via symlink. Examples:
 
 - `<repo-root>/.git/hooks/post-checkout` (the worktree-aware
-  hook installed during adoption).
+  hook installed during adoption). Its expected content is the
+  [`adopt.md` Step 10](adopt.md#step-10--worktree-aware-post-checkout-hook-fresh-only)
+  template — which now both chains the sandbox-allowlist helper
+  **and** seeds a new worktree's agent-guard from the main
+  checkout. An adopter on an older hook (sandbox-only, or the
+  long-removed `--auto-fix-symlinks` line) is re-installed to the
+  current template by this drift sync.
 - `<repo-root>/.claude/hooks/agent-guard.py` and the
   `<repo-root>/.claude/hooks/guards.d/` directory (the
   deterministic `PreToolUse` guard dispatcher and its guards — see
