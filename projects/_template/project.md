@@ -99,7 +99,8 @@ publicly archived lists may appear in CVE `references[]` as
 
 | Capability | Tool | Adapter directory | Config knobs declared here |
 |---|---|---|---|
-| Issue tracking + source control + project board | `github` | [`../../tools/github/`](../../tools/github/) | `tracker_repo`, `upstream_repo`, `github_project_board_*`, `issue_template_fields` |
+| Issue tracking + project board | `github` | [`../../tools/github/`](../../tools/github/) | `tracker_repo`, `upstream_repo`, `github_project_board_*`, `issue_template_fields` |
+| Source control (VCS) | `github` (Git) — replaceable with a non-Git VCS | [`../../tools/github/source-control.md`](../../tools/github/source-control.md) | `upstream_repo`, `default_branch`; for a non-Git VCS declare the sibling tool + its working-copy URL |
 | Inbound email / drafts | `<one or more mail-source backends>` | [`../../tools/mail-source/contract.md`](../../tools/mail-source/contract.md) (abstract) + per-backend adapter dirs (`tools/gmail/`, `tools/ponymail/`, `tools/mail-source/imap/`, `tools/mail-source/mbox/`, ...) | See [Mail sources](#mail-sources) below — declare each backend's role (primary / preferred-for-`<op>` / fallback / optional) and `mandatory` flag |
 | CVE allocation + record mgmt | `vulnogram` | [`../../tools/cve-tool-vulnogram/`](../../tools/cve-tool-vulnogram/) | see [CVE tooling](#cve-tooling) below |
 | ASF project metadata (rosters / people / releases) | `apache-projects` | [`../../tools/apache-projects/`](../../tools/apache-projects/) | see [`project_metadata`](#project-metadata) below — ASF default `mandatory: true` |

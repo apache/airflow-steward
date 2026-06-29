@@ -143,6 +143,15 @@ back empty, announce it once at session start (so the
 maintainer knows the touching-mine half contributed nothing) and
 fall back to review-requested only.
 
+> **Source control.** The `git log` / `git diff` calls here are the
+> **Git binding** of the framework's source-control capability
+> ([`tools/github/source-control.md`](../../tools/github/source-control.md)),
+> reading history on the project's `<upstream>` working copy. If the
+> project's manifest enables a non-Git VCS under *Tools enabled →
+> Source control*, substitute that tool's history-read binding (`hg
+> log`, `svn log`, …) for the same abstract operation; the selector
+> logic is unchanged.
+
 ### Matching open PRs against the active set
 
 Open PRs (excluding drafts and PRs authored by `<viewer>` —

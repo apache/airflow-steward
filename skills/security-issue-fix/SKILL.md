@@ -214,6 +214,19 @@ in `docs/prerequisites.md` for the overall setup.
 
 ---
 
+## Source control
+
+The `git …` invocations in this skill are the **Git binding** of the
+framework's source-control capability
+([`tools/github/source-control.md`](../../tools/github/source-control.md)),
+operating on the project's `<upstream>` working copy and its fork. If
+the project's manifest enables a non-Git VCS under *Tools enabled →
+Source control*, substitute that tool's binding for the same abstract
+operations (status, fetch, branch, diff, stage, commit, push); the
+skill logic is unchanged.
+
+---
+
 ## Step 0 — Pre-flight check
 
 Do **all** of these before the Step 1 sync. Any failure is an
