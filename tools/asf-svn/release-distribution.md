@@ -32,7 +32,7 @@ Reference: [ASF Release Distribution Policy](https://infra.apache.org/release-di
 
 ## Repository layout
 
-```
+```text
 dist.apache.org/repos/dist/
   dev/
     <project>/        ← release candidates staged here
@@ -58,15 +58,26 @@ are pruned from the `release` area — they remain available at
 
 ## Authentication pre-flight
 
-All write operations require an ASF committer credential. Run this
-check at Step 0 of any release-distribution skill step:
+All write operations require PMC membership (the authoritative gate;
+resolved via the roster check in
+[`authorization.md`](authorization.md)) plus a working SVN credential.
+At Step 0 of any release-distribution step, run the `svn info`
+reachability + authentication check below — but note it is **not** a
+write-access check: `dist.apache.org` is world-readable, so a `0` exit
+confirms only that the credential is valid and the path resolves, not
+that the account may write. The write-access gate is the PMC roster
+check, not this command.
 
 ```bash
+# Reachability + authentication only — NOT a write-access check.
+# Let svn prompt for the password; never pass it on argv.
 svn info https://dist.apache.org/repos/dist/dev/<project> \
   --username <asf-id> 2>&1 | grep "^URL:"
 ```
 
-A non-zero exit is a hard stop.
+A non-zero exit (e.g. `svn: E170001`) is a hard stop. A `0` exit does
+not by itself authorise the write — confirm PMC membership per
+[`authorization.md`](authorization.md) first.
 
 ---
 
@@ -145,11 +156,14 @@ sha512sum -c <artifact>.sha512
 ## Promote a release (vote passed)
 
 Promotion moves artefacts from `dist/dev/<project>/<version>-RC<n>/`
-to `dist/release/<project>/<version>/` using a server-side SVN copy
-— no re-upload of bytes.
+to `dist/release/<project>/<version>/` with a server-side `svn move`
+— no re-upload of bytes, and the RC path is **removed** from `dev/` in
+the same operation (a move, not a copy, so nothing is left staged under
+`dev/`).
 
 ```bash
-# Server-side copy from dev to release (atomic, no re-upload)
+# Server-side move from dev to release (atomic, no re-upload).
+# This removes the RC from dev/ as it creates the release path.
 svn move \
   https://dist.apache.org/repos/dist/dev/<project>/<version>-RC<n> \
   https://dist.apache.org/repos/dist/release/<project>/<version> \

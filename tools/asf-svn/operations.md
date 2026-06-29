@@ -55,39 +55,69 @@ under `~/.subversion/auth/` (the
 authenticated once on the machine has a cached credential there, and
 subsequent commands reuse it without re-prompting.
 
-Every skill's Step 0 pre-flight must verify that `svn` has a usable
-credential with write access to the target repository. For read-only
-operations (log, diff, cat) on world-readable repos, credentials are
-not required.
+Every skill's Step 0 pre-flight must confirm two distinct things, which
+SVN exposes through two different checks. For read-only operations
+(log, diff, cat) on world-readable repos, neither is required —
+credentials are not needed to read.
+
+1. **Credential authenticates and the path is reachable.** `svn info`
+   against the target confirms the cached credential is accepted and
+   the URL resolves. **It does not prove write access**:
+   `svn.apache.org/repos/asf` and `dist.apache.org/repos/dist` are
+   world-readable, so `svn info` exits `0` even for a non-committer.
+   Use it only as a reachability + authentication check, never as a
+   write-access gate.
+
+2. **The account actually has write authorization.** This is a roster
+   fact, not something `svn info` can answer: write access comes from
+   the committer's membership in the project's LDAP group (and, for
+   `dist`, PMC membership). Resolve it via the `apache-projects` MCP —
+   see [`authorization.md`](authorization.md). The authoritative
+   write-access gate is the roster check there, not a `svn` command.
 
 ```bash
-# List the cached credentials SVN already holds (the ~/.subversion/auth view)
-svn auth                      # SVN 1.9+; lists cached credential realms
-
-# Verify a cached credential is usable against the target (write check).
-# This reuses ~/.subversion/auth/ if a credential is already cached.
+# Check 1 — reachability + authentication (NOT a write-access check).
+# Reuses ~/.subversion/auth/ if a credential is already cached.
 svn info https://svn.apache.org/repos/asf/<project>/trunk \
   --username <asf-id> 2>&1 | grep "^URL:"
 
-# If no cached credential, authenticate.
-# In CI or a sandboxed agent, pass --no-auth-cache so the credential is
-# NOT written to ~/.subversion/auth/ on a shared/ephemeral machine.
+# List the cached credentials SVN already holds (the ~/.subversion/auth view)
+svn auth                      # SVN 1.9+; lists cached credential realms
+
+# If no cached credential, authenticate by running an interactive svn
+# command and letting svn PROMPT for the password. Do NOT pass the
+# password on the command line — argv is visible in `ps`, shell history,
+# and process logs on the same shared/ephemeral machine --no-auth-cache
+# is meant to protect.
+#
+# In CI or a sandboxed agent, add --no-auth-cache so the credential is
+# NOT persisted to ~/.subversion/auth/. Let svn prompt for the password
+# (it reads the prompt from the controlling terminal / stdin); never put
+# the secret in argv.
 svn info https://svn.apache.org/repos/asf/<project>/trunk \
-  --username <asf-id> --password <asf-password> \
-  --no-auth-cache
+  --username <asf-id> --no-auth-cache        # svn prompts for the password
 ```
 
-A non-zero exit or `svn: E170001` (authentication error) is a hard
-stop — the skill reports the failure and asks the user to authenticate
-(populate `~/.subversion/auth/` via an interactive `svn` command) or
-confirm the ASF committer credentials rather than retrying. The ASF
-SVN password is the committer's ASF account password (managed at
-`id.apache.org`), not a separate token.
+A non-zero exit or `svn: E170001` (authentication error) on check 1 is a
+hard stop — the skill reports the failure and asks the user to
+authenticate (populate `~/.subversion/auth/` via an interactive `svn`
+command) rather than retrying. A `0` exit confirms only that the
+credential is valid and the path is reachable; whether the account may
+*write* is established by the roster check in
+[`authorization.md`](authorization.md). The ASF SVN password is the
+committer's ASF account password (managed at `id.apache.org`), not a
+separate token — treat it as a secret and never place it on a command
+line.
 
 For `dist.apache.org` write operations (release staging and promotion)
-the same pre-flight applies against `https://dist.apache.org/repos/dist/`:
+the same two-check pre-flight applies: `svn info` against
+`https://dist.apache.org/repos/dist/` confirms reachability and
+authentication only (the area is world-readable, so a `0` exit does
+**not** prove write access), and the authoritative write-access gate is
+PMC membership resolved via [`authorization.md`](authorization.md).
 
 ```bash
+# Reachability + authentication only — NOT a write-access check.
 svn info https://dist.apache.org/repos/dist/dev/<project> \
   --username <asf-id> 2>&1 | grep "^URL:"
 ```

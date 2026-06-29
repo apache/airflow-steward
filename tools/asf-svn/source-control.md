@@ -74,7 +74,7 @@ skill, exactly as the Git write paths are.
 The canonical ASF SVN layout for a project at
 `https://svn.apache.org/repos/asf/<project>/`:
 
-```
+```text
 <project>/
   trunk/          # main line of development (equivalent to Git's main branch)
   branches/

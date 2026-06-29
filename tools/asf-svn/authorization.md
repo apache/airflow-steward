@@ -107,11 +107,14 @@ has write access; the MCP says *who is in that group*.
 ## Validate a release manager
 
 Before the `release-rc-cut` skill stages an RC, it validates that the
-user running the skill is a PMC member of the project and has write
-access to `dist.apache.org`:
+user running the skill is a PMC member of the project (the authoritative
+write-access gate for `dist.apache.org`) and that their SVN credential
+authenticates against the dist area:
 
 ```text
-# Step 1: confirm PMC membership (via the apache-projects MCP)
+# Step 1 — the authoritative write-access check: PMC membership
+#          (via the apache-projects MCP). dist write access derives
+#          from PMC membership; this is what actually gates it.
 mcp__apache-projects__get_committee(project="<project>")
   → check that <asf-id> appears in the returned roster
 # or, equivalently:
@@ -120,17 +123,20 @@ mcp__apache-projects__get_person(id="<asf-id>")
 ```
 
 ```bash
-# Step 2: confirm dist write access (via the SVN auth pre-flight)
+# Step 2 — reachability + authentication only. dist is world-readable,
+#          so a 0 exit here does NOT prove write access (Step 1 does);
+#          it confirms the credential is valid and the path resolves.
 svn info https://dist.apache.org/repos/dist/dev/<project> \
   --username <asf-id> 2>&1 | grep "^URL:"
 ```
 
 If either check fails, the skill stops and reports the specific gap:
 
-- PMC check fails → the user is not a PMC member; only PMC members
-  may act as release managers per the ASF release policy.
-- dist auth check fails → the SVN credential is missing or expired;
-  ask the user to run the auth pre-flight from
+- PMC check (Step 1) fails → the user is not a PMC member; only PMC
+  members may act as release managers per the ASF release policy. This
+  is the binding failure — do not proceed even if Step 2 succeeds.
+- auth check (Step 2) fails → the SVN credential is missing or expired;
+  ask the user to authenticate per
   [`operations.md#authentication`](operations.md#authentication).
 
 ---

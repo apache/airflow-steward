@@ -39,7 +39,7 @@ site/docs side of the same mechanism.
 Use this capability when the project's website source lives under an
 SVN path such as:
 
-```
+```text
 https://svn.apache.org/repos/asf/<project>/site/             # site source
 https://svn.apache.org/repos/infra/websites/production/<project>/   # published tree (svnpubsub-backed)
 ```
