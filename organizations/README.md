@@ -92,10 +92,24 @@ not branch on the organization.
 
 ## Authoring a new organization
 
-Copy [`_template/`](_template/) to `organizations/<org>/`, fill in the
-governance vocabulary and the capability→adapter bundle, and point your
-project at it with `organization: <org>`. You can then either
-**contribute it back** to `apache/magpie` under Apache-2.0 (so other
-projects in your organization reuse it) or keep it local. See
-[`docs/adapters/authoring.md`](../docs/adapters/authoring.md) (and
-[`docs/vendor-neutrality.md` § Authoring your own adapter](../docs/vendor-neutrality.md#authoring-your-own-adapter)).
+Copy [`_template/`](_template/) to fill in the governance vocabulary, the
+capability→adapter bundle, and the identity (incl. `logo`), then point a
+project at it with `organization: <org>`.
+
+An organization can live in any of three homes (see
+[`docs/extending.md`](../docs/extending.md) for the full model):
+
+- **In-tree** — `organizations/<org>/` here, contributed to
+  `apache/magpie` under Apache-2.0 so every project under the
+  organization (and others) reuses it.
+- **In your adopter repo** — `<project-config>/.apache-magpie-overrides/organizations/<org>/`,
+  committed in the adopter repo when the organization is not (yet)
+  in-tree.
+- **In the organization's own repo** — maintained externally and vendored
+  into the adopter's override location; discovery, never auto-fetch
+  ([`PRINCIPLES.md` §13](../PRINCIPLES.md#13-snapshot-plus-override-never-vendored-copies)).
+
+`organization: <org>` resolves in-tree first, then the adopter-local
+copy. See
+[`docs/adapters/authoring.md`](../docs/adapters/authoring.md) for the
+authoring how-to.

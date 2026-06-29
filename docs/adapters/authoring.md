@@ -3,7 +3,7 @@
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
 - [Authoring an adapter](#authoring-an-adapter)
-  - [Two homes for an adapter](#two-homes-for-an-adapter)
+  - [Three homes for an adapter](#three-homes-for-an-adapter)
   - [Authoring a tool adapter](#authoring-a-tool-adapter)
   - [Authoring an organization](#authoring-an-organization)
   - [After authoring](#after-authoring)
@@ -22,19 +22,22 @@ author one. The skills stay agnostic: they target a *capability*, and
 your adapter supplies the concrete backend. This guide is the how-to; the
 [registry](registry.md) is the index of what already exists.
 
-## Two homes for an adapter
+## Three homes for an adapter
 
-| | Contribute to Magpie | Keep it external |
-|---|---|---|
-| **Where it lives** | a PR into `apache/magpie` | your own repository |
-| **License** | Apache-2.0 ([§17](../../PRINCIPLES.md#17-contributions-land-under-apache-license-20)) | yours |
-| **Who reuses it** | every adopter on that backend | you (and anyone you share it with) |
-| **Discovery** | shipped in-tree | optionally listed in the [registry](registry.md) |
-| **Install** | part of the snapshot | you wire it in deliberately — never auto-fetched ([§13](../../PRINCIPLES.md#13-snapshot-plus-override-never-vendored-copies)) |
+| | In-tree (upstream) | In your adopter repo | External (another repo) |
+|---|---|---|---|
+| **Where it lives** | a PR into `apache/magpie` | `<project-config>/.apache-magpie-overrides/` | a repo you/the community maintain |
+| **License** | Apache-2.0 ([§17](../../PRINCIPLES.md#17-contributions-land-under-apache-license-20)) | yours | the author's |
+| **Who reuses it** | every adopter on that backend | your project | anyone who wires it in |
+| **Discovery** | shipped in-tree | committed in your repo | optionally listed in the [registry](registry.md) |
+| **Install** | part of the snapshot | committed override | you wire it in deliberately — never auto-fetched ([§13](../../PRINCIPLES.md#13-snapshot-plus-override-never-vendored-copies)) |
 
-Both are first-class. Contributing upstream is preferred when the backend
-is one other projects share; an external adapter is right when it is
-specific to you or you are not ready to upstream.
+All three are first-class. Contribute upstream when the backend is one
+other projects share; keep it in your adopter repo when it is specific to
+your project; keep it external when a third party maintains it or it is
+shared across your repos but not in Magpie. See
+[`docs/extending.md`](../extending.md) for the same model applied to every
+extension type.
 
 ## Authoring a tool adapter
 

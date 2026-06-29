@@ -79,6 +79,7 @@ instead.
 
 ## See also
 
+- [`docs/extending.md`](../extending.md) — the full extension model (what / where / who).
 - [`docs/vendor-neutrality.md`](../vendor-neutrality.md) — how tool adapters and organizations deliver neutrality.
 - [`authoring.md`](authoring.md) — authoring your own adapter.
 - [`organizations/README.md`](../../organizations/README.md) — the organization entity.

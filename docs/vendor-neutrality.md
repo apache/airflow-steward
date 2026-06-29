@@ -261,7 +261,10 @@ organization profile — you author one, and you have two supported paths:
   as you would a built-in one.
 
 Either way the skills stay agnostic: they target the capability, and your
-adapter — wherever it lives — supplies the backend.
+adapter — wherever it lives — supplies the backend. The same three homes
+(in-tree, your adopter repo, an external repo) apply to skills and whole
+organizations too — see [`docs/extending.md`](extending.md) for the full
+extension model (by project, organization, or individual).
 
 ## How each axis is delivered
 

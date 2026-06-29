@@ -308,9 +308,19 @@ Every placeholder and dotted config key then resolves in this order,
 
 ```text
 <project-config>/project.md
-  →  organizations/<org>/organization.md     (org named by project.md → organization:)
+  →  organizations/<org>/organization.md            (in-tree org)
+  →  <project-config>/.apache-magpie-overrides/organizations/<org>/organization.md   (adopter-local / external org)
     →  framework default
 ```
+
+The organization an `organization:` value names need **not** be in-tree.
+The framework ships `organizations/ASF/` and `organizations/independent/`,
+but an organization Magpie does not ship is resolved from an
+adopter-local copy under `.apache-magpie-overrides/organizations/<org>/`
+— maintained in the adopter's repo or vendored from the organization's
+own repo (discovery, never auto-fetch, per
+[`PRINCIPLES.md` §13](PRINCIPLES.md#13-snapshot-plus-override-never-vendored-copies)).
+See [`docs/extending.md`](docs/extending.md) for the full extension model.
 
 A project declares only what differs from its organization; an
 organization declares only what differs from the framework baseline
