@@ -1847,12 +1847,19 @@ _ASF_COUPLING_ALLOW_MARKERS: tuple[str, ...] = (
     "ASF profile",
     "ASF adopter",
     "asf-default",
-    # Phrases where "ASF PMC" is explicitly qualified — the ASF org context
-    # is already named on the line, so the mention is intentional.
+)
+
+# Markers that make *low-confidence* governance mentions intentional on a line
+# but must NOT silence high-confidence operational patterns (svn commands,
+# hardcoded apache.org lists, dist-tree paths) that may appear on the same line.
+# Unlike _ASF_COUPLING_ALLOW_MARKERS these never short-circuit the whole line —
+# they only gate the low-confidence tier, mirroring the organization:ASF opt-out.
+_ASF_COUPLING_LOW_CONF_ALLOW_MARKERS: tuple[str, ...] = (
+    # "ASF PMC" explicitly qualifies the org context, so the bare PMC mention
+    # is intentional — but a real `svn` command on the same line must still fire.
     "ASF PMC",
-    # Lines discussing prompt-injection examples: PMC/ICLA appear as
-    # examples of attacker-crafted social-engineering text, not as
-    # actual skill process steps.
+    # Lines discussing prompt-injection examples: PMC/ICLA appear as examples of
+    # attacker-crafted social-engineering text, not as actual skill process steps.
     "prompt-injection",
 )
 
@@ -1876,6 +1883,15 @@ def validate_asf_coupling(path: Path, text: str) -> Iterable[Violation]:
     patterns (svn commands, hardcoded apache.org lists, dist tree paths,
     Vulnogram URL) still fire because they should be behind capability flags
     even in ASF-only skills.
+
+    The organization:ASF opt-out is intentional and silent by design: the
+    suppression exists precisely to keep legitimately ASF-scoped skills (the
+    release and contributor families) from emitting noise on terms they are
+    supposed to use. The opt-out is not a hidden escape hatch — it is gated on
+    the explicit, validated ``organization:`` frontmatter key, which is itself
+    visible in every skill and cross-checked against ``organizations/``. The
+    suppression only ever silences the *advisory* low-confidence tier;
+    high-confidence patterns are never suppressed by it.
     """
     if is_path_allowlisted(path):
         return
@@ -1889,22 +1905,27 @@ def validate_asf_coupling(path: Path, text: str) -> Iterable[Violation]:
         # intentional explanatory mentions.
         if line_has_inline_allow_marker(line):
             continue
-        # ASF-coupling-specific markers: line already names the guard mechanism.
+        # ASF-coupling-specific markers: line already names the guard mechanism,
+        # so the coupling is generalised — skip the whole line.
         if any(marker in line for marker in _ASF_COUPLING_ALLOW_MARKERS):
             continue
+        # Low-confidence-only suppression: the organization:ASF opt-out or a
+        # descriptive marker ("ASF PMC", a prompt-injection example) makes soft
+        # governance mentions intentional, but high-confidence operational
+        # patterns on the same line must still fire.
+        line_skips_low = skip_low or any(marker in line for marker in _ASF_COUPLING_LOW_CONF_ALLOW_MARKERS)
         for pattern, confidence, remedy, note in _ASF_COUPLING_PATTERNS:
-            # Skip low-confidence patterns for organization: ASF skills — those
-            # terms (PMC, ICLA, incubator) are intentional ASF-default prose.
-            if skip_low and confidence == "low":
-                continue
             m = pattern.search(line)
-            if m:
-                yield Violation(
-                    path,
-                    line_no,
-                    f"asf-coupling [{confidence}] remedy:{remedy} — {note} (matched: {m.group()!r})",
-                    category=ASF_COUPLING_CATEGORY,
-                )
+            if not m:
+                continue
+            if confidence == "low" and line_skips_low:
+                continue
+            yield Violation(
+                path,
+                line_no,
+                f"asf-coupling [{confidence}] remedy:{remedy} — {note} (matched: {m.group()!r})",
+                category=ASF_COUPLING_CATEGORY,
+            )
 
 
 # ---------------------------------------------------------------------------
