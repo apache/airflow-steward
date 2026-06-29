@@ -191,6 +191,7 @@ Capabilities for every skill currently in
 | `setup-override-upstream` | `capability:setup` |
 | `write-skill` | `capability:setup` |
 | `optimize-skill` | `capability:setup` |
+| `skill-reconciler` | `capability:reconciliation` *(compares two near-duplicate skill copies and classifies every difference as ALLOWED, DRIFT, or SAFETY-BASELINE; proposes convergence; never writes either copy)* |
 
 ## Capability to tool map
 
