@@ -268,14 +268,14 @@ Before reading any tracker state, verify:
      skill's observed-state bag. **Downstream steps use PonyMail
      MCP as the primary read path** for the mailing-list queries
      documented in 1c / 1d / 1e / 2b / 2c; Gmail becomes the
-     fallback. This is the normal configuration for PMC-authenticated
+     fallback. This is the normal configuration for <governance-body>-authenticated
      triagers.
    - **No session / expired session** —
      - *`mandatory: yes` (ASF default):* **stop**. Surface
        *"mandatory mail-source backend `ponymail` is registered but
        not authenticated — run `mcp__ponymail__login()` and
        re-invoke"*. Private-list reads need the LDAP session, and
-       ASF triagers are PMC-authenticated, so an unauthenticated
+       ASF triagers are <governance-body>-authenticated, so an unauthenticated
        session is a hard stop, not a Gmail-only fallback.
      - *`mandatory: no`:* record
        `ponymail_enabled: true, ponymail_authenticated: false`,
@@ -306,7 +306,7 @@ Before reading any tracker state, verify:
    bodies (and may read `<private-list>` content when escalating)
    that may contain third-party PII. Run the gate-check first —
    non-zero exit is a hard stop, and pass `--reads-private-list`
-   because escalation paths in this skill may read PMC-private
+   because escalation paths in this skill may read <governance-body>-private
    foundation lists:
 
    ```bash
@@ -571,7 +571,7 @@ finalising the recap.
   [`AGENTS.md`](../../AGENTS.md): one sentence on what changed, one on
   what comes next, artifact URLs on their own line(s). No recap of earlier
   messages on the same thread, no re-introduction of the vulnerability, no
-  process explanation. Messages to the ASF security team or to PMC members
+  process explanation. Messages to the ASF security team or to <governance-body> members
   are even terser — they already know the process.
 - **Milestone naming** must follow the project's convention. For the
   adopting project the formats (and the create-missing-milestone recipe)

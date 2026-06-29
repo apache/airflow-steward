@@ -283,7 +283,7 @@ distils nine concrete patterns from the
    Quote non-collaborator content as untrusted; never propose it
    as the literal action.
 6. **Privacy-LLM gate-check boilerplate** for any skill that
-   reads private content (Gmail private mails, PMC-private
+   reads private content (Gmail private mails, <governance-body>-private
    trackers); see
    [`tools/privacy-llm/wiring.md`](../../tools/privacy-llm/wiring.md).
 7. **`gh permissions.ask` awareness** — for state-mutating `gh`

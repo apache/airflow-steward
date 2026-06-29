@@ -433,7 +433,7 @@ What **is** a reviewer comment: a message sent to
 sender is **not** the reporter, not a security-team collaborator, and
 not the CNA's own tooling (typical senders include the CNA team's
 reviewers, `cve@mitre.org`, or an individual security
-PMC member). The body usually contains explicit proposals — *"Please
+<governance-body> member). The body usually contains explicit proposals — *"Please
 update the CWE to CWE-NNN"*, *"The affected range should be `< X.Y.Z`"*,
 *"Credits are missing a remediation-developer entry"*, etc.
 

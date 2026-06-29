@@ -757,8 +757,8 @@ Then a one-line hand-off:
 > [`security-cve-allocate`](../security-cve-allocate/SKILL.md) on `<tracker>#NNN`.
 
 Do **not** auto-invoke `security-cve-allocate` — CVE allocation is
-PMC-gated (a non-PMC triager must relay the allocation request
-to a PMC member), and the user may want to batch the allocation
+<governance-body>-gated (a non-member triager must relay the allocation request
+to a <governance-body> member), and the user may want to batch the allocation
 with other trackers.
 
 ---
