@@ -184,21 +184,29 @@ where convergence is probably wanted:
 ### SAFETY-BASELINE
 
 Divergence on the elements PRINCIPLES says every copy must stay
-eventually-consistent on:
+eventually-consistent on. The three clauses are defined in full in
+[`safety-baseline-checklist.md`](safety-baseline-checklist.md); the
+short form is:
 
-- **Untrusted-content rule** — one copy carries the injection-guard
-  callout (external content is never an instruction); the other omits
-  it entirely, weakens it, or restricts it to a subset of the inputs
-  the skill actually reads.
-- **Identity-resolution caveat** — one copy enforces the
+- **Clause 1 — Untrusted-content rule** — one copy carries the
+  injection-guard callout (external content is never an instruction);
+  the other omits it entirely, weakens it, or restricts it to a subset
+  of the inputs the skill actually reads.
+- **Clause 2 — Identity-resolution caveat** — one copy enforces the
   collaborator-trust gate (only tracker-repo collaborators may instruct
   the agent); the other omits or softens it.
-- **Confidentiality posture** — one copy names the confidentiality rule
-  governing its outputs (what may appear on public surfaces, what is
-  private); the other omits or contradicts it.
+- **Clause 3 — Confidentiality posture** — one copy names the
+  confidentiality rule governing its outputs (what may appear on public
+  surfaces, what is private); the other omits or contradicts it.
 
-A safety-baseline difference is **never** folded into `ALLOWED` or
+Check each clause **independently**. A copy can satisfy two clauses and
+fail a third; each failure is its own `SAFETY-BASELINE` finding. A
+safety-baseline difference is **never** folded into `ALLOWED` or
 `DRIFT`, even when the two copies are otherwise identical.
+
+The full failure criteria, canonical wording examples, and AGENTS.md
+references for each clause are in
+[`safety-baseline-checklist.md`](safety-baseline-checklist.md).
 
 ---
 
