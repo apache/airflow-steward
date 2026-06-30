@@ -47,7 +47,9 @@ missing piece half-way through a workflow.
 implementation the skills are written against. Any agent that reads
 the `.claude/skills/*/SKILL.md` files and follows their step-by-step
 instructions should work; there is no hard dependency on Claude Code
-specifically.
+specifically. Note that Claude Code requires a subscription; the free
+version cannot be used to power Magpie. Other providers may offer a
+free agent that can be used with Magpie.
 
 The agent runs against pre-disclosure CVE content (private mail
 threads, draft advisories, in-flight tracker discussions). Run it
