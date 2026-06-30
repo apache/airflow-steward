@@ -9,7 +9,7 @@ mode: Mentoring
 source: >
   MISSION.md § Technical scope (Mentoring) — "the highest-value
   project-side mode and the one off-the-shelf agent tooling skips".
-  docs/modes.md § Mentoring (experimental, 3 skills). Spec exists at
+  docs/modes.md § Mentoring (experimental, 5 skills). Spec exists at
   docs/mentoring/spec.md ahead of any skill code. MISSION.md names
   onboarding latency as one of the two loudest ecosystem complaints;
   authoring newcomer-ready good first issues targets it directly.
@@ -71,6 +71,20 @@ a project can offer a first-time contributor.
   for explicit maintainer confirmation before posting. Ships `mode:
   Mentoring` + `experimental`, with an eval suite under
   `tools/skill-evals/evals/mentoring-welcome/`.
+- Skill: `contributor-to-committer` — read-only readiness tracker that
+  maps a contributor's GitHub activity against the adopter's PMC-declared
+  committer or PMC thresholds; surfaces a traffic-light brief (Not yet /
+  Approaching / Ready to nominate) plus the specific evidence gaps that
+  remain. Ships `mode: Mentoring` + `experimental`, with an eval suite
+  under `tools/skill-evals/evals/contributor-to-committer/`.
+- Skill: `good-first-issue-sweep` — sweeps the open issue backlog for
+  existing issues that could be labelled as good first issues. Scores each
+  candidate against the G1–G7 suitability rubric and classifies it as
+  READY (propose the GFI label), NEAR-MISS (surface specific edits to make
+  it GFI-ready), or SKIP. Applies labels only after explicit maintainer
+  confirmation; never edits issue bodies. Ships `mode: Mentoring` +
+  `experimental`, with an eval suite under
+  `tools/skill-evals/evals/good-first-issue-sweep/`.
 
 ## Behaviour & contract
 
@@ -93,9 +107,6 @@ a project can offer a first-time contributor.
 - Implementation-detail review that belongs to Agentic Pairing
   ([Pairing](pairing-mode.md)).
 - Any contributor-facing message sent without human review.
-- Curating or bulk-labeling the *existing* backlog as good first issues:
-  this skill authors net-new drafts only. Backlog curation and labeling is
-  a separate capability that is not specced yet.
 
 ## Acceptance criteria
 
@@ -113,30 +124,31 @@ a project can offer a first-time contributor.
 test -f docs/mentoring/spec.md
 test -f .claude/skills/magpie-good-first-issue-author/SKILL.md
 test -f .claude/skills/magpie-mentoring-welcome/SKILL.md
+test -f .claude/skills/magpie-contributor-to-committer/SKILL.md
+test -f .claude/skills/magpie-good-first-issue-sweep/SKILL.md
 uv run --project tools/skill-and-tool-validator --group dev skill-and-tool-validate
 uv run --project tools/skill-evals skill-eval tools/skill-evals/evals/good-first-issue-author/
 uv run --project tools/skill-evals skill-eval tools/skill-evals/evals/mentoring-welcome/
+uv run --project tools/skill-evals skill-eval tools/skill-evals/evals/good-first-issue-sweep/
 ```
 
 ## Known gaps
 
 - **The family now covers the newcomer journey end to end.**
-  `pr-management-mentor`, `good-first-issue-author`, `mentoring-welcome`
-  (first-contribution welcome / orientation), and `contributor-to-committer`
-  (readiness path tracker) all ship. `docs/mentoring/README.md` reflects all
-  four shipped skills. The two newcomer-facing capabilities this spec
-  previously flagged as undesigned are both built; the open item that remains
-  is the backlog-curation counterpart noted above (relabeling the existing
-  backlog as good-first-issue candidates).
-- **`experimental` — no adopter pilot has run.** All four shipped skills
-  (`pr-management-mentor`, `good-first-issue-author`, `mentoring-welcome`)
-  and `contributor-to-committer` may change shape as adopter pilots and
-  contributor-sentiment evaluations land.
-- **`good-first-issue-author` shipped `experimental`; no adopter pilot
-  has authored a live good first issue through it yet.** The suitability
-  and readiness thresholds may shift once real backlog candidates run
-  through it. The curation counterpart (relabeling the *existing* backlog
-  as good-first-issue candidates) is still unspecced.
+  All five skills ship: `pr-management-mentor`, `good-first-issue-author`,
+  `mentoring-welcome` (first-contribution welcome / orientation),
+  `contributor-to-committer` (readiness path tracker), and
+  `good-first-issue-sweep` (backlog curation / labelling). The on-ramp
+  supply chain is complete from both the authoring side
+  (`good-first-issue-author`) and the curation side (`good-first-issue-sweep`).
+- **`experimental` — no adopter pilot has run.** All five shipped skills
+  may change shape as adopter pilots and contributor-sentiment evaluations
+  land.
+- **`good-first-issue-author` and `good-first-issue-sweep` shipped
+  `experimental`; no adopter pilot has run live good first issue
+  workflows yet.** The G1–G7 suitability thresholds and the R1–R9
+  readiness checklist may shift once real backlog candidates flow through
+  the skills.
 - **`mentoring-welcome` shipped `experimental`; no adopter pilot run.**
   The welcome tone, detecting first-timer vs. repeat contributor, and
   the content of the orientation template may shift once live threads run

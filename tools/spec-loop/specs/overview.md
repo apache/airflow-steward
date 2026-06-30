@@ -31,7 +31,7 @@ Each mode is an independently toggleable set of skills. Maturity mirrors
 | Mode | Spec | Maturity |
 |---|---|---|
 | Agentic Triage | [triage-mode.md](triage-mode.md) | stable (security) / experimental (PR, issue, contributor-nomination) |
-| Agentic Mentoring | [mentoring-mode.md](mentoring-mode.md) | experimental (3 skills) |
+| Agentic Mentoring | [mentoring-mode.md](mentoring-mode.md) | experimental (5 skills) |
 | Agentic Drafting | [drafting-mode.md](drafting-mode.md) | stable (security) / experimental (issue, audit-finding-fix, release-announce-draft) |
 | Agentic Pairing | [pairing-mode.md](pairing-mode.md) | experimental (2 skills) |
 
@@ -54,8 +54,8 @@ Each mode is an independently toggleable set of skills. Maturity mirrors
 | Adapters (Gmail / PonyMail / Jira / GitHub / mail-source / forwarder-relay / mail-archive / github-body-field / github-rollup) | [adapters.md](adapters.md) |
 | Project-agnosticism (de-ASF coupling) | [project-agnosticism.md](project-agnosticism.md) |
 | Meta & quality tooling | [meta-and-quality-tooling.md](meta-and-quality-tooling.md) |
-| Reviewer routing (proposed, Agentic Triage) | [reviewer-routing.md](reviewer-routing.md) |
-| Cross-project skill reconciler (proposed, infra) | [skill-reconciler.md](skill-reconciler.md) |
+| Reviewer routing (experimental, Agentic Triage) | [reviewer-routing.md](reviewer-routing.md) |
+| Cross-project skill reconciler (experimental, infra) | [skill-reconciler.md](skill-reconciler.md) |
 
 ## The non-negotiables every area inherits
 

@@ -7,12 +7,11 @@ status: experimental
 kind: feature
 mode: Mentoring
 source: >
-  mentoring-mode.md Known Gaps ("the curation counterpart — relabeling the
-  existing backlog as good-first-issue candidates — is still unspecced").
   Companion to good-first-issue-author, which drafts net-new issues from a
   supplied candidate. This skill covers the complementary sweep-existing-
   backlog path. Together they fill the newcomer on-ramp from both the
-  authoring and curation sides.
+  authoring and curation sides. Shipped in feat(mentoring): add
+  good-first-issue-sweep skill and eval suite (#632).
 acceptance:
   - Classification uses the G1–G7 suitability rubric; the skill never invents
     or substitutes criteria.

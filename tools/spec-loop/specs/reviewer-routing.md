@@ -13,7 +13,9 @@ source: >
   reviews" (overview.md § Substrate; projects/_template adopter config),
   but no skill turns that roster plus repository signal into an assignee
   suggestion. triage-mode.md § What it does ("propose routing to the
-  right human") names the behaviour; no skill implements it yet.
+  right human") names the behaviour. Skill ships experimental in
+  .claude/skills/magpie-reviewer-routing/ with an eval suite under
+  tools/skill-evals/evals/reviewer-routing/.
 acceptance:
   - The skill is read-only on tracker state and proposes-then-confirms;
     it never assigns, requests review, or labels without confirmation.
@@ -44,9 +46,9 @@ side: a grounded brief a human acts on, not a state change.
 
 ## Where it lives
 
-- Skill (proposed, not implemented): `reviewer-routing` under
-  `skills/`, in the Agentic Triage family alongside `pr-management-triage` and
-  `issue-triage`.
+- Skill: `reviewer-routing` under `.claude/skills/magpie-reviewer-routing/`,
+  in the Agentic Triage family alongside `pr-management-triage` and
+  `issue-triage`. Eval suite under `tools/skill-evals/evals/reviewer-routing/`.
 - Roster source: the project's configured reviewer roster
   (`projects/<project>/` adopter config; `pmc-roster.md` for ASF
   projects, an arbitrary maintainer list for non-ASF adopters). The
@@ -111,9 +113,7 @@ uv run --project tools/skill-evals skill-eval tools/skill-evals/evals/reviewer-r
 
 ## Known gaps
 
-- **No skill is implemented yet.** This spec is `proposed`; the plan
-  pass turns it into a single build item (one skill plus its eval suite).
-- **Open-review-load signal is unspecified in detail.** Whether load is
+- **Open-review-load signal is implementation-defined.** Whether load is
   counted as open review requests, assigned-and-unreviewed PRs, or a
   decay-weighted recent count is left to the implementation; the contract
   only requires that some load signal is present and shown.
@@ -121,3 +121,6 @@ uv run --project tools/skill-evals skill-eval tools/skill-evals/evals/reviewer-r
   assumes an adopter declares a maintainer list; no non-ASF profile
   fixture exercises routing yet (overlaps the non-ASF adopter profile
   work item in IMPLEMENTATION_PLAN).
+- **`experimental` — no adopter pilot has run.** The skill ships but no
+  end-to-end routing workflow has been exercised in a live maintainer
+  session; signal weights and roster-match heuristics may change.

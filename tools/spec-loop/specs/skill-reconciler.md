@@ -14,7 +14,9 @@ source: >
   `source` tag so the split is a registry query). PRINCIPLES.md on the
   safety baseline that must stay eventually-consistent across every copy.
   meta-and-quality-tooling.md (the skill-authoring/quality family this
-  joins). No reconciler tool or skill exists yet.
+  joins). Skill ships experimental in
+  .claude/skills/magpie-skill-reconciler/ with an eval suite under
+  tools/skill-evals/evals/skill-reconciler/.
 acceptance:
   - The reconciler is read-only: it produces a structured diff and a
     reconciliation proposal; it never rewrites either skill without human
@@ -52,10 +54,11 @@ that a maintainer should not ignore.
 
 ## Where it lives
 
-- Skill (proposed, not implemented): `skill-reconciler` under `skills/`,
+- Skill: `skill-reconciler` at `.claude/skills/magpie-skill-reconciler/`,
   in the meta / quality family with `write-skill`, `optimize-skill`, and
   `list-skills` (see [meta-and-quality-tooling.md](meta-and-quality-tooling.md)).
-- Optional deterministic helper (proposed): a `uv` tool under `tools/`
+  Eval suite under `tools/skill-evals/evals/skill-reconciler/`.
+- Optional deterministic helper (not yet built): a `uv` tool under `tools/`
   that does the structural diff (frontmatter, section headings,
   step-by-step decision rules, placeholder inventory) so the skill
   reasons over a normalised diff rather than raw text. Follows the

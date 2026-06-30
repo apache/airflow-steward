@@ -12,7 +12,7 @@ source: >
   Agentic Triage and Agentic Mentoring but are not yet a named family).
   mentoring-mode.md § Known gaps. Implemented by contributor-nomination,
   contributor-activity-sweep, committer-onboarding, good-first-issue-author,
-  and mentoring-welcome.
+  mentoring-welcome, contributor-to-committer, and good-first-issue-sweep.
 acceptance:
   - Every family skill is read-only or propose-before-post; none
     transitions, promotes, or announces without explicit maintainer
@@ -78,6 +78,17 @@ state change for human sign-off.
   Propose-before-post at every state-changing step. Ships
   `mode: Triage` + `experimental`, eval suite under
   `tools/skill-evals/evals/committer-onboarding/`.
+- Skill: `contributor-to-committer` — read-only readiness tracker that
+  maps a contributor's GitHub activity against the adopter's PMC-declared
+  committer or PMC thresholds; surfaces a traffic-light brief (Not yet /
+  Approaching / Ready to nominate) plus the specific evidence gaps that
+  remain. Ships `mode: Mentoring` + `experimental`.
+- Skill: `good-first-issue-sweep` — sweeps the open issue backlog for
+  existing issues that could be labelled as good first issues; classifies
+  each candidate as READY, NEAR-MISS, or SKIP against the G1–G7 rubric;
+  applies labels only after explicit maintainer confirmation. Ships
+  `mode: Mentoring` + `experimental`, eval suite under
+  `tools/skill-evals/evals/good-first-issue-sweep/`.
 
 ## Behaviour & contract
 
@@ -115,10 +126,6 @@ state change for human sign-off.
 - Auto-promoting a contributor: all promotion decisions stay with the
   PMC; the skills prepare evidence and checklists, never act on the
   vote outcome without the nominator's explicit direction.
-- Backlog curation (relabeling the existing issue backlog as good
-  first issue candidates): `good-first-issue-author` drafts net-new
-  issues only; backlog curation is a separate capability not yet
-  specced.
 
 ## Acceptance criteria
 
@@ -153,13 +160,15 @@ uv run --project tools/skill-and-tool-validator --group dev skill-and-tool-valid
   before a skill can safely propose anything. These are candidate work
   items once the active-path skills stabilise and an adopter pilot
   surfaces the concrete policy knobs needed.
-- **Mode boundary with Agentic Mentoring is intentionally fuzzy.** Two family
-  skills (`mentoring-welcome`, `good-first-issue-author`) carry
+- **Mode boundary with Agentic Mentoring is intentionally fuzzy.** Four family
+  skills (`mentoring-welcome`, `good-first-issue-author`,
+  `contributor-to-committer`, `good-first-issue-sweep`) carry
   `mode: Mentoring` and are documented in [mentoring-mode.md](mentoring-mode.md);
-  three carry `mode: Triage`. A later family-maturity review may
-  formalise the boundary or merge the families; for now, both specs
-  cross-reference each other.
-- **`experimental` — no adopter pilot has run.** All five skills exist
+  three carry `mode: Triage` (`contributor-activity-sweep`,
+  `contributor-nomination`, `committer-onboarding`). A later family-maturity
+  review may formalise the boundary or merge the families; for now, both
+  specs cross-reference each other.
+- **`experimental` — no adopter pilot has run.** All seven skills exist
   but no maintainer has run the full contributor-to-committer path
   end-to-end through the family. Shape may change as adopter pilots
   surface real-world usage patterns.
