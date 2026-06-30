@@ -83,7 +83,7 @@ testpaths = ["tests"]
 
 [dependency-groups]
 dev = [
-  "pytest>=8.0",
-  "ruff>=0.6",
-  "mypy>=1.11",
+  "pytest>=9.1.1",
+  "ruff>=0.15.18",
+  "mypy>=2.1.0",
 ]
