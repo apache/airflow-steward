@@ -28,6 +28,7 @@ from skill_and_tool_validator import (
     _MODE_TAXONOMY,
     _OFF_MODES,
     _PRIVACY_EXTERNAL_CONTENT_MODES,
+    ADAPTER_AUTHORING_CATEGORY,
     ALL_CATEGORIES,
     ALLOWED_MODES,
     ASF_COUPLING_CATEGORY,
@@ -63,6 +64,7 @@ from skill_and_tool_validator import (
     resolve_link,
     run_validation,
     slugify,
+    validate_adapter_authoring,
     validate_asf_coupling,
     validate_capability_sync,
     validate_eval_coverage,
@@ -2451,6 +2453,171 @@ class TestValidateTools:
         violations = [v for v in validate_tools(root) if v.category == "organization"]
         assert len(violations) == 1
         assert "'**Organization:** Nope'" in violations[0].message
+
+
+class TestValidateAdapterAuthoring:
+    """Tests for the SOFT adapter authoring smoke check (aspect #11)."""
+
+    def _contract_readme(
+        self,
+        *,
+        credentials: bool = True,
+        operations: bool = True,
+        config: bool = True,
+        contract: str = "contract:tracker",
+    ) -> str:
+        """Build a minimal contract:* adapter README with selectable fields."""
+        lines = [
+            "# tools/my-adapter",
+            "",
+            f"**Capability:** {contract}",
+            "",
+            "An adapter description.",
+            "",
+        ]
+        if operations:
+            lines += ["## Operations", "", "- `search` — find issues.", ""]
+        lines += ["## Prerequisites", ""]
+        if credentials:
+            lines.append("- **Credentials / auth:** API token required.")
+        else:
+            lines.append("- **Runtime:** curl.")
+        lines.append("")
+        if config:
+            lines += ["## Configuration", "", "Set `MY_TOKEN` in the environment.", ""]
+        return "\n".join(lines)
+
+    def test_complete_contract_adapter_no_violations(self, tmp_path: Path) -> None:
+        root = _make_tools_root(tmp_path)
+        tool = root / "tools" / "my-adapter"
+        tool.mkdir()
+        (tool / "README.md").write_text(self._contract_readme())
+        violations = [v for v in validate_adapter_authoring(root) if v.category == ADAPTER_AUTHORING_CATEGORY]
+        assert violations == []
+
+    def test_substrate_tool_not_checked(self, tmp_path: Path) -> None:
+        root = _make_tools_root(tmp_path)
+        tool = root / "tools" / "substrate-tool"
+        tool.mkdir()
+        # substrate:* tool with no credentials / operations / config
+        (tool / "README.md").write_text(
+            "# substrate-tool\n\n**Capability:** substrate:analytics\n\n"
+            "A substrate tool.\n\n## Prerequisites\n\n- Python 3.11+.\n"
+        )
+        violations = [v for v in validate_adapter_authoring(root) if v.category == ADAPTER_AUTHORING_CATEGORY]
+        assert violations == []
+
+    def test_missing_credentials_fires_advisory(self, tmp_path: Path) -> None:
+        root = _make_tools_root(tmp_path)
+        tool = root / "tools" / "no-creds"
+        tool.mkdir()
+        (tool / "README.md").write_text(self._contract_readme(credentials=False))
+        violations = [v for v in validate_adapter_authoring(root) if v.category == ADAPTER_AUTHORING_CATEGORY]
+        assert len(violations) == 1
+        assert "credential-handling" in violations[0].message
+        assert "no-creds" in violations[0].message
+
+    def test_missing_operations_fires_advisory(self, tmp_path: Path) -> None:
+        root = _make_tools_root(tmp_path)
+        tool = root / "tools" / "no-ops"
+        tool.mkdir()
+        (tool / "README.md").write_text(self._contract_readme(operations=False))
+        violations = [v for v in validate_adapter_authoring(root) if v.category == ADAPTER_AUTHORING_CATEGORY]
+        assert len(violations) == 1
+        assert "operations" in violations[0].message
+        assert "no-ops" in violations[0].message
+
+    def test_missing_config_fires_advisory(self, tmp_path: Path) -> None:
+        root = _make_tools_root(tmp_path)
+        tool = root / "tools" / "no-config"
+        tool.mkdir()
+        (tool / "README.md").write_text(self._contract_readme(config=False))
+        violations = [v for v in validate_adapter_authoring(root) if v.category == ADAPTER_AUTHORING_CATEGORY]
+        assert len(violations) == 1
+        assert "config-keys" in violations[0].message
+        assert "no-config" in violations[0].message
+
+    def test_all_three_missing_fires_three_advisories(self, tmp_path: Path) -> None:
+        root = _make_tools_root(tmp_path)
+        tool = root / "tools" / "bare-adapter"
+        tool.mkdir()
+        (tool / "README.md").write_text(
+            "# bare-adapter\n\n**Capability:** contract:mail-source\n\n"
+            "A bare adapter.\n\n## Prerequisites\n\n- Something.\n"
+        )
+        violations = [v for v in validate_adapter_authoring(root) if v.category == ADAPTER_AUTHORING_CATEGORY]
+        assert len(violations) == 3
+        tags = {v.message.split("[")[1].split("]")[0] for v in violations}
+        assert tags == {"credential-handling", "operations", "config-keys"}
+
+    def test_tool_md_reference_satisfies_operations(self, tmp_path: Path) -> None:
+        root = _make_tools_root(tmp_path)
+        tool = root / "tools" / "tool-md-ops"
+        tool.mkdir()
+        readme = (
+            "# tool-md-ops\n\n**Capability:** contract:tracker\n\n"
+            "See [tool.md](tool.md) for the operation catalogue.\n\n"
+            "## Prerequisites\n\n- **Credentials / auth:** API token.\n\n"
+            "## Configuration\n\nSet `TRACKER_URL`.\n"
+        )
+        (tool / "README.md").write_text(readme)
+        violations = [v for v in validate_adapter_authoring(root) if v.category == ADAPTER_AUTHORING_CATEGORY]
+        assert violations == []
+
+    def test_interface_section_satisfies_operations(self, tmp_path: Path) -> None:
+        root = _make_tools_root(tmp_path)
+        tool = root / "tools" / "iface-ops"
+        tool.mkdir()
+        readme = (
+            "# iface-ops\n\n**Capability:** contract:mail-archive\n\n"
+            "A mail archive adapter.\n\n"
+            "## Prerequisites\n\n- **Credentials / auth:** None.\n\n"
+            "## Interface\n\nList of operations.\n\n"
+            "## Configuration\n\nSet `ARCHIVE_URL`.\n"
+        )
+        (tool / "README.md").write_text(readme)
+        violations = [v for v in validate_adapter_authoring(root) if v.category == ADAPTER_AUTHORING_CATEGORY]
+        assert violations == []
+
+    def test_project_config_reference_satisfies_config(self, tmp_path: Path) -> None:
+        root = _make_tools_root(tmp_path)
+        tool = root / "tools" / "proj-config-adapter"
+        tool.mkdir()
+        readme = (
+            "# proj-config-adapter\n\n**Capability:** contract:source-control\n\n"
+            "Config lives in `<project-config>/vcs-config.md`.\n\n"
+            "## Prerequisites\n\n- **Credentials / auth:** OAuth token.\n\n"
+            "## How to use\n\nInvoke via `vcs clone`.\n"
+        )
+        (tool / "README.md").write_text(readme)
+        violations = [v for v in validate_adapter_authoring(root) if v.category == ADAPTER_AUTHORING_CATEGORY]
+        assert violations == []
+
+    def test_multi_capability_with_contract_is_checked(self, tmp_path: Path) -> None:
+        root = _make_tools_root(tmp_path)
+        tool = root / "tools" / "multi-cap"
+        tool.mkdir()
+        # contract:mail-source + contract:mail-draft — should be checked
+        (tool / "README.md").write_text(
+            "# multi-cap\n\n**Capability:** contract:mail-source + contract:mail-draft\n\n"
+            "A dual-contract adapter.\n\n## Prerequisites\n\n- Something.\n"
+        )
+        violations = [v for v in validate_adapter_authoring(root) if v.category == ADAPTER_AUTHORING_CATEGORY]
+        assert len(violations) == 3
+
+    def test_adapter_authoring_is_soft_category(self) -> None:
+        assert ADAPTER_AUTHORING_CATEGORY in SOFT_CATEGORIES
+
+    def test_adapter_authoring_in_all_categories(self) -> None:
+        assert ADAPTER_AUTHORING_CATEGORY in ALL_CATEGORIES
+
+    def test_no_readme_skipped_gracefully(self, tmp_path: Path) -> None:
+        root = _make_tools_root(tmp_path)
+        (root / "tools" / "no-readme-adapter").mkdir()
+        # No README — validate_tools reports this; adapter_authoring must not crash
+        violations = list(validate_adapter_authoring(root))
+        assert all(v.category == ADAPTER_AUTHORING_CATEGORY for v in violations)
+        assert violations == []
 
 
 class TestOrganizationMembership:

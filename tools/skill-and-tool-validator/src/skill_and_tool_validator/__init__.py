@@ -17,7 +17,7 @@
 
 """Validate framework skill definitions.
 
-This module validates ten aspects of every skill under
+This module validates eleven aspects of every skill under
 skills/:
 
 1. YAML frontmatter — every SKILL.md must have a valid frontmatter
@@ -60,6 +60,12 @@ skills/:
     satisfy without editing the skill.  Each hit is tagged with a
     remedy class (placeholder / adapter / capability-flag).  Never
     fails the run — advisory only.
+11. Adapter authoring smoke (SOFT) — every ``contract:*`` adapter
+    tool README must declare the three authoring fields that make an
+    adapter self-contained for adopters: credential / privacy
+    handling, supported operations, and adopter config keys.
+    Missing fields are advisories so legacy adapters can be brought
+    into compliance deliberately without blocking unrelated changes.
 
 SOFT categories surface as advisory warnings (stderr) without
 failing the run unless ``--strict`` is passed.
@@ -103,6 +109,40 @@ TOOL_CAPABILITY_RE = re.compile(r"^\*\*Capability:\*\*[ \t]+(.+)$", re.MULTILINE
 # one so the tool's runtime / CLI / credential / network requirements are
 # stated up front rather than discovered at first run.
 TOOL_PREREQUISITES_RE = re.compile(r"^##[ \t]+Prerequisites[ \t]*$", re.MULTILINE)
+
+# ---------------------------------------------------------------------------
+# Adapter authoring contract patterns (aspect #11, SOFT advisory)
+# ---------------------------------------------------------------------------
+
+# Capability prefix that identifies an adapter (as opposed to a substrate tool).
+_ADAPTER_CONTRACT_PREFIX = "contract:"
+
+# Credential / privacy handling — matches the canonical **Credentials / auth:**
+# bullet used in all adapter Prerequisites sections.
+_ADAPTER_CREDENTIALS_RE = re.compile(r"\*\*Credentials\s*/\s*auth:\*\*", re.IGNORECASE)
+
+# Operations documentation — any of: a named operations section heading, a
+# tool.md or operations.md reference in the intro text.
+_ADAPTER_OPERATIONS_RE = re.compile(
+    r"(?:"
+    r"^##\s+(?:Operations|Interface|How\s+to\s+use|Invocation"
+    r"|Read\s+subcommands|Write\s+subcommands|Subcommands)\s*$"
+    r"|\btool\.md\b"
+    r"|\boperations\.md\b"
+    r")",
+    re.MULTILINE | re.IGNORECASE,
+)
+
+# Config keys documentation — a Configuration section or a project-config
+# / *-config.md reference that points adopters to the adopter-visible knobs.
+_ADAPTER_CONFIG_RE = re.compile(
+    r"(?:"
+    r"^##\s+(?:Configuration|Config(?:uration)?\s+[Kk]eys?)\s*$"
+    r"|\bproject-config\b"
+    r"|-config\.md\b"
+    r")",
+    re.MULTILINE,
+)
 
 # Optional `**Organization:** <org>` line in a tool README — declares that
 # the tool belongs to / is the adapter for a specific organization (e.g.
@@ -314,6 +354,8 @@ LICENSE_HEADER_CATEGORY = "license_header"
 # editing the skill body.  Each hit is tagged with a remedy class so maintainers
 # know how to generalise it.  Never fails the run.
 ASF_COUPLING_CATEGORY = "asf_coupling"
+# SOFT advisory: adapter authoring fields for contract:* tools.
+ADAPTER_AUTHORING_CATEGORY = "adapter-authoring"
 
 # The `magpie-` namespace prefix every installed framework skill carries.
 SKILL_NAME_PREFIX = "magpie-"
@@ -328,6 +370,7 @@ SOFT_CATEGORIES: frozenset[str] = frozenset(
         LOWERCASE_F_FIELD_CATEGORY,
         EVAL_COVERAGE_CATEGORY,
         ASF_COUPLING_CATEGORY,
+        ADAPTER_AUTHORING_CATEGORY,
     }
 )
 HARD_CATEGORIES: frozenset[str] = frozenset(
@@ -1466,6 +1509,86 @@ def validate_tools(root: Path | None = None) -> Iterable[Violation]:
                 )
 
 
+def validate_adapter_authoring(root: Path | None = None) -> Iterable[Violation]:
+    """Advisory (SOFT) checks for ``contract:*`` adapter tool READMEs.
+
+    Adapter READMEs are the primary documentation surface for adopters
+    choosing and configuring an adapter.  Three authoring fields make
+    an adapter self-contained:
+
+    1. **Credential / privacy handling** — ``**Credentials / auth:**``
+       in the README so adopters know what credentials the adapter needs
+       and what privacy boundaries it respects.
+    2. **Operations documentation** — at least one of: an ``## Operations``
+       / ``## Interface`` / ``## Invocation`` / ``## How to use`` section,
+       or a ``tool.md`` / ``operations.md`` reference so adopters can
+       discover what the adapter actually does.
+    3. **Config keys** — a ``## Configuration`` section or a
+       ``project-config`` / ``*-config.md`` reference so adopters know
+       which knobs they control.
+
+    All are SOFT advisories — legacy adapters can be brought into
+    compliance deliberately without blocking unrelated changes.
+    ``substrate:*`` tools are excluded; the contract applies only to
+    ``contract:*`` adapter tools.
+    """
+    for tool_dir in collect_tool_dirs(root):
+        readme = tool_dir / "README.md"
+        if not readme.exists():
+            continue  # validate_tools already reported the missing README
+        try:
+            text = readme.read_text(encoding="utf-8")
+        except OSError:
+            continue
+
+        # Only check contract:* adapter tools
+        cap_match = TOOL_CAPABILITY_RE.search(text)
+        if cap_match is None:
+            continue
+        raw_cap = cap_match.group(1).strip()
+        entries = [e.strip() for e in raw_cap.split("+") if e.strip()]
+        if not any(e.startswith(_ADAPTER_CONTRACT_PREFIX) for e in entries):
+            continue
+
+        # Check 1: credential / privacy handling
+        if _ADAPTER_CREDENTIALS_RE.search(text) is None:
+            yield Violation(
+                readme,
+                1,
+                f"adapter-authoring [credential-handling] adapter '{tool_dir.name}' "
+                f"README missing '**Credentials / auth:**' — adapter READMEs must "
+                f"declare credential and privacy handling requirements so adopters "
+                f"know what the adapter needs before wiring it in "
+                f"(see docs/adapters.md § Adapter READMEs are contracts)",
+                category=ADAPTER_AUTHORING_CATEGORY,
+            )
+
+        # Check 2: operations documentation
+        if _ADAPTER_OPERATIONS_RE.search(text) is None:
+            yield Violation(
+                readme,
+                1,
+                f"adapter-authoring [operations] adapter '{tool_dir.name}' "
+                f"README has no operations section (## Operations / ## Interface / "
+                f"## Invocation / ## How to use) or tool.md reference — "
+                f"document supported operations so adopters know what the adapter provides "
+                f"(see docs/adapters.md § Adapter READMEs are contracts)",
+                category=ADAPTER_AUTHORING_CATEGORY,
+            )
+
+        # Check 3: config keys documentation
+        if _ADAPTER_CONFIG_RE.search(text) is None:
+            yield Violation(
+                readme,
+                1,
+                f"adapter-authoring [config-keys] adapter '{tool_dir.name}' "
+                f"README has no ## Configuration section or project-config reference — "
+                f"document adopter config keys so the adapter is self-contained "
+                f"(see docs/adapters.md § Adapter READMEs are contracts)",
+                category=ADAPTER_AUTHORING_CATEGORY,
+            )
+
+
 def _parse_capability_doc_table(text: str, header: str) -> dict[str, set[str]]:
     """Parse a markdown table rooted at *header* in labels-and-capabilities.md.
 
@@ -2042,6 +2165,10 @@ def run_validation(root: Path | None = None) -> list[Violation]:
     # Tool-level checks: every tools/<name>/ has a README that declares its capability.
     violations.extend(validate_tools(repo_root))
 
+    # Adapter authoring smoke: contract:* tool READMEs declare credentials,
+    # operations, and config keys (SOFT advisory).
+    violations.extend(validate_adapter_authoring(repo_root))
+
     # Capability-sync check: the doc tables and the source must agree.
     violations.extend(validate_capability_sync(repo_root))
 
@@ -2113,6 +2240,7 @@ def main(argv: list[str] | None = None) -> int:
 
 _SOFT_RULE_PREFIXES: tuple[str, ...] = (
     "action-inventory",
+    "adapter-authoring",
     "asf-coupling",
     "chain-handoff",
     "criteria-source",
