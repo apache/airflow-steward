@@ -155,6 +155,11 @@ Two non-negotiable boundaries cross every Agentic Drafting skill above:
 - [**`spec.md`**](spec.md), per-skill scope, state-change
   boundary, hand-off protocol, adopter knobs. The contract the
   future skill implementations must satisfy.
+- [**`svn-release-runbook.md`**](svn-release-runbook.md), the
+  hands-on copy-paste command sequence for the `svnpubsub` backend:
+  package a tagged revision as a signed source `.zip` with SHA-512
+  and stage it to `dist/dev/` (lifecycle Steps 4–5). The longhand
+  companion to [`release-rc-cut`](../../skills/release-rc-cut/SKILL.md).
 
 Two documents that **do not** ship in this family but are
 referenced from it:
