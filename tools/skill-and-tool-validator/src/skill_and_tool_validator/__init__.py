@@ -109,6 +109,7 @@ MODES_DOC_PATH = Path("docs/modes.md")
 TOOL_README_CATEGORY = "tool-readme"
 TOOL_CAPABILITY_CATEGORY = "tool-capability"
 TOOL_PREREQUISITES_CATEGORY = "tool-prerequisites"
+TOOL_PREREQUISITES_FIELDS_CATEGORY = "tool-prerequisites-fields"
 
 # Matches the `**Capability:** <token>` line (tool capability =
 # `contract:NAME` / `substrate:NAME`, multi-value `a + b`) regardless of
@@ -158,6 +159,24 @@ _ADAPTER_CONFIG_RE = re.compile(
     r"|\btools\.[a-z0-9_-]+\.[a-z0-9_]+\b"
     r")",
     re.MULTILINE,
+)
+
+# Sub-field regexes for the standard four-line Prerequisites layout:
+#   **Runtime:** ...
+#   **CLIs:** ...         (or **CLIs / credentials / network:** for delegation)
+#   **Credentials / auth:** ...
+#   **Network:** ...
+# Labels follow the `**LABEL:** value` convention (colon inside the closing
+# bold markers, e.g. `**Runtime:**`).  Each pattern matches either that style
+# OR the less-common `**LABEL**:` style (colon outside) to stay robust.
+# The delegation pattern (`**CLIs / credentials / network:**`) is the accepted
+# short form for pure-contract tools that delegate all three to an adapter.
+_PREREQ_RUNTIME_RE = re.compile(r"\*\*Runtime:?\*\*\s*:?", re.MULTILINE)
+_PREREQ_CLIS_RE = re.compile(r"\*\*CLIs?:?\*\*\s*:?", re.MULTILINE)
+_PREREQ_CREDENTIALS_RE = re.compile(r"\*\*Credentials?(?:\s*/\s*auth)?:?\*\*\s*:?", re.MULTILINE)
+_PREREQ_NETWORK_RE = re.compile(r"\*\*Network:?\*\*\s*:?", re.MULTILINE)
+_PREREQ_DELEGATION_RE = re.compile(
+    r"\*\*CLIs\s*/\s*credentials\s*/\s*network:?\*\*\s*:?", re.MULTILINE | re.IGNORECASE
 )
 
 # Optional `**Organization:** <org>` line in a tool README — declares that
@@ -398,6 +417,7 @@ HARD_CATEGORIES: frozenset[str] = frozenset(
         TOOL_README_CATEGORY,
         TOOL_CAPABILITY_CATEGORY,
         TOOL_PREREQUISITES_CATEGORY,
+        TOOL_PREREQUISITES_FIELDS_CATEGORY,
         ORGANIZATION_CATEGORY,
         CAPABILITY_SYNC_CATEGORY,
         INJECTION_GUARD_CATEGORY,
@@ -1471,7 +1491,8 @@ def validate_tools(root: Path | None = None) -> Iterable[Violation]:
             yield Violation(readme, None, f"cannot read README.md: {exc}")
             continue
 
-        if TOOL_PREREQUISITES_RE.search(text) is None:
+        prereq_match = TOOL_PREREQUISITES_RE.search(text)
+        if prereq_match is None:
             yield Violation(
                 readme,
                 1,
@@ -1480,6 +1501,38 @@ def validate_tools(root: Path | None = None) -> Iterable[Violation]:
                 f"access up front (see tools/AGENTS.md)",
                 category=TOOL_PREREQUISITES_CATEGORY,
             )
+        else:
+            # Validate sub-field structure within the Prerequisites section.
+            # Each section must declare **Runtime:**, **CLIs:**, **Credentials /
+            # auth:**, and **Network:** as bold bullet labels, OR use the
+            # accepted delegation shorthand **CLIs / credentials / network:**
+            # (for pure-contract tools that proxy all three to a concrete adapter).
+            next_heading = re.search(r"^##\s+", text[prereq_match.end() :], re.MULTILINE)
+            section_end = prereq_match.end() + next_heading.start() if next_heading else len(text)
+            section = text[prereq_match.start() : section_end]
+            has_delegation = bool(_PREREQ_DELEGATION_RE.search(section))
+            missing: list[str] = []
+            if not _PREREQ_RUNTIME_RE.search(section):
+                missing.append("**Runtime:**")
+            if not has_delegation:
+                if not _PREREQ_CLIS_RE.search(section):
+                    missing.append("**CLIs:**")
+                if not _PREREQ_CREDENTIALS_RE.search(section):
+                    missing.append("**Credentials / auth:**")
+                if not _PREREQ_NETWORK_RE.search(section):
+                    missing.append("**Network:**")
+            if missing:
+                yield Violation(
+                    readme,
+                    text[: prereq_match.start()].count("\n") + 1,
+                    f"tool '{tool_dir.name}' Prerequisites section missing required "
+                    f"sub-field(s): {', '.join(missing)} — use bold labels "
+                    f"(**Runtime:**, **CLIs:**, **Credentials / auth:**, **Network:**) "
+                    f"or the delegation shorthand "
+                    f"(**CLIs / credentials / network:** Provided by …) "
+                    f"for pure-contract tools",
+                    category=TOOL_PREREQUISITES_FIELDS_CATEGORY,
+                )
 
         org_match = TOOL_ORGANIZATION_RE.search(text)
         if org_match is not None:

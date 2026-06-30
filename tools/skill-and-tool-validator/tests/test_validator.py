@@ -2449,14 +2449,28 @@ class TestValidateAsfCoupling:
         assert all(v.category != ASF_COUPLING_CATEGORY for v in violations)
 
 
+_VALID_PREREQS = (
+    "## Prerequisites\n\n"
+    "- **Runtime:** None.\n"
+    "- **CLIs:** None.\n"
+    "- **Credentials / auth:** None.\n"
+    "- **Network:** None.\n"
+)
+
+_DELEGATION_PREREQS = (
+    "## Prerequisites\n\n"
+    "- **Runtime:** None — pure Markdown contract.\n"
+    "- **CLIs / credentials / network:** Provided by the concrete adapter.\n"
+)
+
+
 class TestValidateTools:
     def test_tool_with_valid_readme(self, tmp_path: Path) -> None:
         root = _make_tools_root(tmp_path)
         tool = root / "tools" / "foo"
         tool.mkdir()
         (tool / "README.md").write_text(
-            "# tools/foo\n\n**Capability:** substrate:framework-dev\n\nFoo tool.\n\n"
-            "## Prerequisites\n\n- Python 3.11+ via uv.\n"
+            "# tools/foo\n\n**Capability:** substrate:framework-dev\n\nFoo tool.\n\n" + _VALID_PREREQS
         )
         violations = list(validate_tools(root))
         assert violations == []
@@ -2474,7 +2488,7 @@ class TestValidateTools:
         tool = root / "tools" / "bare"
         tool.mkdir()
         (tool / "README.md").write_text(
-            "# bare\n\nDescription only, no capability line.\n\n## Prerequisites\n\n- None.\n"
+            "# bare\n\nDescription only, no capability line.\n\n" + _VALID_PREREQS
         )
         violations = list(validate_tools(root))
         assert len(violations) == 1
@@ -2494,7 +2508,7 @@ class TestValidateTools:
         tool = root / "tools" / "dual"
         tool.mkdir()
         (tool / "README.md").write_text(
-            "# dual\n\n**Capability:** contract:tracker + substrate:analytics\n\n## Prerequisites\n\n- None.\n"
+            "# dual\n\n**Capability:** contract:tracker + substrate:analytics\n\n" + _VALID_PREREQS
         )
         violations = list(validate_tools(root))
         assert violations == []
@@ -2510,7 +2524,7 @@ class TestValidateTools:
             "# tools/with-prose\n\n"
             "**Capability:** substrate:framework-dev\n\n"
             "Some prose that follows the capability line and should NOT be parsed as part of it.\n\n"
-            "## Prerequisites\n\n- None.\n"
+            + _VALID_PREREQS
         )
         violations = list(validate_tools(root))
         assert violations == []
@@ -2540,7 +2554,7 @@ class TestValidateTools:
         tool.mkdir()
         (tool / "README.md").write_text(
             "# asf-backend\n\n**Capability:** substrate:framework-dev\n\n"
-            "**Organization:** ASF\n\nAn ASF backend.\n\n## Prerequisites\n\n- None.\n"
+            "**Organization:** ASF\n\nAn ASF backend.\n\n" + _VALID_PREREQS
         )
         violations = list(validate_tools(root))
         assert violations == []
@@ -2552,11 +2566,91 @@ class TestValidateTools:
         tool.mkdir()
         (tool / "README.md").write_text(
             "# bogus-org\n\n**Capability:** substrate:framework-dev\n\n"
-            "**Organization:** Nope\n\nA tool.\n\n## Prerequisites\n\n- None.\n"
+            "**Organization:** Nope\n\nA tool.\n\n" + _VALID_PREREQS
         )
         violations = [v for v in validate_tools(root) if v.category == "organization"]
         assert len(violations) == 1
         assert "'**Organization:** Nope'" in violations[0].message
+
+    def test_prerequisites_subfields_standard_format(self, tmp_path: Path) -> None:
+        root = _make_tools_root(tmp_path)
+        tool = root / "tools" / "standard"
+        tool.mkdir()
+        (tool / "README.md").write_text(
+            "# standard\n\n**Capability:** substrate:framework-dev\n\n" + _VALID_PREREQS
+        )
+        violations = [v for v in validate_tools(root) if v.category == "tool-prerequisites-fields"]
+        assert violations == []
+
+    def test_prerequisites_subfields_delegation_pattern(self, tmp_path: Path) -> None:
+        # A pure-contract tool may use the delegation shorthand for CLIs/credentials/network.
+        root = _make_tools_root(tmp_path)
+        tool = root / "tools" / "contract"
+        tool.mkdir()
+        (tool / "README.md").write_text(
+            "# contract\n\n**Capability:** contract:mail-source\n\n" + _DELEGATION_PREREQS
+        )
+        violations = [v for v in validate_tools(root) if v.category == "tool-prerequisites-fields"]
+        assert violations == []
+
+    def test_prerequisites_subfields_missing_runtime(self, tmp_path: Path) -> None:
+        root = _make_tools_root(tmp_path)
+        tool = root / "tools" / "no-runtime"
+        tool.mkdir()
+        (tool / "README.md").write_text(
+            "# no-runtime\n\n**Capability:** substrate:framework-dev\n\n"
+            "## Prerequisites\n\n"
+            "- **CLIs:** None.\n"
+            "- **Credentials / auth:** None.\n"
+            "- **Network:** None.\n"
+        )
+        violations = [v for v in validate_tools(root) if v.category == "tool-prerequisites-fields"]
+        assert len(violations) == 1
+        assert "**Runtime:**" in violations[0].message
+
+    def test_prerequisites_subfields_missing_network(self, tmp_path: Path) -> None:
+        root = _make_tools_root(tmp_path)
+        tool = root / "tools" / "no-network"
+        tool.mkdir()
+        (tool / "README.md").write_text(
+            "# no-network\n\n**Capability:** substrate:framework-dev\n\n"
+            "## Prerequisites\n\n"
+            "- **Runtime:** Python 3.11+.\n"
+            "- **CLIs:** None.\n"
+            "- **Credentials / auth:** None.\n"
+        )
+        violations = [v for v in validate_tools(root) if v.category == "tool-prerequisites-fields"]
+        assert len(violations) == 1
+        assert "**Network:**" in violations[0].message
+
+    def test_prerequisites_subfields_missing_clis_and_credentials(self, tmp_path: Path) -> None:
+        root = _make_tools_root(tmp_path)
+        tool = root / "tools" / "no-clis"
+        tool.mkdir()
+        (tool / "README.md").write_text(
+            "# no-clis\n\n**Capability:** substrate:framework-dev\n\n"
+            "## Prerequisites\n\n"
+            "- **Runtime:** Python 3.11+.\n"
+            "- **Network:** api.github.com.\n"
+        )
+        violations = [v for v in validate_tools(root) if v.category == "tool-prerequisites-fields"]
+        assert len(violations) == 1
+        assert "**CLIs:**" in violations[0].message
+        assert "**Credentials / auth:**" in violations[0].message
+
+    def test_prerequisites_subfields_delegation_no_network_required(self, tmp_path: Path) -> None:
+        # Delegation pattern covers CLIs + credentials + network; no separate Network: needed.
+        root = _make_tools_root(tmp_path)
+        tool = root / "tools" / "delegate"
+        tool.mkdir()
+        (tool / "README.md").write_text(
+            "# delegate\n\n**Capability:** contract:cve-authority\n\n"
+            "## Prerequisites\n\n"
+            "- **Runtime:** None — Markdown contract spec.\n"
+            "- **CLIs / credentials / network:** Provided by the concrete adapter.\n"
+        )
+        violations = [v for v in validate_tools(root) if v.category == "tool-prerequisites-fields"]
+        assert violations == []
 
 
 class TestValidateAdapterAuthoring:

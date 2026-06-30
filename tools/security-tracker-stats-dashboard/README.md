@@ -219,16 +219,16 @@ remaining charts still render.
 
 ## Prerequisites
 
-- `gh` authenticated with read access to `<tracker>` (and to
-  `<upstream>` for PR metadata, when configured).
-- `python3` (3.9+).
-- `jq` (only used by the fetch scripts via gh's `--jq` flag).
-- Network access to `api.github.com` and (for viewing) Plotly's CDN.
-- Optional: `pyyaml`. When missing, `render.py` falls back to a
-  bundled minimal YAML subset parser sufficient for
-  `default-config.yaml` and typical overlays. To pin a clean PyYAML
-  invocation, set `TRACKER_STATS_PY=uv-yaml` and the orchestrator
-  runs every step under `uv run --with pyyaml`.
+- **Runtime:** Python 3.9+ (`python3`). Run each stage as `python3 fetch_events.py`, etc.
+  Optional: `pyyaml` — when missing, `render.py` uses a bundled minimal YAML subset parser
+  sufficient for `default-config.yaml` and typical overlays; set `TRACKER_STATS_PY=uv-yaml`
+  to pin clean PyYAML invocations via `uv run --with pyyaml`.
+- **CLIs:** `gh` (authenticated with read access to `<tracker>`, and to `<upstream>` when
+  PR metadata is enabled); `jq` (used by fetch scripts via `gh --jq`).
+- **Credentials / auth:** `gh auth status` must show a logged-in account with read access to
+  `<tracker>`. `<upstream>` access is required only when `pr_repo` is configured.
+- **Network:** `api.github.com` (REST) for event and PR fetch; Plotly CDN
+  (`cdn.plot.ly`) when viewing the generated HTML dashboards in a browser.
 
 ## Failure modes
 
