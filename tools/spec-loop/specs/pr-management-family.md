@@ -160,14 +160,14 @@ uv run --project tools/skill-and-tool-validator --group dev skill-and-tool-valid
   the triage → stats → code-review → quick-merge → mentor pipeline
   end-to-end under evaluation conditions. Shape may change as pilot
   evaluations surface real-world usage patterns.
-- **`pr-management-code-review` lacks a dedicated eval suite.** The
-  code-review skill ships without a matching suite in
-  `tools/skill-evals/evals/pr-management-code-review/`; the SOFT
-  eval-coverage check in `skill-and-tool-validator` flags this. Adding a
-  step-level fixture set is the next concrete quality improvement for
-  this family. Minimum coverage: selector resolution, review-risk
-  classification, AI-generated-code signal handling, prompt injection in
-  PR body/comments, and a typical APPROVE / REQUEST_CHANGES handoff.
+- **`pr-management-code-review` now has a full eval suite** at
+  `tools/skill-evals/evals/pr-management-code-review/` covering 112 cases
+  across 24 steps: selector resolution, per-finding risk classification,
+  AI-generated-code signal handling, prompt-injection resistance across PR
+  body / code comments / commit messages, review-disposition (APPROVE /
+  REQUEST_CHANGES / COMMENT), and the confirmation-gate handoff (post /
+  dry-run-skip / re-draft). The SOFT eval-coverage validator warning is
+  cleared. Acceptance criterion 6 is met.
 - **Stale-PR handling is built into `pr-management-triage`.** Dedicated
   stale sweeps (`stale-draft`, `inactive-open`, `stale-review-ping`) run
   as Step 5 of the triage flow and can be invoked standalone via

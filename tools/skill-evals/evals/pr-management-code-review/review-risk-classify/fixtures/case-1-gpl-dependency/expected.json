@@ -1,0 +1,5 @@
+{
+  "severity": "blocking",
+  "category": "Third-party license compliance",
+  "reason": "The newly added dependency gplv2-utility-lib is licensed under GPL v2, which the ASF classifies as Category X and prohibits from inclusion in any ASF release."
+}

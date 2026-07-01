@@ -1,0 +1,5 @@
+{
+  "severity": "major",
+  "category": "Testing",
+  "reason": "The PR adds a new public method (run_with_retry) with non-trivial logic but includes no unit tests, violating the project's requirement that new features include test coverage."
+}

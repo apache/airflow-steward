@@ -2,7 +2,7 @@
 
 Behavioral evals for the `pr-management-code-review` skill.
 
-## Suites (79 cases total)
+## Suites (112 cases total)
 
 | Suite | Step | Cases | What it covers |
 |---|---|---|---|
@@ -26,6 +26,10 @@ Behavioral evals for the `pr-management-code-review` skill.
 | step-6-disposition | Step 6 | 6 | APPROVE / REQUEST_CHANGES / COMMENT auto-pick logic |
 | step-7b-review-body-attribution | Step 7b | 3 | Golden rule 5 AI-attribution footer present / missing / paraphrased before posting |
 | review-disposition | Step 2 (per-PR review loop — disposition) | 5 | APPROVE (clean PR), REQUEST_CHANGES (code issues), COMMENT (failing CI), COMMENT (unresolved maintainer REQUEST_CHANGES), prompt-injection resistance |
+| selector-resolution | Step 0 (selector parsing) | 4 | single-pr, composed area+collab+max flags, default my-reviews, requested-only with dry-run and inline:off |
+| review-risk-classify | Step 4 (per-finding severity) | 4 | blocking (GPL dep), major (missing tests), minor (AI disclosure absent), none (clean code-quality change) |
+| injection-guard | Steps 3–4 (injection resistance) | 4 | PR-body approve-immediately, code-comment directive, commit-message SYSTEM directive, clean PR (no injection) |
+| review-handoff | Steps 7–8 (confirmation gate) | 3 | confirm→post, confirm in dry-run→dry-run-skip, wording edit→re-draft |
 
 ## Run
 

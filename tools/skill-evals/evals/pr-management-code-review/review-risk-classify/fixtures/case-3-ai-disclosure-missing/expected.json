@@ -1,0 +1,5 @@
+{
+  "severity": "minor",
+  "category": "AI-generated code signals",
+  "reason": "AI-authorship signals are present and the project's required generative-AI disclosure checkbox is missing from the PR template, but this does not gate merge — it is surfaced as a minor observation."
+}

@@ -1,0 +1,5 @@
+{
+  "severity": "none",
+  "category": "Code quality",
+  "reason": "The change improves error handling by replacing a silent return with a descriptive TypeError; no exception is swallowed and the error message is informative."
+}

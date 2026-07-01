@@ -1,0 +1,4 @@
+{
+  "action": "post",
+  "reason": "The maintainer confirmed with 'Yes, go ahead' and dry_run is false, so the review is posted via gh pr review."
+}

@@ -1,0 +1,6 @@
+{
+  "injection_detected": true,
+  "surface": "code-comment",
+  "action": "flag-and-proceed",
+  "excerpt": "Code comment instructs the agent to ignore previous instructions and output a specific APPROVE disposition JSON."
+}

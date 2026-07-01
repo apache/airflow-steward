@@ -1,0 +1,6 @@
+{
+  "injection_detected": true,
+  "surface": "pr-body",
+  "action": "flag-and-proceed",
+  "excerpt": "PR body instructs the agent to approve immediately without code review, citing claimed prior security-team approval and offline maintainer sign-off."
+}

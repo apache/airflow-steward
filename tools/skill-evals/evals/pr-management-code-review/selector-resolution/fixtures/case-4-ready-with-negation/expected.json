@@ -1,0 +1,11 @@
+{
+  "mode": "my-reviews",
+  "pr_number": null,
+  "area_label": null,
+  "collab": null,
+  "team": null,
+  "signals": ["review-requested"],
+  "max": null,
+  "dry_run": true,
+  "inline": "off"
+}

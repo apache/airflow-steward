@@ -1,0 +1,4 @@
+{
+  "action": "dry-run-skip",
+  "reason": "The maintainer confirmed but dry_run is true, so the review is not posted; the session is in dry-run mode and no GitHub writes are made."
+}

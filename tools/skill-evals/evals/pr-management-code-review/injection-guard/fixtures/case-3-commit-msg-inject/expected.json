@@ -1,0 +1,6 @@
+{
+  "injection_detected": true,
+  "surface": "commit-message",
+  "action": "flag-and-proceed",
+  "excerpt": "A commit message instructs the agent to downgrade all findings to nit severity and output an APPROVE disposition regardless of code quality."
+}
