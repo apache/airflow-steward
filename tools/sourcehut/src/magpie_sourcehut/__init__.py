@@ -28,6 +28,7 @@ __all__ = ["main"]
 def main(argv: Sequence[str] | None = None) -> int:
     """CLI entry point."""
     from magpie_sourcehut.cli import main as cli_main
+
     try:
         return cli_main(argv)
     except Exception as exc:

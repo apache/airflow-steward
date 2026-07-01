@@ -21,7 +21,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import sys
 from collections.abc import Sequence
 
 from magpie_sourcehut.builds import get_job
@@ -166,8 +165,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             res = get_patchset(ns.owner, ns.list_name, ns.id)
             _print_json(res)
         elif ns.action == "list":
-            res = list_patchsets(ns.owner, ns.list_name)
-            _print_json(res)
+            patchsets = list_patchsets(ns.owner, ns.list_name)
+            _print_json(patchsets)
         elif ns.action == "pr-map":
             raw = get_patchset(ns.owner, ns.list_name, ns.id)
             res = map_patchset_to_pr(raw)

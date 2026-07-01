@@ -16,24 +16,31 @@
 # under the License.
 
 import json
-from io import BytesIO
+from typing import Any
 from unittest.mock import MagicMock, patch
+
 import pytest
 
-from magpie_sourcehut.client import SourceHutError, query_graphql
-from magpie_sourcehut.todo import get_ticket, submit_ticket, submit_comment, label_ticket, update_ticket_status
-from magpie_sourcehut.lists import get_patchset, list_patchsets, map_patchset_to_pr
 from magpie_sourcehut.builds import get_job
-from magpie_sourcehut.repo import get_repo
 from magpie_sourcehut.cli import main
+from magpie_sourcehut.client import SourceHutError, query_graphql
+from magpie_sourcehut.lists import get_patchset, list_patchsets, map_patchset_to_pr
+from magpie_sourcehut.repo import get_repo
+from magpie_sourcehut.todo import (
+    get_ticket,
+    label_ticket,
+    submit_comment,
+    submit_ticket,
+    update_ticket_status,
+)
 
 
 @pytest.fixture
-def mock_env(monkeypatch):
+def mock_env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("SRHT_TOKEN", "mock_token_123")
 
 
-def make_mock_response(status_code, body_dict):
+def make_mock_response(status_code: int, body_dict: dict[str, Any]) -> MagicMock:
     mock_resp = MagicMock()
     mock_resp.read.return_value = json.dumps(body_dict).encode("utf-8")
     mock_resp.status = status_code
@@ -41,28 +48,28 @@ def make_mock_response(status_code, body_dict):
 
 
 @patch("urllib.request.urlopen")
-def test_query_graphql_success(mock_urlopen, mock_env):
+def test_query_graphql_success(mock_urlopen: MagicMock, mock_env: None) -> None:
     mock_urlopen.return_value.__enter__.return_value = make_mock_response(200, {"data": {"version": "1.0"}})
     res = query_graphql("todo", "{ version }")
     assert res == {"version": "1.0"}
 
 
-def test_query_graphql_no_token():
+def test_query_graphql_no_token() -> None:
     with pytest.raises(SourceHutError, match="SRHT_TOKEN environment variable is not set"):
         query_graphql("todo", "{ version }")
 
 
 @patch("urllib.request.urlopen")
-def test_query_graphql_error_in_json(mock_urlopen, mock_env):
+def test_query_graphql_error_in_json(mock_urlopen: MagicMock, mock_env: None) -> None:
     mock_urlopen.return_value.__enter__.return_value = make_mock_response(
         200, {"errors": [{"message": "Invalid query syntax"}]}
     )
-    with pytest.raises(SourceHutError, match="GraphQL error from todo.sr.ht: Invalid query syntax"):
+    with pytest.raises(SourceHutError, match=r"GraphQL error from todo\.sr\.ht: Invalid query syntax"):
         query_graphql("todo", "invalid_query")
 
 
 @patch("urllib.request.urlopen")
-def test_get_ticket(mock_urlopen, mock_env):
+def test_get_ticket(mock_urlopen: MagicMock, mock_env: None) -> None:
     ticket_data = {
         "id": 42,
         "title": "Fix memory leak",
@@ -81,7 +88,7 @@ def test_get_ticket(mock_urlopen, mock_env):
 
 
 @patch("urllib.request.urlopen")
-def test_submit_ticket(mock_urlopen, mock_env):
+def test_submit_ticket(mock_urlopen: MagicMock, mock_env: None) -> None:
     mock_urlopen.return_value.__enter__.return_value = make_mock_response(
         200, {"data": {"submitTicket": {"id": 101, "title": "New issue"}}}
     )
@@ -90,7 +97,7 @@ def test_submit_ticket(mock_urlopen, mock_env):
 
 
 @patch("urllib.request.urlopen")
-def test_submit_comment(mock_urlopen, mock_env):
+def test_submit_comment(mock_urlopen: MagicMock, mock_env: None) -> None:
     mock_urlopen.return_value.__enter__.return_value = make_mock_response(
         200, {"data": {"submitComment": {"id": 501, "body": "Comment body"}}}
     )
@@ -99,7 +106,7 @@ def test_submit_comment(mock_urlopen, mock_env):
 
 
 @patch("urllib.request.urlopen")
-def test_label_ticket(mock_urlopen, mock_env):
+def test_label_ticket(mock_urlopen: MagicMock, mock_env: None) -> None:
     mock_urlopen.return_value.__enter__.return_value = make_mock_response(
         200, {"data": {"labelTicket": {"id": 42}}}
     )
@@ -108,7 +115,7 @@ def test_label_ticket(mock_urlopen, mock_env):
 
 
 @patch("urllib.request.urlopen")
-def test_update_ticket_status(mock_urlopen, mock_env):
+def test_update_ticket_status(mock_urlopen: MagicMock, mock_env: None) -> None:
     mock_urlopen.return_value.__enter__.return_value = make_mock_response(
         200, {"data": {"updateTicketStatus": {"id": 42, "status": "RESOLVED", "resolution": "FIXED"}}}
     )
@@ -117,7 +124,7 @@ def test_update_ticket_status(mock_urlopen, mock_env):
 
 
 @patch("urllib.request.urlopen")
-def test_get_patchset_and_mapping(mock_urlopen, mock_env):
+def test_get_patchset_and_mapping(mock_urlopen: MagicMock, mock_env: None) -> None:
     patchset_data = {
         "id": 200,
         "subject": "[PATCH 0/2] Fix some logs",
@@ -173,7 +180,7 @@ def test_get_patchset_and_mapping(mock_urlopen, mock_env):
 
 
 @patch("urllib.request.urlopen")
-def test_list_patchsets(mock_urlopen, mock_env):
+def test_list_patchsets(mock_urlopen: MagicMock, mock_env: None) -> None:
     mock_urlopen.return_value.__enter__.return_value = make_mock_response(
         200,
         {
@@ -195,7 +202,7 @@ def test_list_patchsets(mock_urlopen, mock_env):
 
 
 @patch("urllib.request.urlopen")
-def test_get_job(mock_urlopen, mock_env):
+def test_get_job(mock_urlopen: MagicMock, mock_env: None) -> None:
     mock_urlopen.return_value.__enter__.return_value = make_mock_response(
         200, {"data": {"job": {"id": 55, "status": "SUCCESS", "tasks": []}}}
     )
@@ -204,7 +211,7 @@ def test_get_job(mock_urlopen, mock_env):
 
 
 @patch("urllib.request.urlopen")
-def test_get_repo(mock_urlopen, mock_env):
+def test_get_repo(mock_urlopen: MagicMock, mock_env: None) -> None:
     mock_urlopen.return_value.__enter__.return_value = make_mock_response(
         200, {"data": {"repository": {"id": 9, "name": "my-repo", "description": "VCS"}}}
     )
@@ -213,7 +220,7 @@ def test_get_repo(mock_urlopen, mock_env):
 
 
 @patch("urllib.request.urlopen")
-def test_cli_dispatch(mock_urlopen, mock_env, capsys):
+def test_cli_dispatch(mock_urlopen: MagicMock, mock_env: None, capsys: pytest.CaptureFixture[str]) -> None:
     mock_urlopen.return_value.__enter__.return_value = make_mock_response(
         200, {"data": {"job": {"id": 12, "status": "FAILED"}}}
     )

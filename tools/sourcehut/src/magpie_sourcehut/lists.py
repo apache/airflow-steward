@@ -19,6 +19,7 @@
 
 from __future__ import annotations
 
+import contextlib
 from typing import Any
 
 from magpie_sourcehut.client import query_graphql
@@ -121,10 +122,8 @@ def map_patchset_to_pr(patchset: dict[str, Any]) -> dict[str, Any]:
     emails = [edge.get("node") for edge in edges if edge.get("node")]
 
     # Sort emails by date if possible
-    try:
+    with contextlib.suppress(Exception):
         emails.sort(key=lambda x: x.get("date", ""))
-    except Exception:
-        pass
 
     # The cover letter / description is the first email (or patchset subject)
     description = ""
@@ -146,22 +145,26 @@ def map_patchset_to_pr(patchset: dict[str, Any]) -> dict[str, Any]:
     # Map patches inside the patchset to commits
     commits = []
     for patch in patchset.get("patches") or []:
-        commits.append({
-            "id": str(patch.get("id")),
-            "subject": patch.get("subject", ""),
-            "diff": patch.get("diff", ""),
-        })
+        commits.append(
+            {
+                "id": str(patch.get("id")),
+                "subject": patch.get("subject", ""),
+                "diff": patch.get("diff", ""),
+            }
+        )
 
     # Map replies (all emails except the first/cover letter) to review comments
     comments = []
     for email in emails[1:]:
         sender = email.get("sender") or {}
-        comments.append({
-            "id": str(email.get("id")),
-            "author": sender.get("canonicalName", "Unknown"),
-            "body": email.get("body", ""),
-            "date": email.get("date", ""),
-        })
+        comments.append(
+            {
+                "id": str(email.get("id")),
+                "author": sender.get("canonicalName", "Unknown"),
+                "body": email.get("body", ""),
+                "date": email.get("date", ""),
+            }
+        )
 
     return {
         "id": str(patchset.get("id")),

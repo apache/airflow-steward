@@ -46,7 +46,7 @@ def query_graphql(service: str, query: str, variables: dict[str, Any] | None = N
         raise SourceHutError("SRHT_TOKEN environment variable is not set")
 
     url = f"https://{service}.sr.ht/query"
-    payload = {"query": query}
+    payload: dict[str, Any] = {"query": query}
     if variables:
         payload["variables"] = variables
 
@@ -65,19 +65,23 @@ def query_graphql(service: str, query: str, variables: dict[str, Any] | None = N
         with urllib.request.urlopen(req) as resp:
             body = resp.read().decode("utf-8")
             res_json = json.loads(body)
-            if "errors" in res_json and res_json["errors"]:
-                err_msgs = [e.get("message", "Unknown error") for e in res_json["errors"]]
+            errors = res_json.get("errors")
+            if errors:
+                err_msgs = [e.get("message", "Unknown error") for e in errors]
                 raise SourceHutError(f"GraphQL error from {service}.sr.ht: {'; '.join(err_msgs)}")
             return res_json.get("data", {})
     except urllib.error.HTTPError as exc:
         try:
             err_body = exc.read().decode("utf-8")
             err_json = json.loads(err_body)
-            if "errors" in err_json and err_json["errors"]:
-                err_msgs = [e.get("message", "Unknown error") for e in err_json["errors"]]
+            err_errors = err_json.get("errors")
+            if err_errors:
+                err_msgs = [e.get("message", "Unknown error") for e in err_errors]
                 raise SourceHutError(f"HTTP {exc.code}: {'; '.join(err_msgs)}")
         except Exception:
+            # Ignore errors parsing the HTTP error response body as JSON
             pass
+
         raise SourceHutError(f"HTTP request to {url} failed with status {exc.code}") from exc
     except urllib.error.URLError as exc:
         raise SourceHutError(f"Failed to connect to {url}: {exc.reason}") from exc

@@ -81,8 +81,8 @@ def submit_ticket(owner: str, name: str, title: str, description: str) -> dict[s
         "owner": owner,
         "name": name,
         "input": {
-          "title": title,
-          "description": description,
+            "title": title,
+            "description": description,
         },
     }
     res = query_graphql("todo", q, variables)
@@ -152,7 +152,9 @@ def unlabel_ticket(owner: str, name: str, ticket_id: int, label_id: int) -> dict
     return res.get("unlabelTicket") or {}
 
 
-def update_ticket_status(owner: str, name: str, ticket_id: int, status: str, resolution: str | None = None) -> dict[str, Any]:
+def update_ticket_status(
+    owner: str, name: str, ticket_id: int, status: str, resolution: str | None = None
+) -> dict[str, Any]:
     """Update ticket status (resolve / close) on todo.sr.ht."""
     owner = _normalize_owner(owner)
     q = """
