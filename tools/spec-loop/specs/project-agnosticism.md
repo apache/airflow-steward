@@ -183,8 +183,11 @@ uv run --project tools/skill-and-tool-validator --group dev skill-and-tool-valid
   catalogue (bare `PMC`, `ICLA`, `announce@apache.org`) is surfaced by the
   advisory lint (check #10 in `skill-and-tool-validator`) for human
   judgement.
-- **Template/profile drift is not mechanically checked.** The non-ASF
-  example is now a real smoke fixture, but no validator compares its file
-  and key surface against `projects/_template/`. A drift check should
-  catch missing required files, stale documented keys, and hidden
-  organization-default assumptions.
+- **Template/profile drift is now mechanically checked.** Check #15 in
+  `tools/skill-and-tool-validator` (`template-drift` category, SOFT)
+  compares `projects/_template/` and `projects/non-asf-example/`: files
+  linked in the example README must exist on disk, every config file in the
+  example must be documented in its README, and shared config files (all
+  except `project.md` and `README.md`, which differ by design) must have
+  the same h2 section headings. The live tree produces no `template-drift`
+  violations.

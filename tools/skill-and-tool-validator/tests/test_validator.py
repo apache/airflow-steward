@@ -53,6 +53,7 @@ from skill_and_tool_validator import (
     SECURITY_PATTERN_CATEGORY,
     SOFT_CATEGORIES,
     STATUS_CATEGORY,
+    TEMPLATE_DRIFT_CATEGORY,
     TRIGGER_PRESERVATION_CATEGORY,
     _parse_modes_doc,
     _read_mode_table,
@@ -88,6 +89,7 @@ from skill_and_tool_validator import (
     validate_placeholders,
     validate_principle_compliance,
     validate_privacy_patterns,
+    validate_project_template_drift,
     validate_security_patterns,
     validate_tools,
     validate_trigger_preservation,
@@ -3695,3 +3697,244 @@ class TestValidateOverrideContract:
         # No skill bodies are read; the check only scans the override directory.
         violations = list(validate_override_contract(tmp_path))
         assert violations == []
+
+
+# ---------------------------------------------------------------------------
+# Project-template drift check
+# ---------------------------------------------------------------------------
+
+
+def _make_profile_dirs(
+    tmp_path: Path,
+    template_files: dict[str, str] | None = None,
+    example_files: dict[str, str] | None = None,
+    example_readme: str | None = None,
+) -> Path:
+    """Create minimal projects/_template/ and projects/non-asf-example/ trees.
+
+    *template_files* and *example_files* are {filename: content} dicts.
+    *example_readme* overrides the auto-generated README.md for the example.
+    Returns the repo root (tmp_path itself).
+    """
+    tmpl_dir = tmp_path / "projects" / "_template"
+    ex_dir = tmp_path / "projects" / "non-asf-example"
+    tmpl_dir.mkdir(parents=True)
+    ex_dir.mkdir(parents=True)
+
+    for name, content in (template_files or {}).items():
+        (tmpl_dir / name).write_text(content, encoding="utf-8")
+
+    for name, content in (example_files or {}).items():
+        (ex_dir / name).write_text(content, encoding="utf-8")
+
+    if example_readme is not None:
+        (ex_dir / "README.md").write_text(example_readme, encoding="utf-8")
+    elif "README.md" not in (example_files or {}):
+        # Default README that lists any config files provided.
+        listed = "\n".join(
+            f"- [`{n}`]({n}) — fixture" for n in sorted((example_files or {}).keys()) if n != "README.md"
+        )
+        (ex_dir / "README.md").write_text(
+            f"# Example\n\n## Files\n\n{listed}\n",
+            encoding="utf-8",
+        )
+
+    return tmp_path
+
+
+class TestProjectTemplateDrift:
+    # --- Category membership ---
+
+    def test_category_is_soft(self) -> None:
+        assert TEMPLATE_DRIFT_CATEGORY in SOFT_CATEGORIES
+        assert TEMPLATE_DRIFT_CATEGORY not in HARD_CATEGORIES
+
+    def test_category_in_all_categories(self) -> None:
+        assert TEMPLATE_DRIFT_CATEGORY in ALL_CATEGORIES
+
+    # --- Silent when directories absent ---
+
+    def test_silent_when_template_dir_missing(self, tmp_path: Path) -> None:
+        ex_dir = tmp_path / "projects" / "non-asf-example"
+        ex_dir.mkdir(parents=True)
+        (ex_dir / "README.md").write_text("# Example\n")
+        violations = list(validate_project_template_drift(tmp_path))
+        assert violations == []
+
+    def test_silent_when_example_dir_missing(self, tmp_path: Path) -> None:
+        tmpl_dir = tmp_path / "projects" / "_template"
+        tmpl_dir.mkdir(parents=True)
+        (tmpl_dir / "project.md").write_text("# Template\n")
+        violations = list(validate_project_template_drift(tmp_path))
+        assert violations == []
+
+    # --- Clean state: no violations ---
+
+    def test_clean_dirs_produce_no_violations(self, tmp_path: Path) -> None:
+        _make_profile_dirs(
+            tmp_path,
+            template_files={"stale-sweep-config.md": "## Thresholds\n\ncontent\n"},
+            example_files={"stale-sweep-config.md": "## Thresholds\n\ncontent\n"},
+        )
+        violations = list(validate_project_template_drift(tmp_path))
+        assert violations == []
+
+    def test_no_violations_on_live_repo(self) -> None:
+        root = find_repo_root()
+        violations = list(validate_project_template_drift(root))
+        drift = [v for v in violations if v.category == TEMPLATE_DRIFT_CATEGORY]
+        assert drift == [], "Unexpected template-drift violations on live repo:\n" + "\n".join(
+            str(v) for v in drift
+        )
+
+    # --- Check 1: README file-list coherence ---
+
+    def test_readme_dead_link_fires(self, tmp_path: Path) -> None:
+        readme = "# Example\n\n## Files\n\n- [`ghost.md`](ghost.md) — does not exist\n"
+        _make_profile_dirs(tmp_path, example_readme=readme)
+        violations = list(validate_project_template_drift(tmp_path))
+        assert any("readme-dead-link" in v.message for v in violations)
+        assert any(v.category == TEMPLATE_DRIFT_CATEGORY for v in violations)
+
+    def test_readme_dead_link_violation_names_the_missing_file(self, tmp_path: Path) -> None:
+        readme = "# Example\n\n## Files\n\n- [`missing.md`](missing.md) — gone\n"
+        _make_profile_dirs(tmp_path, example_readme=readme)
+        violations = list(validate_project_template_drift(tmp_path))
+        dead = [v for v in violations if "readme-dead-link" in v.message]
+        assert any("missing.md" in v.message for v in dead)
+
+    def test_existing_file_does_not_trigger_dead_link(self, tmp_path: Path) -> None:
+        _make_profile_dirs(
+            tmp_path,
+            example_files={"config.md": "# Config\n"},
+        )
+        violations = list(validate_project_template_drift(tmp_path))
+        assert not any("readme-dead-link" in v.message for v in violations)
+
+    def test_external_url_in_files_section_not_checked(self, tmp_path: Path) -> None:
+        readme = "# Example\n\n## Files\n\n- [external](https://example.com/foo.md) — external\n"
+        _make_profile_dirs(tmp_path, example_readme=readme)
+        violations = list(validate_project_template_drift(tmp_path))
+        assert not any("readme-dead-link" in v.message for v in violations)
+
+    def test_parent_traversal_in_files_section_not_checked(self, tmp_path: Path) -> None:
+        readme = "# Example\n\n## Files\n\n- [`org`](../../organizations/README.md) — parent\n"
+        _make_profile_dirs(tmp_path, example_readme=readme)
+        violations = list(validate_project_template_drift(tmp_path))
+        assert not any("readme-dead-link" in v.message for v in violations)
+
+    # --- Check 2: Undocumented files ---
+
+    def test_undocumented_file_fires(self, tmp_path: Path) -> None:
+        readme = "# Example\n\n## Files\n\n(no files listed)\n"
+        _make_profile_dirs(
+            tmp_path,
+            example_files={"orphan.md": "# Orphan\n"},
+            example_readme=readme,
+        )
+        violations = list(validate_project_template_drift(tmp_path))
+        assert any("undocumented-file" in v.message for v in violations)
+
+    def test_undocumented_file_violation_names_the_file(self, tmp_path: Path) -> None:
+        readme = "# Example\n\n## Files\n\n(no files listed)\n"
+        _make_profile_dirs(
+            tmp_path,
+            example_files={"stale-sweep-config.md": "## Thresholds\n"},
+            example_readme=readme,
+        )
+        violations = list(validate_project_template_drift(tmp_path))
+        undoc = [v for v in violations if "undocumented-file" in v.message]
+        assert any("stale-sweep-config.md" in v.message for v in undoc)
+
+    def test_readme_md_itself_never_flagged_as_undocumented(self, tmp_path: Path) -> None:
+        _make_profile_dirs(tmp_path)
+        violations = list(validate_project_template_drift(tmp_path))
+        assert not any("undocumented-file" in v.message and "README.md" in v.message for v in violations)
+
+    def test_documented_file_no_undocumented_violation(self, tmp_path: Path) -> None:
+        _make_profile_dirs(
+            tmp_path,
+            example_files={"config.md": "# Config\n"},
+        )
+        violations = list(validate_project_template_drift(tmp_path))
+        assert not any("undocumented-file" in v.message for v in violations)
+
+    # --- Check 3: Shared-file h2 alignment ---
+
+    def test_h2_missing_from_example_fires(self, tmp_path: Path) -> None:
+        _make_profile_dirs(
+            tmp_path,
+            template_files={"config.md": "## Section A\n\ncontent\n\n## Section B\n\ncontent\n"},
+            example_files={"config.md": "## Section A\n\ncontent\n"},
+        )
+        violations = list(validate_project_template_drift(tmp_path))
+        assert any("h2-missing-from-example" in v.message for v in violations)
+        assert any("Section B" in v.message for v in violations)
+
+    def test_h2_extra_in_example_fires(self, tmp_path: Path) -> None:
+        _make_profile_dirs(
+            tmp_path,
+            template_files={"config.md": "## Section A\n\ncontent\n"},
+            example_files={"config.md": "## Section A\n\ncontent\n\n## Extra\n\ncontent\n"},
+        )
+        violations = list(validate_project_template_drift(tmp_path))
+        assert any("h2-extra-in-example" in v.message for v in violations)
+        assert any("Extra" in v.message for v in violations)
+
+    def test_matching_h2s_produce_no_violation(self, tmp_path: Path) -> None:
+        content = "## Thresholds\n\n## Exclusion labels\n\n## Cross-references\n"
+        _make_profile_dirs(
+            tmp_path,
+            template_files={"stale-sweep-config.md": content},
+            example_files={"stale-sweep-config.md": content},
+        )
+        violations = list(validate_project_template_drift(tmp_path))
+        assert not any("h2-" in v.message for v in violations)
+
+    def test_project_md_h2_differences_silent(self, tmp_path: Path) -> None:
+        # project.md is excluded from h2 comparison — org-inherited blocks
+        # intentionally differ between template and example.
+        _make_profile_dirs(
+            tmp_path,
+            template_files={"project.md": "## Identity\n\n## Mail sources\n\ncontent\n"},
+            example_files={"project.md": "## Identity\n\ncontent\n"},
+        )
+        violations = list(validate_project_template_drift(tmp_path))
+        assert not any("h2-" in v.message and "project.md" in v.message for v in violations)
+
+    def test_readme_md_excluded_from_h2_comparison(self, tmp_path: Path) -> None:
+        _make_profile_dirs(
+            tmp_path,
+            template_files={"README.md": "## What each file is for\n\ncontent\n"},
+            example_readme="## Files\n\ncontent\n",
+        )
+        violations = list(validate_project_template_drift(tmp_path))
+        assert not any("h2-" in v.message and "README.md" in v.message for v in violations)
+
+    def test_doctoc_headings_not_counted(self, tmp_path: Path) -> None:
+        # DocToc repeats headings in a comment block; those should not be compared.
+        doctoc = (
+            "<!-- START doctoc generated TOC please keep comment here to allow auto update -->\n"
+            "<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->\n"
+            "**Table of Contents**\n\n"
+            "- [Section A](#section-a)\n"
+            "- [Section B](#section-b)\n\n"
+            "<!-- END doctoc generated TOC\n"
+            " -->\n"
+        )
+        tmpl = doctoc + "## Section A\n\ncontent\n\n## Section B\n\ncontent\n"
+        ex = doctoc + "## Section A\n\ncontent\n\n## Section B\n\ncontent\n"
+        _make_profile_dirs(
+            tmp_path,
+            template_files={"config.md": tmpl},
+            example_files={"config.md": ex},
+        )
+        violations = list(validate_project_template_drift(tmp_path))
+        assert not any("h2-" in v.message for v in violations)
+
+    def test_all_violations_are_soft_category(self, tmp_path: Path) -> None:
+        readme = "# Example\n\n## Files\n\n- [`ghost.md`](ghost.md) — missing\n"
+        _make_profile_dirs(tmp_path, example_readme=readme)
+        violations = list(validate_project_template_drift(tmp_path))
+        for v in violations:
+            assert v.category == TEMPLATE_DRIFT_CATEGORY

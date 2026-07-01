@@ -95,6 +95,14 @@ skills/:
     attempt to weaken the framework's safety / confidentiality / privacy /
     external-content-as-data baseline.  Advisory only — prose explanations
     of what NOT to do can false-positive here.
+16. Project-template drift (SOFT) — compares ``projects/_template/``
+    with ``projects/non-asf-example/`` for structural drift: files
+    referenced in the example README must exist on disk, every config
+    file in the example must be documented in its README, and config
+    files present in both profiles must have the same h2 section
+    headings (``project.md`` and ``README.md`` are excluded from the
+    h2 comparison because their structures intentionally differ by
+    organization profile). Advisory only.
 
 SOFT categories surface as advisory warnings (stderr) without
 failing the run unless ``--strict`` is passed.
@@ -123,6 +131,7 @@ TOOLS_DIR = Path("tools")
 DOCS_DIR = Path("docs")
 SKILL_EVALS_DIR = Path("tools/skill-evals/evals")
 PROJECTS_TEMPLATE_DIR = Path("projects/_template")
+PROJECTS_NON_ASF_EXAMPLE_DIR = Path("projects/non-asf-example")
 MODES_DOC_PATH = Path("docs/modes.md")
 OVERRIDES_DIR = Path(".apache-magpie-overrides")
 
@@ -429,6 +438,9 @@ MODES_DOC_CATEGORY = "modes-doc-consistency"
 # SOFT advisory: override files in .apache-magpie-overrides/ must not weaken the
 # framework's safety / confidentiality / privacy / data-not-instructions baseline.
 OVERRIDE_CONTRACT_CATEGORY = "override-contract"
+# SOFT advisory: structural drift between projects/_template/ and
+# projects/non-asf-example/ — missing files, undocumented files, or h2 mismatches.
+TEMPLATE_DRIFT_CATEGORY = "template-drift"
 
 # The `magpie-` namespace prefix every installed framework skill carries.
 SKILL_NAME_PREFIX = "magpie-"
@@ -447,6 +459,7 @@ SOFT_CATEGORIES: frozenset[str] = frozenset(
         MODES_DOC_CATEGORY,
         MULTI_CAPABILITY_CATEGORY,
         OVERRIDE_CONTRACT_CATEGORY,
+        TEMPLATE_DRIFT_CATEGORY,
     }
 )
 HARD_CATEGORIES: frozenset[str] = frozenset(
@@ -2634,6 +2647,172 @@ def validate_eval_coverage(root: Path | None = None) -> Iterable[Violation]:
             )
 
 
+# ---------------------------------------------------------------------------
+# Project-template drift check (check #15, SOFT advisory)
+# ---------------------------------------------------------------------------
+
+# DocToc-generated TOC block — strip before comparing headings so that
+# section titles in the generated table of contents do not double-count as h2s.
+_DOCTOC_BLOCK_RE = re.compile(
+    r"<!-- START doctoc.*?<!-- END doctoc[^\n]*\n",
+    re.DOTALL,
+)
+
+# Markdown link where the link text is a backtick-quoted filename, e.g.:
+#   [`issue-tracker-config.md`](issue-tracker-config.md)
+# Group 1: the file name (inside backticks); Group 2: the link target (href).
+_PROJECT_FILE_LINK_RE = re.compile(r"\[`([^`]+)`\]\(([^)#\s]+)\)")
+
+# Files excluded from the h2 heading comparison.  project.md and README.md
+# have intentionally different structures depending on organization profile
+# (project.md has org-inherited blocks the example omits; README.md is a
+# narrative file not a config template).
+_TEMPLATE_DRIFT_H2_SKIP: frozenset[str] = frozenset({"project.md", "README.md"})
+
+
+def _strip_doctoc(text: str) -> str:
+    """Remove the DocToc-generated TOC block so its headings are not counted."""
+    return _DOCTOC_BLOCK_RE.sub("", text)
+
+
+def _extract_h2_headings(text: str) -> list[str]:
+    """Return the text of every h2 heading, in order, after stripping DocToc."""
+    clean = _strip_doctoc(text)
+    return [m.group(1).strip() for m in re.finditer(r"^## (.+)$", clean, re.MULTILINE)]
+
+
+def validate_project_template_drift(root: Path | None = None) -> Iterable[Violation]:
+    """SOFT advisory: detect structural drift between _template and non-asf-example.
+
+    Three checks (all SOFT — advisory, never fails the run unless --strict):
+
+    1. **README file-list coherence**: every file linked in the '## Files'
+       section of non-asf-example/README.md must exist on disk.
+
+    2. **Undocumented files**: every ``.md`` file in non-asf-example/
+       (other than README.md itself) must be mentioned somewhere in
+       non-asf-example/README.md.
+
+    3. **Shared-file h2 alignment**: for each file present in both
+       ``projects/_template/`` and ``projects/non-asf-example/`` (excluding
+       README.md and project.md, whose structures differ intentionally by
+       organization profile), the h2 section headings are compared.  A
+       heading present in the template but absent in the example suggests
+       the example may be missing a section; the reverse suggests the
+       template doc needs updating.  Both are advisory.
+
+    Silently skipped when either directory does not exist — avoids noise
+    on forks that omit the non-ASF example profile.
+    """
+    repo_root = root or find_repo_root()
+    template_dir = repo_root / PROJECTS_TEMPLATE_DIR
+    example_dir = repo_root / PROJECTS_NON_ASF_EXAMPLE_DIR
+
+    if not template_dir.is_dir() or not example_dir.is_dir():
+        return
+
+    example_readme = example_dir / "README.md"
+    if not example_readme.exists():
+        yield Violation(
+            example_readme,
+            None,
+            "template-drift [readme-missing]: non-asf-example/README.md is missing — "
+            "the example profile must document its files and explain what differs from "
+            "the _template/ profile",
+            category=TEMPLATE_DRIFT_CATEGORY,
+        )
+        return
+
+    try:
+        example_readme_text = example_readme.read_text(encoding="utf-8")
+    except OSError:
+        return
+
+    # -------------------------------------------------------------------
+    # Check 1: README file-list coherence (non-asf-example)
+    # -------------------------------------------------------------------
+    # Locate the "## Files" section and inspect every backtick-linked filename.
+    files_section = ""
+    if "## Files" in example_readme_text:
+        after_header = example_readme_text.split("## Files", 1)[1]
+        next_h2 = after_header.find("\n## ")
+        files_section = after_header[:next_h2] if next_h2 > 0 else after_header
+
+    for m in _PROJECT_FILE_LINK_RE.finditer(files_section):
+        href = m.group(2).strip()
+        # Only check local same-directory links (no ../ traversal, no URLs).
+        if href.startswith(("http://", "https://", "#", "..", "/")):
+            continue
+        target = example_dir / href
+        if not target.exists():
+            yield Violation(
+                example_readme,
+                None,
+                f"template-drift [readme-dead-link]: non-asf-example/README.md "
+                f"'## Files' links to '{href}' but the file does not exist — "
+                f"add the file or remove it from the README",
+                category=TEMPLATE_DRIFT_CATEGORY,
+            )
+
+    # -------------------------------------------------------------------
+    # Check 2: Undocumented files in non-asf-example
+    # -------------------------------------------------------------------
+    for child in sorted(example_dir.iterdir()):
+        if not child.is_file() or child.suffix != ".md" or child.name == "README.md":
+            continue
+        if child.name not in example_readme_text:
+            yield Violation(
+                child,
+                None,
+                f"template-drift [undocumented-file]: non-asf-example/{child.name} "
+                f"exists but is not mentioned in non-asf-example/README.md — "
+                f"add it to the '## Files' section or explain its purpose",
+                category=TEMPLATE_DRIFT_CATEGORY,
+            )
+
+    # -------------------------------------------------------------------
+    # Check 3: Shared-file h2 alignment (excluding project.md and README.md)
+    # -------------------------------------------------------------------
+    template_files = {p.name for p in template_dir.iterdir() if p.is_file() and p.suffix == ".md"}
+    example_files = {p.name for p in example_dir.iterdir() if p.is_file() and p.suffix == ".md"}
+    shared = (template_files & example_files) - _TEMPLATE_DRIFT_H2_SKIP
+
+    for filename in sorted(shared):
+        try:
+            tmpl_text = (template_dir / filename).read_text(encoding="utf-8")
+            ex_text = (example_dir / filename).read_text(encoding="utf-8")
+        except OSError:
+            continue
+
+        tmpl_h2s = set(_extract_h2_headings(tmpl_text))
+        ex_h2s = set(_extract_h2_headings(ex_text))
+
+        missing_from_example = tmpl_h2s - ex_h2s
+        extra_in_example = ex_h2s - tmpl_h2s
+
+        if missing_from_example:
+            yield Violation(
+                example_dir / filename,
+                None,
+                f"template-drift [h2-missing-from-example]: "
+                f"non-asf-example/{filename} is missing h2 section(s) present in "
+                f"_template/{filename}: {sorted(missing_from_example)!r} — "
+                f"add the section(s) or document the intentional omission in the README",
+                category=TEMPLATE_DRIFT_CATEGORY,
+            )
+
+        if extra_in_example:
+            yield Violation(
+                template_dir / filename,
+                None,
+                f"template-drift [h2-extra-in-example]: "
+                f"non-asf-example/{filename} has h2 section(s) not present in "
+                f"_template/{filename}: {sorted(extra_in_example)!r} — "
+                f"add the section(s) to the template so adopters know about them",
+                category=TEMPLATE_DRIFT_CATEGORY,
+            )
+
+
 def run_validation(root: Path | None = None) -> list[Violation]:
     """Run the full validation suite and return all violations."""
     repo_root = root or find_repo_root()
@@ -2693,6 +2872,9 @@ def run_validation(root: Path | None = None) -> list[Violation]:
 
     # Override-file contract check: .apache-magpie-overrides/*.md must not weaken baseline.
     violations.extend(validate_override_contract(repo_root))
+
+    # Project-template drift check: _template/ and non-asf-example/ stay comparable.
+    violations.extend(validate_project_template_drift(repo_root))
 
     return violations
 
@@ -2770,6 +2952,7 @@ _SOFT_RULE_PREFIXES: tuple[str, ...] = (
     "override-contract",
     "override-weakening",
     "parenthetical rationale",
+    "template-drift",
     "trigger phrase",
     "injection-guard TODO",
     "security-pattern-1",
