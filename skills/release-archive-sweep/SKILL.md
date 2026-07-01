@@ -15,7 +15,9 @@ when_to_use: |
   confirms a new release is promoted and announced. Safe to run periodically on any
   schedule; it is a no-op when nothing is past retention.
 argument-hint: "[--planning-issue <url>]"
-capability: capability:resolve
+capability:
+  - capability:resolve
+  - capability:triage
 license: Apache-2.0
 ---
 

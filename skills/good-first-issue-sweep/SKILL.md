@@ -21,7 +21,9 @@ when_to_use: |
   `good-first-issue-author` for that. Ask before running if
   `<project-config>/good-first-issue-config.md` is absent.
 argument-hint: "[--component <label>] [--label <filter-label>] [--limit <N>]"
-capability: capability:review
+capability:
+  - capability:review
+  - capability:triage
 license: Apache-2.0
 ---
 <!-- SPDX-License-Identifier: Apache-2.0

@@ -15,7 +15,7 @@
 
 # spec-status-index
 
-**Capability:** substrate:framework-dev
+**Capability:** substrate:framework-dev + substrate:analytics
 
 A deterministic `uv` tool that reads spec-loop specs from
 `tools/spec-loop/specs/` and prints them grouped by status, so build

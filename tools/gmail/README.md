@@ -12,7 +12,7 @@
 
 # `tools/gmail/`
 
-**Capability:** contract:mail-source + contract:mail-draft
+**Capability:** contract:mail-source + contract:mail-draft + contract:mail-archive
 
 Gmail API substrate. Read + draft-only — never sends. Provides two
 contracts: `mail-source` for inbound report intake (search / read a

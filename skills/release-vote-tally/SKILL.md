@@ -17,7 +17,9 @@ when_to_use: |
   Skip if the window has not closed yet — the skill will block in
   pre-flight.
 argument-hint: "<version>-rcN [--force-close <reason>]"
-capability: capability:triage
+capability:
+  - capability:triage
+  - capability:resolve
 license: Apache-2.0
 ---
 

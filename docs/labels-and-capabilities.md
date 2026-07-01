@@ -99,7 +99,7 @@ framework substrate:
 |---|---|---|
 | `contract:tracker` | contract | Issue / PR / board / label backend. |
 | `contract:source-control` | contract | Branch / commit / diff / push (VCS). |
-| `contract:mail-archive` | contract | Public mailing-list / forum archive reads. |
+| `contract:mail-archive` | contract | Mailing-list / forum archive reads. |
 | `contract:mail-source` | contract | Inbound-mail ingestion (mbox / IMAP / …). |
 | `contract:mail-draft` | contract | Outbound mail composition (draft, never send). |
 | `contract:cve-authority` | contract | CVE allocation / record management / publication. |
@@ -170,7 +170,7 @@ Capabilities for every skill currently in
 | `pairing-multi-agent-review` | `capability:review` |
 | `pr-management-mentor` | `capability:review` |
 | `good-first-issue-author` | `capability:review` *(authors a newcomer-ready good first issue — contributor mentoring on the supply side)* |
-| `good-first-issue-sweep` | `capability:review` *(sweeps the open issue backlog for GFI candidates; scores each against the G1–G7 rubric and proposes the label on maintainer confirmation)* |
+| `good-first-issue-sweep` | `capability:review` + `capability:triage` *(sweeps the open issue backlog for GFI candidates; scores each against the G1–G7 rubric and proposes the label on maintainer confirmation — a triage sweep in the mentoring family)* |
 | `mentoring-welcome` | `capability:review` *(drafts a first-contact orientation comment for first-time contributors on issues and PRs)* |
 | `issue-fix-workflow` | `capability:fix` |
 | `audit-finding-fix` | `capability:fix` |
@@ -182,7 +182,7 @@ Capabilities for every skill currently in
 | `security-issue-import-from-scan` | `capability:intake` |
 | `security-issue-sync` | `capability:intake` *(+ `capability:reconciliation` once [#337](https://github.com/apache/magpie/issues/337) lands the ASF-dashboard step)* |
 | `setup-shared-config-sync` | `capability:intake` + `capability:platform` *(reconciles user-scope config to a sync repo; the act is intake, the subject is setup)* |
-| `release-vote-tally` | `capability:triage` *(reads the vote thread / approval signal, classifies each reply as binding or non-binding, tallies the result, and drafts the `[RESULT] [VOTE]` email for RM review — triage over the vote-thread queue)* |
+| `release-vote-tally` | `capability:triage` + `capability:resolve` *(reads the vote thread / approval signal, classifies each reply as binding or non-binding, tallies the result — triage over the vote-thread queue — and drafts the `[RESULT] [VOTE]` close-out email for RM review — resolve)* |
 | `release-prepare` | `capability:resolve` *(drafts the planning issue, prep PR, and post-release bump PR that open the release lifecycle)* |
 | `release-announce-draft` | `capability:resolve` *(drafts the `[ANNOUNCE]` email and opens the site-bump PR that complete the release lifecycle)* |
 | `release-verify-rc` | `capability:triage` *(read-only RC pre-flight: verifies GPG signatures, checksums, RAT licence headers, NOTICE/LICENSE presence, prohibited binaries, and version-string consistency; emits a PASS/PASS-WITH-WARNINGS/FAIL report)* |
@@ -190,7 +190,7 @@ Capabilities for every skill currently in
 | `release-keys-sync` | `capability:resolve` *(drafts the KEYS file diff and paste-ready `svn` command sequence to add the RM's public key; validates key strength against the ASF floor)* |
 | `release-rc-cut` | `capability:resolve` *(emits the paste-ready tag, build, sign, checksum, and staging command sequences for an RC)* |
 | `release-vote-draft` | `capability:resolve` *(drafts the `[VOTE]` email and planning-issue comment that advance the release to the vote stage)* |
-| `release-archive-sweep` | `capability:resolve` *(scans the dist area and proposes the command set to move past-retention releases to the archive)* |
+| `release-archive-sweep` | `capability:resolve` + `capability:triage` *(scans the dist area, classifies each release against the retention rule — triage — and proposes the command set to move past-retention releases to the archive — resolve)* |
 | `security-cve-allocate` | `capability:resolve` |
 | `security-issue-invalidate` | `capability:resolve` |
 | `security-issue-deduplicate` | `capability:resolve` |
@@ -204,7 +204,7 @@ Capabilities for every skill currently in
 | `contributor-nomination` | `capability:stats` |
 | `contributor-to-committer` | `capability:stats` |
 | `contributor-activity-sweep` | `capability:stats` |
-| `committer-onboarding` | `capability:stats` |
+| `committer-onboarding` | `capability:resolve` + `capability:triage` *(post-vote onboarding close-out — resolve — after validating the vote result in pre-flight — triage)* |
 | `list-skills` | `capability:stats` |
 | `release-audit-report` | `capability:stats` *(assembles the per-release audit record from the planning issue, vote thread, artefact list, and announce archive URL)* |
 | `setup-status` | `capability:stats` + `capability:platform` *(reports the adoption configuration — stats — and delegates reconfiguration to the setup skill)* |
@@ -237,10 +237,10 @@ it implements multiple contracts (e.g. `tools/gmail` provides both
 | [`tools/dev`](../tools/dev/) | `substrate:framework-dev` | Framework dev-loop helpers |
 | [`tools/egress-gateway`](../tools/egress-gateway/) | `substrate:sandbox` | Egress-allowlist forward proxy (proxy.py plugin); host-level egress chokepoint — defence-in-depth for RFC-AI-0003 §4.4 |
 | [`tools/forwarder-relay`](../tools/forwarder-relay/) | `contract:report-relay` | Adapter contract for inbound-relay backends (ASF Security relay, huntr.com, HackerOne triagers). Pure interface spec; adapters declare detection + credit-extraction + reporter-addressing rules. |
-| [`tools/github`](../tools/github/) | `contract:tracker` | GitHub REST / GraphQL substrate (called by every lifecycle phase — pure substrate, no single phase) |
+| [`tools/github`](../tools/github/) | `contract:tracker` + `contract:source-control` | GitHub REST / GraphQL tracker substrate (called by every lifecycle phase) plus the Git source-control binding documented in [`source-control.md`](../tools/github/source-control.md) (runnable backend in [`tools/vcs`](../tools/vcs/)) |
 | [`tools/github-body-field`](../tools/github-body-field/) | `contract:tracker` | Read or rewrite one `### Field` section of a GitHub issue body without bringing the body into agent context — substrate helper for the security-sync skills |
 | [`tools/github-rollup`](../tools/github-rollup/) | `contract:tracker` | Append to (or create) the status-rollup comment on a GitHub issue without bringing the rollup body into agent context — substrate helper for every status-update-emitting skill |
-| [`tools/gmail`](../tools/gmail/) | `contract:mail-source` + `contract:mail-draft` | Gmail API substrate — inbound report intake (`mail-source`) plus outbound courtesy-reply drafting (`mail-draft`); read + draft only, never sends |
+| [`tools/gmail`](../tools/gmail/) | `contract:mail-source` + `contract:mail-draft` + `contract:mail-archive` | Gmail API substrate — inbound report intake (`mail-source`), thread / archive reads (`mail-archive`), plus outbound courtesy-reply drafting (`mail-draft`); read + draft only, never sends |
 | [`tools/jira`](../tools/jira/) | `contract:tracker` | JIRA REST substrate (read-only today; write subcommands tracked in [#301](https://github.com/apache/magpie/issues/301)) |
 | [`tools/mail-archive`](../tools/mail-archive/) | `contract:mail-archive` | Adapter contract for public mail-archive backends (PonyMail, Hyperkitty, Discourse, Google Groups, GitHub Discussions). Pure interface spec. |
 | [`tools/mail-source`](../tools/mail-source/) | `contract:mail-source` | Mail-source backend abstraction (mbox / IMAP / Mailman 3) feeding a uniform inbound thread/message view to the intake pipeline |
@@ -256,7 +256,7 @@ it implements multiple contracts (e.g. `tools/gmail` provides both
 | [`tools/spec-loop`](../tools/spec-loop/) | `substrate:framework-dev` | Spec-driven build loop runner (Ralph-style) for framework development |
 | [`tools/skill-evals`](../tools/skill-evals/) | `substrate:framework-dev` | Eval harness for skills; framework-dev infrastructure whose run output is governance evidence |
 | [`tools/skill-and-tool-validator`](../tools/skill-and-tool-validator/) | `substrate:framework-dev` | Skill-frontmatter and convention validator |
-| [`tools/spec-status-index`](../tools/spec-status-index/) | `substrate:framework-dev` | Index of spec / RFC implementation status — substrate that also doubles as a governance/stats view |
+| [`tools/spec-status-index`](../tools/spec-status-index/) | `substrate:framework-dev` + `substrate:analytics` | Index of spec / RFC implementation status — framework-dev substrate that also doubles as a governance/stats view (`analytics`) |
 | [`tools/spec-validator`](../tools/spec-validator/) | `substrate:framework-dev` | Spec-frontmatter and body-section validator — counterpart to `skill-and-tool-validator` for `tools/spec-loop/specs/` |
 | [`tools/pilot-report-validator`](../tools/pilot-report-validator/) | `substrate:framework-dev` | Adopter pilot-report validator — required frontmatter keys, no unfilled placeholders, valid profile, and required body sections; counterpart to `spec-validator` for `docs/pilot-report-template.md` |
 | [`tools/vcs`](../tools/vcs/) | `contract:source-control` | Backend-dispatching implementation of the source-control (VCS) capability ([`tools/github/source-control.md`](../tools/github/source-control.md)); complete Git backend plus detected extension points for non-Git VCS bridges (#601 Hg, #602 SVN) |
@@ -282,8 +282,8 @@ backend the adopter wired in. The framework consumes four:
 
 | MCP server | Tool prefix | Wrapped by | Capability provided | Organization |
 |---|---|---|---|---|
-| GitHub MCP | `mcp__github__*` | [`tools/github`](../tools/github/) | `contract:tracker` | — |
-| Gmail MCP (claude.ai) | `mcp__claude_ai_Gmail__*` | [`tools/gmail`](../tools/gmail/) | `contract:mail-source` + `contract:mail-draft` | — |
+| GitHub MCP | `mcp__github__*` | [`tools/github`](../tools/github/) | `contract:tracker` + `contract:source-control` | — |
+| Gmail MCP (claude.ai) | `mcp__claude_ai_Gmail__*` | [`tools/gmail`](../tools/gmail/) | `contract:mail-source` + `contract:mail-draft` + `contract:mail-archive` | — |
 | PonyMail MCP (`apache/comdev`) | `mcp__ponymail__*` | [`tools/ponymail`](../tools/ponymail/) | `contract:mail-archive` | ASF |
 | apache-projects MCP (`apache/comdev`) | `mcp__apache-projects__*` | [`tools/apache-projects`](../tools/apache-projects/) | `contract:project-metadata` | ASF |
 
